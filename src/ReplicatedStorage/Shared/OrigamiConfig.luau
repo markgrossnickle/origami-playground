@@ -27,6 +27,13 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "raw", display = "Raw", icon = "📝" },
 }
 
+-- AI models
+OrigamiConfig.MODELS = {
+	{ key = "haiku", display = "Haiku" },
+	{ key = "sonnet", display = "Sonnet" },
+	{ key = "opus", display = "Opus" },
+}
+
 -- Art styles
 OrigamiConfig.STYLES = {
 	{ key = "origami", display = "Origami" },
@@ -40,6 +47,15 @@ OrigamiConfig.STYLES = {
 	{ key = "pixel", display = "Pixel" },
 	{ key = "neon", display = "Neon" },
 	{ key = "freestyle", display = "Freestyle" },
+}
+
+-- DM (Dungeon Master) mode
+OrigamiConfig.DM = {
+	MAX_SCENE_ITEMS = 15,
+	MAX_ACTIVE_CREATURES = 20,
+	CREATURE_TICK_RATE = 0.05,
+	SCENE_RADIUS = 60,
+	DEFAULT_MODEL = "sonnet",
 }
 
 return OrigamiConfig

@@ -7,6 +7,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
+local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 
 local Player = Players.LocalPlayer
 
@@ -28,6 +29,7 @@ local CreatorController = Knit.CreateController({
 local _trove = Trove.new()
 local _selectedCategory = "creature"
 local _selectedStyle = "origami"
+local _selectedModel = "haiku"
 local _gui: ScreenGui
 local _inputBox: TextBox
 local _statusLabel: TextLabel
@@ -35,6 +37,7 @@ local _createButton: TextButton
 local _clearButton: TextButton
 local _categoryButtons: { [string]: TextButton } = {}
 local _styleButtons: { [string]: TextButton } = {}
+local _modelButtons: { [string]: TextButton } = {}
 local _queueFrame: Frame
 local _queueEntries: { { frame: Frame, label: TextLabel, dot: TextLabel } } = {}
 local _nextQueueId = 0
@@ -46,6 +49,7 @@ local _equippedHat: Accessory? = nil
 local _activeVehicle: Model? = nil
 local _vehicleSeat: VehicleSeat? = nil
 local _avatarApplied = false
+local _dmToggleButton: TextButton
 
 -- Colors
 local COLORS = {
@@ -72,8 +76,8 @@ local function createUI()
 	-- Container at bottom of screen
 	local container = Instance.new("Frame")
 	container.Name = "Container"
-	container.Size = UDim2.new(0.6, 0, 0, 156)
-	container.Position = UDim2.new(0.2, 0, 1, -220)
+	container.Size = UDim2.new(0.6, 0, 0, 188)
+	container.Position = UDim2.new(0.2, 0, 1, -252)
 	container.BackgroundColor3 = COLORS.bg
 	container.BackgroundTransparency = 0.1
 	container.BorderSizePixel = 0
@@ -135,11 +139,62 @@ local function createUI()
 		end)
 	end
 
+	-- Model selector row
+	local modelRow = Instance.new("Frame")
+	modelRow.Name = "ModelRow"
+	modelRow.Size = UDim2.new(1, -20, 0, 28)
+	modelRow.Position = UDim2.new(0, 10, 0, 40)
+	modelRow.BackgroundTransparency = 1
+	modelRow.Parent = container
+
+	local modelLayout = Instance.new("UIListLayout")
+	modelLayout.FillDirection = Enum.FillDirection.Horizontal
+	modelLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	modelLayout.Padding = UDim.new(0, 4)
+	modelLayout.Parent = modelRow
+
+	-- "Model:" label
+	local modelLabel = Instance.new("TextLabel")
+	modelLabel.Name = "ModelLabel"
+	modelLabel.Size = UDim2.new(0, 44, 1, 0)
+	modelLabel.BackgroundTransparency = 1
+	modelLabel.Text = "Model:"
+	modelLabel.TextColor3 = COLORS.textDim
+	modelLabel.TextSize = 11
+	modelLabel.Font = Enum.Font.GothamBold
+	modelLabel.TextXAlignment = Enum.TextXAlignment.Left
+	modelLabel.Parent = modelRow
+
+	for _, mdl in ipairs(OrigamiConfig.MODELS) do
+		local btn = Instance.new("TextButton")
+		btn.Name = "Model_" .. mdl.key
+		btn.Size = UDim2.new(0, 60, 1, 0)
+		btn.BackgroundColor3 = COLORS.bgLight
+		btn.BorderSizePixel = 0
+		btn.Text = mdl.display
+		btn.TextColor3 = COLORS.textDim
+		btn.TextSize = 11
+		btn.Font = Enum.Font.GothamBold
+		btn.AutoButtonColor = true
+		btn.Parent = modelRow
+
+		local btnCorner = Instance.new("UICorner")
+		btnCorner.CornerRadius = UDim.new(0, 6)
+		btnCorner.Parent = btn
+
+		_modelButtons[mdl.key] = btn
+
+		btn.MouseButton1Click:Connect(function()
+			_selectedModel = mdl.key
+			updateModelHighlights()
+		end)
+	end
+
 	-- Category buttons row
 	local categoryRow = Instance.new("Frame")
 	categoryRow.Name = "CategoryRow"
 	categoryRow.Size = UDim2.new(1, -20, 0, 32)
-	categoryRow.Position = UDim2.new(0, 10, 0, 40)
+	categoryRow.Position = UDim2.new(0, 10, 0, 72)
 	categoryRow.BackgroundTransparency = 1
 	categoryRow.Parent = container
 
@@ -178,7 +233,7 @@ local function createUI()
 	local inputRow = Instance.new("Frame")
 	inputRow.Name = "InputRow"
 	inputRow.Size = UDim2.new(1, -20, 0, 40)
-	inputRow.Position = UDim2.new(0, 10, 0, 82)
+	inputRow.Position = UDim2.new(0, 10, 0, 114)
 	inputRow.BackgroundTransparency = 1
 	inputRow.Parent = container
 
@@ -247,7 +302,7 @@ local function createUI()
 	_statusLabel = Instance.new("TextLabel")
 	_statusLabel.Name = "StatusLabel"
 	_statusLabel.Size = UDim2.new(1, -20, 0, 20)
-	_statusLabel.Position = UDim2.new(0, 10, 0, 128)
+	_statusLabel.Position = UDim2.new(0, 10, 0, 160)
 	_statusLabel.BackgroundTransparency = 1
 	_statusLabel.Text = ""
 	_statusLabel.TextColor3 = COLORS.textDim
@@ -301,10 +356,48 @@ local function createUI()
 	queuePadding.PaddingRight = UDim.new(0, 8)
 	queuePadding.Parent = _queueFrame
 
+	-- DM Mode toggle button (top-left corner)
+	_dmToggleButton = Instance.new("TextButton")
+	_dmToggleButton.Name = "DMToggle"
+	_dmToggleButton.Size = UDim2.new(0, 100, 0, 32)
+	_dmToggleButton.Position = UDim2.new(0, 10, 0, 10)
+	_dmToggleButton.BackgroundColor3 = Color3.fromRGB(120, 60, 180)
+	_dmToggleButton.BorderSizePixel = 0
+	_dmToggleButton.Text = "DM Mode"
+	_dmToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	_dmToggleButton.TextSize = 14
+	_dmToggleButton.Font = Enum.Font.GothamBold
+	_dmToggleButton.AutoButtonColor = true
+	_dmToggleButton.Parent = _gui
+
+	local dmToggleCorner = Instance.new("UICorner")
+	dmToggleCorner.CornerRadius = UDim.new(0, 8)
+	dmToggleCorner.Parent = _dmToggleButton
+
+	_dmToggleButton.Activated:Connect(function()
+		local DMController = Knit.GetController("DMController")
+		if DMController then
+			DMController:Toggle()
+		end
+	end)
+
 	_gui.Parent = Player.PlayerGui
 
 	updateStyleHighlights()
+	updateModelHighlights()
 	updateCategoryHighlights()
+end
+
+function updateModelHighlights()
+	for key, btn in pairs(_modelButtons) do
+		if key == _selectedModel then
+			btn.BackgroundColor3 = COLORS.accentDim
+			btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		else
+			btn.BackgroundColor3 = COLORS.bgLight
+			btn.TextColor3 = COLORS.textDim
+		end
+	end
 end
 
 function updateStyleHighlights()
@@ -349,16 +442,16 @@ function clearAllCreations()
 	-- Remove equipped hat parts
 	_equippedHat = nil
 
-	-- Remove active vehicle
-	if _activeVehicle then
-		_activeVehicle:Destroy()
-		_activeVehicle = nil
-		_vehicleSeat = nil
-	end
+	-- Remove active vehicle visual model + server-side seats
+	_activeVehicle = nil
+	_vehicleSeat = nil
+	local OrigamiService = Knit.GetService("OrigamiService")
+	OrigamiService:DestroyVehicleSeats():catch(function(err)
+		warn("[Clear] Failed to destroy server vehicle seats:", err)
+	end)
 
 	-- Reset avatar
 	if _avatarApplied then
-		local OrigamiService = Knit.GetService("OrigamiService")
 		OrigamiService:ResetAvatar():await()
 		_avatarApplied = false
 	end
@@ -483,6 +576,7 @@ function submitPrompt()
 
 	local category = _selectedCategory
 	local style = _selectedStyle
+	local model = _selectedModel
 	_inputBox.Text = ""
 
 	local queueId = addQueueEntry(prompt, category)
@@ -490,7 +584,7 @@ function submitPrompt()
 	-- Run async so multiple requests can fly in parallel
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:RequestModel(prompt, category, style):await()
+		local ok, result = OrigamiService:RequestModel(prompt, category, style, model):await()
 
 		if ok and result and result.success and result.model then
 			local modelData = result.model
@@ -652,6 +746,7 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	end
 
 	-- Weld each part directly to the head
+	-- Keep anchored during setup so parts don't fall before welds activate
 	for _, part in ipairs(partsToMove) do
 		if scale < 1 then
 			part.Size = part.Size * scale
@@ -660,17 +755,24 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 		local offset = (part.Position - modelCenter) * scale
 		local partRotation = part.CFrame - part.CFrame.Position
 
-		part.Anchored = false
+		part.Anchored = true
 		part.CanCollide = false
 		part.Massless = true
 		part:SetAttribute("OrigamiHat", true)
-		part.CFrame = headTop * CFrame.new(offset) * partRotation
+		part.CFrame = headTop * CFrame.Angles(0, math.pi, 0) * CFrame.new(offset) * partRotation
 		part.Parent = character
 
 		local weld = Instance.new("WeldConstraint")
 		weld.Part0 = head
 		weld.Part1 = part
 		weld.Parent = part
+	end
+
+	-- Now unanchor all parts so they follow the head via welds
+	for _, part in ipairs(partsToMove) do
+		if part.Parent then
+			part.Anchored = false
+		end
 	end
 
 	model:Destroy()
@@ -689,41 +791,54 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 		return
 	end
 
-	-- Remove previous vehicle
-	if _activeVehicle then
-		_activeVehicle:Destroy()
-		_activeVehicle = nil
-		_vehicleSeat = nil
-	end
-
 	-- Place vehicle in front of player
 	local placementPos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
-	placementPos = Vector3.new(placementPos.X, rootPart.Position.Y, placementPos.Z)
 
-	-- Create VehicleSeat as the driver seat
-	local seat = Instance.new("VehicleSeat")
-	seat.Name = "DriverSeat"
-	seat.Size = Vector3.new(2, 0.5, 2)
-	seat.Anchored = true -- Keep anchored until positioned
-	seat.CanCollide = true
-	seat.Transparency = 1
-	seat.MaxSpeed = 50
-	seat.Torque = 10
-	seat.TurnSpeed = 8
-	seat.Material = Enum.Material.SmoothPlastic
-	seat.Parent = model
-
-	-- Make seat the PrimaryPart so the model pivots around it
-	model.PrimaryPart = seat
-
-	-- Position the whole model first (while still anchored)
 	local _, lookY, _ = rootPart.CFrame:ToEulerAnglesYXZ()
-	model.Parent = workspace
-	model:PivotTo(CFrame.new(placementPos + Vector3.new(0, 2, 0)) * CFrame.Angles(0, lookY, 0))
+	local modelName = modelData.name or "Vehicle"
 
-	-- Weld all visual parts to the seat — massless so they don't tip it
+	-- Get model bounds for collision plate sizing
+	model.Parent = workspace
+	local _, modelSize = model:GetBoundingBox()
+
+	-- Raycast to find ground level at placement position
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = { character, model }
+	local rayResult = workspace:Raycast(
+		Vector3.new(placementPos.X, rootPart.Position.Y + 10, placementPos.Z),
+		Vector3.new(0, -50, 0),
+		rayParams
+	)
+	local groundY = if rayResult then rayResult.Position.Y else (rootPart.Position.Y - 3)
+
+	-- Seat sits 1 stud above ground (inside lower portion of car)
+	placementPos = Vector3.new(placementPos.X, groundY + 1, placementPos.Z)
+
+	-- Create server-side VehicleSeat (Sit() requires server authority)
+	local OrigamiService = Knit.GetService("OrigamiService")
+	print("[Vehicle] Requesting server seat at", placementPos)
+	local ok, seat =
+		OrigamiService
+			:CreateVehicleSeat(placementPos, lookY, modelName, { X = modelSize.X, Y = modelSize.Y, Z = modelSize.Z })
+			:await()
+
+	if not ok or not seat then
+		warn("[Vehicle] Failed to create server seat:", seat)
+		table.insert(_spawnedModels, model)
+		return
+	end
+
+	print("[Vehicle] Server seat received:", seat, "Position:", seat.Position)
+
+	-- Position visual model so seat is in the lower portion (where a driver sits)
+	-- Offset model upward: seat is 1 stud above ground, model bottom should be at ground
+	local modelRise = modelSize.Y / 2 - 1
+	model:PivotTo(seat.CFrame * CFrame.new(0, modelRise, 0))
+
+	-- Weld all visual parts to the server seat — massless so they don't tip it
 	for _, part in ipairs(model:GetDescendants()) do
-		if part:IsA("BasePart") and part ~= seat then
+		if part:IsA("BasePart") then
 			part.Anchored = false
 			part.CanCollide = false
 			part.Massless = true
@@ -734,54 +849,19 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 		end
 	end
 
-	-- Add an invisible collision plate at the bottom for ground contact
-	local _, modelSize = model:GetBoundingBox()
-	local collisionPlate = Instance.new("Part")
-	collisionPlate.Name = "CollisionPlate"
-	collisionPlate.Size = Vector3.new(math.min(modelSize.X * 0.8, 14), 0.5, math.min(modelSize.Z * 0.8, 16))
-	collisionPlate.Transparency = 1
-	collisionPlate.CanCollide = true
-	collisionPlate.Massless = true
-	collisionPlate.Anchored = false
-	collisionPlate.Material = Enum.Material.SmoothPlastic
-	-- Position at bottom of model
-	collisionPlate.CFrame = seat.CFrame * CFrame.new(0, -modelSize.Y / 2 + 0.25, 0)
-	collisionPlate.Parent = model
+	-- Add name label
+	addNameLabel(model, modelName)
 
-	local plateWeld = Instance.new("WeldConstraint")
-	plateWeld.Part0 = seat
-	plateWeld.Part1 = collisionPlate
-	plateWeld.Parent = collisionPlate
-
-	-- Un-anchor seat last so everything is welded before physics kicks in
-	seat.Anchored = false
-
-	-- Add BillboardGui with name + "Sit to drive" hint
-	local modelName = modelData.name or "Vehicle"
-	addNameLabel(model, modelName .. " (Walk up to drive)")
-
-	-- Add ProximityPrompt — walks the player to the seat so auto-sit triggers
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.ObjectText = modelName
-	prompt.ActionText = "Drive"
-	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = 20
-	prompt.Parent = seat
-
-	prompt.Triggered:Connect(function()
-		local char = Player.Character
-		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			humanoid:MoveTo(seat.Position)
-		end
-	end)
+	-- Tell server to unanchor now that visual parts are welded
+	print("[Vehicle] Calling ReadyVehicle to unanchor seat")
+	OrigamiService:ReadyVehicle(seat):await()
+	print("[Vehicle] Vehicle ready, seat anchored:", seat.Anchored)
 
 	_activeVehicle = model
 	_vehicleSeat = seat
 
 	-- Track for clear
 	table.insert(_spawnedModels, model)
-
 end
 
 function applyAvatar(model: Model, modelData: { [string]: any })
@@ -813,79 +893,6 @@ function setStatus(text: string, color: Color3?)
 	end)
 end
 
-
--- Snappy paper-fold curve: sharp snap at zero-crossing, holds at extremes
-local function foldCurve(raw: number): number
-	return math.sign(raw) * math.abs(raw) ^ 0.6
-end
-
--- Apply per-part creature animation based on name prefix
-local function applyCreatureAnimation(model: Model, animParts: { [BasePart]: CFrame }, t: number)
-	local pivot = model:GetPivot()
-
-	for part, baseOffset in pairs(animParts) do
-		if not part.Parent then
-			continue
-		end
-
-		local name = part.Name
-		local animOffset = CFrame.new()
-
-		if name:match("^seg_") then
-			-- Body segments: accordion fold
-			local idx = tonumber(name:match("%d+")) or 1
-			local dir = if idx % 2 == 0 then 1 else -1
-			local foldY = foldCurve(math.sin(t * 2.0 + idx * 0.5)) * 0.2 * dir
-			local foldAngle = foldCurve(math.cos(t * 1.5 + idx * 0.4)) * math.rad(15) * dir
-			animOffset = CFrame.new(0, foldY, 0) * CFrame.Angles(0, foldAngle, 0)
-
-		elseif name:match("^wing_L") then
-			-- Left wing: flap up/down via Z rotation
-			local idx = tonumber(name:match("%d+")) or 1
-			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
-			animOffset = CFrame.Angles(0, 0, flapAngle)
-
-		elseif name:match("^wing_R") then
-			-- Right wing: flap opposite
-			local idx = tonumber(name:match("%d+")) or 1
-			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
-			animOffset = CFrame.Angles(0, 0, -flapAngle)
-
-		elseif name:match("^tail_") then
-			-- Tail: side-to-side sway
-			local idx = tonumber(name:match("%d+")) or 1
-			local swayAngle = math.sin(t * 3.0 + idx * 0.6) * math.rad(20)
-			animOffset = CFrame.Angles(0, swayAngle, 0)
-
-		elseif name:match("^jaw_") then
-			-- Jaw: open/close
-			local openAngle = (math.sin(t * 2.0) * 0.5 + 0.5) * math.rad(15) -- 0 to 15 degrees
-			animOffset = CFrame.Angles(openAngle, 0, 0)
-
-		elseif name:match("^leg_") then
-			-- Legs: walking cycle. FL/BL move opposite to FR/BR
-			local isLeft = name:match("_[FB]L_")
-			local isFront = name:match("_F[LR]_")
-			local phase = (if isLeft then 0 else math.pi) + (if isFront then 0 else math.pi / 2)
-			local walkAngle = math.sin(t * 5.0 + phase) * math.rad(25)
-			animOffset = CFrame.Angles(walkAngle, 0, 0)
-		end
-		-- else: detail parts (eyes, horns) — no animation, animOffset stays identity
-
-		part.CFrame = pivot * baseOffset * animOffset
-	end
-end
-
--- Locomotion configs: speed, wanderRadius, hover height, behavior
-local LOCOMOTION_CONFIG = {
-	walk = { speed = 4, radius = 20, hoverHeight = 0, pauseMin = 1, pauseMax = 3 },
-	slither = { speed = 2, radius = 12, hoverHeight = 0, pauseMin = 2, pauseMax = 5 },
-	fly = { speed = 6, radius = 30, hoverHeight = 12, pauseMin = 0.5, pauseMax = 2 },
-	float = { speed = 1.5, radius = 15, hoverHeight = 6, pauseMin = 3, pauseMax = 6 },
-	hop = { speed = 5, radius = 18, hoverHeight = 0, pauseMin = 0.8, pauseMax = 2 },
-	stationary = { speed = 0, radius = 0, hoverHeight = 0, pauseMin = 2, pauseMax = 4 },
-}
-
 function spawnCreature(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
@@ -915,168 +922,8 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 	addNameLabel(model, modelName)
 	table.insert(_spawnedModels, model)
 
-	-- Collect ALL parts and their offsets from the model pivot for animation
-	local animParts: { [BasePart]: CFrame } = {}
-	local currentPivot = model:GetPivot()
-	for _, child in ipairs(model:GetChildren()) do
-		if child:IsA("BasePart") then
-			animParts[child] = currentPivot:ToObjectSpace(child.CFrame)
-		end
-	end
-
-	-- Locomotion type
-	local locomotion = modelData.locomotion or "walk"
-	local locoConfig = LOCOMOTION_CONFIG[locomotion] or LOCOMOTION_CONFIG.walk
-
-	-- Wandering state
-	local spawnPos = model:GetPivot().Position
-	local stopped = false
-	local rayParams = RaycastParams.new()
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
-	rayParams.FilterDescendantsInstances = { model, character }
-
-	model.Destroying:Connect(function()
-		stopped = true
-	end)
-
-	local function raycastGround(x: number, z: number): number
-		local result = workspace:Raycast(Vector3.new(x, spawnPos.Y + 50, z), Vector3.new(0, -200, 0), rayParams)
-		return if result then result.Position.Y else spawnPos.Y
-	end
-
-	local function isAlive(): boolean
-		return not stopped and model ~= nil and model.Parent ~= nil and model.PrimaryPart ~= nil
-	end
-
-	-- Stationary: just animate in place
-	if locomotion == "stationary" then
-		task.spawn(function()
-			while isAlive() do
-				applyCreatureAnimation(model, animParts, tick())
-				task.wait(0.03)
-			end
-		end)
-		return
-	end
-
-	task.spawn(function()
-		while isAlive() do
-			-- Pick a random target within wander radius
-			local angle = math.random() * math.pi * 2
-			local dist = math.random() * locoConfig.radius
-			local targetX = spawnPos.X + math.cos(angle) * dist
-			local targetZ = spawnPos.Z + math.sin(angle) * dist
-			local groundY = raycastGround(targetX, targetZ)
-
-			local startPos = model.PrimaryPart.Position
-			local distance = (Vector3.new(targetX, 0, targetZ) - Vector3.new(startPos.X, 0, startPos.Z)).Magnitude
-
-			if distance > 1 then
-				local lookCF = CFrame.lookAt(startPos, Vector3.new(targetX, startPos.Y, targetZ))
-				local lookRot = lookCF - lookCF.Position
-				local steps = math.max(1, math.floor(distance / (locoConfig.speed * 0.03)))
-
-				-- Slither: curved sinuous path
-				local slitherPhase = math.random() * math.pi * 2
-
-				-- Hop: pre-compute hop count
-				local hopCount = 0
-				local hopStepsPerHop = 0
-				if locomotion == "hop" then
-					hopCount = math.max(1, math.floor(distance / 3))
-					hopStepsPerHop = math.max(1, math.floor(steps / hopCount))
-				end
-
-				for step = 1, steps do
-					if not isAlive() then
-						break
-					end
-
-					local t = step / steps
-					local baseX = startPos.X + (targetX - startPos.X) * t
-					local baseZ = startPos.Z + (targetZ - startPos.Z) * t
-					local baseGroundY = raycastGround(baseX, baseZ)
-					local finalY = baseGroundY + pivotAboveBottom
-					local finalRot = lookRot
-
-					if locomotion == "slither" then
-						-- Sinuous S-curve perpendicular to travel direction
-						local perpX = -(targetZ - startPos.Z)
-						local perpZ = targetX - startPos.X
-						local perpLen = math.sqrt(perpX * perpX + perpZ * perpZ)
-						if perpLen > 0.01 then
-							perpX, perpZ = perpX / perpLen, perpZ / perpLen
-						end
-						local sway = math.sin(t * math.pi * 4 + slitherPhase) * 1.2
-						baseX = baseX + perpX * sway
-						baseZ = baseZ + perpZ * sway
-						-- Rotate to face movement direction (tangent of the curve)
-						local tangentSway = math.cos(t * math.pi * 4 + slitherPhase) * 1.2 * (math.pi * 4 / distance)
-						local yawOffset = math.atan2(tangentSway * perpX, tangentSway * perpZ)
-						finalRot = lookRot * CFrame.Angles(0, yawOffset * 0.3, 0)
-						finalY = baseGroundY + pivotAboveBottom
-
-					elseif locomotion == "fly" then
-						-- Swooping flight: sine wave altitude + bank into turns
-						local swoopY = math.sin(t * math.pi * 2) * 4
-						finalY = baseGroundY + pivotAboveBottom + locoConfig.hoverHeight + swoopY
-						-- Bank slightly into the swoop
-						local bankAngle = math.cos(t * math.pi * 2) * math.rad(15)
-						finalRot = lookRot * CFrame.Angles(0, 0, bankAngle)
-
-					elseif locomotion == "float" then
-						-- Gentle hover with vertical bob
-						local bobY = math.sin(tick() * 1.5) * 1.0
-						finalY = baseGroundY + pivotAboveBottom + locoConfig.hoverHeight + bobY
-						-- Slow gentle yaw drift
-						local driftYaw = math.sin(tick() * 0.5) * math.rad(10)
-						finalRot = lookRot * CFrame.Angles(0, driftYaw, 0)
-
-					elseif locomotion == "hop" then
-						-- Parabolic arc per hop
-						local hopIndex = math.floor((step - 1) / hopStepsPerHop)
-						local hopT = ((step - 1) % hopStepsPerHop) / hopStepsPerHop
-						local arcHeight = math.sin(hopT * math.pi) * 2.5
-						finalY = baseGroundY + pivotAboveBottom + arcHeight
-						-- Slight forward tilt during hop
-						local tiltAngle = math.sin(hopT * math.pi) * math.rad(-20)
-						finalRot = lookRot * CFrame.Angles(tiltAngle, 0, 0)
-
-					else -- walk (default)
-						finalY = baseGroundY + pivotAboveBottom
-					end
-
-					model:PivotTo(CFrame.new(baseX, finalY, baseZ) * finalRot)
-					applyCreatureAnimation(model, animParts, tick())
-					task.wait(0.03)
-				end
-			end
-
-			-- Pause at destination with fold animation
-			local pauseTime = locoConfig.pauseMin + math.random() * (locoConfig.pauseMax - locoConfig.pauseMin)
-
-			-- Float/fly: keep bobbing during pause
-			if locomotion == "float" or locomotion == "fly" then
-				local pauseStart = tick()
-				while isAlive() and (tick() - pauseStart) < pauseTime do
-					local currentPos = model:GetPivot().Position
-					local groundY = raycastGround(currentPos.X, currentPos.Z)
-					local bobY = math.sin(tick() * 1.5) * 1.0
-					local targetY = groundY + pivotAboveBottom + locoConfig.hoverHeight + bobY
-					local currentRot = model:GetPivot() - model:GetPivot().Position
-					model:PivotTo(CFrame.new(currentPos.X, targetY, currentPos.Z) * currentRot)
-					applyCreatureAnimation(model, animParts, tick())
-					task.wait(0.03)
-				end
-			else
-				local pauseStart = tick()
-				while isAlive() and (tick() - pauseStart) < pauseTime do
-					applyCreatureAnimation(model, animParts, tick())
-					task.wait(0.03)
-				end
-			end
-		end
-	end)
+	-- Start creature AI (shared module handles locomotion + animation)
+	CreatureAI.Start(model, modelData, model:GetPivot().Position, { model, character })
 end
 
 function placeBuilding(model: Model, modelData: { [string]: any })
@@ -1184,15 +1031,13 @@ function addNameLabel(model: Model, name: string)
 	end
 end
 
-function CreatorController:KnitInit()
-end
+function CreatorController:KnitInit() end
 
 function CreatorController:KnitStart()
 	createUI()
 
 	local OrigamiService = Knit.GetService("OrigamiService")
-	OrigamiService.ModelGenerated:Connect(function(modelData)
-	end)
+	OrigamiService.ModelGenerated:Connect(function(modelData) end)
 end
 
 return CreatorController

@@ -26,6 +26,9 @@ local _rateLimits: { [string]: number } = {}
 -- Avatar state: store original character parts to restore later
 local _originalAvatars: { [number]: { [string]: any } } = {}
 
+-- Server-side vehicle seats per player (needed because Sit() requires server authority)
+local _vehicleSeats: { [number]: { any } } = {}
+
 local SHAPE_MAP = {
 	Block = Enum.PartType.Block,
 	Ball = Enum.PartType.Ball,
@@ -57,7 +60,7 @@ local function checkRateLimit(player: Player): (boolean, number)
 	return true, 0
 end
 
-function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string, style: string?)
+function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string, style: string?, model: string?)
 	-- Validate input
 	if not prompt or prompt == "" then
 		return { success = false, error = "empty_prompt" }
@@ -81,6 +84,7 @@ function OrigamiService.Client:RequestModel(player: Player, prompt: string, cate
 		player_id = tostring(player.UserId),
 		category = if isRaw then nil else category,
 		style = style or "origami",
+		model = model or "haiku",
 		raw = if isRaw then true else nil,
 	}
 
@@ -386,11 +390,117 @@ function OrigamiService.Client:ResetAvatar(player: Player)
 	return { success = true }
 end
 
+function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vector3, lookY: number, modelName: string, modelSizeData: { X: number, Y: number, Z: number })
+	print("[OrigamiService] CreateVehicleSeat called by", player.Name, "at", position)
+
+	-- Create VehicleSeat on server so Sit() works
+	local seat = Instance.new("VehicleSeat")
+	seat.Name = "DriverSeat"
+	seat.Size = Vector3.new(2, 0.5, 2)
+	seat.CFrame = CFrame.new(position) * CFrame.Angles(0, lookY, 0)
+	seat.Anchored = true -- stays anchored until client welds visual parts and calls ReadyVehicle
+	seat.CanCollide = true
+	seat.Transparency = 1
+	seat.MaxSpeed = 50
+	seat.Torque = 40
+	seat.TurnSpeed = 8
+	seat.Material = Enum.Material.SmoothPlastic
+	seat:SetAttribute("OrigamiVehicle", true)
+	seat:SetAttribute("OwnerUserId", player.UserId)
+	seat.Parent = workspace
+
+	-- Collision plate at ground level for traction/ground contact
+	local modelSize = Vector3.new(modelSizeData.X or 4, modelSizeData.Y or 2, modelSizeData.Z or 4)
+	local collisionPlate = Instance.new("Part")
+	collisionPlate.Name = "CollisionPlate"
+	collisionPlate.Size = Vector3.new(math.min(modelSize.X * 0.8, 14), 0.5, math.min(modelSize.Z * 0.8, 16))
+	collisionPlate.Transparency = 1
+	collisionPlate.CanCollide = true
+	collisionPlate.Massless = false -- needs mass for ground friction/traction
+	collisionPlate.Anchored = false
+	collisionPlate.Material = Enum.Material.SmoothPlastic
+	-- Seat is ~1 stud above ground; plate sits at ground level just below the seat
+	collisionPlate.CFrame = seat.CFrame * CFrame.new(0, -1, 0)
+	collisionPlate.Parent = workspace
+
+	local plateWeld = Instance.new("WeldConstraint")
+	plateWeld.Part0 = seat
+	plateWeld.Part1 = collisionPlate
+	plateWeld.Parent = collisionPlate
+
+	-- ProximityPrompt with line-of-sight disabled (visual parts surround the seat)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ObjectText = modelName or "Vehicle"
+	prompt.ActionText = "Drive"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 20
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = seat
+
+	prompt.Triggered:Connect(function(triggerPlayer: Player)
+		print("[OrigamiService] ProximityPrompt triggered by", triggerPlayer.Name)
+		local character = triggerPlayer.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			print("[OrigamiService] Sitting", triggerPlayer.Name, "in seat")
+			seat:Sit(humanoid)
+			print("[OrigamiService] Occupant after Sit:", seat.Occupant)
+		else
+			warn("[OrigamiService] No humanoid for", triggerPlayer.Name)
+		end
+	end)
+
+	-- Track for cleanup
+	if not _vehicleSeats[player.UserId] then
+		_vehicleSeats[player.UserId] = {}
+	end
+	table.insert(_vehicleSeats[player.UserId], { seat = seat, plate = collisionPlate })
+
+	print("[OrigamiService] Vehicle seat created, seat:", seat, "plate:", collisionPlate)
+	return seat
+end
+
+function OrigamiService.Client:DestroyVehicleSeats(player: Player)
+	local seats = _vehicleSeats[player.UserId]
+	if seats then
+		for _, entry in ipairs(seats) do
+			if entry.seat and entry.seat.Parent then
+				entry.seat:Destroy()
+			end
+			if entry.plate and entry.plate.Parent then
+				entry.plate:Destroy()
+			end
+		end
+		_vehicleSeats[player.UserId] = nil
+		print("[OrigamiService] Destroyed all vehicle seats for", player.Name)
+	end
+end
+
+function OrigamiService.Client:ReadyVehicle(player: Player, seat: VehicleSeat)
+	if seat and seat.Parent and seat:GetAttribute("OwnerUserId") == player.UserId then
+		print("[OrigamiService] Unanchoring vehicle seat for", player.Name)
+		seat.Anchored = false
+	end
+end
+
 function OrigamiService:KnitInit()
-	-- Clean up rate limits and avatar state when players leave
+	-- Clean up rate limits, avatar state, and vehicle seats when players leave
 	Players.PlayerRemoving:Connect(function(player)
 		_rateLimits[tostring(player.UserId)] = nil
 		_originalAvatars[player.UserId] = nil
+		-- Clean up server vehicle seats
+		local seats = _vehicleSeats[player.UserId]
+		if seats then
+			for _, entry in ipairs(seats) do
+				if entry.seat and entry.seat.Parent then
+					entry.seat:Destroy()
+				end
+				if entry.plate and entry.plate.Parent then
+					entry.plate:Destroy()
+				end
+			end
+			_vehicleSeats[player.UserId] = nil
+		end
 	end)
 end
 

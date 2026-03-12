@@ -27,6 +27,8 @@ local _categoryButtons: { [string]: TextButton } = {}
 local _spawnedModels: { Model } = {}
 local _equippedTool: Tool? = nil
 local _equippedHat: Accessory? = nil
+local _activeVehicle: Model? = nil
+local _vehicleSeat: VehicleSeat? = nil
 
 -- Colors
 local COLORS = {
@@ -238,6 +240,13 @@ function clearAllCreations()
 		_equippedHat = nil
 	end
 
+	-- Remove active vehicle
+	if _activeVehicle then
+		_activeVehicle:Destroy()
+		_activeVehicle = nil
+		_vehicleSeat = nil
+	end
+
 	-- Also remove any leftover origami tools from backpack/character
 	local character = Player.Character
 	if character then
@@ -294,6 +303,8 @@ function submitPrompt()
 			equipAsTool(model, modelData)
 		elseif category == "hat" then
 			equipAsHat(model, modelData)
+		elseif category == "vehicle" then
+			spawnVehicle(model, modelData)
 		else
 			placeModel(model, modelData)
 		end
@@ -303,8 +314,8 @@ function submitPrompt()
 		local description = modelData.description or ""
 		setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
 
-		-- Apply animation (not for tools/hats — they move with the player)
-		if category ~= "tool" and category ~= "hat" then
+		-- Apply animation (not for tools/hats/vehicles — they move with the player)
+		if category ~= "tool" and category ~= "hat" and category ~= "vehicle" then
 			local animType = modelData.animation or "idle_bob"
 			OrigamiBuilder.ApplyAnimation(model, animType)
 		end
@@ -459,6 +470,101 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	table.insert(_spawnedModels, accessory)
 
 	setStatus("Wearing: " .. accessory.Name, COLORS.success)
+end
+
+function spawnVehicle(model: Model, modelData: { [string]: any })
+	local character = Player.Character
+	if not character then
+		return
+	end
+
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if not rootPart then
+		return
+	end
+
+	-- Remove previous vehicle
+	if _activeVehicle then
+		_activeVehicle:Destroy()
+		_activeVehicle = nil
+		_vehicleSeat = nil
+	end
+
+	-- Place vehicle in front of player
+	local placementPos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
+	placementPos = Vector3.new(placementPos.X, rootPart.Position.Y, placementPos.Z)
+
+	-- Create VehicleSeat as the driver seat
+	local seat = Instance.new("VehicleSeat")
+	seat.Name = "DriverSeat"
+	seat.Size = Vector3.new(2, 0.5, 2)
+	seat.Position = placementPos + Vector3.new(0, 1, 0)
+	seat.Anchored = false
+	seat.CanCollide = true
+	seat.Transparency = 1
+	seat.MaxSpeed = 50
+	seat.Torque = 10
+	seat.TurnSpeed = 8
+	seat.Material = Enum.Material.SmoothPlastic
+	seat.Parent = model
+
+	-- Make seat the PrimaryPart so the model pivots around it
+	model.PrimaryPart = seat
+
+	-- Un-anchor all parts and weld them to the seat
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") and part ~= seat then
+			part.Anchored = false
+			part.CanCollide = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = seat
+			weld.Part1 = part
+			weld.Parent = part
+		end
+	end
+
+	-- Position the whole model
+	model.Parent = workspace
+	model:PivotTo(CFrame.new(placementPos + Vector3.new(0, 2, 0)) * CFrame.Angles(0, rootPart.CFrame.Rotation.Y, 0))
+
+	-- Add BillboardGui with name + "Sit to drive" hint
+	local modelName = modelData.name or "Vehicle"
+	addNameLabel(model, modelName .. " (Sit to drive)")
+
+	-- Add a ClickDetector for easy mounting
+	local clickDetector = Instance.new("ClickDetector")
+	clickDetector.MaxActivationDistance = 20
+	clickDetector.Parent = seat
+
+	clickDetector.MouseClick:Connect(function()
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			seat:Sit(humanoid)
+		end
+	end)
+
+	-- Add ProximityPrompt as alternative
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ObjectText = modelName
+	prompt.ActionText = "Drive"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 15
+	prompt.Parent = seat
+
+	prompt.Triggered:Connect(function()
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			seat:Sit(humanoid)
+		end
+	end)
+
+	_activeVehicle = model
+	_vehicleSeat = seat
+
+	-- Track for clear
+	table.insert(_spawnedModels, model)
+
+	setStatus("Vehicle ready: " .. modelName .. " — walk up and sit!", COLORS.success)
 end
 
 function setStatus(text: string, color: Color3?)

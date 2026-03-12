@@ -27,12 +27,14 @@ local CreatorController = Knit.CreateController({
 
 local _trove = Trove.new()
 local _selectedCategory = "creature"
+local _selectedStyle = "origami"
 local _gui: ScreenGui
 local _inputBox: TextBox
 local _statusLabel: TextLabel
 local _createButton: TextButton
 local _clearButton: TextButton
 local _categoryButtons: { [string]: TextButton } = {}
+local _styleButtons: { [string]: TextButton } = {}
 local _queueFrame: Frame
 local _queueEntries: { { frame: Frame, label: TextLabel, dot: TextLabel } } = {}
 local _nextQueueId = 0
@@ -70,8 +72,8 @@ local function createUI()
 	-- Container at bottom of screen
 	local container = Instance.new("Frame")
 	container.Name = "Container"
-	container.Size = UDim2.new(0.6, 0, 0, 120)
-	container.Position = UDim2.new(0.2, 0, 1, -200)
+	container.Size = UDim2.new(0.6, 0, 0, 156)
+	container.Position = UDim2.new(0.2, 0, 1, -220)
 	container.BackgroundColor3 = COLORS.bg
 	container.BackgroundTransparency = 0.1
 	container.BorderSizePixel = 0
@@ -81,11 +83,63 @@ local function createUI()
 	containerCorner.CornerRadius = UDim.new(0, 12)
 	containerCorner.Parent = container
 
+	-- Style buttons row (scrollable)
+	local styleClip = Instance.new("Frame")
+	styleClip.Name = "StyleClip"
+	styleClip.Size = UDim2.new(1, -20, 0, 28)
+	styleClip.Position = UDim2.new(0, 10, 0, 8)
+	styleClip.BackgroundTransparency = 1
+	styleClip.ClipsDescendants = true
+	styleClip.Parent = container
+
+	local styleRow = Instance.new("ScrollingFrame")
+	styleRow.Name = "StyleRow"
+	styleRow.Size = UDim2.new(1, 0, 1, 0)
+	styleRow.BackgroundTransparency = 1
+	styleRow.BorderSizePixel = 0
+	styleRow.ScrollBarThickness = 2
+	styleRow.ScrollBarImageColor3 = COLORS.accentDim
+	styleRow.ScrollingDirection = Enum.ScrollingDirection.X
+	styleRow.AutomaticCanvasSize = Enum.AutomaticSize.X
+	styleRow.CanvasSize = UDim2.new(0, 0, 0, 28)
+	styleRow.Parent = styleClip
+
+	local styleLayout = Instance.new("UIListLayout")
+	styleLayout.FillDirection = Enum.FillDirection.Horizontal
+	styleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	styleLayout.Padding = UDim.new(0, 4)
+	styleLayout.Parent = styleRow
+
+	for _, sty in ipairs(OrigamiConfig.STYLES) do
+		local btn = Instance.new("TextButton")
+		btn.Name = "Style_" .. sty.key
+		btn.Size = UDim2.new(0, 68, 1, 0)
+		btn.BackgroundColor3 = COLORS.bgLight
+		btn.BorderSizePixel = 0
+		btn.Text = sty.display
+		btn.TextColor3 = COLORS.textDim
+		btn.TextSize = 11
+		btn.Font = Enum.Font.GothamBold
+		btn.AutoButtonColor = true
+		btn.Parent = styleRow
+
+		local btnCorner = Instance.new("UICorner")
+		btnCorner.CornerRadius = UDim.new(0, 6)
+		btnCorner.Parent = btn
+
+		_styleButtons[sty.key] = btn
+
+		btn.MouseButton1Click:Connect(function()
+			_selectedStyle = sty.key
+			updateStyleHighlights()
+		end)
+	end
+
 	-- Category buttons row
 	local categoryRow = Instance.new("Frame")
 	categoryRow.Name = "CategoryRow"
 	categoryRow.Size = UDim2.new(1, -20, 0, 32)
-	categoryRow.Position = UDim2.new(0, 10, 0, 10)
+	categoryRow.Position = UDim2.new(0, 10, 0, 40)
 	categoryRow.BackgroundTransparency = 1
 	categoryRow.Parent = container
 
@@ -124,7 +178,7 @@ local function createUI()
 	local inputRow = Instance.new("Frame")
 	inputRow.Name = "InputRow"
 	inputRow.Size = UDim2.new(1, -20, 0, 40)
-	inputRow.Position = UDim2.new(0, 10, 0, 52)
+	inputRow.Position = UDim2.new(0, 10, 0, 82)
 	inputRow.BackgroundTransparency = 1
 	inputRow.Parent = container
 
@@ -193,7 +247,7 @@ local function createUI()
 	_statusLabel = Instance.new("TextLabel")
 	_statusLabel.Name = "StatusLabel"
 	_statusLabel.Size = UDim2.new(1, -20, 0, 20)
-	_statusLabel.Position = UDim2.new(0, 10, 0, 96)
+	_statusLabel.Position = UDim2.new(0, 10, 0, 128)
 	_statusLabel.BackgroundTransparency = 1
 	_statusLabel.Text = ""
 	_statusLabel.TextColor3 = COLORS.textDim
@@ -249,7 +303,20 @@ local function createUI()
 
 	_gui.Parent = Player.PlayerGui
 
+	updateStyleHighlights()
 	updateCategoryHighlights()
+end
+
+function updateStyleHighlights()
+	for key, btn in pairs(_styleButtons) do
+		if key == _selectedStyle then
+			btn.BackgroundColor3 = COLORS.accentDim
+			btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		else
+			btn.BackgroundColor3 = COLORS.bgLight
+			btn.TextColor3 = COLORS.textDim
+		end
+	end
 end
 
 function updateCategoryHighlights()
@@ -415,6 +482,7 @@ function submitPrompt()
 	end
 
 	local category = _selectedCategory
+	local style = _selectedStyle
 	_inputBox.Text = ""
 
 	local queueId = addQueueEntry(prompt, category)
@@ -422,7 +490,7 @@ function submitPrompt()
 	-- Run async so multiple requests can fly in parallel
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:RequestModel(prompt, category):await()
+		local ok, result = OrigamiService:RequestModel(prompt, category, style):await()
 
 		if ok and result and result.success and result.model then
 			local modelData = result.model
@@ -808,6 +876,16 @@ local function applyCreatureAnimation(model: Model, animParts: { [BasePart]: CFr
 	end
 end
 
+-- Locomotion configs: speed, wanderRadius, hover height, behavior
+local LOCOMOTION_CONFIG = {
+	walk = { speed = 4, radius = 20, hoverHeight = 0, pauseMin = 1, pauseMax = 3 },
+	slither = { speed = 2, radius = 12, hoverHeight = 0, pauseMin = 2, pauseMax = 5 },
+	fly = { speed = 6, radius = 30, hoverHeight = 12, pauseMin = 0.5, pauseMax = 2 },
+	float = { speed = 1.5, radius = 15, hoverHeight = 6, pauseMin = 3, pauseMax = 6 },
+	hop = { speed = 5, radius = 18, hoverHeight = 0, pauseMin = 0.8, pauseMax = 2 },
+	stationary = { speed = 0, radius = 0, hoverHeight = 0, pauseMin = 2, pauseMax = 4 },
+}
+
 function spawnCreature(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
@@ -846,10 +924,12 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 		end
 	end
 
+	-- Locomotion type
+	local locomotion = modelData.locomotion or "walk"
+	local locoConfig = LOCOMOTION_CONFIG[locomotion] or LOCOMOTION_CONFIG.walk
+
 	-- Wandering state
 	local spawnPos = model:GetPivot().Position
-	local wanderRadius = 20
-	local moveSpeed = 4
 	local stopped = false
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -864,51 +944,136 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 		return if result then result.Position.Y else spawnPos.Y
 	end
 
+	local function isAlive(): boolean
+		return not stopped and model ~= nil and model.Parent ~= nil and model.PrimaryPart ~= nil
+	end
+
+	-- Stationary: just animate in place
+	if locomotion == "stationary" then
+		task.spawn(function()
+			while isAlive() do
+				applyCreatureAnimation(model, animParts, tick())
+				task.wait(0.03)
+			end
+		end)
+		return
+	end
+
 	task.spawn(function()
-		while not stopped and model and model.Parent and model.PrimaryPart do
-			-- Pick a random point within wander radius
+		while isAlive() do
+			-- Pick a random target within wander radius
 			local angle = math.random() * math.pi * 2
-			local dist = math.random() * wanderRadius
+			local dist = math.random() * locoConfig.radius
 			local targetX = spawnPos.X + math.cos(angle) * dist
 			local targetZ = spawnPos.Z + math.sin(angle) * dist
 			local groundY = raycastGround(targetX, targetZ)
-			local targetPos = Vector3.new(targetX, groundY, targetZ)
 
 			local startPos = model.PrimaryPart.Position
-			local flatDir = Vector3.new(targetPos.X - startPos.X, 0, targetPos.Z - startPos.Z)
-			local distance = flatDir.Magnitude
+			local distance = (Vector3.new(targetX, 0, targetZ) - Vector3.new(startPos.X, 0, startPos.Z)).Magnitude
 
 			if distance > 1 then
-				local lookCF = CFrame.lookAt(startPos, Vector3.new(targetPos.X, startPos.Y, targetPos.Z))
+				local lookCF = CFrame.lookAt(startPos, Vector3.new(targetX, startPos.Y, targetZ))
 				local lookRot = lookCF - lookCF.Position
-				local steps = math.max(1, math.floor(distance / (moveSpeed * 0.03)))
+				local steps = math.max(1, math.floor(distance / (locoConfig.speed * 0.03)))
+
+				-- Slither: curved sinuous path
+				local slitherPhase = math.random() * math.pi * 2
+
+				-- Hop: pre-compute hop count
+				local hopCount = 0
+				local hopStepsPerHop = 0
+				if locomotion == "hop" then
+					hopCount = math.max(1, math.floor(distance / 3))
+					hopStepsPerHop = math.max(1, math.floor(steps / hopCount))
+				end
 
 				for step = 1, steps do
-					if stopped or not model or not model.Parent or not model.PrimaryPart then
+					if not isAlive() then
 						break
 					end
 
 					local t = step / steps
-					local pos = startPos:Lerp(targetPos, t)
-					local midY = raycastGround(pos.X, pos.Z)
+					local baseX = startPos.X + (targetX - startPos.X) * t
+					local baseZ = startPos.Z + (targetZ - startPos.Z) * t
+					local baseGroundY = raycastGround(baseX, baseZ)
+					local finalY = baseGroundY + pivotAboveBottom
+					local finalRot = lookRot
 
-					-- Position model
-					model:PivotTo(CFrame.new(pos.X, midY + pivotAboveBottom, pos.Z) * lookRot)
+					if locomotion == "slither" then
+						-- Sinuous S-curve perpendicular to travel direction
+						local perpX = -(targetZ - startPos.Z)
+						local perpZ = targetX - startPos.X
+						local perpLen = math.sqrt(perpX * perpX + perpZ * perpZ)
+						if perpLen > 0.01 then
+							perpX, perpZ = perpX / perpLen, perpZ / perpLen
+						end
+						local sway = math.sin(t * math.pi * 4 + slitherPhase) * 1.2
+						baseX = baseX + perpX * sway
+						baseZ = baseZ + perpZ * sway
+						-- Rotate to face movement direction (tangent of the curve)
+						local tangentSway = math.cos(t * math.pi * 4 + slitherPhase) * 1.2 * (math.pi * 4 / distance)
+						local yawOffset = math.atan2(tangentSway * perpX, tangentSway * perpZ)
+						finalRot = lookRot * CFrame.Angles(0, yawOffset * 0.3, 0)
+						finalY = baseGroundY + pivotAboveBottom
 
-					-- Animate all creature parts
+					elseif locomotion == "fly" then
+						-- Swooping flight: sine wave altitude + bank into turns
+						local swoopY = math.sin(t * math.pi * 2) * 4
+						finalY = baseGroundY + pivotAboveBottom + locoConfig.hoverHeight + swoopY
+						-- Bank slightly into the swoop
+						local bankAngle = math.cos(t * math.pi * 2) * math.rad(15)
+						finalRot = lookRot * CFrame.Angles(0, 0, bankAngle)
+
+					elseif locomotion == "float" then
+						-- Gentle hover with vertical bob
+						local bobY = math.sin(tick() * 1.5) * 1.0
+						finalY = baseGroundY + pivotAboveBottom + locoConfig.hoverHeight + bobY
+						-- Slow gentle yaw drift
+						local driftYaw = math.sin(tick() * 0.5) * math.rad(10)
+						finalRot = lookRot * CFrame.Angles(0, driftYaw, 0)
+
+					elseif locomotion == "hop" then
+						-- Parabolic arc per hop
+						local hopIndex = math.floor((step - 1) / hopStepsPerHop)
+						local hopT = ((step - 1) % hopStepsPerHop) / hopStepsPerHop
+						local arcHeight = math.sin(hopT * math.pi) * 2.5
+						finalY = baseGroundY + pivotAboveBottom + arcHeight
+						-- Slight forward tilt during hop
+						local tiltAngle = math.sin(hopT * math.pi) * math.rad(-20)
+						finalRot = lookRot * CFrame.Angles(tiltAngle, 0, 0)
+
+					else -- walk (default)
+						finalY = baseGroundY + pivotAboveBottom
+					end
+
+					model:PivotTo(CFrame.new(baseX, finalY, baseZ) * finalRot)
 					applyCreatureAnimation(model, animParts, tick())
-
 					task.wait(0.03)
 				end
 			end
 
 			-- Pause at destination with fold animation
-			local pauseTime = 1 + math.random() * 3
-			local pauseStart = tick()
-			while not stopped and model and model.Parent and model.PrimaryPart and (tick() - pauseStart) < pauseTime do
-				-- Keep creature animation going while idle
-				applyCreatureAnimation(model, animParts, tick())
-				task.wait(0.03)
+			local pauseTime = locoConfig.pauseMin + math.random() * (locoConfig.pauseMax - locoConfig.pauseMin)
+
+			-- Float/fly: keep bobbing during pause
+			if locomotion == "float" or locomotion == "fly" then
+				local pauseStart = tick()
+				while isAlive() and (tick() - pauseStart) < pauseTime do
+					local currentPos = model:GetPivot().Position
+					local groundY = raycastGround(currentPos.X, currentPos.Z)
+					local bobY = math.sin(tick() * 1.5) * 1.0
+					local targetY = groundY + pivotAboveBottom + locoConfig.hoverHeight + bobY
+					local currentRot = model:GetPivot() - model:GetPivot().Position
+					model:PivotTo(CFrame.new(currentPos.X, targetY, currentPos.Z) * currentRot)
+					applyCreatureAnimation(model, animParts, tick())
+					task.wait(0.03)
+				end
+			else
+				local pauseStart = tick()
+				while isAlive() and (tick() - pauseStart) < pauseTime do
+					applyCreatureAnimation(model, animParts, tick())
+					task.wait(0.03)
+				end
 			end
 		end
 	end)

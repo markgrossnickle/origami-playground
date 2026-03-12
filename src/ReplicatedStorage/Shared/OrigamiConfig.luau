@@ -27,4 +27,19 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "raw", display = "Raw", icon = "📝" },
 }
 
+-- Art styles
+OrigamiConfig.STYLES = {
+	{ key = "origami", display = "Origami" },
+	{ key = "lowpoly", display = "Low Poly" },
+	{ key = "voxel", display = "Voxel" },
+	{ key = "balloon", display = "Balloon" },
+	{ key = "wireframe", display = "Wireframe" },
+	{ key = "crystal", display = "Crystal" },
+	{ key = "plush", display = "Plush" },
+	{ key = "steampunk", display = "Steampunk" },
+	{ key = "pixel", display = "Pixel" },
+	{ key = "neon", display = "Neon" },
+	{ key = "freestyle", display = "Freestyle" },
+}
+
 return OrigamiConfig

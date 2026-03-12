@@ -57,7 +57,7 @@ local function checkRateLimit(player: Player): (boolean, number)
 	return true, 0
 end
 
-function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string)
+function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string, style: string?)
 	-- Validate input
 	if not prompt or prompt == "" then
 		return { success = false, error = "empty_prompt" }
@@ -80,6 +80,7 @@ function OrigamiService.Client:RequestModel(player: Player, prompt: string, cate
 		prompt = prompt,
 		player_id = tostring(player.UserId),
 		category = if isRaw then nil else category,
+		style = style or "origami",
 		raw = if isRaw then true else nil,
 	}
 

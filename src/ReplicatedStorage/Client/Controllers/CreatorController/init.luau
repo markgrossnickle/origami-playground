@@ -746,6 +746,32 @@ function setStatus(text: string, color: Color3?)
 end
 
 
+-- Snappy paper-fold curve: sharp snap at zero-crossing, holds at extremes
+local function foldCurve(raw: number): number
+	return math.sign(raw) * math.abs(raw) ^ 0.6
+end
+
+-- Apply per-segment fold animation to seg_* parts after model is positioned
+local function applyFoldAnimation(model: Model, segmentOffsets: { [BasePart]: CFrame }, t: number)
+	for part, baseOffset in pairs(segmentOffsets) do
+		if part.Parent then
+			local idx = tonumber(part.Name:match("%d+")) or 1
+			local direction = if idx % 2 == 0 then 1 else -1
+
+			-- Vertical accordion bob
+			local foldY = foldCurve(math.sin(t * 2.0 + idx * 0.5)) * 0.2 * direction
+			-- Angular fold rotation
+			local foldAngle = foldCurve(math.cos(t * 1.5 + idx * 0.4)) * math.rad(15) * direction
+
+			local foldOffset = CFrame.new(0, foldY, 0) * CFrame.Angles(0, foldAngle, 0)
+
+			-- Apply: model pivot * base offset * fold offset
+			local pivot = model:GetPivot()
+			part.CFrame = pivot * baseOffset * foldOffset
+		end
+	end
+end
+
 function spawnCreature(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
@@ -761,84 +787,74 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 		return
 	end
 
-	-- Place in front of player
+	-- Place in front of player, on ground
 	local placementPos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
-	placementPos = Vector3.new(placementPos.X, rootPart.Position.Y, placementPos.Z)
-
-	-- Parent and position
 	model.Parent = workspace
-	if model.PrimaryPart then
-		local _, size = model:GetBoundingBox()
-		local halfHeight = size.Y / 2
-		model:PivotTo(CFrame.new(placementPos.X, placementPos.Y + halfHeight, placementPos.Z))
-	end
+
+	local cf, size = model:GetBoundingBox()
+	local pivot = model:GetPivot()
+	local pivotAboveBottom = pivot.Position.Y - (cf.Position.Y - size.Y / 2)
+	model:PivotTo(CFrame.new(placementPos.X, rootPart.Position.Y + pivotAboveBottom, placementPos.Z))
 
 	-- Add name label
 	local modelName = modelData.name or "Creature"
 	addNameLabel(model, modelName)
 	table.insert(_spawnedModels, model)
 
-	-- Start wandering behavior
-	local spawnPos = placementPos
-	local wanderRadius = 20
-	local moveSpeed = 4
-	local stopped = false
-
-	-- Bob animation while walking
-	local startTime = tick()
-	local bobConnection: RBXScriptConnection
-	local origins = {}
-	for _, part in ipairs(model:GetDescendants()) do
-		if part:IsA("BasePart") then
-			origins[part] = part.Position - (model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero)
+	-- Collect seg_* parts and their offsets from the model pivot for fold animation
+	local segmentOffsets: { [BasePart]: CFrame } = {}
+	local hasSegments = false
+	local currentPivot = model:GetPivot()
+	for _, child in ipairs(model:GetChildren()) do
+		if child:IsA("BasePart") and child.Name:match("^seg_") then
+			segmentOffsets[child] = currentPivot:ToObjectSpace(child.CFrame)
+			hasSegments = true
 		end
 	end
 
+	-- Also store ALL part offsets for non-segment parts (eyes, details) to keep them in place
+	local detailOffsets: { [BasePart]: CFrame } = {}
+	for _, child in ipairs(model:GetChildren()) do
+		if child:IsA("BasePart") and not child.Name:match("^seg_") then
+			detailOffsets[child] = currentPivot:ToObjectSpace(child.CFrame)
+		end
+	end
+
+	-- Wandering state
+	local spawnPos = model:GetPivot().Position
+	local wanderRadius = 20
+	local moveSpeed = 4
+	local stopped = false
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = { model, character }
+
 	model.Destroying:Connect(function()
 		stopped = true
-		if bobConnection then
-			bobConnection:Disconnect()
-		end
 	end)
 
+	local function raycastGround(x: number, z: number): number
+		local result = workspace:Raycast(Vector3.new(x, spawnPos.Y + 50, z), Vector3.new(0, -200, 0), rayParams)
+		return if result then result.Position.Y else spawnPos.Y
+	end
+
 	task.spawn(function()
-		while not stopped and model and model.Parent do
-			-- Pick a random point within wander radius of spawn
+		while not stopped and model and model.Parent and model.PrimaryPart do
+			-- Pick a random point within wander radius
 			local angle = math.random() * math.pi * 2
 			local dist = math.random() * wanderRadius
 			local targetX = spawnPos.X + math.cos(angle) * dist
 			local targetZ = spawnPos.Z + math.sin(angle) * dist
-
-			-- Raycast to find ground at target
-			local rayResult = workspace:Raycast(
-				Vector3.new(targetX, spawnPos.Y + 50, targetZ),
-				Vector3.new(0, -200, 0),
-				(function()
-					local p = RaycastParams.new()
-					p.FilterType = Enum.RaycastFilterType.Exclude
-					p.FilterDescendantsInstances = { model, character }
-					return p
-				end)()
-			)
-			local groundY = if rayResult then rayResult.Position.Y else spawnPos.Y
-
+			local groundY = raycastGround(targetX, targetZ)
 			local targetPos = Vector3.new(targetX, groundY, targetZ)
 
-			if not model or not model.Parent or not model.PrimaryPart then
-				break
-			end
-
-			-- Move toward target
 			local startPos = model.PrimaryPart.Position
-			local direction = (targetPos - startPos)
-			local flatDir = Vector3.new(direction.X, 0, direction.Z)
+			local flatDir = Vector3.new(targetPos.X - startPos.X, 0, targetPos.Z - startPos.Z)
 			local distance = flatDir.Magnitude
 
 			if distance > 1 then
-				-- Face the target
 				local lookCF = CFrame.lookAt(startPos, Vector3.new(targetPos.X, startPos.Y, targetPos.Z))
-				local _, modelSize = model:GetBoundingBox()
-				local halfH = modelSize.Y / 2
+				local lookRot = lookCF - lookCF.Position
 				local steps = math.max(1, math.floor(distance / (moveSpeed * 0.03)))
 
 				for step = 1, steps do
@@ -848,59 +864,40 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 
 					local t = step / steps
 					local pos = startPos:Lerp(targetPos, t)
+					local midY = raycastGround(pos.X, pos.Z)
 
-					-- Raycast for ground at this position
-					local midRay = workspace:Raycast(
-						Vector3.new(pos.X, spawnPos.Y + 50, pos.Z),
-						Vector3.new(0, -200, 0),
-						(function()
-							local p = RaycastParams.new()
-							p.FilterType = Enum.RaycastFilterType.Exclude
-							p.FilterDescendantsInstances = { model, character }
-							return p
-						end)()
-					)
-					local midY = if midRay then midRay.Position.Y else spawnPos.Y
+					-- Position model
+					model:PivotTo(CFrame.new(pos.X, midY + pivotAboveBottom, pos.Z) * lookRot)
 
-					-- Bob up and down while walking
-					local bobOffset = math.sin(tick() * 6) * 0.3
-
-					model:PivotTo(
-						CFrame.new(pos.X, midY + halfH + bobOffset, pos.Z)
-						* (lookCF - lookCF.Position)
-					)
+					-- Apply fold animation to segments
+					if hasSegments then
+						applyFoldAnimation(model, segmentOffsets, tick())
+						-- Keep detail parts (eyes etc) in place relative to pivot
+						local pv = model:GetPivot()
+						for part, offset in pairs(detailOffsets) do
+							if part.Parent then
+								part.CFrame = pv * offset
+							end
+						end
+					end
 
 					task.wait(0.03)
 				end
 			end
 
-			-- Pause at destination
+			-- Pause at destination with fold animation
 			local pauseTime = 1 + math.random() * 3
 			local pauseStart = tick()
-			while not stopped and model and model.Parent and (tick() - pauseStart) < pauseTime do
-				-- Idle bob while paused
-				if model.PrimaryPart then
-					local currentPos = model.PrimaryPart.Position
-					local bobOffset = math.sin(tick() * 2) * 0.3
-					local _, modelSize = model:GetBoundingBox()
-					local halfH = modelSize.Y / 2
-
-					local midRay = workspace:Raycast(
-						Vector3.new(currentPos.X, spawnPos.Y + 50, currentPos.Z),
-						Vector3.new(0, -200, 0),
-						(function()
-							local p = RaycastParams.new()
-							p.FilterType = Enum.RaycastFilterType.Exclude
-							p.FilterDescendantsInstances = { model, character }
-							return p
-						end)()
-					)
-					local groundAtPos = if midRay then midRay.Position.Y else spawnPos.Y
-
-					model:PivotTo(
-						CFrame.new(currentPos.X, groundAtPos + halfH + bobOffset, currentPos.Z)
-						* (model.PrimaryPart.CFrame - model.PrimaryPart.CFrame.Position)
-					)
+			while not stopped and model and model.Parent and model.PrimaryPart and (tick() - pauseStart) < pauseTime do
+				-- Keep fold animation going while idle
+				if hasSegments then
+					applyFoldAnimation(model, segmentOffsets, tick())
+					local pv = model:GetPivot()
+					for part, offset in pairs(detailOffsets) do
+						if part.Parent then
+							part.CFrame = pv * offset
+						end
+					end
 				end
 				task.wait(0.03)
 			end

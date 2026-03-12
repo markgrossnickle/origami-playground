@@ -64,12 +64,13 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 			)
 		end
 
-		-- Orientation
-		if partData.orientation then
+		-- Orientation (accept both "orientation" and "rotation" from LLM)
+		local orient = partData.orientation or partData.rotation
+		if orient then
 			part.Orientation = Vector3.new(
-				partData.orientation[1] or partData.orientation.x or 0,
-				partData.orientation[2] or partData.orientation.y or 0,
-				partData.orientation[3] or partData.orientation.z or 0
+				orient[1] or orient.x or 0,
+				orient[2] or orient.y or 0,
+				orient[3] or orient.z or 0
 			)
 		end
 
@@ -84,6 +85,11 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 		-- Material
 		if partData.material then
 			part.Material = MATERIAL_MAP[partData.material] or Enum.Material.SmoothPlastic
+		end
+
+		-- Transparency
+		if partData.transparency then
+			part.Transparency = partData.transparency
 		end
 
 		part.Parent = model

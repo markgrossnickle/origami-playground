@@ -937,16 +937,13 @@ function placeBuilding(model: Model, modelData: { [string]: any })
 	local result = workspace:Raycast(rayOrigin, rayDir, params)
 	local groundY = if result then result.Position.Y else rootPart.Position.Y - 3
 
-	-- Position building directly on the ground (no pedestal)
+	-- Position building flush on the ground
 	model.Parent = workspace
-	if model.PrimaryPart then
-		-- Get model bounds to sit it flush on ground
-		local _, size = model:GetBoundingBox()
-		local halfHeight = size.Y / 2
-		model:PivotTo(CFrame.new(targetPos.X, groundY + halfHeight, targetPos.Z))
-	else
-		model:PivotTo(CFrame.new(targetPos.X, groundY, targetPos.Z))
-	end
+	local cf, size = model:GetBoundingBox()
+	local pivot = model:GetPivot()
+	-- How far the pivot sits above the bounding box bottom
+	local pivotAboveBottom = pivot.Position.Y - (cf.Position.Y - size.Y / 2)
+	model:PivotTo(CFrame.new(targetPos.X, groundY + pivotAboveBottom, targetPos.Z))
 
 	-- Add name label
 	local modelName = modelData.name or "Building"

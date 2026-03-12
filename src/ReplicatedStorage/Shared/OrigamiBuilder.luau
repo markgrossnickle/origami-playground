@@ -124,6 +124,14 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 		end
 	end
 
+	-- Flip model 180° on Y so LLM's +Z forward becomes Roblox's -Z forward
+	-- LLM models face +Z but Roblox convention is -Z (CFrame.LookVector)
+	for _, child in ipairs(model:GetChildren()) do
+		if child:IsA("BasePart") then
+			child.CFrame = CFrame.Angles(0, math.pi, 0) * child.CFrame
+		end
+	end
+
 	-- Set primary part to first part
 	if #model:GetChildren() > 0 then
 		model.PrimaryPart = model:GetChildren()[1]

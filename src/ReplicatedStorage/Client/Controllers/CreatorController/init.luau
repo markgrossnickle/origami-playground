@@ -759,7 +759,7 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 		part.CanCollide = false
 		part.Massless = true
 		part:SetAttribute("OrigamiHat", true)
-		part.CFrame = headTop * CFrame.Angles(0, math.pi, 0) * CFrame.new(offset) * partRotation
+		part.CFrame = headTop * CFrame.new(offset) * partRotation
 		part.Parent = character
 
 		local weld = Instance.new("WeldConstraint")

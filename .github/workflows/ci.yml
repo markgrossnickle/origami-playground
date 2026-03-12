@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint-format-test:
+    name: Lint, Format & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+      - name: Run selene
+        run: selene src
+      - name: Check formatting
+        run: stylua --check src
+      - name: Run tests
+        run: lune run tests/runner

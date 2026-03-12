@@ -1,0 +1,62 @@
+{
+	"Knit": {
+		"scope": "lua,luau",
+		"prefix": "knit",
+		"body": [
+			"local Knit = require(ReplicatedStorage.Packages.Knit)",
+			"$0"
+		],
+		"description": "Require the Knit module from ReplicatedStorage.Packages"
+	},
+	"New Service": {
+		"scope": "lua,luau",
+		"prefix": [
+			"newservice"
+		],
+		"body": [
+			"local ReplicatedStorage = game:GetService(\"ReplicatedStorage\")",
+			"local Knit = require(ReplicatedStorage.Packages.Knit)",
+			"",
+			"local ${1:$TM_FILENAME_BASE} = Knit.CreateService({",
+			"\tName = \"$1\",",
+			"\tClient = {},",
+			"})",
+			"",
+			"function $1:KnitStart()",
+			"\t",
+			"end",
+			"",
+			"function $1:KnitInit()",
+			"\t",
+			"end",
+			"",
+			"return $1"
+		],
+		"description": "Create a new Knit service"
+	},
+	"New Controller": {
+		"scope": "lua,luau",
+		"prefix": [
+			"newcontroller"
+		],
+		"body": [
+			"local ReplicatedStorage = game:GetService(\"ReplicatedStorage\")",
+			"local Knit = require(ReplicatedStorage.Packages.Knit)",
+			"",
+			"local ${1:$TM_FILENAME_BASE} = Knit.CreateController({",
+			"\tName = \"$1\",",
+			"})",
+			"",
+			"function $1:KnitStart()",
+			"\t",
+			"end",
+			"",
+			"function $1:KnitInit()",
+			"\t",
+			"end",
+			"",
+			"return $1"
+		],
+		"description": "Create a new Knit controller"
+	}
+}

@@ -1,0 +1,11 @@
+{
+	"Doc Comment": {
+		"prefix": "doc",
+		"body": [
+			"--[=[",
+			"\t$0",
+			"]=]"
+		],
+		"description": "Documentation comment"
+	}
+}

@@ -1,0 +1,29 @@
+{
+	"name": "MindTrust Roblox Template",
+	"servePort": 34872,
+	"servePlaceIds": [
+		0
+	],
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedFirst": {
+			"$path": "src/ReplicatedFirst"
+		},
+		"ReplicatedStorage": {
+			"$ignoreUnknownInstances": true,
+			"$path": "src/ReplicatedStorage",
+			"Packages": {
+				"$path": "Packages"
+			},
+			"GameVersion": {
+				"$path": "GameVersion.txt"
+			}
+		},
+		"ServerScriptService": {
+			"$path": "src/ServerScriptService",
+			"ServerPackages": {
+				"$path": "ServerPackages"
+			}
+		}
+	}
+}

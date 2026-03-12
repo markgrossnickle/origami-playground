@@ -1,0 +1,21 @@
+title = "Roblox Template"
+gitRepoUrl = "https://github.com/mindtrustlabs/roblox-template"
+
+gitSourceBranch = "main"
+changelog = true
+classOrder = []
+
+[docusaurus]
+onBrokenLinks = "warn"
+onBrokenMarkdownLinks = "warn"
+favicon = "favicon.ico"
+
+# From git:
+organizationName = "MindTrust"
+projectName = "Roblox Template"
+baseUrl = "/mindtrustlabs"
+tagline = "Roblox Template - Roblox - MINDTRUST"
+
+[footer]
+style = "dark"
+copyright = "MindTrust Labs 2026"

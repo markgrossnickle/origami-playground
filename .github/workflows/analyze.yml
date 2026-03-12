@@ -1,0 +1,46 @@
+name: Codebase Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+      - name: Run selene
+        run: selene src
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+      - name: Run StyLua
+        run: stylua --check src
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Download Moonwave Extractor
+        run: |
+          curl -L -o moonwave-extractor.zip https://github.com/evaera/moonwave/releases/download/v1.3.0/moonwave-extractor-v1.3.0-linux.zip
+          unzip moonwave-extractor.zip -d moonwave-extractor
+          chmod +x moonwave-extractor/moonwave-extractor
+      - name: Check documentation
+        run: |
+          ./moonwave-extractor/moonwave-extractor extract src

@@ -1,0 +1,33 @@
+{
+	"Cmdr Command": {
+		"scope": "lua,luau",
+		"prefix": "cmdrcommand",
+		"body": [
+			"return {",
+			"\tName = \"${1:commandName}\";",
+			"\tAliases = {\"${2:alias}\"};",
+			"\tDescription = \"${3:description}\";",
+			"\tGroup = \"${4:group}\";",
+			"\tArgs = {",
+			"\t\t{",
+			"\t\t\t$0",
+			"\t\t},",
+			"\t};",
+			"\t-- ClientRun = function (context) end",
+			"}"
+		],
+		"description": "Create a Cmdr command"
+	},
+	"Cmdr Arg": {
+		"scope": "lua,luau",
+		"prefix": "cmdrarg",
+		"body": [
+			"{",
+			"\tType = \"${1:type}\";",
+			"\tName = \"${2:name}\";",
+			"\tDescription = \"${3:description}\"",
+			"}"
+		],
+		"description": "Create a Cmdr command argument"
+	}
+}

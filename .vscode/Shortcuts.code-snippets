@@ -1,0 +1,46 @@
+{
+	"GetService ReplicatedStorage": {
+		"scope": "lua,luau",
+		"prefix": [
+			"repl"
+		],
+		"body": [
+			"local ReplicatedStorage = game:GetService(\"ReplicatedStorage\")",
+			"$0"
+		],
+		"description": "Get the ReplicatedStorage service"
+	},
+	"Wally Package": {
+		"scope": "lua,luau",
+		"prefix": [
+			"wally",
+			"package"
+		],
+		"body": [
+			"local $1 = require(ReplicatedStorage.Packages.$1)",
+			"$0"
+		],
+		"description": "Require a module for a Wally package from ReplicatedStorage.Packages"
+	},
+	"Library": {
+		"scope": "lua,luau",
+		"prefix": [
+			"lib"
+		],
+		"body": [
+			"local $1 = require(ReplicatedStorage.Lib.$1)",
+			"$0"
+		]
+	},
+	"Enums Module": {
+		"scope": "lua,luau",
+		"prefix": [
+			"enums"
+		],
+		"body": [
+			"local Enums = require(ReplicatedStorage.Shared.Enums)",
+			"$0"
+		],
+		"description": "Require the Enums module from ReplicatedStorage.Shared"
+	}
+}

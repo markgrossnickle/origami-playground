@@ -1,0 +1,5 @@
+std = "roblox"
+exclude = ["Packages/*", "ServerPackages/*", "tests/*"]
+
+[lints]
+roblox_manual_fromscale_or_fromoffset = "allow"  # turn it off

@@ -463,6 +463,12 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	attachment.Position = Vector3.new(0, 0, 0)
 	attachment.Parent = handle
 
+	-- Get model bounds and scale down if too large
+	local MAX_HAT_SIZE = 3 -- studs max in any dimension
+	local _, modelSize = model:GetBoundingBox()
+	local maxDim = math.max(modelSize.X, modelSize.Y, modelSize.Z)
+	local scale = if maxDim > MAX_HAT_SIZE then MAX_HAT_SIZE / maxDim else 1
+
 	-- Get model center for offset calculation
 	local modelCenter = Vector3.zero
 	if model.PrimaryPart then
@@ -478,11 +484,15 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	end
 
 	for _, part in ipairs(partsToMove) do
-		local offset = part.CFrame * CFrame.new(-modelCenter)
+		-- Scale down if oversized
+		if scale < 1 then
+			part.Size = part.Size * scale
+		end
+		local offset = (part.Position - modelCenter) * scale
 		part.Anchored = false
 		part.CanCollide = false
 		part.Massless = true
-		part.CFrame = handle.CFrame * offset
+		part.CFrame = handle.CFrame * CFrame.new(offset) * (part.CFrame - part.CFrame.Position)
 		part.Parent = handle
 
 		local weld = Instance.new("WeldConstraint")

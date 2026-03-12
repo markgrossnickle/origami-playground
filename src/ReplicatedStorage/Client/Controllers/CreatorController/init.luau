@@ -510,8 +510,7 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	local seat = Instance.new("VehicleSeat")
 	seat.Name = "DriverSeat"
 	seat.Size = Vector3.new(2, 0.5, 2)
-	seat.Position = placementPos + Vector3.new(0, 1, 0)
-	seat.Anchored = false
+	seat.Anchored = true -- Keep anchored until positioned
 	seat.CanCollide = true
 	seat.Transparency = 1
 	seat.MaxSpeed = 50
@@ -523,7 +522,12 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	-- Make seat the PrimaryPart so the model pivots around it
 	model.PrimaryPart = seat
 
-	-- Un-anchor all parts and weld them to the seat
+	-- Position the whole model first (while still anchored)
+	local _, lookY, _ = rootPart.CFrame:ToEulerAnglesYXZ()
+	model.Parent = workspace
+	model:PivotTo(CFrame.new(placementPos + Vector3.new(0, 2, 0)) * CFrame.Angles(0, lookY, 0))
+
+	-- Now weld all parts to the seat and un-anchor
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") and part ~= seat then
 			part.Anchored = false
@@ -535,9 +539,8 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 		end
 	end
 
-	-- Position the whole model
-	model.Parent = workspace
-	model:PivotTo(CFrame.new(placementPos + Vector3.new(0, 2, 0)) * CFrame.Angles(0, rootPart.CFrame.Rotation.Y, 0))
+	-- Un-anchor seat last so everything is welded before physics kicks in
+	seat.Anchored = false
 
 	-- Add BillboardGui with name + "Sit to drive" hint
 	local modelName = modelData.name or "Vehicle"

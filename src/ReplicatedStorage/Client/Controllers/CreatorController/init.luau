@@ -247,11 +247,8 @@ function clearAllCreations()
 		_equippedTool = nil
 	end
 
-	-- Remove equipped hat
-	if _equippedHat then
-		_equippedHat:Destroy()
-		_equippedHat = nil
-	end
+	-- Remove equipped hat parts
+	_equippedHat = nil
 
 	-- Remove active vehicle
 	if _activeVehicle then
@@ -274,7 +271,7 @@ function clearAllCreations()
 			if child:IsA("Tool") and child:GetAttribute("OrigamiTool") then
 				child:Destroy()
 			end
-			if child:IsA("Accessory") and child:GetAttribute("OrigamiHat") then
+			if child:GetAttribute("OrigamiHat") then
 				child:Destroy()
 			end
 		end
@@ -437,45 +434,34 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 		return
 	end
 
-	-- Remove previous origami hat
-	if _equippedHat then
-		_equippedHat:Destroy()
-		_equippedHat = nil
+	local head = character:FindFirstChild("Head")
+	if not head then
+		return
 	end
 
-	-- Create an Accessory
-	local accessory = Instance.new("Accessory")
-	accessory.Name = modelData.name or "Hat"
-	accessory:SetAttribute("OrigamiHat", true)
-
-	-- Create handle — all parts must be children of Handle for physics to work
-	local handle = Instance.new("Part")
-	handle.Name = "Handle"
-	handle.Size = Vector3.new(1, 1, 1)
-	handle.Transparency = 1
-	handle.CanCollide = false
-	handle.Massless = true
-	handle.Parent = accessory
-
-	-- Attachment for hat positioning (top of head)
-	local attachment = Instance.new("Attachment")
-	attachment.Name = "HatAttachment"
-	attachment.Position = Vector3.new(0, 0, 0)
-	attachment.Parent = handle
+	-- Remove previous origami hat parts
+	for _, child in ipairs(character:GetChildren()) do
+		if child:GetAttribute("OrigamiHat") then
+			child:Destroy()
+		end
+	end
+	_equippedHat = nil
 
 	-- Get model bounds and scale down if too large
-	local MAX_HAT_SIZE = 3 -- studs max in any dimension
+	local MAX_HAT_SIZE = 3
 	local _, modelSize = model:GetBoundingBox()
 	local maxDim = math.max(modelSize.X, modelSize.Y, modelSize.Z)
 	local scale = if maxDim > MAX_HAT_SIZE then MAX_HAT_SIZE / maxDim else 1
 
-	-- Get model center for offset calculation
 	local modelCenter = Vector3.zero
 	if model.PrimaryPart then
 		modelCenter = model.PrimaryPart.Position
 	end
 
-	-- Move parts into Handle (not accessory) and weld
+	-- Position on top of head
+	local headTop = head.CFrame * CFrame.new(0, head.Size.Y / 2, 0)
+
+	-- Collect parts before reparenting
 	local partsToMove = {}
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then
@@ -483,36 +469,32 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 		end
 	end
 
+	-- Weld each part directly to the head
 	for _, part in ipairs(partsToMove) do
-		-- Scale down if oversized
 		if scale < 1 then
 			part.Size = part.Size * scale
 		end
+
 		local offset = (part.Position - modelCenter) * scale
+		local partRotation = part.CFrame - part.CFrame.Position
+
 		part.Anchored = false
 		part.CanCollide = false
 		part.Massless = true
-		part.CFrame = handle.CFrame * CFrame.new(offset) * (part.CFrame - part.CFrame.Position)
-		part.Parent = handle
+		part:SetAttribute("OrigamiHat", true)
+		part.CFrame = headTop * CFrame.new(offset) * partRotation
+		part.Parent = character
 
 		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = handle
+		weld.Part0 = head
 		weld.Part1 = part
 		weld.Parent = part
 	end
 
 	model:Destroy()
 
-	-- Add to character (Roblox welds Handle to head via HatAttachment)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid:AddAccessory(accessory)
-	else
-		accessory.Parent = character
-	end
-
-	_equippedHat = accessory
-	table.insert(_spawnedModels, accessory)
+	_equippedHat = head -- marker; cleanup uses OrigamiHat attribute
+	table.insert(_spawnedModels, model)
 
 	setStatus("Wearing: " .. accessory.Name, COLORS.success)
 end

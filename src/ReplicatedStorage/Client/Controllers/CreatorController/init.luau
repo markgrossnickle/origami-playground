@@ -315,6 +315,8 @@ function submitPrompt()
 			spawnVehicle(model, modelData)
 		elseif category == "avatar" then
 			applyAvatar(model, modelData)
+		elseif category == "building" then
+			placeBuilding(model, modelData)
 		else
 			placeModel(model, modelData)
 		end
@@ -623,6 +625,53 @@ function startCooldown()
 		_createButton.Text = "Create"
 		_inputBox.TextEditable = true
 	end)
+end
+
+function placeBuilding(model: Model, modelData: { [string]: any })
+	local character = Player.Character
+	if not character then
+		model.Parent = workspace
+		table.insert(_spawnedModels, model)
+		return
+	end
+
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if not rootPart then
+		model.Parent = workspace
+		table.insert(_spawnedModels, model)
+		return
+	end
+
+	-- Place in front of player
+	local forward = rootPart.CFrame.LookVector
+	local targetPos = rootPart.Position + forward * OrigamiConfig.PLACEMENT_DISTANCE
+
+	-- Raycast down to find the ground
+	local rayOrigin = Vector3.new(targetPos.X, rootPart.Position.Y + 50, targetPos.Z)
+	local rayDir = Vector3.new(0, -200, 0)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character, model }
+
+	local result = workspace:Raycast(rayOrigin, rayDir, params)
+	local groundY = if result then result.Position.Y else rootPart.Position.Y - 3
+
+	-- Position building directly on the ground (no pedestal)
+	model.Parent = workspace
+	if model.PrimaryPart then
+		-- Get model bounds to sit it flush on ground
+		local _, size = model:GetBoundingBox()
+		local halfHeight = size.Y / 2
+		model:PivotTo(CFrame.new(targetPos.X, groundY + halfHeight, targetPos.Z))
+	else
+		model:PivotTo(CFrame.new(targetPos.X, groundY, targetPos.Z))
+	end
+
+	-- Add name label
+	local modelName = modelData.name or "Building"
+	addNameLabel(model, modelName)
+
+	table.insert(_spawnedModels, model)
 end
 
 function placeModel(model: Model, modelData: { [string]: any })

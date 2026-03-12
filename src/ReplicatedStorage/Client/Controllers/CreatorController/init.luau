@@ -693,21 +693,12 @@ function placeModel(model: Model, modelData: { [string]: any })
 	local placementPos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
 	placementPos = Vector3.new(placementPos.X, rootPart.Position.Y, placementPos.Z)
 
-	-- Create a small pedestal
-	local pedestal = Instance.new("Part")
-	pedestal.Name = "Pedestal"
-	pedestal.Size = Vector3.new(6, 0.5, 6)
-	pedestal.Position = placementPos - Vector3.new(0, 0.25, 0)
-	pedestal.Anchored = true
-	pedestal.CanCollide = true
-	pedestal.Material = Enum.Material.SmoothPlastic
-	pedestal.Color = Color3.fromRGB(60, 60, 70)
-	pedestal.Parent = model
-
-	-- Position the model on the pedestal
+	-- Position the model in front of player, on the ground
 	model.Parent = workspace
 	if model.PrimaryPart then
-		model:PivotTo(CFrame.new(placementPos + Vector3.new(0, 2, 0)))
+		local _, size = model:GetBoundingBox()
+		local halfHeight = size.Y / 2
+		model:PivotTo(CFrame.new(placementPos.X, placementPos.Y + halfHeight, placementPos.Z))
 	end
 
 	-- Add BillboardGui with name

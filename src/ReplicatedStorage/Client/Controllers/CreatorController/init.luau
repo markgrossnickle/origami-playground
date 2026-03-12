@@ -27,13 +27,15 @@ local CreatorController = Knit.CreateController({
 
 local _trove = Trove.new()
 local _selectedCategory = "creature"
-local _pendingRequests = 0
 local _gui: ScreenGui
 local _inputBox: TextBox
 local _statusLabel: TextLabel
 local _createButton: TextButton
 local _clearButton: TextButton
 local _categoryButtons: { [string]: TextButton } = {}
+local _queueFrame: Frame
+local _queueEntries: { { frame: Frame, label: TextLabel, dot: TextLabel } } = {}
+local _nextQueueId = 0
 
 -- Track all spawned creations for Clear
 local _spawnedModels: { Model } = {}
@@ -215,6 +217,36 @@ local function createUI()
 		clearAllCreations()
 	end)
 
+	-- Queue panel (right side of screen)
+	_queueFrame = Instance.new("Frame")
+	_queueFrame.Name = "QueuePanel"
+	_queueFrame.Size = UDim2.new(0, 240, 0, 300)
+	_queueFrame.Position = UDim2.new(1, -250, 0.5, -150)
+	_queueFrame.AnchorPoint = Vector2.new(0, 0)
+	_queueFrame.BackgroundColor3 = COLORS.bg
+	_queueFrame.BackgroundTransparency = 0.15
+	_queueFrame.BorderSizePixel = 0
+	_queueFrame.Visible = false
+	_queueFrame.AutomaticSize = Enum.AutomaticSize.Y
+	_queueFrame.Parent = _gui
+
+	local queueCorner = Instance.new("UICorner")
+	queueCorner.CornerRadius = UDim.new(0, 10)
+	queueCorner.Parent = _queueFrame
+
+	local queueLayout = Instance.new("UIListLayout")
+	queueLayout.FillDirection = Enum.FillDirection.Vertical
+	queueLayout.Padding = UDim.new(0, 4)
+	queueLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	queueLayout.Parent = _queueFrame
+
+	local queuePadding = Instance.new("UIPadding")
+	queuePadding.PaddingTop = UDim.new(0, 8)
+	queuePadding.PaddingBottom = UDim.new(0, 8)
+	queuePadding.PaddingLeft = UDim.new(0, 8)
+	queuePadding.PaddingRight = UDim.new(0, 8)
+	queuePadding.Parent = _queueFrame
+
 	_gui.Parent = Player.PlayerGui
 
 	updateCategoryHighlights()
@@ -289,6 +321,92 @@ function clearAllCreations()
 	setStatus("All creations cleared!", COLORS.textDim)
 end
 
+function addQueueEntry(prompt: string, category: string): number
+	_nextQueueId += 1
+	local id = _nextQueueId
+
+	local entry = Instance.new("Frame")
+	entry.Name = "QueueEntry_" .. id
+	entry.Size = UDim2.new(1, 0, 0, 28)
+	entry.BackgroundColor3 = COLORS.bgLight
+	entry.BackgroundTransparency = 0.3
+	entry.BorderSizePixel = 0
+	entry.LayoutOrder = id
+	entry.Parent = _queueFrame
+
+	local entryCorner = Instance.new("UICorner")
+	entryCorner.CornerRadius = UDim.new(0, 6)
+	entryCorner.Parent = entry
+
+	-- Status dot
+	local dot = Instance.new("Frame")
+	dot.Name = "Dot"
+	dot.Size = UDim2.new(0, 8, 0, 8)
+	dot.Position = UDim2.new(0, 6, 0.5, -4)
+	dot.BackgroundColor3 = COLORS.accent
+	dot.BorderSizePixel = 0
+	dot.Parent = entry
+
+	local dotCorner = Instance.new("UICorner")
+	dotCorner.CornerRadius = UDim.new(1, 0)
+	dotCorner.Parent = dot
+
+	-- Label
+	local shortPrompt = prompt:sub(1, 22) .. (if #prompt > 22 then "..." else "")
+	local label = Instance.new("TextLabel")
+	label.Name = "Label"
+	label.Size = UDim2.new(1, -24, 1, 0)
+	label.Position = UDim2.new(0, 20, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = shortPrompt .. "  Folding..."
+	label.TextColor3 = COLORS.text
+	label.TextSize = 11
+	label.Font = Enum.Font.Gotham
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextTruncate = Enum.TextTruncate.AtEnd
+	label.Parent = entry
+
+	_queueEntries[id] = { frame = entry, label = label, dot = dot, prompt = prompt }
+	_queueFrame.Visible = true
+
+	return id
+end
+
+function updateQueueEntry(id: number, status: string, color: Color3)
+	local entry = _queueEntries[id]
+	if not entry then
+		return
+	end
+
+	local shortPrompt = entry.prompt:sub(1, 22) .. (if #entry.prompt > 22 then "..." else "")
+	entry.label.Text = shortPrompt .. "  " .. status
+	entry.dot.BackgroundColor3 = color
+end
+
+function removeQueueEntry(id: number)
+	local entry = _queueEntries[id]
+	if not entry then
+		return
+	end
+
+	task.delay(5, function()
+		if entry.frame and entry.frame.Parent then
+			entry.frame:Destroy()
+		end
+		_queueEntries[id] = nil
+
+		-- Hide queue panel if empty
+		local hasEntries = false
+		for _ in pairs(_queueEntries) do
+			hasEntries = true
+			break
+		end
+		if not hasEntries then
+			_queueFrame.Visible = false
+		end
+	end)
+end
+
 function submitPrompt()
 	local prompt = _inputBox.Text
 	if not prompt or prompt:match("^%s*$") then
@@ -298,7 +416,8 @@ function submitPrompt()
 
 	local category = _selectedCategory
 	_inputBox.Text = ""
-	setStatus("Folding...", COLORS.accent)
+
+	local queueId = addQueueEntry(prompt, category)
 
 	-- Run async so multiple requests can fly in parallel
 	task.spawn(function()
@@ -336,23 +455,20 @@ function submitPrompt()
 
 			if buildOk then
 				local modelName = modelData.name or "Creation"
-				local description = modelData.description or ""
-				setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
+				updateQueueEntry(queueId, modelName, COLORS.success)
 				_successSound:Play()
 			else
 				warn("[OrigamiCreator] Build/place error:", buildErr)
-				setStatus("Build error: " .. tostring(buildErr), COLORS.error)
+				updateQueueEntry(queueId, "Build error", COLORS.error)
 				_failSound:Play()
 			end
 		else
 			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
-			if errMsg == "api_not_configured" then
-				setStatus("API not configured yet", COLORS.error)
-			else
-				setStatus("Failed: " .. errMsg, COLORS.error)
-			end
+			updateQueueEntry(queueId, "Failed: " .. errMsg:sub(1, 30), COLORS.error)
 			_failSound:Play()
 		end
+
+		removeQueueEntry(queueId)
 	end)
 end
 
@@ -424,8 +540,6 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 	if humanoid then
 		humanoid:EquipTool(tool)
 	end
-
-	setStatus("Equipped: " .. tool.Name, COLORS.success)
 end
 
 function equipAsHat(model: Model, modelData: { [string]: any })
@@ -494,9 +608,6 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	model:Destroy()
 
 	_equippedHat = head -- marker; cleanup uses OrigamiHat attribute
-	table.insert(_spawnedModels, model)
-
-	setStatus("Wearing: " .. accessory.Name, COLORS.success)
 end
 
 function spawnVehicle(model: Model, modelData: { [string]: any })
@@ -594,7 +705,6 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	-- Track for clear
 	table.insert(_spawnedModels, model)
 
-	setStatus("Vehicle ready: " .. modelName .. " — walk up and sit!", COLORS.success)
 end
 
 function applyAvatar(model: Model, modelData: { [string]: any })

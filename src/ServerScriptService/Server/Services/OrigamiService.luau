@@ -144,36 +144,57 @@ function OrigamiService.Client:ApplyAvatar(player: Player, modelData)
 	end
 
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if not humanoid or not rootPart then
 		return { success = false, error = "no_humanoid" }
+	end
+
+	-- Clean up previous origami avatar if one exists
+	for _, child in ipairs(character:GetChildren()) do
+		if child:GetAttribute("OrigamiAvatar") then
+			child:Destroy()
+		end
 	end
 
 	-- Save original appearance if not already saved
 	if not _originalAvatars[player.UserId] then
 		local saved = {}
+		-- Save transparency of all body parts
 		for _, part in ipairs(character:GetChildren()) do
 			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-				saved[part.Name] = {
-					Color = part.Color,
-					Material = part.Material,
-					Size = part.Size,
-					Transparency = part.Transparency,
-				}
+				saved[part.Name] = { Transparency = part.Transparency }
 			end
 		end
-		-- Save accessories
+		-- Stash accessories (reparent to nil, don't destroy)
 		saved._accessories = {}
 		for _, acc in ipairs(character:GetChildren()) do
-			if acc:IsA("Accessory") and not acc:GetAttribute("OrigamiHat") then
+			if acc:IsA("Accessory") then
 				table.insert(saved._accessories, acc)
-				acc.Parent = nil -- Hide, don't destroy
 			end
 		end
-		-- Save shirt/pants/body colors
-		saved._shirt = character:FindFirstChildOfClass("Shirt")
-		saved._pants = character:FindFirstChildOfClass("Pants")
-		saved._bodyColors = character:FindFirstChildOfClass("BodyColors")
+		-- Save shirt/pants templates
+		local shirt = character:FindFirstChildOfClass("Shirt")
+		local pants = character:FindFirstChildOfClass("Pants")
+		saved._shirtTemplate = shirt and shirt.ShirtTemplate or nil
+		saved._pantsTemplate = pants and pants.PantsTemplate or nil
 		_originalAvatars[player.UserId] = saved
+	end
+
+	-- Hide all existing body parts (make invisible)
+	for _, part in ipairs(character:GetChildren()) do
+		if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+			part.Transparency = 1
+		end
+	end
+
+	-- Hide accessories
+	for _, acc in ipairs(character:GetChildren()) do
+		if acc:IsA("Accessory") then
+			local handle = acc:FindFirstChild("Handle")
+			if handle then
+				handle.Transparency = 1
+			end
+		end
 	end
 
 	-- Hide shirt/pants
@@ -182,127 +203,31 @@ function OrigamiService.Client:ApplyAvatar(player: Player, modelData)
 	local pants = character:FindFirstChildOfClass("Pants")
 	if pants then pants.PantsTemplate = "" end
 
-	-- Remove non-origami accessories
-	for _, child in ipairs(character:GetChildren()) do
-		if child:IsA("Accessory") and not child:GetAttribute("OrigamiHat") then
-			child.Parent = nil
+	-- Build the origami model using OrigamiBuilder
+	local model = OrigamiBuilder.BuildModel(modelData)
+
+	-- Weld the entire origami model to HumanoidRootPart
+	-- All parts become children of character, welded to rootPart
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.CanCollide = false
+			part:SetAttribute("OrigamiAvatar", true)
+
+			-- Position relative to rootPart
+			local offset = part.CFrame - (model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero)
+			part.CFrame = rootPart.CFrame * offset
+
+			part.Parent = character
+
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = rootPart
+			weld.Part1 = part
+			weld.Parent = part
 		end
 	end
 
-	-- Build origami model to get part data
-	local parts = modelData.parts or {}
-
-	-- Map origami parts to character body parts by name matching
-	local bodyPartMap = {
-		head = "Head",
-		torso = "Torso", body = "Torso", chest = "Torso",
-		["left arm"] = "Left Arm", ["left_arm"] = "Left Arm", leftarm = "Left Arm",
-		["right arm"] = "Right Arm", ["right_arm"] = "Right Arm", rightarm = "Right Arm",
-		["left leg"] = "Left Leg", ["left_leg"] = "Left Leg", leftleg = "Left Leg",
-		["right leg"] = "Right Leg", ["right_leg"] = "Right Leg", rightleg = "Right Leg",
-	}
-
-	-- Apply colors/materials from origami parts to matching body parts
-	local appliedParts = {}
-	for _, partData in ipairs(parts) do
-		local partName = (partData.name or ""):lower()
-		local bodyPartName = bodyPartMap[partName]
-
-		if bodyPartName then
-			local bodyPart = character:FindFirstChild(bodyPartName)
-			if bodyPart and bodyPart:IsA("BasePart") then
-				if partData.color then
-					local r = partData.color[1] or partData.color.r or 255
-					local g = partData.color[2] or partData.color.g or 255
-					local b = partData.color[3] or partData.color.b or 255
-					bodyPart.Color = Color3.fromRGB(r, g, b)
-				end
-				if partData.material then
-					local mat = Enum.Material.SmoothPlastic
-					pcall(function() mat = Enum.Material[partData.material] end)
-					bodyPart.Material = mat
-				end
-				appliedParts[bodyPartName] = true
-			end
-		end
-	end
-
-	-- For any body part without a match, use the first part's color as default
-	if parts[1] and parts[1].color then
-		local defaultColor = Color3.fromRGB(
-			parts[1].color[1] or 255,
-			parts[1].color[2] or 255,
-			parts[1].color[3] or 255
-		)
-		for _, bodyPartName in pairs({ "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg" }) do
-			if not appliedParts[bodyPartName] then
-				local bodyPart = character:FindFirstChild(bodyPartName)
-				if bodyPart and bodyPart:IsA("BasePart") then
-					bodyPart.Color = defaultColor
-					bodyPart.Material = Enum.Material.SmoothPlastic
-				end
-			end
-		end
-	end
-
-	-- Add origami decoration parts (accessories, details) that don't map to body parts
-	-- Tag them for cleanup
-	for _, partData in ipairs(parts) do
-		local partName = (partData.name or ""):lower()
-		if not bodyPartMap[partName] then
-			-- This is a decoration part (hat detail, cape, wings, etc)
-			-- Attach to nearest body part
-			local attachTo = character:FindFirstChild("Torso") or character:FindFirstChild("Head")
-			if attachTo and attachTo:IsA("BasePart") then
-				local decor = Instance.new("Part")
-				decor.Name = "OrigamiDecor_" .. (partData.name or "detail")
-				decor:SetAttribute("OrigamiDecor", true)
-				decor.Anchored = false
-				decor.CanCollide = false
-
-				if partData.size then
-					decor.Size = Vector3.new(
-						partData.size[1] or partData.size.x or 1,
-						partData.size[2] or partData.size.y or 1,
-						partData.size[3] or partData.size.z or 1
-					)
-				else
-					decor.Size = Vector3.new(1, 1, 1)
-				end
-
-				if partData.color then
-					decor.Color = Color3.fromRGB(
-						partData.color[1] or 255,
-						partData.color[2] or 255,
-						partData.color[3] or 255
-					)
-				end
-
-				if partData.material then
-					pcall(function() decor.Material = Enum.Material[partData.material] end)
-				end
-
-				-- Position relative to attach point
-				local offset = Vector3.new(0, 0, 0)
-				if partData.position then
-					offset = Vector3.new(
-						partData.position[1] or 0,
-						partData.position[2] or 0,
-						partData.position[3] or 0
-					)
-					-- Scale down since these are relative to model center, not body
-					offset = offset * 0.3
-				end
-
-				decor.Parent = character
-				local weld = Instance.new("WeldConstraint")
-				weld.Part0 = attachTo
-				weld.Part1 = decor
-				weld.Parent = decor
-				decor.CFrame = attachTo.CFrame * CFrame.new(offset)
-			end
-		end
-	end
+	model:Destroy() -- Empty shell, parts moved to character
 
 	return { success = true }
 end
@@ -318,13 +243,18 @@ function OrigamiService.Client:ResetAvatar(player: Player)
 		return { success = false, error = "no_saved_avatar" }
 	end
 
-	-- Restore body part colors/materials/sizes
+	-- Remove all origami avatar parts
+	for _, child in ipairs(character:GetChildren()) do
+		if child:GetAttribute("OrigamiAvatar") then
+			child:Destroy()
+		end
+	end
+
+	-- Restore body part visibility
 	for partName, data in pairs(saved) do
-		if partName ~= "_accessories" and partName ~= "_shirt" and partName ~= "_pants" and partName ~= "_bodyColors" then
+		if type(data) == "table" and data.Transparency then
 			local bodyPart = character:FindFirstChild(partName)
 			if bodyPart and bodyPart:IsA("BasePart") then
-				bodyPart.Color = data.Color
-				bodyPart.Material = data.Material
 				bodyPart.Transparency = data.Transparency
 			end
 		end
@@ -334,26 +264,22 @@ function OrigamiService.Client:ResetAvatar(player: Player)
 	if saved._accessories then
 		for _, acc in ipairs(saved._accessories) do
 			if acc then
-				acc.Parent = character
+				local handle = acc:FindFirstChild("Handle")
+				if handle then
+					handle.Transparency = 0
+				end
 			end
 		end
 	end
 
 	-- Restore shirt/pants
-	local shirt = character:FindFirstChildOfClass("Shirt")
-	if shirt and saved._shirt then
-		shirt.ShirtTemplate = saved._shirt.ShirtTemplate
+	if saved._shirtTemplate then
+		local shirt = character:FindFirstChildOfClass("Shirt")
+		if shirt then shirt.ShirtTemplate = saved._shirtTemplate end
 	end
-	local pants = character:FindFirstChildOfClass("Pants")
-	if pants and saved._pants then
-		pants.PantsTemplate = saved._pants.PantsTemplate
-	end
-
-	-- Remove origami decoration parts
-	for _, child in ipairs(character:GetChildren()) do
-		if child:GetAttribute("OrigamiDecor") then
-			child:Destroy()
-		end
+	if saved._pantsTemplate then
+		local pants = character:FindFirstChildOfClass("Pants")
+		if pants then pants.PantsTemplate = saved._pantsTemplate end
 	end
 
 	_originalAvatars[player.UserId] = nil

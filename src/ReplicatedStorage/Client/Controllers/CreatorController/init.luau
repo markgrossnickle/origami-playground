@@ -653,11 +653,12 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	model.Parent = workspace
 	model:PivotTo(CFrame.new(placementPos + Vector3.new(0, 2, 0)) * CFrame.Angles(0, lookY, 0))
 
-	-- Now weld all parts to the seat and un-anchor
+	-- Weld all visual parts to the seat — massless so they don't tip it
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") and part ~= seat then
 			part.Anchored = false
 			part.CanCollide = false
+			part.Massless = true
 			local weld = Instance.new("WeldConstraint")
 			weld.Part0 = seat
 			weld.Part1 = part
@@ -665,37 +666,45 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 		end
 	end
 
+	-- Add an invisible collision plate at the bottom for ground contact
+	local _, modelSize = model:GetBoundingBox()
+	local collisionPlate = Instance.new("Part")
+	collisionPlate.Name = "CollisionPlate"
+	collisionPlate.Size = Vector3.new(math.min(modelSize.X * 0.8, 14), 0.5, math.min(modelSize.Z * 0.8, 16))
+	collisionPlate.Transparency = 1
+	collisionPlate.CanCollide = true
+	collisionPlate.Massless = true
+	collisionPlate.Anchored = false
+	collisionPlate.Material = Enum.Material.SmoothPlastic
+	-- Position at bottom of model
+	collisionPlate.CFrame = seat.CFrame * CFrame.new(0, -modelSize.Y / 2 + 0.25, 0)
+	collisionPlate.Parent = model
+
+	local plateWeld = Instance.new("WeldConstraint")
+	plateWeld.Part0 = seat
+	plateWeld.Part1 = collisionPlate
+	plateWeld.Parent = collisionPlate
+
 	-- Un-anchor seat last so everything is welded before physics kicks in
 	seat.Anchored = false
 
 	-- Add BillboardGui with name + "Sit to drive" hint
 	local modelName = modelData.name or "Vehicle"
-	addNameLabel(model, modelName .. " (Sit to drive)")
+	addNameLabel(model, modelName .. " (Walk up to drive)")
 
-	-- Add a ClickDetector for easy mounting
-	local clickDetector = Instance.new("ClickDetector")
-	clickDetector.MaxActivationDistance = 20
-	clickDetector.Parent = seat
-
-	clickDetector.MouseClick:Connect(function()
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			seat:Sit(humanoid)
-		end
-	end)
-
-	-- Add ProximityPrompt as alternative
+	-- Add ProximityPrompt — walks the player to the seat so auto-sit triggers
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ObjectText = modelName
 	prompt.ActionText = "Drive"
 	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = 15
+	prompt.MaxActivationDistance = 20
 	prompt.Parent = seat
 
 	prompt.Triggered:Connect(function()
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		local char = Player.Character
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 		if humanoid then
-			seat:Sit(humanoid)
+			humanoid:MoveTo(seat.Position)
 		end
 	end)
 

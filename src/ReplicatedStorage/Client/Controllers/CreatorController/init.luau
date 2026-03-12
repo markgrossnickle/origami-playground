@@ -207,9 +207,9 @@ function submitPrompt()
 
 	-- Call server
 	local OrigamiService = Knit.GetService("OrigamiService")
-	local result = OrigamiService:RequestModel(prompt, _selectedCategory):await()
+	local ok, result = OrigamiService:RequestModel(prompt, _selectedCategory):await()
 
-	if result and result.success and result.model then
+	if ok and result and result.success and result.model then
 		-- Build and place model
 		local modelData = result.model
 		local model = OrigamiBuilder.BuildModel(modelData)
@@ -227,8 +227,8 @@ function submitPrompt()
 		-- Clear input
 		_inputBox.Text = ""
 	else
-		local errMsg = result and result.error or "Unknown error"
-		if errMsg == "cooldown" then
+		local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
+		if type(result) == "table" and result.error == "cooldown" then
 			local cd = result.cooldown or OrigamiConfig.COOLDOWN_SECONDS
 			setStatus("Wait " .. cd .. "s before creating again", COLORS.error)
 		elseif errMsg == "api_not_configured" then

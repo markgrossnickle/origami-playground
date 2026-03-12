@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -8,6 +9,17 @@ local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 
 local Player = Players.LocalPlayer
+
+-- Sound effects
+local _successSound = Instance.new("Sound")
+_successSound.SoundId = "rbxassetid://9125402735"
+_successSound.Volume = 0.5
+_successSound.Parent = SoundService
+
+local _failSound = Instance.new("Sound")
+_failSound.SoundId = "rbxassetid://9118869788"
+_failSound.Volume = 0.5
+_failSound.Parent = SoundService
 
 local CreatorController = Knit.CreateController({
 	Name = "CreatorController",
@@ -304,39 +316,49 @@ function submitPrompt()
 
 	if ok and result and result.success and result.model then
 		local modelData = result.model
-		local model = OrigamiBuilder.BuildModel(modelData)
 		local category = modelData.category or _selectedCategory
 
-		if category == "tool" then
-			equipAsTool(model, modelData)
-		elseif category == "hat" then
-			equipAsHat(model, modelData)
-		elseif category == "vehicle" then
-			spawnVehicle(model, modelData)
-		elseif category == "avatar" then
-			applyAvatar(model, modelData)
-		elseif category == "building" then
-			placeBuilding(model, modelData)
-		elseif category == "creature" then
-			spawnCreature(model, modelData)
+		-- Wrap building + placement in pcall so errors are visible
+		local buildOk, buildErr = pcall(function()
+			local model = OrigamiBuilder.BuildModel(modelData)
+
+			if category == "tool" then
+				equipAsTool(model, modelData)
+			elseif category == "hat" then
+				equipAsHat(model, modelData)
+			elseif category == "vehicle" then
+				spawnVehicle(model, modelData)
+			elseif category == "avatar" then
+				applyAvatar(model, modelData)
+			elseif category == "building" then
+				placeBuilding(model, modelData)
+			elseif category == "creature" then
+				spawnCreature(model, modelData)
+			else
+				placeModel(model, modelData)
+			end
+
+			-- Apply animation (not for wearables/vehicles/creatures — they have their own behavior)
+			if category ~= "tool" and category ~= "hat" and category ~= "vehicle" and category ~= "avatar" and category ~= "creature" then
+				local animType = modelData.animation or "idle_bob"
+				OrigamiBuilder.ApplyAnimation(model, animType)
+			end
+		end)
+
+		if buildOk then
+			-- Show success + play ding
+			local modelName = modelData.name or "Creation"
+			local description = modelData.description or ""
+			setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
+			_successSound:Play()
+			_inputBox.Text = ""
 		else
-			placeModel(model, modelData)
+			warn("[OrigamiCreator] Build/place error:", buildErr)
+			setStatus("Build error: " .. tostring(buildErr), COLORS.error)
+			_failSound:Play()
 		end
-
-		-- Show success
-		local modelName = modelData.name or "Creation"
-		local description = modelData.description or ""
-		setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
-
-		-- Apply animation (not for wearables/vehicles/creatures — they have their own behavior)
-		if category ~= "tool" and category ~= "hat" and category ~= "vehicle" and category ~= "avatar" and category ~= "creature" then
-			local animType = modelData.animation or "idle_bob"
-			OrigamiBuilder.ApplyAnimation(model, animType)
-		end
-
-		-- Clear input
-		_inputBox.Text = ""
 	else
+		-- Server or network error
 		local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
 		if type(result) == "table" and result.error == "cooldown" then
 			local cd = result.cooldown or OrigamiConfig.COOLDOWN_SECONDS
@@ -346,6 +368,7 @@ function submitPrompt()
 		else
 			setStatus("Failed: " .. errMsg, COLORS.error)
 		end
+		_failSound:Play()
 	end
 
 	-- Cooldown timer

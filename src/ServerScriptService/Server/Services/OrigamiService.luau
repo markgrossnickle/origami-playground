@@ -108,12 +108,28 @@ function OrigamiService.Client:RequestModel(player: Player, prompt: string, cate
 
 	if not ok then
 		warn("[OrigamiService] HTTP request failed:", response)
-		return { success = false, error = "request_failed" }
+		return { success = false, error = "request_failed: " .. tostring(response) }
 	end
 
 	if not response.Success then
 		warn("[OrigamiService] API returned error:", response.StatusCode, response.Body)
-		return { success = false, error = "api_error" }
+		-- Try to extract detail from response body
+		local detail = ""
+		local decodeOk, errBody = pcall(function()
+			return HttpService:JSONDecode(response.Body)
+		end)
+		if decodeOk and errBody then
+			if errBody.detail then
+				if type(errBody.detail) == "string" then
+					detail = errBody.detail
+				elseif type(errBody.detail) == "table" and errBody.detail[1] then
+					detail = errBody.detail[1].msg or ""
+				end
+			elseif errBody.error then
+				detail = errBody.error
+			end
+		end
+		return { success = false, error = "api_error(" .. response.StatusCode .. "): " .. detail }
 	end
 
 	-- Parse response
@@ -123,7 +139,7 @@ function OrigamiService.Client:RequestModel(player: Player, prompt: string, cate
 
 	if not parseOk or not data then
 		warn("[OrigamiService] Failed to parse response:", response.Body)
-		return { success = false, error = "parse_error" }
+		return { success = false, error = "parse_error: " .. tostring(data) }
 	end
 
 	if not data.success then

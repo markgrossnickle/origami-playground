@@ -85,11 +85,12 @@ function OrigamiService.Client:RequestModel(player: Player, prompt: string, cate
 	end
 
 	local apiKey = getApiKey()
+	local isRaw = category == "raw"
 	local requestBody = {
 		prompt = prompt,
 		player_id = tostring(player.UserId),
-		category = category or nil,
-		raw = (category == "raw") or nil,
+		category = if isRaw then nil else category,
+		raw = if isRaw then true else nil,
 	}
 
 	-- Call external API

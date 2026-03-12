@@ -213,27 +213,115 @@ function OrigamiService.Client:ApplyAvatar(player: Player, modelData)
 	-- Build the origami model using OrigamiBuilder
 	local model = OrigamiBuilder.BuildModel(modelData)
 
-	-- Weld the entire origami model to HumanoidRootPart
-	-- Rotate 180° on Y so the model faces the same direction as the character
-	local modelCenter = model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero
-	local flip = CFrame.Angles(0, math.rad(180), 0)
+	-- R15 body part name fallbacks for R6 characters
+	local R15_TO_R6 = {
+		UpperTorso = "Torso",
+		LowerTorso = "Torso",
+		LeftUpperArm = "Left Arm",
+		LeftLowerArm = "Left Arm",
+		LeftHand = "Left Arm",
+		RightUpperArm = "Right Arm",
+		RightLowerArm = "Right Arm",
+		RightHand = "Right Arm",
+		LeftUpperLeg = "Left Leg",
+		LeftLowerLeg = "Left Leg",
+		LeftFoot = "Left Leg",
+		RightUpperLeg = "Right Leg",
+		RightLowerLeg = "Right Leg",
+		RightFoot = "Right Leg",
+	}
 
-	for _, part in ipairs(model:GetDescendants()) do
+	-- Resolve a body part name to an actual part in the character
+	local function findBodyPart(bodyPartName: string): BasePart?
+		-- Try exact match first (R15)
+		local found = character:FindFirstChild(bodyPartName)
+		if found and found:IsA("BasePart") then
+			return found
+		end
+		-- Try R6 fallback
+		local r6Name = R15_TO_R6[bodyPartName]
+		if r6Name then
+			found = character:FindFirstChild(r6Name)
+			if found and found:IsA("BasePart") then
+				return found
+			end
+		end
+		return nil
+	end
+
+	-- Check if model data has body_part fields (rigged avatar)
+	local partsData = modelData.parts or {}
+	local hasBodyParts = false
+	for _, pd in ipairs(partsData) do
+		if pd.body_part then
+			hasBodyParts = true
+			break
+		end
+	end
+
+	-- Weld origami parts to character
+	local builtParts = model:GetDescendants()
+	local partsByName = {}
+	for _, part in ipairs(builtParts) do
 		if part:IsA("BasePart") then
+			partsByName[part.Name] = part
+		end
+	end
+
+	if hasBodyParts then
+		-- RIGGED MODE: weld each part to its mapped body part
+		for _, pd in ipairs(partsData) do
+			local partName = pd.name
+			local bodyPartName = pd.body_part
+			local part = partsByName[partName]
+			if not part or not bodyPartName then
+				continue
+			end
+
+			local targetPart = findBodyPart(bodyPartName)
+			if not targetPart then
+				-- Fallback to HumanoidRootPart
+				targetPart = rootPart
+			end
+
 			part.Anchored = false
 			part.CanCollide = false
+			part.Massless = true
 			part:SetAttribute("OrigamiAvatar", true)
 
-			-- Get offset from model center, flip, then apply relative to rootPart
-			local localCF = CFrame.new(-modelCenter) * part.CFrame
-			part.CFrame = rootPart.CFrame * flip * localCF
-
+			-- Position part relative to the target body part
+			-- The LLM positions parts relative to [0,0,0] of each body part
+			local offset = CFrame.new(part.Position)
+			local partRot = part.CFrame - part.CFrame.Position
+			part.CFrame = targetPart.CFrame * offset * partRot
 			part.Parent = character
 
 			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = rootPart
+			weld.Part0 = targetPart
 			weld.Part1 = part
 			weld.Parent = part
+		end
+	else
+		-- LEGACY MODE: weld everything to HumanoidRootPart with 180° flip
+		local modelCenter = model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero
+		local flip = CFrame.Angles(0, math.rad(180), 0)
+
+		for _, part in ipairs(builtParts) do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = false
+				part.Massless = true
+				part:SetAttribute("OrigamiAvatar", true)
+
+				local localCF = CFrame.new(-modelCenter) * part.CFrame
+				part.CFrame = rootPart.CFrame * flip * localCF
+				part.Parent = character
+
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = rootPart
+				weld.Part1 = part
+				weld.Parent = part
+			end
 		end
 	end
 

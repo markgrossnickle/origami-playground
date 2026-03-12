@@ -751,24 +751,60 @@ local function foldCurve(raw: number): number
 	return math.sign(raw) * math.abs(raw) ^ 0.6
 end
 
--- Apply per-segment fold animation to seg_* parts after model is positioned
-local function applyFoldAnimation(model: Model, segmentOffsets: { [BasePart]: CFrame }, t: number)
-	for part, baseOffset in pairs(segmentOffsets) do
-		if part.Parent then
-			local idx = tonumber(part.Name:match("%d+")) or 1
-			local direction = if idx % 2 == 0 then 1 else -1
+-- Apply per-part creature animation based on name prefix
+local function applyCreatureAnimation(model: Model, animParts: { [BasePart]: CFrame }, t: number)
+	local pivot = model:GetPivot()
 
-			-- Vertical accordion bob
-			local foldY = foldCurve(math.sin(t * 2.0 + idx * 0.5)) * 0.2 * direction
-			-- Angular fold rotation
-			local foldAngle = foldCurve(math.cos(t * 1.5 + idx * 0.4)) * math.rad(15) * direction
-
-			local foldOffset = CFrame.new(0, foldY, 0) * CFrame.Angles(0, foldAngle, 0)
-
-			-- Apply: model pivot * base offset * fold offset
-			local pivot = model:GetPivot()
-			part.CFrame = pivot * baseOffset * foldOffset
+	for part, baseOffset in pairs(animParts) do
+		if not part.Parent then
+			continue
 		end
+
+		local name = part.Name
+		local animOffset = CFrame.new()
+
+		if name:match("^seg_") then
+			-- Body segments: accordion fold
+			local idx = tonumber(name:match("%d+")) or 1
+			local dir = if idx % 2 == 0 then 1 else -1
+			local foldY = foldCurve(math.sin(t * 2.0 + idx * 0.5)) * 0.2 * dir
+			local foldAngle = foldCurve(math.cos(t * 1.5 + idx * 0.4)) * math.rad(15) * dir
+			animOffset = CFrame.new(0, foldY, 0) * CFrame.Angles(0, foldAngle, 0)
+
+		elseif name:match("^wing_L") then
+			-- Left wing: flap up/down via Z rotation
+			local idx = tonumber(name:match("%d+")) or 1
+			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
+			animOffset = CFrame.Angles(0, 0, flapAngle)
+
+		elseif name:match("^wing_R") then
+			-- Right wing: flap opposite
+			local idx = tonumber(name:match("%d+")) or 1
+			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
+			animOffset = CFrame.Angles(0, 0, -flapAngle)
+
+		elseif name:match("^tail_") then
+			-- Tail: side-to-side sway
+			local idx = tonumber(name:match("%d+")) or 1
+			local swayAngle = math.sin(t * 3.0 + idx * 0.6) * math.rad(20)
+			animOffset = CFrame.Angles(0, swayAngle, 0)
+
+		elseif name:match("^jaw_") then
+			-- Jaw: open/close
+			local openAngle = (math.sin(t * 2.0) * 0.5 + 0.5) * math.rad(15) -- 0 to 15 degrees
+			animOffset = CFrame.Angles(openAngle, 0, 0)
+
+		elseif name:match("^leg_") then
+			-- Legs: walking cycle. FL/BL move opposite to FR/BR
+			local isLeft = name:match("_[FB]L_")
+			local isFront = name:match("_F[LR]_")
+			local phase = (if isLeft then 0 else math.pi) + (if isFront then 0 else math.pi / 2)
+			local walkAngle = math.sin(t * 5.0 + phase) * math.rad(25)
+			animOffset = CFrame.Angles(walkAngle, 0, 0)
+		end
+		-- else: detail parts (eyes, horns) — no animation, animOffset stays identity
+
+		part.CFrame = pivot * baseOffset * animOffset
 	end
 end
 
@@ -801,22 +837,12 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 	addNameLabel(model, modelName)
 	table.insert(_spawnedModels, model)
 
-	-- Collect seg_* parts and their offsets from the model pivot for fold animation
-	local segmentOffsets: { [BasePart]: CFrame } = {}
-	local hasSegments = false
+	-- Collect ALL parts and their offsets from the model pivot for animation
+	local animParts: { [BasePart]: CFrame } = {}
 	local currentPivot = model:GetPivot()
 	for _, child in ipairs(model:GetChildren()) do
-		if child:IsA("BasePart") and child.Name:match("^seg_") then
-			segmentOffsets[child] = currentPivot:ToObjectSpace(child.CFrame)
-			hasSegments = true
-		end
-	end
-
-	-- Also store ALL part offsets for non-segment parts (eyes, details) to keep them in place
-	local detailOffsets: { [BasePart]: CFrame } = {}
-	for _, child in ipairs(model:GetChildren()) do
-		if child:IsA("BasePart") and not child.Name:match("^seg_") then
-			detailOffsets[child] = currentPivot:ToObjectSpace(child.CFrame)
+		if child:IsA("BasePart") then
+			animParts[child] = currentPivot:ToObjectSpace(child.CFrame)
 		end
 	end
 
@@ -869,17 +895,8 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 					-- Position model
 					model:PivotTo(CFrame.new(pos.X, midY + pivotAboveBottom, pos.Z) * lookRot)
 
-					-- Apply fold animation to segments
-					if hasSegments then
-						applyFoldAnimation(model, segmentOffsets, tick())
-						-- Keep detail parts (eyes etc) in place relative to pivot
-						local pv = model:GetPivot()
-						for part, offset in pairs(detailOffsets) do
-							if part.Parent then
-								part.CFrame = pv * offset
-							end
-						end
-					end
+					-- Animate all creature parts
+					applyCreatureAnimation(model, animParts, tick())
 
 					task.wait(0.03)
 				end
@@ -889,16 +906,8 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 			local pauseTime = 1 + math.random() * 3
 			local pauseStart = tick()
 			while not stopped and model and model.Parent and model.PrimaryPart and (tick() - pauseStart) < pauseTime do
-				-- Keep fold animation going while idle
-				if hasSegments then
-					applyFoldAnimation(model, segmentOffsets, tick())
-					local pv = model:GetPivot()
-					for part, offset in pairs(detailOffsets) do
-						if part.Parent then
-							part.CFrame = pv * offset
-						end
-					end
-				end
+				-- Keep creature animation going while idle
+				applyCreatureAnimation(model, animParts, tick())
 				task.wait(0.03)
 			end
 		end

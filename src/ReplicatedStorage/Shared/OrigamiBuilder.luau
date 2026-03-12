@@ -92,6 +92,11 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 			part.Transparency = partData.transparency
 		end
 
+		-- Body part mapping (for avatar rigging)
+		if partData.body_part then
+			part:SetAttribute("BodyPart", partData.body_part)
+		end
+
 		part.Parent = model
 	end
 

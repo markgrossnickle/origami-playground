@@ -89,6 +89,30 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 		part.Parent = model
 	end
 
+	-- Fix z-fighting: nudge small detail parts that share a face with larger parts
+	local allParts = model:GetChildren()
+	for i = 1, #allParts do
+		for j = i + 1, #allParts do
+			local a = allParts[i]
+			local b = allParts[j]
+			if a:IsA("BasePart") and b:IsA("BasePart") then
+				local dist = (a.Position - b.Position).Magnitude
+				local touchDist = (a.Size.Magnitude + b.Size.Magnitude) * 0.3
+				if dist < touchDist and dist > 0.01 then
+					-- Parts are overlapping or touching — nudge the smaller one outward
+					local smaller = if a.Size.Magnitude < b.Size.Magnitude then a else b
+					local larger = if smaller == a then b else a
+					local dir = (smaller.Position - larger.Position)
+					if dir.Magnitude > 0.001 then
+						smaller.Position = smaller.Position + dir.Unit * 0.15
+					else
+						smaller.Position = smaller.Position + Vector3.new(0, 0.15, 0)
+					end
+				end
+			end
+		end
+	end
+
 	-- Set primary part to first part
 	if #model:GetChildren() > 0 then
 		model.PrimaryPart = model:GetChildren()[1]

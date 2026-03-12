@@ -58,16 +58,6 @@ local function checkRateLimit(player: Player): (boolean, number)
 end
 
 function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string)
-	-- Rate limit check
-	local allowed, cooldownRemaining = checkRateLimit(player)
-	if not allowed then
-		return {
-			success = false,
-			error = "cooldown",
-			cooldown = math.ceil(cooldownRemaining),
-		}
-	end
-
 	-- Validate input
 	if not prompt or prompt == "" then
 		return { success = false, error = "empty_prompt" }

@@ -27,7 +27,7 @@ local CreatorController = Knit.CreateController({
 
 local _trove = Trove.new()
 local _selectedCategory = "creature"
-local _cooldownActive = false
+local _pendingRequests = 0
 local _gui: ScreenGui
 local _inputBox: TextBox
 local _statusLabel: TextLabel
@@ -293,86 +293,70 @@ function clearAllCreations()
 end
 
 function submitPrompt()
-	if _cooldownActive then
-		return
-	end
-
 	local prompt = _inputBox.Text
 	if not prompt or prompt:match("^%s*$") then
 		setStatus("Type something first!", COLORS.error)
 		return
 	end
 
-	-- Start cooldown and show folding status
-	_cooldownActive = true
-	_createButton.BackgroundColor3 = COLORS.disabled
-	_createButton.Text = "..."
-	_inputBox.TextEditable = false
+	local category = _selectedCategory
+	_inputBox.Text = ""
 	setStatus("Folding...", COLORS.accent)
 
-	-- Call server
-	local OrigamiService = Knit.GetService("OrigamiService")
-	local ok, result = OrigamiService:RequestModel(prompt, _selectedCategory):await()
+	-- Run async so multiple requests can fly in parallel
+	task.spawn(function()
+		local OrigamiService = Knit.GetService("OrigamiService")
+		local ok, result = OrigamiService:RequestModel(prompt, category):await()
 
-	if ok and result and result.success and result.model then
-		local modelData = result.model
-		local category = modelData.category or _selectedCategory
+		if ok and result and result.success and result.model then
+			local modelData = result.model
+			local cat = modelData.category or category
 
-		-- Wrap building + placement in pcall so errors are visible
-		local buildOk, buildErr = pcall(function()
-			local model = OrigamiBuilder.BuildModel(modelData)
+			local buildOk, buildErr = pcall(function()
+				local model = OrigamiBuilder.BuildModel(modelData)
 
-			if category == "tool" then
-				equipAsTool(model, modelData)
-			elseif category == "hat" then
-				equipAsHat(model, modelData)
-			elseif category == "vehicle" then
-				spawnVehicle(model, modelData)
-			elseif category == "avatar" then
-				applyAvatar(model, modelData)
-			elseif category == "building" then
-				placeBuilding(model, modelData)
-			elseif category == "creature" then
-				spawnCreature(model, modelData)
+				if cat == "tool" then
+					equipAsTool(model, modelData)
+				elseif cat == "hat" then
+					equipAsHat(model, modelData)
+				elseif cat == "vehicle" then
+					spawnVehicle(model, modelData)
+				elseif cat == "avatar" then
+					applyAvatar(model, modelData)
+				elseif cat == "building" then
+					placeBuilding(model, modelData)
+				elseif cat == "creature" then
+					spawnCreature(model, modelData)
+				else
+					placeModel(model, modelData)
+				end
+
+				if cat ~= "tool" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+					local animType = modelData.animation or "idle_bob"
+					OrigamiBuilder.ApplyAnimation(model, animType)
+				end
+			end)
+
+			if buildOk then
+				local modelName = modelData.name or "Creation"
+				local description = modelData.description or ""
+				setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
+				_successSound:Play()
 			else
-				placeModel(model, modelData)
+				warn("[OrigamiCreator] Build/place error:", buildErr)
+				setStatus("Build error: " .. tostring(buildErr), COLORS.error)
+				_failSound:Play()
 			end
-
-			-- Apply animation (not for wearables/vehicles/creatures — they have their own behavior)
-			if category ~= "tool" and category ~= "hat" and category ~= "vehicle" and category ~= "avatar" and category ~= "creature" then
-				local animType = modelData.animation or "idle_bob"
-				OrigamiBuilder.ApplyAnimation(model, animType)
-			end
-		end)
-
-		if buildOk then
-			-- Show success + play ding
-			local modelName = modelData.name or "Creation"
-			local description = modelData.description or ""
-			setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
-			_successSound:Play()
-			_inputBox.Text = ""
 		else
-			warn("[OrigamiCreator] Build/place error:", buildErr)
-			setStatus("Build error: " .. tostring(buildErr), COLORS.error)
+			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
+			if errMsg == "api_not_configured" then
+				setStatus("API not configured yet", COLORS.error)
+			else
+				setStatus("Failed: " .. errMsg, COLORS.error)
+			end
 			_failSound:Play()
 		end
-	else
-		-- Server or network error
-		local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
-		if type(result) == "table" and result.error == "cooldown" then
-			local cd = result.cooldown or OrigamiConfig.COOLDOWN_SECONDS
-			setStatus("Wait " .. cd .. "s before creating again", COLORS.error)
-		elseif errMsg == "api_not_configured" then
-			setStatus("API not configured yet", COLORS.error)
-		else
-			setStatus("Failed: " .. errMsg, COLORS.error)
-		end
-		_failSound:Play()
-	end
-
-	-- Cooldown timer
-	startCooldown()
+	end)
 end
 
 function equipAsTool(model: Model, modelData: { [string]: any })
@@ -650,24 +634,6 @@ function setStatus(text: string, color: Color3?)
 	end)
 end
 
-function startCooldown()
-	local remaining = OrigamiConfig.COOLDOWN_SECONDS
-	_createButton.Text = tostring(remaining)
-
-	task.spawn(function()
-		while remaining > 0 do
-			task.wait(1)
-			remaining -= 1
-			if remaining > 0 then
-				_createButton.Text = tostring(remaining)
-			end
-		end
-		_cooldownActive = false
-		_createButton.BackgroundColor3 = COLORS.accent
-		_createButton.Text = "Create"
-		_inputBox.TextEditable = true
-	end)
-end
 
 function spawnCreature(model: Model, modelData: { [string]: any })
 	local character = Player.Character

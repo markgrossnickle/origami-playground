@@ -28,7 +28,7 @@ local MATERIAL_MAP = {
 
 function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 	local model = Instance.new("Model")
-	model.Name = modelData.name or "OrigamiModel"
+	model.Name = modelData.name or "Creation"
 
 	local parts = modelData.parts or {}
 	for i, partData in ipairs(parts) do

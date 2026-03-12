@@ -383,7 +383,7 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 
 	-- Create a Roblox Tool
 	local tool = Instance.new("Tool")
-	tool.Name = modelData.name or "Origami Tool"
+	tool.Name = modelData.name or "Tool"
 	tool:SetAttribute("OrigamiTool", true)
 	tool.CanBeDropped = false
 	tool.RequiresHandle = true
@@ -445,7 +445,7 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 
 	-- Create an Accessory
 	local accessory = Instance.new("Accessory")
-	accessory.Name = modelData.name or "Origami Hat"
+	accessory.Name = modelData.name or "Hat"
 	accessory:SetAttribute("OrigamiHat", true)
 
 	-- Create handle — all parts must be children of Handle for physics to work

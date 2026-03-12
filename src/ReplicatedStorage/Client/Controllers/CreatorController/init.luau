@@ -57,7 +57,7 @@ local function createUI()
 	local container = Instance.new("Frame")
 	container.Name = "Container"
 	container.Size = UDim2.new(0.6, 0, 0, 120)
-	container.Position = UDim2.new(0.2, 0, 1, -130)
+	container.Position = UDim2.new(0.2, 0, 1, -200)
 	container.BackgroundColor3 = COLORS.bg
 	container.BackgroundTransparency = 0.1
 	container.BorderSizePixel = 0

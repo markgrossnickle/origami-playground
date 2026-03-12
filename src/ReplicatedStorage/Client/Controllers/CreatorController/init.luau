@@ -450,6 +450,12 @@ function clearAllCreations()
 		warn("[Clear] Failed to destroy server vehicle seats:", err)
 	end)
 
+	-- Clear DM mode scene (server-side models + creature AIs)
+	local DMService = Knit.GetService("DMService")
+	DMService:ClearScene():catch(function(err)
+		warn("[Clear] Failed to clear DM scene:", err)
+	end)
+
 	-- Reset avatar
 	if _avatarApplied then
 		OrigamiService:ResetAvatar():await()

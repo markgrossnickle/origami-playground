@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
+local ServerConfig = require(ReplicatedStorage.Assets.Configuration.Server)
 
 local OrigamiService = Knit.CreateService({
 	Name = "OrigamiService",
@@ -21,20 +22,11 @@ local OrigamiService = Knit.CreateService({
 local _rateLimits: { [string]: number } = {}
 
 local function getApiUrl(): string
-	-- Check for Attribute override first, then config
-	local attr = script:GetAttribute("API_URL")
-	if attr and attr ~= "" then
-		return attr
-	end
-	return OrigamiConfig.API_URL
+	return ServerConfig.API_URL or OrigamiConfig.API_URL
 end
 
 local function getApiKey(): string
-	local attr = script:GetAttribute("API_KEY")
-	if attr and attr ~= "" then
-		return attr
-	end
-	return OrigamiConfig.API_KEY
+	return ServerConfig.API_KEY or OrigamiConfig.API_KEY
 end
 
 local function checkRateLimit(player: Player): (boolean, number)

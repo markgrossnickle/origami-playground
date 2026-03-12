@@ -29,6 +29,7 @@ local _equippedTool: Tool? = nil
 local _equippedHat: Accessory? = nil
 local _activeVehicle: Model? = nil
 local _vehicleSeat: VehicleSeat? = nil
+local _avatarApplied = false
 
 -- Colors
 local COLORS = {
@@ -247,6 +248,13 @@ function clearAllCreations()
 		_vehicleSeat = nil
 	end
 
+	-- Reset avatar
+	if _avatarApplied then
+		local OrigamiService = Knit.GetService("OrigamiService")
+		OrigamiService:ResetAvatar():await()
+		_avatarApplied = false
+	end
+
 	-- Also remove any leftover origami tools from backpack/character
 	local character = Player.Character
 	if character then
@@ -305,6 +313,8 @@ function submitPrompt()
 			equipAsHat(model, modelData)
 		elseif category == "vehicle" then
 			spawnVehicle(model, modelData)
+		elseif category == "avatar" then
+			applyAvatar(model, modelData)
 		else
 			placeModel(model, modelData)
 		end
@@ -314,8 +324,8 @@ function submitPrompt()
 		local description = modelData.description or ""
 		setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
 
-		-- Apply animation (not for tools/hats/vehicles — they move with the player)
-		if category ~= "tool" and category ~= "hat" and category ~= "vehicle" then
+		-- Apply animation (not for wearables/vehicles — they move with the player)
+		if category ~= "tool" and category ~= "hat" and category ~= "vehicle" and category ~= "avatar" then
 			local animType = modelData.animation or "idle_bob"
 			OrigamiBuilder.ApplyAnimation(model, animType)
 		end
@@ -565,6 +575,23 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	table.insert(_spawnedModels, model)
 
 	setStatus("Vehicle ready: " .. modelName .. " — walk up and sit!", COLORS.success)
+end
+
+function applyAvatar(model: Model, modelData: { [string]: any })
+	-- Send model data to server to apply as avatar skin
+	local OrigamiService = Knit.GetService("OrigamiService")
+	local ok, result = OrigamiService:ApplyAvatar(modelData):await()
+
+	-- Destroy the built model — server applies directly to character
+	model:Destroy()
+
+	if ok and result and result.success then
+		_avatarApplied = true
+		local modelName = modelData.name or "Avatar"
+		setStatus("Transformed into: " .. modelName, COLORS.success)
+	else
+		setStatus("Failed to apply avatar", COLORS.error)
+	end
 end
 
 function setStatus(text: string, color: Color3?)

@@ -214,16 +214,19 @@ function OrigamiService.Client:ApplyAvatar(player: Player, modelData)
 	local model = OrigamiBuilder.BuildModel(modelData)
 
 	-- Weld the entire origami model to HumanoidRootPart
-	-- All parts become children of character, welded to rootPart
+	-- Rotate 180° on Y so the model faces the same direction as the character
+	local modelCenter = model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero
+	local flip = CFrame.Angles(0, math.rad(180), 0)
+
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then
 			part.Anchored = false
 			part.CanCollide = false
 			part:SetAttribute("OrigamiAvatar", true)
 
-			-- Position relative to rootPart
-			local offset = part.CFrame - (model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero)
-			part.CFrame = rootPart.CFrame * offset
+			-- Get offset from model center, flip, then apply relative to rootPart
+			local localCF = CFrame.new(-modelCenter) * part.CFrame
+			part.CFrame = rootPart.CFrame * flip * localCF
 
 			part.Parent = character
 

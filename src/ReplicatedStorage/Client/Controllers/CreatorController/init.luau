@@ -10,15 +10,15 @@ local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 
 local Player = Players.LocalPlayer
 
--- Sound effects
+-- Sound effects (built-in engine sounds — no asset ownership needed)
 local _successSound = Instance.new("Sound")
-_successSound.SoundId = "rbxassetid://9125402735"
+_successSound.SoundId = "rbxasset://sounds/electronicpingshort.wav"
 _successSound.Volume = 0.5
 _successSound.Parent = SoundService
 
 local _failSound = Instance.new("Sound")
-_failSound.SoundId = "rbxassetid://9118869788"
-_failSound.Volume = 0.5
+_failSound.SoundId = "rbxasset://sounds/uuhhh.mp3"
+_failSound.Volume = 0.4
 _failSound.Parent = SoundService
 
 local CreatorController = Knit.CreateController({

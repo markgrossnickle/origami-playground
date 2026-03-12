@@ -22,6 +22,7 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "vehicle", display = "Vehicle", icon = "🚗" },
 	{ key = "building", display = "Building", icon = "🏠" },
 	{ key = "tool", display = "Tool", icon = "🔧" },
+	{ key = "hat", display = "Hat", icon = "🎩" },
 	{ key = "prop", display = "Prop", icon = "🎭" },
 	{ key = "raw", display = "Raw", icon = "📝" },
 }

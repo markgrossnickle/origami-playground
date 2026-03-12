@@ -20,7 +20,13 @@ local _gui: ScreenGui
 local _inputBox: TextBox
 local _statusLabel: TextLabel
 local _createButton: TextButton
+local _clearButton: TextButton
 local _categoryButtons: { [string]: TextButton } = {}
+
+-- Track all spawned creations for Clear
+local _spawnedModels: { Model } = {}
+local _equippedTool: Tool? = nil
+local _equippedHat: Accessory? = nil
 
 -- Colors
 local COLORS = {
@@ -33,6 +39,7 @@ local COLORS = {
 	disabled = Color3.fromRGB(80, 80, 90),
 	success = Color3.fromRGB(100, 220, 140),
 	error = Color3.fromRGB(220, 100, 100),
+	danger = Color3.fromRGB(200, 60, 60),
 }
 
 local function createUI()
@@ -74,12 +81,12 @@ local function createUI()
 	for _, cat in ipairs(OrigamiConfig.CATEGORIES) do
 		local btn = Instance.new("TextButton")
 		btn.Name = "Cat_" .. cat.key
-		btn.Size = UDim2.new(0, 80, 1, 0)
+		btn.Size = UDim2.new(0, 72, 1, 0)
 		btn.BackgroundColor3 = COLORS.bgLight
 		btn.BorderSizePixel = 0
 		btn.Text = cat.display
 		btn.TextColor3 = COLORS.textDim
-		btn.TextSize = 13
+		btn.TextSize = 12
 		btn.Font = Enum.Font.GothamBold
 		btn.AutoButtonColor = true
 		btn.Parent = categoryRow
@@ -107,7 +114,7 @@ local function createUI()
 	-- Text input box
 	_inputBox = Instance.new("TextBox")
 	_inputBox.Name = "PromptInput"
-	_inputBox.Size = UDim2.new(1, -100, 1, 0)
+	_inputBox.Size = UDim2.new(1, -180, 1, 0)
 	_inputBox.Position = UDim2.new(0, 0, 0, 0)
 	_inputBox.BackgroundColor3 = COLORS.bgLight
 	_inputBox.BorderSizePixel = 0
@@ -133,7 +140,7 @@ local function createUI()
 	_createButton = Instance.new("TextButton")
 	_createButton.Name = "CreateButton"
 	_createButton.Size = UDim2.new(0, 88, 1, 0)
-	_createButton.Position = UDim2.new(1, -88, 0, 0)
+	_createButton.Position = UDim2.new(1, -168, 0, 0)
 	_createButton.BackgroundColor3 = COLORS.accent
 	_createButton.BorderSizePixel = 0
 	_createButton.Text = "Create"
@@ -146,6 +153,24 @@ local function createUI()
 	local createCorner = Instance.new("UICorner")
 	createCorner.CornerRadius = UDim.new(0, 8)
 	createCorner.Parent = _createButton
+
+	-- Clear button
+	_clearButton = Instance.new("TextButton")
+	_clearButton.Name = "ClearButton"
+	_clearButton.Size = UDim2.new(0, 72, 1, 0)
+	_clearButton.Position = UDim2.new(1, -72, 0, 0)
+	_clearButton.BackgroundColor3 = COLORS.danger
+	_clearButton.BorderSizePixel = 0
+	_clearButton.Text = "Clear"
+	_clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	_clearButton.TextSize = 16
+	_clearButton.Font = Enum.Font.GothamBold
+	_clearButton.AutoButtonColor = true
+	_clearButton.Parent = inputRow
+
+	local clearCorner = Instance.new("UICorner")
+	clearCorner.CornerRadius = UDim.new(0, 8)
+	clearCorner.Parent = _clearButton
 
 	-- Status label
 	_statusLabel = Instance.new("TextLabel")
@@ -170,6 +195,11 @@ local function createUI()
 		end
 	end)
 
+	-- Wire up clear
+	_clearButton.MouseButton1Click:Connect(function()
+		clearAllCreations()
+	end)
+
 	_gui.Parent = Player.PlayerGui
 
 	updateCategoryHighlights()
@@ -185,6 +215,52 @@ function updateCategoryHighlights()
 			btn.TextColor3 = COLORS.textDim
 		end
 	end
+end
+
+function clearAllCreations()
+	-- Remove all spawned models from workspace
+	for _, model in ipairs(_spawnedModels) do
+		if model and model.Parent then
+			model:Destroy()
+		end
+	end
+	_spawnedModels = {}
+
+	-- Remove equipped tool
+	if _equippedTool then
+		_equippedTool:Destroy()
+		_equippedTool = nil
+	end
+
+	-- Remove equipped hat
+	if _equippedHat then
+		_equippedHat:Destroy()
+		_equippedHat = nil
+	end
+
+	-- Also remove any leftover origami tools from backpack/character
+	local character = Player.Character
+	if character then
+		for _, child in ipairs(character:GetChildren()) do
+			if child:IsA("Tool") and child:GetAttribute("OrigamiTool") then
+				child:Destroy()
+			end
+			if child:IsA("Accessory") and child:GetAttribute("OrigamiHat") then
+				child:Destroy()
+			end
+		end
+	end
+
+	local backpack = Player:FindFirstChild("Backpack")
+	if backpack then
+		for _, child in ipairs(backpack:GetChildren()) do
+			if child:IsA("Tool") and child:GetAttribute("OrigamiTool") then
+				child:Destroy()
+			end
+		end
+	end
+
+	setStatus("All creations cleared!", COLORS.textDim)
 end
 
 function submitPrompt()
@@ -210,19 +286,28 @@ function submitPrompt()
 	local ok, result = OrigamiService:RequestModel(prompt, _selectedCategory):await()
 
 	if ok and result and result.success and result.model then
-		-- Build and place model
 		local modelData = result.model
 		local model = OrigamiBuilder.BuildModel(modelData)
-		placeModel(model, modelData)
+		local category = modelData.category or _selectedCategory
+
+		if category == "tool" then
+			equipAsTool(model, modelData)
+		elseif category == "hat" then
+			equipAsHat(model, modelData)
+		else
+			placeModel(model, modelData)
+		end
 
 		-- Show success
 		local modelName = modelData.name or "Creation"
 		local description = modelData.description or ""
 		setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
 
-		-- Apply animation if specified
-		local animType = modelData.animation or "idle_bob"
-		OrigamiBuilder.ApplyAnimation(model, animType)
+		-- Apply animation (not for tools/hats — they move with the player)
+		if category ~= "tool" and category ~= "hat" then
+			local animType = modelData.animation or "idle_bob"
+			OrigamiBuilder.ApplyAnimation(model, animType)
+		end
 
 		-- Clear input
 		_inputBox.Text = ""
@@ -240,6 +325,140 @@ function submitPrompt()
 
 	-- Cooldown timer
 	startCooldown()
+end
+
+function equipAsTool(model: Model, modelData: { [string]: any })
+	local character = Player.Character
+	if not character then
+		return
+	end
+
+	-- Remove previous origami tool (only one at a time)
+	if _equippedTool then
+		_equippedTool:Destroy()
+		_equippedTool = nil
+	end
+
+	-- Also remove from backpack
+	local backpack = Player:FindFirstChild("Backpack")
+	if backpack then
+		for _, child in ipairs(backpack:GetChildren()) do
+			if child:IsA("Tool") and child:GetAttribute("OrigamiTool") then
+				child:Destroy()
+			end
+		end
+	end
+
+	-- Create a Roblox Tool
+	local tool = Instance.new("Tool")
+	tool.Name = modelData.name or "Origami Tool"
+	tool:SetAttribute("OrigamiTool", true)
+	tool.CanBeDropped = false
+	tool.RequiresHandle = true
+
+	-- Create handle from the model parts
+	-- Weld all parts to a single Handle part
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(1, 1, 1)
+	handle.Transparency = 1
+	handle.CanCollide = false
+	handle.Parent = tool
+
+	-- Move model parts into the tool and weld to handle
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.CanCollide = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = handle
+			weld.Part1 = part
+			weld.Parent = part
+			part.Parent = tool
+		end
+	end
+
+	-- Set grip so it's held properly (handle at bottom)
+	tool.GripPos = Vector3.new(0, -0.5, 0)
+
+	model:Destroy() -- Parts moved out, clean up empty model
+
+	-- Put in backpack (auto-equips if only tool)
+	tool.Parent = backpack or character
+	_equippedTool = tool
+
+	-- Track for clear
+	table.insert(_spawnedModels, tool)
+
+	-- Auto-equip
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid:EquipTool(tool)
+	end
+
+	setStatus("Equipped: " .. tool.Name, COLORS.success)
+end
+
+function equipAsHat(model: Model, modelData: { [string]: any })
+	local character = Player.Character
+	if not character then
+		return
+	end
+
+	-- Remove previous origami hat
+	if _equippedHat then
+		_equippedHat:Destroy()
+		_equippedHat = nil
+	end
+
+	-- Create an Accessory
+	local accessory = Instance.new("Accessory")
+	accessory.Name = modelData.name or "Origami Hat"
+	accessory:SetAttribute("OrigamiHat", true)
+
+	-- Create handle from the model parts
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.new(1, 1, 1)
+	handle.Transparency = 1
+	handle.CanCollide = false
+	handle.Parent = accessory
+
+	-- Attachment for hat positioning (top of head)
+	local attachment = Instance.new("Attachment")
+	attachment.Name = "HatAttachment"
+	attachment.Position = Vector3.new(0, 0, 0)
+	attachment.Parent = handle
+
+	-- Move model parts into accessory and weld to handle
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.CanCollide = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = handle
+			weld.Part1 = part
+			weld.Parent = part
+			part.Parent = accessory
+		end
+	end
+
+	model:Destroy() -- Parts moved out, clean up empty model
+
+	-- Add to character (Roblox places accessories on the head automatically)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid:AddAccessory(accessory)
+	else
+		accessory.Parent = character
+	end
+
+	_equippedHat = accessory
+
+	-- Track for clear
+	table.insert(_spawnedModels, accessory)
+
+	setStatus("Wearing: " .. accessory.Name, COLORS.success)
 end
 
 function setStatus(text: string, color: Color3?)
@@ -274,22 +493,22 @@ function startCooldown()
 end
 
 function placeModel(model: Model, modelData: { [string]: any })
-	-- Get player character position and look direction
 	local character = Player.Character
 	if not character then
 		model.Parent = workspace
+		table.insert(_spawnedModels, model)
 		return
 	end
 
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
 	if not rootPart then
 		model.Parent = workspace
+		table.insert(_spawnedModels, model)
 		return
 	end
 
 	-- Place model in front of player
 	local placementPos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
-	-- Ensure it's above ground
 	placementPos = Vector3.new(placementPos.X, rootPart.Position.Y, placementPos.Z)
 
 	-- Create a small pedestal
@@ -303,9 +522,6 @@ function placeModel(model: Model, modelData: { [string]: any })
 	pedestal.Color = Color3.fromRGB(60, 60, 70)
 	pedestal.Parent = model
 
-	local pedestalCorner = Instance.new("UICorner")
-	-- Can't use UICorner on Part, skip
-
 	-- Position the model on the pedestal
 	model.Parent = workspace
 	if model.PrimaryPart then
@@ -315,6 +531,9 @@ function placeModel(model: Model, modelData: { [string]: any })
 	-- Add BillboardGui with name
 	local modelName = modelData.name or "Creation"
 	addNameLabel(model, modelName)
+
+	-- Track for clear
+	table.insert(_spawnedModels, model)
 end
 
 function addNameLabel(model: Model, name: string)
@@ -336,7 +555,6 @@ function addNameLabel(model: Model, name: string)
 	label.Font = Enum.Font.GothamBold
 	label.Parent = billboard
 
-	-- Parent to primary part or first part
 	local target = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
 	if target then
 		billboard.Adornee = target
@@ -345,16 +563,13 @@ function addNameLabel(model: Model, name: string)
 end
 
 function CreatorController:KnitInit()
-	-- Nothing needed in init
 end
 
 function CreatorController:KnitStart()
 	createUI()
 
-	-- Listen for server-pushed model events
 	local OrigamiService = Knit.GetService("OrigamiService")
 	OrigamiService.ModelGenerated:Connect(function(modelData)
-		-- Handle models generated by other triggers if needed
 	end)
 end
 

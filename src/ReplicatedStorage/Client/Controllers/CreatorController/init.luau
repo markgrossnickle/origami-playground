@@ -317,6 +317,8 @@ function submitPrompt()
 			applyAvatar(model, modelData)
 		elseif category == "building" then
 			placeBuilding(model, modelData)
+		elseif category == "creature" then
+			spawnCreature(model, modelData)
 		else
 			placeModel(model, modelData)
 		end
@@ -326,8 +328,8 @@ function submitPrompt()
 		local description = modelData.description or ""
 		setStatus(modelName .. (description ~= "" and (" - " .. description) or ""), COLORS.success)
 
-		-- Apply animation (not for wearables/vehicles — they move with the player)
-		if category ~= "tool" and category ~= "hat" and category ~= "vehicle" and category ~= "avatar" then
+		-- Apply animation (not for wearables/vehicles/creatures — they have their own behavior)
+		if category ~= "tool" and category ~= "hat" and category ~= "vehicle" and category ~= "avatar" and category ~= "creature" then
 			local animType = modelData.animation or "idle_bob"
 			OrigamiBuilder.ApplyAnimation(model, animType)
 		end
@@ -627,6 +629,168 @@ function startCooldown()
 		_createButton.BackgroundColor3 = COLORS.accent
 		_createButton.Text = "Create"
 		_inputBox.TextEditable = true
+	end)
+end
+
+function spawnCreature(model: Model, modelData: { [string]: any })
+	local character = Player.Character
+	if not character then
+		model.Parent = workspace
+		table.insert(_spawnedModels, model)
+		return
+	end
+
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if not rootPart then
+		model.Parent = workspace
+		table.insert(_spawnedModels, model)
+		return
+	end
+
+	-- Place in front of player
+	local placementPos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
+	placementPos = Vector3.new(placementPos.X, rootPart.Position.Y, placementPos.Z)
+
+	-- Parent and position
+	model.Parent = workspace
+	if model.PrimaryPart then
+		local _, size = model:GetBoundingBox()
+		local halfHeight = size.Y / 2
+		model:PivotTo(CFrame.new(placementPos.X, placementPos.Y + halfHeight, placementPos.Z))
+	end
+
+	-- Add name label
+	local modelName = modelData.name or "Creature"
+	addNameLabel(model, modelName)
+	table.insert(_spawnedModels, model)
+
+	-- Start wandering behavior
+	local spawnPos = placementPos
+	local wanderRadius = 20
+	local moveSpeed = 4
+	local stopped = false
+
+	-- Bob animation while walking
+	local startTime = tick()
+	local bobConnection: RBXScriptConnection
+	local origins = {}
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			origins[part] = part.Position - (model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero)
+		end
+	end
+
+	model.Destroying:Connect(function()
+		stopped = true
+		if bobConnection then
+			bobConnection:Disconnect()
+		end
+	end)
+
+	task.spawn(function()
+		while not stopped and model and model.Parent do
+			-- Pick a random point within wander radius of spawn
+			local angle = math.random() * math.pi * 2
+			local dist = math.random() * wanderRadius
+			local targetX = spawnPos.X + math.cos(angle) * dist
+			local targetZ = spawnPos.Z + math.sin(angle) * dist
+
+			-- Raycast to find ground at target
+			local rayResult = workspace:Raycast(
+				Vector3.new(targetX, spawnPos.Y + 50, targetZ),
+				Vector3.new(0, -200, 0),
+				(function()
+					local p = RaycastParams.new()
+					p.FilterType = Enum.RaycastFilterType.Exclude
+					p.FilterDescendantsInstances = { model, character }
+					return p
+				end)()
+			)
+			local groundY = if rayResult then rayResult.Position.Y else spawnPos.Y
+
+			local targetPos = Vector3.new(targetX, groundY, targetZ)
+
+			if not model or not model.Parent or not model.PrimaryPart then
+				break
+			end
+
+			-- Move toward target
+			local startPos = model.PrimaryPart.Position
+			local direction = (targetPos - startPos)
+			local flatDir = Vector3.new(direction.X, 0, direction.Z)
+			local distance = flatDir.Magnitude
+
+			if distance > 1 then
+				-- Face the target
+				local lookCF = CFrame.lookAt(startPos, Vector3.new(targetPos.X, startPos.Y, targetPos.Z))
+				local _, modelSize = model:GetBoundingBox()
+				local halfH = modelSize.Y / 2
+				local steps = math.max(1, math.floor(distance / (moveSpeed * 0.03)))
+
+				for step = 1, steps do
+					if stopped or not model or not model.Parent or not model.PrimaryPart then
+						break
+					end
+
+					local t = step / steps
+					local pos = startPos:Lerp(targetPos, t)
+
+					-- Raycast for ground at this position
+					local midRay = workspace:Raycast(
+						Vector3.new(pos.X, spawnPos.Y + 50, pos.Z),
+						Vector3.new(0, -200, 0),
+						(function()
+							local p = RaycastParams.new()
+							p.FilterType = Enum.RaycastFilterType.Exclude
+							p.FilterDescendantsInstances = { model, character }
+							return p
+						end)()
+					)
+					local midY = if midRay then midRay.Position.Y else spawnPos.Y
+
+					-- Bob up and down while walking
+					local bobOffset = math.sin(tick() * 6) * 0.3
+
+					model:PivotTo(
+						CFrame.new(pos.X, midY + halfH + bobOffset, pos.Z)
+						* (lookCF - lookCF.Position)
+					)
+
+					task.wait(0.03)
+				end
+			end
+
+			-- Pause at destination
+			local pauseTime = 1 + math.random() * 3
+			local pauseStart = tick()
+			while not stopped and model and model.Parent and (tick() - pauseStart) < pauseTime do
+				-- Idle bob while paused
+				if model.PrimaryPart then
+					local currentPos = model.PrimaryPart.Position
+					local bobOffset = math.sin(tick() * 2) * 0.3
+					local _, modelSize = model:GetBoundingBox()
+					local halfH = modelSize.Y / 2
+
+					local midRay = workspace:Raycast(
+						Vector3.new(currentPos.X, spawnPos.Y + 50, currentPos.Z),
+						Vector3.new(0, -200, 0),
+						(function()
+							local p = RaycastParams.new()
+							p.FilterType = Enum.RaycastFilterType.Exclude
+							p.FilterDescendantsInstances = { model, character }
+							return p
+						end)()
+					)
+					local groundAtPos = if midRay then midRay.Position.Y else spawnPos.Y
+
+					model:PivotTo(
+						CFrame.new(currentPos.X, groundAtPos + halfH + bobOffset, currentPos.Z)
+						* (model.PrimaryPart.CFrame - model.PrimaryPart.CFrame.Position)
+					)
+				end
+				task.wait(0.03)
+			end
+		end
 	end)
 end
 

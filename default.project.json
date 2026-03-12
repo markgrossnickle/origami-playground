@@ -1,8 +1,8 @@
 {
-	"name": "MindTrust Roblox Template",
-	"servePort": 34872,
+	"name": "Origami Playground",
+	"servePort": 34972,
 	"servePlaceIds": [
-		0
+		104211510869162
 	],
 	"tree": {
 		"$className": "DataModel",

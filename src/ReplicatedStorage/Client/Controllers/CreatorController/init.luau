@@ -441,12 +441,13 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	accessory.Name = modelData.name or "Origami Hat"
 	accessory:SetAttribute("OrigamiHat", true)
 
-	-- Create handle from the model parts
+	-- Create handle — all parts must be children of Handle for physics to work
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
 	handle.Size = Vector3.new(1, 1, 1)
 	handle.Transparency = 1
 	handle.CanCollide = false
+	handle.Massless = true
 	handle.Parent = accessory
 
 	-- Attachment for hat positioning (top of head)
@@ -455,22 +456,37 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	attachment.Position = Vector3.new(0, 0, 0)
 	attachment.Parent = handle
 
-	-- Move model parts into accessory and weld to handle
+	-- Get model center for offset calculation
+	local modelCenter = Vector3.zero
+	if model.PrimaryPart then
+		modelCenter = model.PrimaryPart.Position
+	end
+
+	-- Move parts into Handle (not accessory) and weld
+	local partsToMove = {}
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then
-			part.Anchored = false
-			part.CanCollide = false
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = handle
-			weld.Part1 = part
-			weld.Parent = part
-			part.Parent = accessory
+			table.insert(partsToMove, part)
 		end
 	end
 
-	model:Destroy() -- Parts moved out, clean up empty model
+	for _, part in ipairs(partsToMove) do
+		local offset = part.CFrame * CFrame.new(-modelCenter)
+		part.Anchored = false
+		part.CanCollide = false
+		part.Massless = true
+		part.CFrame = handle.CFrame * offset
+		part.Parent = handle
 
-	-- Add to character (Roblox places accessories on the head automatically)
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = handle
+		weld.Part1 = part
+		weld.Parent = part
+	end
+
+	model:Destroy()
+
+	-- Add to character (Roblox welds Handle to head via HatAttachment)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		humanoid:AddAccessory(accessory)
@@ -479,8 +495,6 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	end
 
 	_equippedHat = accessory
-
-	-- Track for clear
 	table.insert(_spawnedModels, accessory)
 
 	setStatus("Wearing: " .. accessory.Name, COLORS.success)

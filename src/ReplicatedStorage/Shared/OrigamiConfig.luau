@@ -25,6 +25,7 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "hat", display = "Hat", icon = "🎩" },
 	{ key = "prop", display = "Prop", icon = "🎭" },
 	{ key = "raw", display = "Raw", icon = "📝" },
+	{ key = "animation", display = "Animate", icon = "🎬" },
 }
 
 -- AI models

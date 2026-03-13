@@ -205,6 +205,11 @@ local function createUI()
 	categoryLayout.Parent = categoryRow
 
 	for _, cat in ipairs(OrigamiConfig.CATEGORIES) do
+		-- Animation category is handled by AnimatorController
+		if cat.key == "animation" then
+			continue
+		end
+
 		local btn = Instance.new("TextButton")
 		btn.Name = "Cat_" .. cat.key
 		btn.Size = UDim2.new(0, 72, 1, 0)

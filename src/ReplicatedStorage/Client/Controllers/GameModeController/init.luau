@@ -74,6 +74,28 @@ local function createUI()
 	layout.Padding = UDim.new(0, 4)
 	layout.Parent = bar
 
+	-- Close button (first in layout)
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseBtn"
+	closeBtn.Size = UDim2.new(0, 28, 0, 28)
+	closeBtn.BackgroundColor3 = COLORS.bgLight
+	closeBtn.BorderSizePixel = 0
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = COLORS.textDim
+	closeBtn.TextSize = 12
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.AutoButtonColor = true
+	closeBtn.LayoutOrder = 0
+	closeBtn.Parent = bar
+
+	local closeBtnCorner = Instance.new("UICorner")
+	closeBtnCorner.CornerRadius = UDim.new(0, 6)
+	closeBtnCorner.Parent = closeBtn
+
+	closeBtn.Activated:Connect(function()
+		GameModeController:Hide()
+	end)
+
 	for i, mode in ipairs(GameMode.MODES) do
 		local btn = Instance.new("TextButton")
 		btn.Name = "Mode_" .. mode.key
@@ -99,6 +121,8 @@ local function createUI()
 		end)
 	end
 
+	-- Start hidden (opened via sidebar)
+	_gui.Enabled = false
 	_gui.Parent = Player.PlayerGui
 
 	-- Listen for mode changes to update highlights
@@ -107,6 +131,28 @@ local function createUI()
 	end)
 
 	updateHighlights()
+end
+
+function GameModeController:Toggle()
+	if _gui then
+		_gui.Enabled = not _gui.Enabled
+	end
+end
+
+function GameModeController:Show()
+	if _gui then
+		_gui.Enabled = true
+	end
+end
+
+function GameModeController:Hide()
+	if _gui then
+		_gui.Enabled = false
+	end
+end
+
+function GameModeController:IsVisible(): boolean
+	return _gui ~= nil and _gui.Enabled
 end
 
 function GameModeController:KnitInit() end

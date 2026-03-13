@@ -372,7 +372,7 @@ local function createUI()
 	-- Title
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
-	title.Size = UDim2.new(1, -16, 0, 24)
+	title.Size = UDim2.new(1, -40, 0, 24)
 	title.Position = UDim2.new(0, 8, 0, yPos)
 	title.BackgroundTransparency = 1
 	title.Text = "DM Mode"
@@ -381,6 +381,28 @@ local function createUI()
 	title.Font = Enum.Font.GothamBold
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = container
+
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseBtn"
+	closeBtn.Size = UDim2.new(0, 24, 0, 24)
+	closeBtn.Position = UDim2.new(1, -32, 0, yPos)
+	closeBtn.BackgroundColor3 = COLORS.bgLight
+	closeBtn.BorderSizePixel = 0
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = COLORS.textDim
+	closeBtn.TextSize = 12
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.AutoButtonColor = true
+	closeBtn.Parent = container
+
+	local closeBtnCorner = Instance.new("UICorner")
+	closeBtnCorner.CornerRadius = UDim.new(0, 6)
+	closeBtnCorner.Parent = closeBtn
+
+	closeBtn.Activated:Connect(function()
+		DMController:Hide()
+	end)
 	yPos += 30
 
 	-- Style selector row (scrollable)

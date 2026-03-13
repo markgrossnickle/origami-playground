@@ -50,7 +50,6 @@ local _equippedHat: Accessory? = nil
 local _activeVehicle: Model? = nil
 local _vehicleSeat: VehicleSeat? = nil
 local _avatarApplied = false
-local _dmToggleButton: TextButton
 
 -- Colors
 local COLORS = {
@@ -375,28 +374,86 @@ local function createUI()
 	queuePadding.PaddingRight = UDim.new(0, 8)
 	queuePadding.Parent = _queueFrame
 
-	-- DM Mode toggle button (top-left corner)
-	_dmToggleButton = Instance.new("TextButton")
-	_dmToggleButton.Name = "DMToggle"
-	_dmToggleButton.Size = UDim2.new(0, 100, 0, 32)
-	_dmToggleButton.Position = UDim2.new(0, 10, 0, 10)
-	_dmToggleButton.BackgroundColor3 = Color3.fromRGB(120, 60, 180)
-	_dmToggleButton.BorderSizePixel = 0
-	_dmToggleButton.Text = "DM Mode"
-	_dmToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	_dmToggleButton.TextSize = 14
-	_dmToggleButton.Font = Enum.Font.GothamBold
-	_dmToggleButton.AutoButtonColor = true
-	_dmToggleButton.Parent = _gui
+	-- Left sidebar with toggle buttons (own ScreenGui so it stays visible in all modes)
+	local sidebarGui = Instance.new("ScreenGui")
+	sidebarGui.Name = "SidebarGui"
+	sidebarGui.ResetOnSpawn = false
+	sidebarGui.DisplayOrder = 10
+	sidebarGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	sidebarGui.Parent = Player.PlayerGui
 
-	local dmToggleCorner = Instance.new("UICorner")
-	dmToggleCorner.CornerRadius = UDim.new(0, 8)
-	dmToggleCorner.Parent = _dmToggleButton
+	local sidebar = Instance.new("Frame")
+	sidebar.Name = "Sidebar"
+	sidebar.Size = UDim2.new(0, 42, 0, 0)
+	sidebar.Position = UDim2.new(0, 10, 0.5, 0)
+	sidebar.AnchorPoint = Vector2.new(0, 0.5)
+	sidebar.AutomaticSize = Enum.AutomaticSize.Y
+	sidebar.BackgroundColor3 = COLORS.bg
+	sidebar.BackgroundTransparency = 0.1
+	sidebar.BorderSizePixel = 0
+	sidebar.Parent = sidebarGui
 
-	_dmToggleButton.Activated:Connect(function()
+	local sidebarCorner = Instance.new("UICorner")
+	sidebarCorner.CornerRadius = UDim.new(0, 10)
+	sidebarCorner.Parent = sidebar
+
+	local sidebarPadding = Instance.new("UIPadding")
+	sidebarPadding.PaddingTop = UDim.new(0, 4)
+	sidebarPadding.PaddingBottom = UDim.new(0, 4)
+	sidebarPadding.PaddingLeft = UDim.new(0, 4)
+	sidebarPadding.PaddingRight = UDim.new(0, 4)
+	sidebarPadding.Parent = sidebar
+
+	local sidebarLayout = Instance.new("UIListLayout")
+	sidebarLayout.FillDirection = Enum.FillDirection.Vertical
+	sidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	sidebarLayout.Padding = UDim.new(0, 4)
+	sidebarLayout.Parent = sidebar
+
+	-- Helper to make sidebar icon buttons
+	local function makeSidebarButton(name: string, label: string, color: Color3, order: number): TextButton
+		local btn = Instance.new("TextButton")
+		btn.Name = name
+		btn.Size = UDim2.new(0, 34, 0, 34)
+		btn.BackgroundColor3 = color
+		btn.BorderSizePixel = 0
+		btn.Text = label
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.TextSize = 9
+		btn.Font = Enum.Font.GothamBold
+		btn.AutoButtonColor = true
+		btn.LayoutOrder = order
+		btn.Parent = sidebar
+
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 8)
+		corner.Parent = btn
+
+		return btn
+	end
+
+	local modesBtn = makeSidebarButton("ModesBtn", "Mode", COLORS.accentDim, 1)
+	local dmBtn = makeSidebarButton("DMBtn", "DM", Color3.fromRGB(120, 60, 180), 2)
+	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 3)
+
+	modesBtn.Activated:Connect(function()
+		local GameModeController = Knit.GetController("GameModeController")
+		if GameModeController then
+			GameModeController:Toggle()
+		end
+	end)
+
+	dmBtn.Activated:Connect(function()
 		local DMController = Knit.GetController("DMController")
 		if DMController then
 			DMController:Toggle()
+		end
+	end)
+
+	animBtn.Activated:Connect(function()
+		local AnimatorController = Knit.GetController("AnimatorController")
+		if AnimatorController then
+			AnimatorController:Toggle()
 		end
 	end)
 

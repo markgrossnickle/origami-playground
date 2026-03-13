@@ -407,7 +407,7 @@ local function createUI()
 	-- Title row
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
-	title.Size = UDim2.new(1, -20, 0, 24)
+	title.Size = UDim2.new(1, -40, 0, 24)
 	title.Position = UDim2.new(0, 10, 0, 8)
 	title.BackgroundTransparency = 1
 	title.Text = "Animator"
@@ -416,6 +416,28 @@ local function createUI()
 	title.Font = Enum.Font.GothamBold
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = container
+
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseBtn"
+	closeBtn.Size = UDim2.new(0, 24, 0, 24)
+	closeBtn.Position = UDim2.new(1, -32, 0, 8)
+	closeBtn.BackgroundColor3 = COLORS.bgLight
+	closeBtn.BorderSizePixel = 0
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = COLORS.textDim
+	closeBtn.TextSize = 12
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.AutoButtonColor = true
+	closeBtn.Parent = container
+
+	local closeBtnCorner = Instance.new("UICorner")
+	closeBtnCorner.CornerRadius = UDim.new(0, 6)
+	closeBtnCorner.Parent = closeBtn
+
+	closeBtn.Activated:Connect(function()
+		AnimatorController:Hide()
+	end)
 
 	-- Spawn / Respawn button
 	_spawnButton = Instance.new("TextButton")
@@ -529,7 +551,31 @@ local function createUI()
 		end
 	end)
 
+	-- Start hidden
+	_gui.Enabled = false
 	_gui.Parent = Player.PlayerGui
+end
+
+function AnimatorController:Toggle()
+	if _gui then
+		_gui.Enabled = not _gui.Enabled
+	end
+end
+
+function AnimatorController:Show()
+	if _gui then
+		_gui.Enabled = true
+	end
+end
+
+function AnimatorController:Hide()
+	if _gui then
+		_gui.Enabled = false
+	end
+end
+
+function AnimatorController:IsVisible(): boolean
+	return _gui ~= nil and _gui.Enabled
 end
 
 function AnimatorController:KnitInit() end

@@ -662,7 +662,8 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 
 		if ok and result and result.success and result.model then
 			local modelData = result.model
-			local cat = modelData.category or category
+			-- Use the user's selected category for routing — LLM category only as fallback for "raw"
+			local cat = if category == "raw" then (modelData.category or "prop") else category
 
 			local buildOk, buildErr = pcall(function()
 				local builtModel = OrigamiBuilder.BuildModel(modelData)

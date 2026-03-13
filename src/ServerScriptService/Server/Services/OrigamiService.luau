@@ -443,6 +443,8 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 		if humanoid then
 			print("[OrigamiService] Sitting", triggerPlayer.Name, "in seat")
+			-- Transfer network ownership so the client can control vehicle physics
+			seat:SetNetworkOwner(triggerPlayer)
 			seat:Sit(humanoid)
 			print("[OrigamiService] Occupant after Sit:", seat.Occupant)
 		else
@@ -480,6 +482,8 @@ function OrigamiService.Client:ReadyVehicle(player: Player, seat: VehicleSeat)
 	if seat and seat.Parent and seat:GetAttribute("OwnerUserId") == player.UserId then
 		print("[OrigamiService] Unanchoring vehicle seat for", player.Name)
 		seat.Anchored = false
+		-- Give the owner network ownership so physics are client-controlled
+		seat:SetNetworkOwner(player)
 	end
 end
 

@@ -140,13 +140,26 @@ local function createUI()
 		end)
 	end
 
-	-- Model selector row
-	local modelRow = Instance.new("Frame")
+	-- Model selector row (scrollable)
+	local modelClip = Instance.new("Frame")
+	modelClip.Name = "ModelClip"
+	modelClip.Size = UDim2.new(1, -20, 0, 28)
+	modelClip.Position = UDim2.new(0, 10, 0, 40)
+	modelClip.BackgroundTransparency = 1
+	modelClip.ClipsDescendants = true
+	modelClip.Parent = container
+
+	local modelRow = Instance.new("ScrollingFrame")
 	modelRow.Name = "ModelRow"
-	modelRow.Size = UDim2.new(1, -20, 0, 28)
-	modelRow.Position = UDim2.new(0, 10, 0, 40)
+	modelRow.Size = UDim2.new(1, 0, 1, 0)
 	modelRow.BackgroundTransparency = 1
-	modelRow.Parent = container
+	modelRow.BorderSizePixel = 0
+	modelRow.ScrollBarThickness = 2
+	modelRow.ScrollBarImageColor3 = COLORS.accentDim
+	modelRow.ScrollingDirection = Enum.ScrollingDirection.X
+	modelRow.AutomaticCanvasSize = Enum.AutomaticSize.X
+	modelRow.CanvasSize = UDim2.new(0, 0, 0, 28)
+	modelRow.Parent = modelClip
 
 	local modelLayout = Instance.new("UIListLayout")
 	modelLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -579,21 +592,13 @@ function removeQueueEntry(id: number)
 	end)
 end
 
-function submitPrompt()
-	local prompt = _inputBox.Text
-	if not prompt or prompt:match("^%s*$") then
-		setStatus("Type something first!", COLORS.error)
-		return
-	end
+local TEST_MODELS = { "haiku", "flash_lite", "gpt4o_mini", "kimi" }
+local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4o", kimi = "Kimi" }
+local TEST_SPACING = 8 -- studs between each test model
 
-	local category = _selectedCategory
-	local style = _selectedStyle
-	local model = _selectedModel
-	_inputBox.Text = ""
+function submitSingleRequest(prompt: string, category: string, style: string, model: string, placementOffset: Vector3?, labelOverride: string?)
+	local queueId = addQueueEntry(prompt .. (if labelOverride then " [" .. labelOverride .. "]" else ""), category)
 
-	local queueId = addQueueEntry(prompt, category)
-
-	-- Run async so multiple requests can fly in parallel
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
 		local ok, result = OrigamiService:RequestModel(prompt, category, style, model):await()
@@ -603,27 +608,53 @@ function submitPrompt()
 			local cat = modelData.category or category
 
 			local buildOk, buildErr = pcall(function()
-				local model = OrigamiBuilder.BuildModel(modelData)
+				local builtModel = OrigamiBuilder.BuildModel(modelData)
 
-				if cat == "tool" then
-					equipAsTool(model, modelData)
-				elseif cat == "hat" then
-					equipAsHat(model, modelData)
-				elseif cat == "vehicle" then
-					spawnVehicle(model, modelData)
-				elseif cat == "avatar" then
-					applyAvatar(model, modelData)
-				elseif cat == "building" then
-					placeBuilding(model, modelData)
-				elseif cat == "creature" then
-					spawnCreature(model, modelData)
-				else
-					placeModel(model, modelData)
-				end
+				if placementOffset then
+					-- Test mode: place at offset position with model label
+					local character = Player.Character
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+					if rootPart then
+						local basePos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
+						local placePos = basePos + placementOffset
+						builtModel.Parent = workspace
 
-				if cat ~= "tool" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+						local cf, size = builtModel:GetBoundingBox()
+						local pivot = builtModel:GetPivot()
+						local pivotAboveBottom = pivot.Position.Y - (cf.Position.Y - size.Y / 2)
+						builtModel:PivotTo(CFrame.new(placePos.X, rootPart.Position.Y + pivotAboveBottom, placePos.Z))
+					else
+						builtModel.Parent = workspace
+					end
+
+					-- Label with model name instead of creation name
+					addNameLabel(builtModel, labelOverride or model)
+					table.insert(_spawnedModels, builtModel)
+
 					local animType = modelData.animation or "idle_bob"
-					OrigamiBuilder.ApplyAnimation(model, animType)
+					OrigamiBuilder.ApplyAnimation(builtModel, animType)
+				else
+					-- Normal mode: use category-specific placement
+					if cat == "tool" then
+						equipAsTool(builtModel, modelData)
+					elseif cat == "hat" then
+						equipAsHat(builtModel, modelData)
+					elseif cat == "vehicle" then
+						spawnVehicle(builtModel, modelData)
+					elseif cat == "avatar" then
+						applyAvatar(builtModel, modelData)
+					elseif cat == "building" then
+						placeBuilding(builtModel, modelData)
+					elseif cat == "creature" then
+						spawnCreature(builtModel, modelData)
+					else
+						placeModel(builtModel, modelData)
+					end
+
+					if cat ~= "tool" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+						local animType = modelData.animation or "idle_bob"
+						OrigamiBuilder.ApplyAnimation(builtModel, animType)
+					end
 				end
 			end)
 
@@ -644,6 +675,36 @@ function submitPrompt()
 
 		removeQueueEntry(queueId)
 	end)
+end
+
+function submitPrompt()
+	local prompt = _inputBox.Text
+	if not prompt or prompt:match("^%s*$") then
+		setStatus("Type something first!", COLORS.error)
+		return
+	end
+
+	local category = _selectedCategory
+	local style = _selectedStyle
+	local model = _selectedModel
+	_inputBox.Text = ""
+
+	if model == "test" then
+		-- Test All mode: fire all test models in parallel, placed in a line
+		local totalWidth = (#TEST_MODELS - 1) * TEST_SPACING
+		local character = Player.Character
+		local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+		local rightVector = if rootPart then rootPart.CFrame.RightVector else Vector3.new(1, 0, 0)
+
+		for i, testModel in ipairs(TEST_MODELS) do
+			local offsetDist = -totalWidth / 2 + (i - 1) * TEST_SPACING
+			local offset = rightVector * offsetDist
+			submitSingleRequest(prompt, category, style, testModel, offset, TEST_DISPLAY[testModel])
+		end
+	else
+		-- Normal single-model mode
+		submitSingleRequest(prompt, category, style, model)
+	end
 end
 
 function equipAsTool(model: Model, modelData: { [string]: any })

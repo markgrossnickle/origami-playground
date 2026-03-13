@@ -148,7 +148,9 @@ function CreatureAI.Start(
 
 			if distance > 1 then
 				local lookCF = CFrame.lookAt(startPos, Vector3.new(targetX, startPos.Y, targetZ))
-				local lookRot = lookCF - lookCF.Position
+				-- Flip 180°: animation offsets are relative (ToObjectSpace cancels OrigamiBuilder flip),
+				-- so in local space the face is still +Z. CFrame.lookAt points -Z at target → flip needed.
+				local lookRot = (lookCF - lookCF.Position) * CFrame.Angles(0, math.pi, 0)
 				local steps = math.max(1, math.floor(distance / (locoConfig.speed * dt)))
 
 				-- Slither: curved sinuous path

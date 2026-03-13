@@ -8,6 +8,7 @@ local Trove = require(ReplicatedStorage.Packages.Trove)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
+local GameMode = require(ReplicatedStorage.Shared.GameMode)
 
 local Player = Players.LocalPlayer
 
@@ -1049,6 +1050,17 @@ function CreatorController:KnitStart()
 
 	local OrigamiService = Knit.GetService("OrigamiService")
 	OrigamiService.ModelGenerated:Connect(function(modelData) end)
+
+	-- Hide creator UI when switching away from sandbox, show + clear when returning
+	GameMode.Changed:Connect(function(newMode, oldMode)
+		if newMode == "sandbox" then
+			_gui.Enabled = true
+			clearAllCreations()
+		else
+			clearAllCreations()
+			_gui.Enabled = false
+		end
+	end)
 end
 
 return CreatorController

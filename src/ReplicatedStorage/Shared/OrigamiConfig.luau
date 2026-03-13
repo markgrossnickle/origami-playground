@@ -35,7 +35,6 @@ OrigamiConfig.MODELS = {
 	{ key = "opus", display = "Opus" },
 	{ key = "flash_lite", display = "Flash" },
 	{ key = "gpt4o_mini", display = "GPT4o" },
-	{ key = "kimi", display = "Kimi" },
 	{ key = "test", display = "Test All" },
 }
 

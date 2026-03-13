@@ -649,8 +649,8 @@ function removeQueueEntry(id: number)
 	end)
 end
 
-local TEST_MODELS = { "haiku", "flash_lite", "gpt4o_mini", "kimi" }
-local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4o", kimi = "Kimi" }
+local TEST_MODELS = { "haiku", "flash_lite", "gpt4o_mini" }
+local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4o" }
 local TEST_SPACING = 8 -- studs between each test model
 
 function submitSingleRequest(prompt: string, category: string, style: string, model: string, placementOffset: Vector3?, labelOverride: string?)
@@ -726,6 +726,7 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 			end
 		else
 			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
+			warn("[OrigamiCreator] Request failed:", errMsg)
 			updateQueueEntry(queueId, "Failed: " .. errMsg:sub(1, 30), COLORS.error)
 			_failSound:Play()
 		end

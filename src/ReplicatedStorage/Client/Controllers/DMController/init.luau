@@ -237,6 +237,7 @@ local function addItem()
 			refreshItemList()
 		else
 			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
+			warn("[DM] AddToScene failed:", errMsg)
 			setStatus("Failed: " .. tostring(errMsg):sub(1, 40), COLORS.error)
 			setProgress("")
 			_failSound:Play()
@@ -276,6 +277,7 @@ local function buildScene()
 			refreshItemList()
 		else
 			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
+			warn("[DM] BuildScene failed:", errMsg)
 			setStatus("Scene failed: " .. tostring(errMsg):sub(1, 40), COLORS.error)
 			setProgress("")
 			_failSound:Play()

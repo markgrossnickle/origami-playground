@@ -46,7 +46,7 @@ OrigamiConfig.STYLES = {
 	{ key = "balloon", display = "Balloon" },
 	{ key = "wireframe", display = "Wireframe" },
 	{ key = "crystal", display = "Crystal" },
-	{ key = "plush", display = "Plush" },
+	{ key = "plastic", display = "Plastic" },
 	{ key = "steampunk", display = "Steampunk" },
 	{ key = "pixel", display = "Pixel" },
 	{ key = "neon", display = "Neon" },

@@ -49,7 +49,7 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 
 		part.Name = partData.name or ("Part" .. i)
 		part.Anchored = if partData.anchored ~= nil then partData.anchored else true
-		part.CanCollide = if partData.canCollide ~= nil then partData.canCollide else false
+		part.CanCollide = if partData.canCollide ~= nil then partData.canCollide else true
 
 		-- Position
 		if partData.position then

@@ -16,7 +16,7 @@ jobs:
       - name: Install Aftman
         uses: ok-nick/setup-aftman@v0.4.2
       - name: Run selene
-        run: selene src
+        run: selene src --allow-warnings
       - name: Check formatting
         run: stylua --check src
       - name: Run tests

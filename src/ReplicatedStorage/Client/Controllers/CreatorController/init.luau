@@ -57,6 +57,7 @@ local _modelButtons: { [string]: TextButton } = {}
 local _queueFrame: Frame
 local _queueEntries: { { frame: Frame, label: TextLabel, dot: TextLabel } } = {}
 local _nextQueueId = 0
+local _uiMinimized = false
 
 -- Track all spawned creations for Clear
 local _spawnedModels: { Model } = {}
@@ -194,6 +195,44 @@ local function createUI()
 	local containerCorner = Instance.new("UICorner")
 	containerCorner.CornerRadius = UDim.new(0, 12)
 	containerCorner.Parent = container
+
+	-- Minimize/maximize toggle button (top-right of container)
+	local minimizeBtn = Instance.new("TextButton")
+	minimizeBtn.Name = "MinimizeBtn"
+	minimizeBtn.Size = UDim2.new(0, 28, 0, 20)
+	minimizeBtn.Position = UDim2.new(1, -34, 0, 4)
+	minimizeBtn.BackgroundColor3 = COLORS.bgLight
+	minimizeBtn.BorderSizePixel = 0
+	minimizeBtn.Text = "v"
+	minimizeBtn.TextColor3 = COLORS.textDim
+	minimizeBtn.TextSize = FONT_SM
+	minimizeBtn.Font = Enum.Font.GothamBold
+	minimizeBtn.AutoButtonColor = true
+	minimizeBtn.Parent = container
+
+	local minBtnCorner = Instance.new("UICorner")
+	minBtnCorner.CornerRadius = UDim.new(0, 4)
+	minBtnCorner.Parent = minimizeBtn
+
+	-- Rows that get hidden when minimized (populated after creation)
+	local _collapsibleRows = {}
+
+	local function toggleMinimize()
+		_uiMinimized = not _uiMinimized
+		minimizeBtn.Text = if _uiMinimized then "^" else "v"
+		for _, row in _collapsibleRows do
+			row.Visible = not _uiMinimized
+		end
+		-- Resize container: minimized = just input row + padding
+		local minH = ROW_HEIGHT + 24
+		container.Size = UDim2.new(containerWidth, 0, 0, if _uiMinimized then minH else containerH)
+		container.Position = UDim2.new(containerX, 0, 1, -(if _uiMinimized then minH + 64 else containerH + 64))
+		-- Move input row to top when minimized
+		inputRow.Position = UDim2.new(0, 10, 0, if _uiMinimized then 8 else (BTN_HEIGHT + 12) * 2 + BTN_HEIGHT + 12)
+		_statusLabel.Visible = not _uiMinimized
+	end
+
+	minimizeBtn.Activated:Connect(toggleMinimize)
 
 	-- Style buttons row (scrollable)
 	local styleClip = Instance.new("Frame")
@@ -437,6 +476,16 @@ local function createUI()
 	_statusLabel.TextSize = FONT_SM + 1
 	_statusLabel.Font = Enum.Font.Gotham
 	_statusLabel.Parent = container
+
+	-- Register collapsible rows for minimize toggle
+	table.insert(_collapsibleRows, styleClip)
+	table.insert(_collapsibleRows, modelClip)
+	table.insert(_collapsibleRows, categoryRow)
+
+	-- Start minimized on mobile
+	if IS_MOBILE then
+		toggleMinimize()
+	end
 
 	-- Wire up submit
 	_createButton.Activated:Connect(function()

@@ -264,6 +264,13 @@ function OrigamiService.Client:ApplyAvatar(player: Player, modelData)
 		end
 	end
 
+	-- Undo OrigamiBuilder's 180° Y flip — avatar uses body-part-local coordinates, not world space
+	for _, child in ipairs(model:GetDescendants()) do
+		if child:IsA("BasePart") then
+			child.CFrame = CFrame.Angles(0, math.pi, 0) * child.CFrame
+		end
+	end
+
 	-- Weld origami parts to character
 	local builtParts = model:GetDescendants()
 	local partsByName = {}

@@ -91,7 +91,7 @@ local function createUI()
 	_gui.DisplayOrder = 5
 	_gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-	-- Currency bar (top center)
+	-- Currency bar (top center) — hidden until economy is live
 	local currencyBar = Instance.new("Frame")
 	currencyBar.Name = "CurrencyBar"
 	currencyBar.Size = UDim2.new(0, 200, 0, 32)
@@ -99,6 +99,7 @@ local function createUI()
 	currencyBar.BackgroundColor3 = COLORS.bg
 	currencyBar.BackgroundTransparency = 0.2
 	currencyBar.BorderSizePixel = 0
+	currencyBar.Visible = false
 	currencyBar.Parent = _gui
 
 	local currBarCorner = Instance.new("UICorner")

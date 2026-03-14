@@ -2,11 +2,16 @@ local RunService = game:GetService("RunService")
 
 local OrigamiBuilder = {}
 
+-- Map shape names to Roblox part types (case-insensitive, with aliases)
 local SHAPE_MAP = {
-	Block = Enum.PartType.Block,
-	Ball = Enum.PartType.Ball,
-	Cylinder = Enum.PartType.Cylinder,
-	Wedge = Enum.PartType.Wedge,
+	block = Enum.PartType.Block,
+	cube = Enum.PartType.Block,
+	box = Enum.PartType.Block,
+	ball = Enum.PartType.Ball,
+	sphere = Enum.PartType.Ball,
+	cylinder = Enum.PartType.Cylinder,
+	tube = Enum.PartType.Cylinder,
+	wedge = Enum.PartType.Wedge,
 }
 
 local MATERIAL_MAP = {
@@ -32,10 +37,10 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 
 	local parts = modelData.parts or {}
 	for i, partData in ipairs(parts) do
-		local shape = partData.shape or "Block"
+		local shape = string.lower(partData.shape or "block")
 		local part: Part
 
-		if shape == "Wedge" then
+		if shape == "wedge" then
 			part = Instance.new("WedgePart")
 		else
 			part = Instance.new("Part")

@@ -1,3 +1,4 @@
+local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -512,20 +513,12 @@ local function createUI()
 	end
 
 	local modesBtn = makeSidebarButton("ModesBtn", "Mode", COLORS.accentDim, 1)
-	local dmBtn = makeSidebarButton("DMBtn", "DM", Color3.fromRGB(120, 60, 180), 2)
-	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 3)
+	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 2)
 
 	modesBtn.Activated:Connect(function()
 		local GameModeController = Knit.GetController("GameModeController")
 		if GameModeController then
 			GameModeController:Toggle()
-		end
-	end)
-
-	dmBtn.Activated:Connect(function()
-		local DMController = Knit.GetController("DMController")
-		if DMController then
-			DMController:Toggle()
 		end
 	end)
 
@@ -536,7 +529,7 @@ local function createUI()
 		end
 	end)
 
-	-- Browse button (below DM toggle)
+	-- Browse button
 	_browseButton = Instance.new("TextButton")
 	_browseButton.Name = "BrowseToggle"
 	_browseButton.Size = UDim2.new(0, 100, 0, 32)
@@ -697,12 +690,6 @@ function clearAllCreations()
 	local OrigamiService = Knit.GetService("OrigamiService")
 	OrigamiService:DestroyVehicleSeats():catch(function(err)
 		warn("[Clear] Failed to destroy server vehicle seats:", err)
-	end)
-
-	-- Clear DM mode scene (server-side models + creature AIs)
-	local DMService = Knit.GetService("DMService")
-	DMService:ClearScene():catch(function(err)
-		warn("[Clear] Failed to clear DM scene:", err)
 	end)
 
 	-- Reset avatar
@@ -962,6 +949,74 @@ function submitPrompt()
 	end
 end
 
+local function executeHitActions(actions, startIndex, hitResult, character, params, ray)
+	for i = startIndex, #actions do
+		local act = actions[i]
+		local action = act.action
+
+		-- Auto-raycast if no hit target yet
+		if not hitResult and action ~= "spawn" and action ~= "raycast" then
+			hitResult = workspace:Raycast(ray.Origin, ray.Direction * 20, params)
+		end
+
+		if action == "raycast" then
+			local range = act.range or 20
+			hitResult = workspace:Raycast(ray.Origin, ray.Direction * range, params)
+
+		elseif action == "destroy" then
+			if hitResult and hitResult.Instance then
+				local radius = act.radius or 0
+				if radius > 0 then
+					for _, p in workspace:GetPartBoundsInRadius(hitResult.Position, radius) do
+						if not p:IsDescendantOf(character) then p:Destroy() end
+					end
+				else
+					hitResult.Instance:Destroy()
+				end
+			end
+
+		elseif action == "force" then
+			if hitResult and hitResult.Instance then
+				local hit = hitResult.Instance
+				if hit.Anchored then hit.Anchored = false end
+				local mag = act.magnitude or 50
+				local dirType = act.direction or "forward"
+				local forceDir
+				if dirType == "up" then
+					forceDir = Vector3.new(0, 1, 0)
+				elseif dirType == "away" then
+					forceDir = (hit.Position - ray.Origin).Unit
+				else
+					forceDir = ray.Direction
+				end
+				hit.AssemblyLinearVelocity = forceDir * mag
+			end
+
+		elseif action == "recolor" then
+			if hitResult and hitResult.Instance then
+				local hit = hitResult.Instance
+				if act.color then
+					hit.Color = Color3.fromRGB(act.color[1], act.color[2], act.color[3])
+				end
+				if act.material then
+					hit.Material = Enum.Material[act.material] or hit.Material
+				end
+			end
+
+		elseif action == "anchor" then
+			if hitResult and hitResult.Instance then
+				hitResult.Instance.Anchored = (act.freeze ~= false)
+			end
+
+		elseif action == "resize" then
+			if hitResult and hitResult.Instance then
+				local scale = math.clamp(act.scale or 1, 0.3, 3)
+				hitResult.Instance.Size = hitResult.Instance.Size * scale
+			end
+		end
+	end
+end
+
 function equipAsTool(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
@@ -1029,6 +1084,95 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		humanoid:EquipTool(tool)
+	end
+
+	-- Wire up click behavior from LLM attributes
+	local attrs = modelData.attributes or {}
+	local actions = attrs.OnClick
+	if actions and #actions > 0 then
+		local cooldown = attrs.Cooldown or 0.5
+		local lastClick = 0
+
+		tool.Activated:Connect(function()
+			local now = tick()
+			if now - lastClick < cooldown then return end
+			lastClick = now
+
+			local character = Player.Character
+			if not character then return end
+
+			local camera = workspace.CurrentCamera
+			local mouse = Player:GetMouse()
+			local ray = camera:ScreenPointToRay(mouse.X, mouse.Y)
+			local params = RaycastParams.new()
+			params.FilterDescendantsInstances = { character }
+
+			-- Find first spawn action index (if any)
+			local spawnIndex = nil
+			for i, act in actions do
+				if act.action == "spawn" then
+					spawnIndex = i
+					break
+				end
+			end
+
+			if spawnIndex then
+				-- Phase 1: execute pre-spawn actions (raycasts before spawn are ignored for now)
+				-- Phase 2: spawn projectiles, defer post-spawn actions to on-hit
+				local act = actions[spawnIndex]
+				local rootPart = character:FindFirstChild("HumanoidRootPart")
+				if not rootPart then return end
+
+				local count = act.count or 1
+				local spread = math.rad(act.spread or 0)
+				local speed = act.speed or 100
+				local lifetime = act.lifetime or 3
+				local useGravity = if act.gravity == false then false else true
+				local size = act.size or 0.5
+				local shape = act.shape or "Ball"
+				local color = act.color or { 255, 200, 50 }
+				local material = act.material or "Neon"
+				local transparency = act.transparency or 0
+
+				for i = 1, count do
+					local dir = ray.Direction
+					if spread > 0 then
+						local rx = (math.random() - 0.5) * 2 * spread
+						local ry = (math.random() - 0.5) * 2 * spread
+						dir = (CFrame.new(Vector3.zero, dir) * CFrame.Angles(rx, ry, 0)).LookVector
+					end
+
+					local proj = Instance.new("Part")
+					proj.Shape = Enum.PartType[shape] or Enum.PartType.Ball
+					proj.Size = Vector3.new(size, size, size)
+					proj.Material = Enum.Material[material] or Enum.Material.Neon
+					proj.Color = Color3.fromRGB(color[1] or 255, color[2] or 200, color[3] or 50)
+					proj.Transparency = transparency
+					proj.CFrame = CFrame.new(rootPart.Position + ray.Direction * 3)
+					proj.Anchored = false
+					proj.CanCollide = true
+					proj.Parent = workspace
+					proj.AssemblyLinearVelocity = dir * speed
+					if not useGravity then
+						proj.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+					end
+					Debris:AddItem(proj, lifetime)
+
+					-- On-hit: run post-spawn actions on the touched target
+					if spawnIndex < #actions then
+						proj.Touched:Connect(function(touchedPart)
+							if touchedPart:IsDescendantOf(character) or touchedPart == proj then return end
+							local hitResult = { Instance = touchedPart, Position = proj.Position }
+							executeHitActions(actions, spawnIndex + 1, hitResult, character, params, ray)
+							proj:Destroy()
+						end)
+					end
+				end
+			else
+				-- No spawn: execute all actions sequentially (raycast + hit actions)
+				executeHitActions(actions, 1, nil, character, params, ray)
+			end
+		end)
 	end
 end
 
@@ -1106,6 +1250,94 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	model:Destroy()
 
 	_equippedHat = head -- marker; cleanup uses OrigamiHat attribute
+
+	-- Wire up hat behavioral effects from LLM attributes
+	local attrs = modelData.attributes or {}
+	local hatEffect = attrs.HatEffect
+	if hatEffect then
+		local keyName = attrs.EffectKey or "Space"
+		local keyCode = Enum.KeyCode[keyName] or Enum.KeyCode.Space
+
+		if hatEffect == "fly" then
+			local flyForce = attrs.FlyForce or 40
+			local rootPart = character:FindFirstChild("HumanoidRootPart")
+			if rootPart then
+				local bodyVel = Instance.new("BodyVelocity")
+				bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
+				bodyVel.Velocity = Vector3.zero
+				bodyVel.Parent = rootPart
+				bodyVel:SetAttribute("OrigamiHatEffect", true)
+
+				-- Spinning propeller parts
+				local spinPartsPrefix = attrs.SpinParts
+				local spinSpeed = math.rad(attrs.SpinSpeed or 720)
+				local spinWelds = {}
+				if spinPartsPrefix then
+					for _, child in character:GetChildren() do
+						if child:GetAttribute("OrigamiHat") and child.Name:lower():find(spinPartsPrefix:lower()) then
+							-- Find the WeldConstraint and replace with Motor6D for animation
+							for _, w in child:GetChildren() do
+								if w:IsA("WeldConstraint") then
+									local motor = Instance.new("Motor6D")
+									motor.Part0 = head
+									motor.Part1 = child
+									motor.C0 = head.CFrame:ToObjectSpace(child.CFrame)
+									motor.C1 = CFrame.new()
+									motor.Parent = child
+									w:Destroy()
+									table.insert(spinWelds, motor)
+									break
+								end
+							end
+						end
+					end
+				end
+
+				local conn
+				conn = RunService.Heartbeat:Connect(function(dt)
+					-- Check hat still exists
+					local hatExists = false
+					for _, child in character:GetChildren() do
+						if child:GetAttribute("OrigamiHat") then hatExists = true; break end
+					end
+					if not hatExists or not rootPart.Parent then
+						conn:Disconnect(); bodyVel:Destroy(); return
+					end
+
+					local keyDown = UserInputService:IsKeyDown(keyCode)
+					bodyVel.Velocity = if keyDown then Vector3.new(0, flyForce, 0) else Vector3.zero
+
+					-- Spin propeller parts while key held
+					if keyDown then
+						for _, motor in spinWelds do
+							motor.C0 = motor.C0 * CFrame.Angles(0, spinSpeed * dt, 0)
+						end
+					end
+				end)
+			end
+
+		elseif hatEffect == "speed" then
+			local boost = attrs.SpeedBoost or 1.5
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				local origSpeed = humanoid.WalkSpeed
+				humanoid.WalkSpeed = origSpeed * boost
+
+				-- Watch for hat removal to restore speed
+				local conn
+				conn = RunService.Heartbeat:Connect(function()
+					local hatExists = false
+					for _, child in character:GetChildren() do
+						if child:GetAttribute("OrigamiHat") then hatExists = true; break end
+					end
+					if not hatExists then
+						humanoid.WalkSpeed = origSpeed
+						conn:Disconnect()
+					end
+				end)
+			end
+		end
+	end
 end
 
 function spawnVehicle(model: Model, modelData: { [string]: any })
@@ -1143,12 +1375,20 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	-- Seat sits 1 stud above ground (inside lower portion of car)
 	placementPos = Vector3.new(placementPos.X, groundY + 1, placementPos.Z)
 
+	-- Read LLM-driven physics attributes
+	local attrs = modelData.attributes or {}
+	local speed = attrs.Speed or 50
+	local torque = attrs.Torque or 40
+	local turnSpeed = attrs.TurnSpeed or 8
+	local canFly = attrs.CanFly
+	local flySpeed = attrs.FlySpeed or 30
+
 	-- Create server-side VehicleSeat (Sit() requires server authority)
 	local OrigamiService = Knit.GetService("OrigamiService")
 	print("[Vehicle] Requesting server seat at", placementPos)
 	local ok, seat =
 		OrigamiService
-			:CreateVehicleSeat(placementPos, lookY, modelName, { X = modelSize.X, Y = modelSize.Y, Z = modelSize.Z })
+			:CreateVehicleSeat(placementPos, lookY, modelName, { X = modelSize.X, Y = modelSize.Y, Z = modelSize.Z }, { Speed = speed, Torque = torque, TurnSpeed = turnSpeed })
 			:await()
 
 	if not ok or not seat then
@@ -1184,6 +1424,27 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	print("[Vehicle] Calling ReadyVehicle to unanchor seat")
 	OrigamiService:ReadyVehicle(seat):await()
 	print("[Vehicle] Vehicle ready, seat anchored:", seat.Anchored)
+
+	-- Add flight capability if LLM specified CanFly
+	if canFly and seat then
+		local bodyVel = Instance.new("BodyVelocity")
+		bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
+		bodyVel.Velocity = Vector3.zero
+		bodyVel.Parent = seat
+
+		local flyConn
+		flyConn = RunService.Heartbeat:Connect(function()
+			if not seat or not seat.Parent then
+				flyConn:Disconnect()
+				return
+			end
+			if seat.Occupant and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+				bodyVel.Velocity = Vector3.new(0, flySpeed, 0)
+			else
+				bodyVel.Velocity = Vector3.new(0, math.max(-20, seat.AssemblyLinearVelocity.Y - 1), 0)
+			end
+		end)
+	end
 
 	_activeVehicle = model
 	_vehicleSeat = seat

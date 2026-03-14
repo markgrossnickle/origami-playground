@@ -397,8 +397,10 @@ function OrigamiService.Client:ResetAvatar(player: Player)
 	return { success = true }
 end
 
-function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vector3, lookY: number, modelName: string, modelSizeData: { X: number, Y: number, Z: number })
+function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vector3, lookY: number, modelName: string, modelSizeData: { X: number, Y: number, Z: number }, physicsData: { Speed: number?, Torque: number?, TurnSpeed: number? }?)
 	print("[OrigamiService] CreateVehicleSeat called by", player.Name, "at", position)
+
+	local physics = physicsData or {}
 
 	-- Create VehicleSeat on server so Sit() works
 	local seat = Instance.new("VehicleSeat")
@@ -408,9 +410,9 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 	seat.Anchored = true -- stays anchored until client welds visual parts and calls ReadyVehicle
 	seat.CanCollide = true
 	seat.Transparency = 1
-	seat.MaxSpeed = 50
-	seat.Torque = 40
-	seat.TurnSpeed = 8
+	seat.MaxSpeed = physics.Speed or 50
+	seat.Torque = physics.Torque or 40
+	seat.TurnSpeed = physics.TurnSpeed or 8
 	seat.Material = Enum.Material.SmoothPlastic
 	seat:SetAttribute("OrigamiVehicle", true)
 	seat:SetAttribute("OwnerUserId", player.UserId)

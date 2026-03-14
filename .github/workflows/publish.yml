@@ -1,0 +1,60 @@
+name: Publish to Roblox
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    name: Lint, Format & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+      - name: Run selene
+        run: selene src
+      - name: Check formatting
+        run: stylua --check src
+      - name: Run tests
+        run: lune run tests/runner
+
+  publish:
+    name: Build & Publish
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Aftman
+        uses: ok-nick/setup-aftman@v0.4.2
+
+      - name: Install Wally packages
+        run: wally install
+
+      - name: Build place file
+        run: rojo build default.project.json -o Origami-Playground.rbxl
+
+      - name: Install rbxcloud CLI
+        run: |
+          curl -L https://github.com/Sleitnick/rbxcloud/releases/latest/download/rbxcloud-linux-x86_64.tar.gz -o rbxcloud.tar.gz
+          tar -xzf rbxcloud.tar.gz
+          chmod +x rbxcloud
+          sudo mv rbxcloud /usr/local/bin/
+
+      - name: Publish to Roblox
+        run: |
+          rbxcloud experience publish \
+            --api-key "$ROBLOX_API_KEY" \
+            --universe-id "$ROBLOX_UNIVERSE_ID" \
+            --place-id "$ROBLOX_PLACE_ID" \
+            --version-type published \
+            --filename Origami-Playground.rbxl
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          ROBLOX_UNIVERSE_ID: ${{ secrets.ROBLOX_UNIVERSE_ID }}
+          ROBLOX_PLACE_ID: ${{ secrets.ROBLOX_PLACE_ID }}

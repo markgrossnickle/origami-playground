@@ -66,13 +66,4 @@ OrigamiConfig.CRANE_COSTS = {
 -- Folds cost to spawn a cached catalog item
 OrigamiConfig.CACHED_ITEM_COST = 10
 
--- DM (Dungeon Master) mode
-OrigamiConfig.DM = {
-	MAX_SCENE_ITEMS = 15,
-	MAX_ACTIVE_CREATURES = 20,
-	CREATURE_TICK_RATE = 0.05,
-	SCENE_RADIUS = 60,
-	DEFAULT_MODEL = "sonnet",
-}
-
 return OrigamiConfig

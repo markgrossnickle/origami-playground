@@ -51,12 +51,17 @@ jobs:
 
       - name: Publish to Roblox
         run: |
-          rbxcloud experience publish \
-            --api-key "$ROBLOX_API_KEY" \
-            --universe-id "$ROBLOX_UNIVERSE_ID" \
-            --place-id "$ROBLOX_PLACE_ID" \
-            --version-type published \
-            --filename Origami-Playground.rbxl
+          for i in 1 2 3; do
+            rbxcloud experience publish \
+              --api-key "$ROBLOX_API_KEY" \
+              --universe-id "$ROBLOX_UNIVERSE_ID" \
+              --place-id "$ROBLOX_PLACE_ID" \
+              --version-type published \
+              --filename Origami-Playground.rbxl && exit 0
+            echo "Attempt $i failed, retrying in 30s..."
+            sleep 30
+          done
+          exit 1
         env:
           ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
           ROBLOX_UNIVERSE_ID: ${{ secrets.ROBLOX_UNIVERSE_ID }}

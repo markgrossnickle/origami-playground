@@ -915,7 +915,7 @@ local function createCreepButton(parent: GuiObject, tierName: string, posX: numb
 	btn.Parent = parent
 	makeCorner(btn, 6)
 
-	btn.MouseButton1Click:Connect(function()
+	btn.Activated:Connect(function()
 		if not _gameOver and _playerGold >= tier.cost then
 			spawnCreep("player", tierName)
 			updateHUD()
@@ -1091,7 +1091,7 @@ local function createUI()
 	_gameOverLabel = gameOverLabel
 
 	-- Wire events
-	buildButton.MouseButton1Click:Connect(submitPrompt)
+	buildButton.Activated:Connect(submitPrompt)
 	inputBox.FocusLost:Connect(function(enterPressed: boolean)
 		if enterPressed then
 			submitPrompt()

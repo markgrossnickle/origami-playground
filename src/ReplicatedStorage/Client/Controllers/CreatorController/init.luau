@@ -1,9 +1,22 @@
 local Debris = game:GetService("Debris")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
+
+-- Platform detection
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_CONSOLE = GuiService:IsTenFootInterface()
+
+-- Responsive sizing helpers
+local FONT_SM = if IS_CONSOLE then 16 elseif IS_MOBILE then 13 else 11
+local FONT_MD = if IS_CONSOLE then 20 elseif IS_MOBILE then 16 else 14
+local FONT_LG = if IS_CONSOLE then 24 elseif IS_MOBILE then 18 else 16
+local BTN_HEIGHT = if IS_CONSOLE then 44 elseif IS_MOBILE then 36 else 28
+local ROW_HEIGHT = if IS_CONSOLE then 48 elseif IS_MOBILE then 44 else 40
+local SIDEBAR_SIZE = if IS_CONSOLE then 52 elseif IS_MOBILE then 44 else 34
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Trove = require(ReplicatedStorage.Packages.Trove)
@@ -154,11 +167,14 @@ local function createUI()
 	_craneLabel.TextXAlignment = Enum.TextXAlignment.Left
 	_craneLabel.Parent = currencyBar
 
-	-- Container at bottom of screen
+	-- Container at bottom of screen (responsive)
+	local containerWidth = if IS_MOBILE then 0.92 elseif IS_CONSOLE then 0.7 else 0.6
+	local containerX = (1 - containerWidth) / 2
+	local containerH = BTN_HEIGHT * 3 + ROW_HEIGHT + 40 -- 3 button rows + input row + padding
 	local container = Instance.new("Frame")
 	container.Name = "Container"
-	container.Size = UDim2.new(0.6, 0, 0, 188)
-	container.Position = UDim2.new(0.2, 0, 1, -252)
+	container.Size = UDim2.new(containerWidth, 0, 0, containerH)
+	container.Position = UDim2.new(containerX, 0, 1, -(containerH + 64))
 	container.BackgroundColor3 = COLORS.bg
 	container.BackgroundTransparency = 0.1
 	container.BorderSizePixel = 0
@@ -171,7 +187,7 @@ local function createUI()
 	-- Style buttons row (scrollable)
 	local styleClip = Instance.new("Frame")
 	styleClip.Name = "StyleClip"
-	styleClip.Size = UDim2.new(1, -20, 0, 28)
+	styleClip.Size = UDim2.new(1, -20, 0, BTN_HEIGHT)
 	styleClip.Position = UDim2.new(0, 10, 0, 8)
 	styleClip.BackgroundTransparency = 1
 	styleClip.ClipsDescendants = true
@@ -186,7 +202,7 @@ local function createUI()
 	styleRow.ScrollBarImageColor3 = COLORS.accentDim
 	styleRow.ScrollingDirection = Enum.ScrollingDirection.X
 	styleRow.AutomaticCanvasSize = Enum.AutomaticSize.X
-	styleRow.CanvasSize = UDim2.new(0, 0, 0, 28)
+	styleRow.CanvasSize = UDim2.new(0, 0, 0, BTN_HEIGHT)
 	styleRow.Parent = styleClip
 
 	local styleLayout = Instance.new("UIListLayout")
@@ -198,12 +214,12 @@ local function createUI()
 	for _, sty in ipairs(OrigamiConfig.STYLES) do
 		local btn = Instance.new("TextButton")
 		btn.Name = "Style_" .. sty.key
-		btn.Size = UDim2.new(0, 68, 1, 0)
+		btn.Size = UDim2.new(0, if IS_CONSOLE then 100 elseif IS_MOBILE then 80 else 68, 1, 0)
 		btn.BackgroundColor3 = COLORS.bgLight
 		btn.BorderSizePixel = 0
 		btn.Text = sty.display
 		btn.TextColor3 = COLORS.textDim
-		btn.TextSize = 11
+		btn.TextSize = FONT_SM
 		btn.Font = Enum.Font.GothamBold
 		btn.AutoButtonColor = true
 		btn.Parent = styleRow
@@ -214,7 +230,7 @@ local function createUI()
 
 		_styleButtons[sty.key] = btn
 
-		btn.MouseButton1Click:Connect(function()
+		btn.Activated:Connect(function()
 			_selectedStyle = sty.key
 			updateStyleHighlights()
 		end)
@@ -223,8 +239,8 @@ local function createUI()
 	-- Model selector row (scrollable)
 	local modelClip = Instance.new("Frame")
 	modelClip.Name = "ModelClip"
-	modelClip.Size = UDim2.new(1, -20, 0, 28)
-	modelClip.Position = UDim2.new(0, 10, 0, 40)
+	modelClip.Size = UDim2.new(1, -20, 0, BTN_HEIGHT)
+	modelClip.Position = UDim2.new(0, 10, 0, BTN_HEIGHT + 12)
 	modelClip.BackgroundTransparency = 1
 	modelClip.ClipsDescendants = true
 	modelClip.Parent = container
@@ -238,7 +254,7 @@ local function createUI()
 	modelRow.ScrollBarImageColor3 = COLORS.accentDim
 	modelRow.ScrollingDirection = Enum.ScrollingDirection.X
 	modelRow.AutomaticCanvasSize = Enum.AutomaticSize.X
-	modelRow.CanvasSize = UDim2.new(0, 0, 0, 28)
+	modelRow.CanvasSize = UDim2.new(0, 0, 0, BTN_HEIGHT)
 	modelRow.Parent = modelClip
 
 	local modelLayout = Instance.new("UIListLayout")
@@ -250,11 +266,11 @@ local function createUI()
 	-- "Model:" label
 	local modelLabel = Instance.new("TextLabel")
 	modelLabel.Name = "ModelLabel"
-	modelLabel.Size = UDim2.new(0, 44, 1, 0)
+	modelLabel.Size = UDim2.new(0, if IS_CONSOLE then 60 else 44, 1, 0)
 	modelLabel.BackgroundTransparency = 1
 	modelLabel.Text = "Model:"
 	modelLabel.TextColor3 = COLORS.textDim
-	modelLabel.TextSize = 11
+	modelLabel.TextSize = FONT_SM
 	modelLabel.Font = Enum.Font.GothamBold
 	modelLabel.TextXAlignment = Enum.TextXAlignment.Left
 	modelLabel.Parent = modelRow
@@ -262,12 +278,12 @@ local function createUI()
 	for _, mdl in ipairs(OrigamiConfig.MODELS) do
 		local btn = Instance.new("TextButton")
 		btn.Name = "Model_" .. mdl.key
-		btn.Size = UDim2.new(0, 60, 1, 0)
+		btn.Size = UDim2.new(0, if IS_CONSOLE then 90 elseif IS_MOBILE then 72 else 60, 1, 0)
 		btn.BackgroundColor3 = COLORS.bgLight
 		btn.BorderSizePixel = 0
 		btn.Text = mdl.display
 		btn.TextColor3 = COLORS.textDim
-		btn.TextSize = 11
+		btn.TextSize = FONT_SM
 		btn.Font = Enum.Font.GothamBold
 		btn.AutoButtonColor = true
 		btn.Parent = modelRow
@@ -278,7 +294,7 @@ local function createUI()
 
 		_modelButtons[mdl.key] = btn
 
-		btn.MouseButton1Click:Connect(function()
+		btn.Activated:Connect(function()
 			_selectedModel = mdl.key
 			updateModelHighlights()
 		end)
@@ -287,8 +303,8 @@ local function createUI()
 	-- Category buttons row
 	local categoryRow = Instance.new("Frame")
 	categoryRow.Name = "CategoryRow"
-	categoryRow.Size = UDim2.new(1, -20, 0, 32)
-	categoryRow.Position = UDim2.new(0, 10, 0, 72)
+	categoryRow.Size = UDim2.new(1, -20, 0, BTN_HEIGHT + 4)
+	categoryRow.Position = UDim2.new(0, 10, 0, (BTN_HEIGHT + 12) * 2)
 	categoryRow.BackgroundTransparency = 1
 	categoryRow.Parent = container
 
@@ -306,12 +322,12 @@ local function createUI()
 
 		local btn = Instance.new("TextButton")
 		btn.Name = "Cat_" .. cat.key
-		btn.Size = UDim2.new(0, 72, 1, 0)
+		btn.Size = UDim2.new(0, if IS_CONSOLE then 100 elseif IS_MOBILE then 80 else 72, 1, 0)
 		btn.BackgroundColor3 = COLORS.bgLight
 		btn.BorderSizePixel = 0
 		btn.Text = cat.display
 		btn.TextColor3 = COLORS.textDim
-		btn.TextSize = 12
+		btn.TextSize = FONT_SM + 1
 		btn.Font = Enum.Font.GothamBold
 		btn.AutoButtonColor = true
 		btn.Parent = categoryRow
@@ -322,7 +338,7 @@ local function createUI()
 
 		_categoryButtons[cat.key] = btn
 
-		btn.MouseButton1Click:Connect(function()
+		btn.Activated:Connect(function()
 			_selectedCategory = cat.key
 			updateCategoryHighlights()
 		end)
@@ -331,15 +347,15 @@ local function createUI()
 	-- Input row
 	local inputRow = Instance.new("Frame")
 	inputRow.Name = "InputRow"
-	inputRow.Size = UDim2.new(1, -20, 0, 40)
-	inputRow.Position = UDim2.new(0, 10, 0, 114)
+	inputRow.Size = UDim2.new(1, -20, 0, ROW_HEIGHT)
+	inputRow.Position = UDim2.new(0, 10, 0, (BTN_HEIGHT + 12) * 2 + BTN_HEIGHT + 12)
 	inputRow.BackgroundTransparency = 1
 	inputRow.Parent = container
 
 	-- Text input box
 	_inputBox = Instance.new("TextBox")
 	_inputBox.Name = "PromptInput"
-	_inputBox.Size = UDim2.new(1, -180, 1, 0)
+	_inputBox.Size = UDim2.new(1, if IS_MOBILE then -140 else -180, 1, 0)
 	_inputBox.Position = UDim2.new(0, 0, 0, 0)
 	_inputBox.BackgroundColor3 = COLORS.bgLight
 	_inputBox.BorderSizePixel = 0
@@ -347,7 +363,7 @@ local function createUI()
 	_inputBox.PlaceholderColor3 = COLORS.textDim
 	_inputBox.Text = ""
 	_inputBox.TextColor3 = COLORS.text
-	_inputBox.TextSize = 16
+	_inputBox.TextSize = FONT_LG
 	_inputBox.Font = Enum.Font.Gotham
 	_inputBox.ClearTextOnFocus = false
 	_inputBox.Parent = inputRow
@@ -364,13 +380,15 @@ local function createUI()
 	-- Create button
 	_createButton = Instance.new("TextButton")
 	_createButton.Name = "CreateButton"
-	_createButton.Size = UDim2.new(0, 88, 1, 0)
-	_createButton.Position = UDim2.new(1, -168, 0, 0)
+	local createW = if IS_MOBILE then 68 else 88
+	local clearW = if IS_MOBILE then 60 else 72
+	_createButton.Size = UDim2.new(0, createW, 1, 0)
+	_createButton.Position = UDim2.new(1, -(createW + clearW + 8), 0, 0)
 	_createButton.BackgroundColor3 = COLORS.accent
 	_createButton.BorderSizePixel = 0
 	_createButton.Text = "Create"
 	_createButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	_createButton.TextSize = 16
+	_createButton.TextSize = FONT_LG
 	_createButton.Font = Enum.Font.GothamBold
 	_createButton.AutoButtonColor = true
 	_createButton.Parent = inputRow
@@ -382,13 +400,13 @@ local function createUI()
 	-- Clear button
 	_clearButton = Instance.new("TextButton")
 	_clearButton.Name = "ClearButton"
-	_clearButton.Size = UDim2.new(0, 72, 1, 0)
-	_clearButton.Position = UDim2.new(1, -72, 0, 0)
+	_clearButton.Size = UDim2.new(0, clearW, 1, 0)
+	_clearButton.Position = UDim2.new(1, -clearW, 0, 0)
 	_clearButton.BackgroundColor3 = COLORS.danger
 	_clearButton.BorderSizePixel = 0
 	_clearButton.Text = "Clear"
 	_clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	_clearButton.TextSize = 16
+	_clearButton.TextSize = FONT_LG
 	_clearButton.Font = Enum.Font.GothamBold
 	_clearButton.AutoButtonColor = true
 	_clearButton.Parent = inputRow
@@ -401,16 +419,16 @@ local function createUI()
 	_statusLabel = Instance.new("TextLabel")
 	_statusLabel.Name = "StatusLabel"
 	_statusLabel.Size = UDim2.new(1, -20, 0, 20)
-	_statusLabel.Position = UDim2.new(0, 10, 0, 160)
+	_statusLabel.Position = UDim2.new(0, 10, 1, -24)
 	_statusLabel.BackgroundTransparency = 1
 	_statusLabel.Text = ""
 	_statusLabel.TextColor3 = COLORS.textDim
-	_statusLabel.TextSize = 12
+	_statusLabel.TextSize = FONT_SM + 1
 	_statusLabel.Font = Enum.Font.Gotham
 	_statusLabel.Parent = container
 
 	-- Wire up submit
-	_createButton.MouseButton1Click:Connect(function()
+	_createButton.Activated:Connect(function()
 		submitPrompt()
 	end)
 
@@ -421,15 +439,16 @@ local function createUI()
 	end)
 
 	-- Wire up clear
-	_clearButton.MouseButton1Click:Connect(function()
+	_clearButton.Activated:Connect(function()
 		clearAllCreations()
 	end)
 
 	-- Queue panel (right side of screen)
 	_queueFrame = Instance.new("Frame")
 	_queueFrame.Name = "QueuePanel"
-	_queueFrame.Size = UDim2.new(0, 240, 0, 300)
-	_queueFrame.Position = UDim2.new(1, -250, 0.5, -150)
+	local queueW = if IS_MOBILE then 180 elseif IS_CONSOLE then 280 else 240
+	_queueFrame.Size = UDim2.new(0, queueW, 0, 300)
+	_queueFrame.Position = UDim2.new(1, -(queueW + 10), 0.5, -150)
 	_queueFrame.AnchorPoint = Vector2.new(0, 0)
 	_queueFrame.BackgroundColor3 = COLORS.bg
 	_queueFrame.BackgroundTransparency = 0.15
@@ -465,7 +484,7 @@ local function createUI()
 
 	local sidebar = Instance.new("Frame")
 	sidebar.Name = "Sidebar"
-	sidebar.Size = UDim2.new(0, 42, 0, 0)
+	sidebar.Size = UDim2.new(0, SIDEBAR_SIZE + 8, 0, 0)
 	sidebar.Position = UDim2.new(0, 10, 0.5, 0)
 	sidebar.AnchorPoint = Vector2.new(0, 0.5)
 	sidebar.AutomaticSize = Enum.AutomaticSize.Y
@@ -495,12 +514,12 @@ local function createUI()
 	local function makeSidebarButton(name: string, label: string, color: Color3, order: number): TextButton
 		local btn = Instance.new("TextButton")
 		btn.Name = name
-		btn.Size = UDim2.new(0, 34, 0, 34)
+		btn.Size = UDim2.new(0, SIDEBAR_SIZE, 0, SIDEBAR_SIZE)
 		btn.BackgroundColor3 = color
 		btn.BorderSizePixel = 0
 		btn.Text = label
 		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		btn.TextSize = 9
+		btn.TextSize = if IS_CONSOLE then 14 elseif IS_MOBILE then 11 else 9
 		btn.Font = Enum.Font.GothamBold
 		btn.AutoButtonColor = true
 		btn.LayoutOrder = order
@@ -533,7 +552,7 @@ local function createUI()
 	-- Browse button
 	_browseButton = Instance.new("TextButton")
 	_browseButton.Name = "BrowseToggle"
-	_browseButton.Size = UDim2.new(0, 100, 0, 32)
+	_browseButton.Size = UDim2.new(0, if IS_CONSOLE then 140 else 100, 0, if IS_MOBILE then 40 else 32)
 	_browseButton.Position = UDim2.new(0, 10, 0, 48)
 	_browseButton.BackgroundColor3 = COLORS.folds
 	_browseButton.BorderSizePixel = 0
@@ -551,7 +570,7 @@ local function createUI()
 	-- Catalog panel (left side)
 	_catalogPanel = Instance.new("Frame")
 	_catalogPanel.Name = "CatalogPanel"
-	_catalogPanel.Size = UDim2.new(0, 260, 0, 400)
+	_catalogPanel.Size = if IS_MOBILE then UDim2.new(0.85, 0, 0, 350) elseif IS_CONSOLE then UDim2.new(0, 320, 0, 450) else UDim2.new(0, 260, 0, 400)
 	_catalogPanel.Position = UDim2.new(0, 10, 0, 86)
 	_catalogPanel.BackgroundColor3 = COLORS.bg
 	_catalogPanel.BackgroundTransparency = 0.1
@@ -1306,6 +1325,14 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 					end
 
 					local keyDown = UserInputService:IsKeyDown(keyCode)
+					if not keyDown then
+						-- Also check gamepad (map Space→ButtonA, E→ButtonX, Q→ButtonY)
+						local gpMap = { [Enum.KeyCode.Space] = Enum.KeyCode.ButtonA, [Enum.KeyCode.E] = Enum.KeyCode.ButtonX, [Enum.KeyCode.Q] = Enum.KeyCode.ButtonY }
+						local gpKey = gpMap[keyCode]
+						if gpKey then
+							keyDown = pcall(function() return UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey) end) and UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey)
+						end
+					end
 					bodyVel.Velocity = if keyDown then Vector3.new(0, flyForce, 0) else Vector3.zero
 
 					-- Spin propeller parts while key held
@@ -1439,7 +1466,8 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 				flyConn:Disconnect()
 				return
 			end
-			if seat.Occupant and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+			local jumpPressed = UserInputService:IsKeyDown(Enum.KeyCode.Space) or UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonA)
+			if seat.Occupant and jumpPressed then
 				bodyVel.Velocity = Vector3.new(0, flySpeed, 0)
 			else
 				bodyVel.Velocity = Vector3.new(0, math.max(-20, seat.AssemblyLinearVelocity.Y - 1), 0)

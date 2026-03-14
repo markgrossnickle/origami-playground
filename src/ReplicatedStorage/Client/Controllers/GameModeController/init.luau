@@ -116,7 +116,7 @@ local function createUI()
 
 		_modeButtons[mode.key] = btn
 
-		btn.MouseButton1Click:Connect(function()
+		btn.Activated:Connect(function()
 			GameMode.SetMode(mode.key)
 		end)
 	end

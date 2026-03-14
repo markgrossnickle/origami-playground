@@ -305,7 +305,55 @@ Type annotations with `:` are only valid on **local variable declarations** and 
 
 ## Cross-Platform (IMPORTANT)
 
-All games must work on mobile, PC, Xbox, and console. Use `UDim2.fromScale()`, minimum 48x48px touch targets, `Activated` signal (not `MouseButton1Click`), and `ContextActionService:BindAction()` for mobile touch buttons. Reduce particles/effects on mobile (`TouchEnabled`).
+All UI and interactions MUST work on mobile (iOS/Android), PC, Xbox, and PlayStation. Follow these rules strictly:
+
+### Platform Detection
+```lua
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_CONSOLE = GuiService:IsTenFootInterface()
+```
+
+### UI Layout Rules
+- **NEVER use hardcoded pixel sizes** for containers. Use `UDim2.fromScale()` or platform-conditional sizing.
+- **Mobile**: containers should be 85-95% screen width. Fixed-width panels must adapt.
+- **Console (10-foot UI)**: text and buttons must be ~1.5x larger than desktop.
+- Use responsive sizing helpers (FONT_SM/MD/LG, BTN_HEIGHT, ROW_HEIGHT) — see CreatorController for the pattern.
+- Queue panels, catalog panels, and overlays must fit on small screens (~390px wide).
+- Account for **safe areas** (notches, rounded corners) — avoid placing interactive elements in screen corners.
+
+### Button & Touch Target Rules
+- **Minimum touch target**: 44x44px on mobile, 48x48px on console (Apple HIG / Xbox guidelines).
+- **Always use `.Activated`** signal — NEVER `.MouseButton1Click`. `Activated` fires on mouse click, touch tap, AND gamepad confirm.
+- Sidebar/icon buttons: 34px (desktop), 44px (mobile), 52px (console).
+
+### Input Rules
+- **Keyboard actions must have gamepad equivalents**:
+  - Space → ButtonA (jump, fly, confirm)
+  - E → ButtonX (interact)
+  - Q → ButtonY (alternate action)
+  - Check with `UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, keyCode)`
+- **Vehicle flight**: check both `Enum.KeyCode.Space` AND `Enum.KeyCode.ButtonA`
+- **Hat effects**: map EffectKey to corresponding gamepad button
+- **TextBox input**: works automatically on mobile (virtual keyboard) and is not available on console — provide alternative UIs for console if text entry is required.
+- Use `ContextActionService:BindAction()` with `createTouchButton = true` for mobile action buttons.
+
+### Text Sizing
+| Context | Desktop | Mobile | Console |
+|---------|---------|--------|---------|
+| Small labels | 11px | 13px | 16px |
+| Body text | 14px | 16px | 20px |
+| Buttons/headings | 16px | 18px | 24px |
+
+### Testing Checklist
+Before shipping any UI change, verify:
+- [ ] All buttons reachable and tappable on mobile (no overlapping, no tiny targets)
+- [ ] Text readable on mobile without squinting (13px minimum)
+- [ ] Console text large enough for TV viewing (16px minimum)
+- [ ] Gamepad can navigate and activate all interactive elements
+- [ ] Virtual keyboard doesn't obscure input fields on mobile
+- [ ] No UI extends beyond screen edges on any device
 
 ## Built-in Services
 

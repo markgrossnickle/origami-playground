@@ -36,12 +36,6 @@ jobs:
       - name: Install Aftman
         uses: ok-nick/setup-aftman@v0.4.2
 
-      - name: Install Wally packages
-        run: wally install
-
-      - name: Build place file
-        run: rojo build default.project.json -o Origami-Playground.rbxl
-
       - name: Install rbxcloud CLI
         run: |
           LATEST=$(curl -sI https://github.com/Sleitnick/rbxcloud/releases/latest | grep -i location | sed 's|.*/v||;s/\r//')
@@ -49,6 +43,25 @@ jobs:
           unzip rbxcloud.zip
           chmod +x rbxcloud
           sudo mv rbxcloud /usr/local/bin/
+
+      - name: Download current live place
+        run: |
+          rbxcloud place download \
+            --api-key "$ROBLOX_API_KEY" \
+            --universe-id "$ROBLOX_UNIVERSE_ID" \
+            --place-id "$ROBLOX_PLACE_ID" \
+            --format rbxl \
+            --output Origami-Playground.rbxl
+        env:
+          ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+          ROBLOX_UNIVERSE_ID: ${{ secrets.ROBLOX_UNIVERSE_ID }}
+          ROBLOX_PLACE_ID: ${{ secrets.ROBLOX_PLACE_ID }}
+
+      - name: Install Wally packages
+        run: wally install
+
+      - name: Build on top of live place
+        run: rojo build default.project.json -o Origami-Playground.rbxl
 
       - name: Publish to Roblox
         run: |

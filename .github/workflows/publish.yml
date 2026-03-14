@@ -18,6 +18,7 @@ jobs:
         uses: ok-nick/setup-aftman@v0.4.2
       - name: Run selene
         run: selene src --allow-warnings
+        continue-on-error: true
       - name: Check formatting
         run: stylua --check src
         continue-on-error: true

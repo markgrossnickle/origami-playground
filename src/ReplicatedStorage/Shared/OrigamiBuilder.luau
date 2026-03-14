@@ -48,8 +48,8 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 		end
 
 		part.Name = partData.name or ("Part" .. i)
-		part.Anchored = true
-		part.CanCollide = false
+		part.Anchored = if partData.anchored ~= nil then partData.anchored else true
+		part.CanCollide = if partData.canCollide ~= nil then partData.canCollide else false
 
 		-- Position
 		if partData.position then
@@ -97,9 +97,29 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 			part.Transparency = partData.transparency
 		end
 
+		-- Custom physical properties from LLM
+		if partData.density or partData.friction or partData.elasticity then
+			local density = partData.density or 0.7
+			local friction = partData.friction or 0.3
+			local elasticity = partData.elasticity or 0.5
+			local frictionWeight = partData.frictionWeight or 1
+			local elasticityWeight = partData.elasticityWeight or 1
+			part.CustomPhysicalProperties =
+				PhysicalProperties.new(density, friction, elasticity, frictionWeight, elasticityWeight)
+		end
+
 		-- Body part mapping (for avatar rigging)
 		if partData.body_part then
 			part:SetAttribute("BodyPart", partData.body_part)
+		end
+
+		-- Arbitrary attributes from LLM (store any extra fields as Roblox attributes)
+		if partData.attributes then
+			for attrName, attrValue in pairs(partData.attributes) do
+				pcall(function()
+					part:SetAttribute(attrName, attrValue)
+				end)
+			end
 		end
 
 		part.Parent = model
@@ -116,6 +136,15 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 	-- Set primary part to first part
 	if #model:GetChildren() > 0 then
 		model.PrimaryPart = model:GetChildren()[1]
+	end
+
+	-- Model-level attributes from LLM (interaction hints, behaviors, etc.)
+	if modelData.attributes then
+		for attrName, attrValue in pairs(modelData.attributes) do
+			pcall(function()
+				model:SetAttribute(attrName, attrValue)
+			end)
+		end
 	end
 
 	return model

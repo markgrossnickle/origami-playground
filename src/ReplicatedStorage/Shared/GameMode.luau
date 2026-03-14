@@ -11,7 +11,7 @@ GameMode.MODES = {
 	{ key = "tower_defense", display = "Tower Defense" },
 	{ key = "auto_battler", display = "Auto Battler" },
 	{ key = "card_battler", display = "Card Battler" },
-	{ key = "colony", display = "Colony" },
+	{ key = "play", display = "Play" },
 }
 
 GameMode.Current = "sandbox"

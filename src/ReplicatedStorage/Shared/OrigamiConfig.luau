@@ -44,12 +44,12 @@ OrigamiConfig.STYLES = {
 	{ key = "lowpoly", display = "Low Poly" },
 	{ key = "voxel", display = "Voxel" },
 	{ key = "balloon", display = "Balloon" },
-	{ key = "wireframe", display = "Wireframe" },
-	{ key = "crystal", display = "Crystal" },
+	{ key = "chibi", display = "Chibi" },
+	{ key = "lego", display = "Lego" },
 	{ key = "plastic", display = "Plastic" },
-	{ key = "steampunk", display = "Steampunk" },
-	{ key = "pixel", display = "Pixel" },
-	{ key = "neon", display = "Neon" },
+	{ key = "scifi", display = "Sci-Fi" },
+	{ key = "spooky", display = "Spooky" },
+	{ key = "candy", display = "Candy" },
 	{ key = "freestyle", display = "Freestyle" },
 }
 

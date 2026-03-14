@@ -61,7 +61,18 @@ local _nextQueueId = 0
 -- Track all spawned creations for Clear
 local _spawnedModels: { Model } = {}
 local _equippedTool: Tool? = nil
-local _equippedHat: Accessory? = nil
+local _equippedAccessory: BasePart? = nil
+
+-- Attachment slot config: body part name, offset function (from body part size), max accessory size
+local ATTACH_CONFIG = {
+	head = { bodyPart = "Head", offset = function(s) return CFrame.new(0, s.Y / 2, 0) end, maxSize = 3 },
+	face = { bodyPart = "Head", offset = function(s) return CFrame.new(0, 0, -s.Z / 2) end, maxSize = 2.5 },
+	neck = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, s.Y / 2, 0) end, maxSize = 3 },
+	back = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, 0, s.Z / 2) end, maxSize = 5 },
+	chest = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, 0, -s.Z / 2) end, maxSize = 3 },
+	waist = { bodyPart = "LowerTorso", offset = function(s) return CFrame.new(0, 0, 0) end, maxSize = 4 },
+	shoulders = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, s.Y / 2, 0) end, maxSize = 4 },
+}
 local _activeVehicle: Model? = nil
 local _vehicleSeat: VehicleSeat? = nil
 local _avatarApplied = false
@@ -701,8 +712,8 @@ function clearAllCreations()
 		_equippedTool = nil
 	end
 
-	-- Remove equipped hat parts
-	_equippedHat = nil
+	-- Remove equipped accessory parts
+	_equippedAccessory = nil
 
 	-- Remove active vehicle visual model + server-side seats
 	_activeVehicle = nil
@@ -898,8 +909,8 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 					-- Normal mode: use category-specific placement
 					if cat == "tool" then
 						equipAsTool(builtModel, modelData)
-					elseif cat == "hat" then
-						equipAsHat(builtModel, modelData)
+					elseif cat == "accessory" or cat == "hat" then
+						equipAsAccessory(builtModel, modelData)
 					elseif cat == "vehicle" then
 						spawnVehicle(builtModel, modelData)
 					elseif cat == "avatar" then
@@ -912,7 +923,7 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 						placeModel(builtModel, modelData)
 					end
 
-					if cat ~= "tool" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+					if cat ~= "tool" and cat ~= "accessory" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
 						local animType = modelData.animation or "idle_bob"
 						OrigamiBuilder.ApplyAnimation(builtModel, animType)
 					end
@@ -1196,38 +1207,169 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 	end
 end
 
-function equipAsHat(model: Model, modelData: { [string]: any })
+-- Check if accessory parts still exist on the character
+local function _accessoryExists(character)
+	for _, child in character:GetChildren() do
+		if child:GetAttribute("OrigamiAccessory") or child:GetAttribute("OrigamiHat") then
+			return true
+		end
+	end
+	return false
+end
+
+-- Check key down with gamepad fallback
+local function _isEffectKeyDown(keyCode)
+	local keyDown = UserInputService:IsKeyDown(keyCode)
+	if not keyDown then
+		local gpMap = { [Enum.KeyCode.Space] = Enum.KeyCode.ButtonA, [Enum.KeyCode.E] = Enum.KeyCode.ButtonX, [Enum.KeyCode.Q] = Enum.KeyCode.ButtonY }
+		local gpKey = gpMap[keyCode]
+		if gpKey then
+			keyDown = pcall(function() return UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey) end) and UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey)
+		end
+	end
+	return keyDown
+end
+
+-- Wire fly effect: upward force on key hold, optional spinning parts
+local function _wireFlyEffect(character, attachPart, attrs, keyCode)
+	local flyForce = attrs.FlyForce or 40
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if not rootPart then return end
+
+	local bodyVel = Instance.new("BodyVelocity")
+	bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
+	bodyVel.Velocity = Vector3.zero
+	bodyVel.Parent = rootPart
+	bodyVel:SetAttribute("OrigamiAccessoryEffect", true)
+
+	-- Spinning propeller parts
+	local spinPartsPrefix = attrs.SpinParts
+	local spinSpeed = math.rad(attrs.SpinSpeed or 720)
+	local spinWelds = {}
+	if spinPartsPrefix then
+		for _, child in character:GetChildren() do
+			if (child:GetAttribute("OrigamiAccessory") or child:GetAttribute("OrigamiHat")) and child.Name:lower():find(spinPartsPrefix:lower()) then
+				for _, w in child:GetChildren() do
+					if w:IsA("WeldConstraint") then
+						local motor = Instance.new("Motor6D")
+						motor.Part0 = attachPart
+						motor.Part1 = child
+						motor.C0 = attachPart.CFrame:ToObjectSpace(child.CFrame)
+						motor.C1 = CFrame.new()
+						motor.Parent = child
+						w:Destroy()
+						table.insert(spinWelds, motor)
+						break
+					end
+				end
+			end
+		end
+	end
+
+	local conn
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if not _accessoryExists(character) or not rootPart.Parent then
+			conn:Disconnect(); bodyVel:Destroy(); return
+		end
+		local keyDown = _isEffectKeyDown(keyCode)
+		bodyVel.Velocity = if keyDown then Vector3.new(0, flyForce, 0) else Vector3.zero
+		if keyDown then
+			for _, motor in spinWelds do
+				motor.C0 = motor.C0 * CFrame.Angles(0, spinSpeed * dt, 0)
+			end
+		end
+	end)
+end
+
+-- Wire speed effect: boost walk speed while worn
+local function _wireSpeedEffect(character, attrs)
+	local boost = attrs.SpeedBoost or 1.5
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+
+	local origSpeed = humanoid.WalkSpeed
+	humanoid.WalkSpeed = origSpeed * boost
+
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		if not _accessoryExists(character) then
+			humanoid.WalkSpeed = origSpeed
+			conn:Disconnect()
+		end
+	end)
+end
+
+-- Wire glow effect: toggle Neon material on key press
+local function _wireGlowEffect(character, keyCode)
+	local glowing = false
+	-- Store original materials so we can restore them
+	local origMaterials = {}
+	for _, child in character:GetChildren() do
+		if child:GetAttribute("OrigamiAccessory") or child:GetAttribute("OrigamiHat") then
+			origMaterials[child] = child.Material
+		end
+	end
+
+	local inputConn
+	local cleanupConn
+	inputConn = UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then return end
+		if input.KeyCode ~= keyCode then return end
+		glowing = not glowing
+		for part, origMat in origMaterials do
+			if part.Parent then
+				part.Material = if glowing then Enum.Material.Neon else origMat
+			end
+		end
+	end)
+
+	cleanupConn = RunService.Heartbeat:Connect(function()
+		if not _accessoryExists(character) then
+			inputConn:Disconnect()
+			cleanupConn:Disconnect()
+		end
+	end)
+end
+
+function equipAsAccessory(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
 		return
 	end
 
-	local head = character:FindFirstChild("Head")
-	if not head then
-		return
+	-- Resolve attachment slot from attributes (backward compat: default to head)
+	local attrs = modelData.attributes or {}
+	local slot = attrs.AttachTo or "head"
+	local config = ATTACH_CONFIG[slot] or ATTACH_CONFIG.head
+
+	local attachPart = character:FindFirstChild(config.bodyPart)
+	if not attachPart then
+		-- Fallback: try Head for any slot
+		attachPart = character:FindFirstChild("Head")
+		if not attachPart then return end
 	end
 
-	-- Remove previous origami hat parts
+	-- Remove previous origami accessory parts
 	for _, child in ipairs(character:GetChildren()) do
-		if child:GetAttribute("OrigamiHat") then
+		if child:GetAttribute("OrigamiAccessory") or child:GetAttribute("OrigamiHat") then
 			child:Destroy()
 		end
 	end
-	_equippedHat = nil
+	_equippedAccessory = nil
 
-	-- Get model bounds and scale down if too large
-	local MAX_HAT_SIZE = 3
+	-- Scale down if too large for slot
+	local maxSize = config.maxSize
 	local _, modelSize = model:GetBoundingBox()
 	local maxDim = math.max(modelSize.X, modelSize.Y, modelSize.Z)
-	local scale = if maxDim > MAX_HAT_SIZE then MAX_HAT_SIZE / maxDim else 1
+	local scale = if maxDim > maxSize then maxSize / maxDim else 1
 
 	local modelCenter = Vector3.zero
 	if model.PrimaryPart then
 		modelCenter = model.PrimaryPart.Position
 	end
 
-	-- Position on top of head
-	local headTop = head.CFrame * CFrame.new(0, head.Size.Y / 2, 0)
+	-- Compute anchor point: body part CFrame + dynamic offset based on part size
+	local anchorCF = attachPart.CFrame * config.offset(attachPart.Size)
 
 	-- Collect parts before reparenting
 	local partsToMove = {}
@@ -1237,8 +1379,7 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 		end
 	end
 
-	-- Weld each part directly to the head
-	-- Keep anchored during setup so parts don't fall before welds activate
+	-- Weld each part to the attach body part
 	for _, part in ipairs(partsToMove) do
 		if scale < 1 then
 			part.Size = part.Size * scale
@@ -1250,17 +1391,17 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 		part.Anchored = true
 		part.CanCollide = false
 		part.Massless = true
-		part:SetAttribute("OrigamiHat", true)
-		part.CFrame = headTop * CFrame.new(offset) * partRotation
+		part:SetAttribute("OrigamiAccessory", true)
+		part.CFrame = anchorCF * CFrame.new(offset) * partRotation
 		part.Parent = character
 
 		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = head
+		weld.Part0 = attachPart
 		weld.Part1 = part
 		weld.Parent = part
 	end
 
-	-- Now unanchor all parts so they follow the head via welds
+	-- Unanchor so parts follow via welds
 	for _, part in ipairs(partsToMove) do
 		if part.Parent then
 			part.Anchored = false
@@ -1268,102 +1409,20 @@ function equipAsHat(model: Model, modelData: { [string]: any })
 	end
 
 	model:Destroy()
+	_equippedAccessory = attachPart
 
-	_equippedHat = head -- marker; cleanup uses OrigamiHat attribute
-
-	-- Wire up hat behavioral effects from LLM attributes
-	local attrs = modelData.attributes or {}
-	local hatEffect = attrs.HatEffect
-	if hatEffect then
+	-- Wire up effects (read AccessoryEffect, fall back to HatEffect for old catalog items)
+	local effect = attrs.AccessoryEffect or attrs.HatEffect
+	if effect then
 		local keyName = attrs.EffectKey or "Space"
 		local keyCode = Enum.KeyCode[keyName] or Enum.KeyCode.Space
 
-		if hatEffect == "fly" then
-			local flyForce = attrs.FlyForce or 40
-			local rootPart = character:FindFirstChild("HumanoidRootPart")
-			if rootPart then
-				local bodyVel = Instance.new("BodyVelocity")
-				bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
-				bodyVel.Velocity = Vector3.zero
-				bodyVel.Parent = rootPart
-				bodyVel:SetAttribute("OrigamiHatEffect", true)
-
-				-- Spinning propeller parts
-				local spinPartsPrefix = attrs.SpinParts
-				local spinSpeed = math.rad(attrs.SpinSpeed or 720)
-				local spinWelds = {}
-				if spinPartsPrefix then
-					for _, child in character:GetChildren() do
-						if child:GetAttribute("OrigamiHat") and child.Name:lower():find(spinPartsPrefix:lower()) then
-							-- Find the WeldConstraint and replace with Motor6D for animation
-							for _, w in child:GetChildren() do
-								if w:IsA("WeldConstraint") then
-									local motor = Instance.new("Motor6D")
-									motor.Part0 = head
-									motor.Part1 = child
-									motor.C0 = head.CFrame:ToObjectSpace(child.CFrame)
-									motor.C1 = CFrame.new()
-									motor.Parent = child
-									w:Destroy()
-									table.insert(spinWelds, motor)
-									break
-								end
-							end
-						end
-					end
-				end
-
-				local conn
-				conn = RunService.Heartbeat:Connect(function(dt)
-					-- Check hat still exists
-					local hatExists = false
-					for _, child in character:GetChildren() do
-						if child:GetAttribute("OrigamiHat") then hatExists = true; break end
-					end
-					if not hatExists or not rootPart.Parent then
-						conn:Disconnect(); bodyVel:Destroy(); return
-					end
-
-					local keyDown = UserInputService:IsKeyDown(keyCode)
-					if not keyDown then
-						-- Also check gamepad (map Space→ButtonA, E→ButtonX, Q→ButtonY)
-						local gpMap = { [Enum.KeyCode.Space] = Enum.KeyCode.ButtonA, [Enum.KeyCode.E] = Enum.KeyCode.ButtonX, [Enum.KeyCode.Q] = Enum.KeyCode.ButtonY }
-						local gpKey = gpMap[keyCode]
-						if gpKey then
-							keyDown = pcall(function() return UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey) end) and UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey)
-						end
-					end
-					bodyVel.Velocity = if keyDown then Vector3.new(0, flyForce, 0) else Vector3.zero
-
-					-- Spin propeller parts while key held
-					if keyDown then
-						for _, motor in spinWelds do
-							motor.C0 = motor.C0 * CFrame.Angles(0, spinSpeed * dt, 0)
-						end
-					end
-				end)
-			end
-
-		elseif hatEffect == "speed" then
-			local boost = attrs.SpeedBoost or 1.5
-			local humanoid = character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				local origSpeed = humanoid.WalkSpeed
-				humanoid.WalkSpeed = origSpeed * boost
-
-				-- Watch for hat removal to restore speed
-				local conn
-				conn = RunService.Heartbeat:Connect(function()
-					local hatExists = false
-					for _, child in character:GetChildren() do
-						if child:GetAttribute("OrigamiHat") then hatExists = true; break end
-					end
-					if not hatExists then
-						humanoid.WalkSpeed = origSpeed
-						conn:Disconnect()
-					end
-				end)
-			end
+		if effect == "fly" then
+			_wireFlyEffect(character, attachPart, attrs, keyCode)
+		elseif effect == "speed" then
+			_wireSpeedEffect(character, attrs)
+		elseif effect == "glow" then
+			_wireGlowEffect(character, keyCode)
 		end
 	end
 end
@@ -1655,7 +1714,8 @@ local CATEGORY_ICONS = {
 	vehicle = "V",
 	building = "B",
 	tool = "T",
-	hat = "H",
+	accessory = "A",
+	hat = "A",
 	prop = "P",
 }
 
@@ -1813,8 +1873,8 @@ function spawnCatalogItem(item: { [string]: any })
 
 			if cat == "tool" then
 				equipAsTool(builtModel, modelData)
-			elseif cat == "hat" then
-				equipAsHat(builtModel, modelData)
+			elseif cat == "accessory" or cat == "hat" then
+				equipAsAccessory(builtModel, modelData)
 			elseif cat == "vehicle" then
 				spawnVehicle(builtModel, modelData)
 			elseif cat == "avatar" then
@@ -1827,7 +1887,7 @@ function spawnCatalogItem(item: { [string]: any })
 				placeModel(builtModel, modelData)
 			end
 
-			if cat ~= "tool" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+			if cat ~= "tool" and cat ~= "accessory" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
 				local animType = modelData.animation or "idle_bob"
 				OrigamiBuilder.ApplyAnimation(builtModel, animType)
 			end

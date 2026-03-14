@@ -320,4 +320,27 @@ function PlayerDataService.Client:Read(player: Player)
 	return self.Server:Read(player)
 end
 
+function PlayerDataService.Client:GetCurrency(player: Player)
+	local folds = self.Server:Read(player, { "Folds" }) or 0
+	local cranes = self.Server:Read(player, { "Cranes" }) or 0
+	return { Folds = folds, Cranes = cranes }
+end
+
+function PlayerDataService.Client:DeductCurrency(player: Player, currencyType: string, amount: number)
+	-- In Studio, skip deduction (unlimited)
+	if RunService:IsStudio() then
+		return { success = true, remaining = 999999 }
+	end
+
+	local path = { currencyType }
+	local current = self.Server:Read(player, path) or 0
+	if current < amount then
+		return { success = false, error = "insufficient_funds", remaining = current }
+	end
+
+	local newBalance = current - amount
+	self.Server:Write(player, path, newBalance)
+	return { success = true, remaining = newBalance }
+end
+
 return PlayerDataService

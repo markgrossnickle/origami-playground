@@ -494,6 +494,85 @@ function OrigamiService.Client:ReadyVehicle(player: Player, seat: VehicleSeat)
 	end
 end
 
+function OrigamiService.Client:FetchCatalog(player: Player, search: string?)
+	local apiUrl = getApiUrl()
+	if apiUrl == "" then
+		return { success = false, error = "api_not_configured" }
+	end
+
+	local apiKey = getApiKey()
+	local url = apiUrl .. "/api/catalog"
+	if search and search ~= "" then
+		url = url .. "?search=" .. HttpService:UrlEncode(search)
+	end
+
+	local ok, response = pcall(function()
+		return HttpService:RequestAsync({
+			Url = url,
+			Method = "GET",
+			Headers = {
+				["X-Api-Key"] = apiKey,
+			},
+		})
+	end)
+
+	if not ok then
+		warn("[OrigamiService] Catalog fetch failed:", response)
+		return { success = false, error = "request_failed" }
+	end
+
+	if not response.Success then
+		return { success = false, error = "api_error(" .. response.StatusCode .. ")" }
+	end
+
+	local parseOk, data = pcall(function()
+		return HttpService:JSONDecode(response.Body)
+	end)
+
+	if not parseOk or not data then
+		return { success = false, error = "parse_error" }
+	end
+
+	return { success = true, items = data.items or {} }
+end
+
+function OrigamiService.Client:FetchCatalogItem(player: Player, itemId: string)
+	local apiUrl = getApiUrl()
+	if apiUrl == "" then
+		return { success = false, error = "api_not_configured" }
+	end
+
+	local apiKey = getApiKey()
+
+	local ok, response = pcall(function()
+		return HttpService:RequestAsync({
+			Url = apiUrl .. "/api/catalog/" .. itemId,
+			Method = "GET",
+			Headers = {
+				["X-Api-Key"] = apiKey,
+			},
+		})
+	end)
+
+	if not ok then
+		return { success = false, error = "request_failed" }
+	end
+
+	if not response.Success then
+		return { success = false, error = "api_error(" .. response.StatusCode .. ")" }
+	end
+
+	local parseOk, data = pcall(function()
+		return HttpService:JSONDecode(response.Body)
+	end)
+
+	if not parseOk or not data then
+		return { success = false, error = "parse_error" }
+	end
+
+	return { success = true, item = data }
+end
+
 function OrigamiService:KnitInit()
 	-- Clean up rate limits, avatar state, and vehicle seats when players leave
 	Players.PlayerRemoving:Connect(function(player)

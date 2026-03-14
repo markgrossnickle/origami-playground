@@ -43,6 +43,9 @@ Built on the MindTrust Roblox template using the Knit framework.
     "category": "creature",
     "locomotion": "walk",
     "animation": "idle_bob",
+    "attackType": "splash",
+    "targetPriority": "weakest",
+    "defenseType": "armor",
     "parts": [
       { "name": "seg_1", "shape": "Block", "position": [0,0,0], "size": [2,2,2],
         "orientation": [0,0,0], "color": [255,100,50], "material": "SmoothPlastic",
@@ -70,6 +73,16 @@ Built on the MindTrust Roblox template using the Knit framework.
 ### Art Styles (11)
 
 origami, lowpoly, voxel, balloon, wireframe, crystal, plush, steampunk, pixel, neon, freestyle
+
+### Combat Strategy Fields (optional, for creature/building categories)
+
+The LLM can return strategy fields that drive combat behavior in Auto Battler and Tower Defense modes. Picked by the LLM based on the creature/tower description (e.g. "giant turtle" → armor + splash).
+
+| Field | Values | Default | Effect |
+|-------|--------|---------|--------|
+| `attackType` | `single`, `splash`, `rapid`, `piercing` | `single` | `splash`: AoE damage around target. `rapid`: 2x speed, 0.6x damage. `piercing`: ignores armor defense. |
+| `targetPriority` | `nearest`, `weakest`, `strongest`, `fastest` | `nearest` | Who to attack first. `fastest` targets creep closest to reaching the base (TD) or highest speed (AB). |
+| `defenseType` | `none`, `armor`, `dodge`, `regen` | `none` | `armor`: -30% damage (except piercing). `dodge`: 25% miss chance. `regen`: heals over time. |
 
 ### Creature Animation System
 

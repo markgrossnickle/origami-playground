@@ -1,5 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -51,6 +52,20 @@ local _activeVehicle: Model? = nil
 local _vehicleSeat: VehicleSeat? = nil
 local _avatarApplied = false
 
+-- Currency state
+local _foldsCount = 0
+local _craneCount = 0
+local _foldsLabel: TextLabel
+local _craneLabel: TextLabel
+
+-- Catalog browser state
+local _browseButton: TextButton
+local _catalogPanel: Frame
+local _catalogScroll: ScrollingFrame
+local _catalogSearchBox: TextBox
+local _catalogCache: { any }? = nil
+local _catalogOpen = false
+
 -- Colors
 local COLORS = {
 	bg = Color3.fromRGB(30, 30, 40),
@@ -63,6 +78,8 @@ local COLORS = {
 	success = Color3.fromRGB(100, 220, 140),
 	error = Color3.fromRGB(220, 100, 100),
 	danger = Color3.fromRGB(200, 60, 60),
+	folds = Color3.fromRGB(255, 200, 50),
+	crane = Color3.fromRGB(100, 160, 255),
 }
 
 local function createUI()
@@ -72,6 +89,68 @@ local function createUI()
 	_gui.ResetOnSpawn = false
 	_gui.DisplayOrder = 5
 	_gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+	-- Currency bar (top center)
+	local currencyBar = Instance.new("Frame")
+	currencyBar.Name = "CurrencyBar"
+	currencyBar.Size = UDim2.new(0, 200, 0, 32)
+	currencyBar.Position = UDim2.new(0.5, -100, 0, 8)
+	currencyBar.BackgroundColor3 = COLORS.bg
+	currencyBar.BackgroundTransparency = 0.2
+	currencyBar.BorderSizePixel = 0
+	currencyBar.Parent = _gui
+
+	local currBarCorner = Instance.new("UICorner")
+	currBarCorner.CornerRadius = UDim.new(0, 8)
+	currBarCorner.Parent = currencyBar
+
+	-- Folds display (left half)
+	local foldsIcon = Instance.new("TextLabel")
+	foldsIcon.Name = "FoldsIcon"
+	foldsIcon.Size = UDim2.new(0, 24, 1, 0)
+	foldsIcon.Position = UDim2.new(0, 8, 0, 0)
+	foldsIcon.BackgroundTransparency = 1
+	foldsIcon.Text = "F"
+	foldsIcon.TextColor3 = COLORS.folds
+	foldsIcon.TextSize = 16
+	foldsIcon.Font = Enum.Font.GothamBold
+	foldsIcon.Parent = currencyBar
+
+	_foldsLabel = Instance.new("TextLabel")
+	_foldsLabel.Name = "FoldsCount"
+	_foldsLabel.Size = UDim2.new(0, 60, 1, 0)
+	_foldsLabel.Position = UDim2.new(0, 30, 0, 0)
+	_foldsLabel.BackgroundTransparency = 1
+	_foldsLabel.Text = "0"
+	_foldsLabel.TextColor3 = COLORS.folds
+	_foldsLabel.TextSize = 14
+	_foldsLabel.Font = Enum.Font.GothamBold
+	_foldsLabel.TextXAlignment = Enum.TextXAlignment.Left
+	_foldsLabel.Parent = currencyBar
+
+	-- Cranes display (right half)
+	local craneIcon = Instance.new("TextLabel")
+	craneIcon.Name = "CraneIcon"
+	craneIcon.Size = UDim2.new(0, 24, 1, 0)
+	craneIcon.Position = UDim2.new(0, 108, 0, 0)
+	craneIcon.BackgroundTransparency = 1
+	craneIcon.Text = ">"
+	craneIcon.TextColor3 = COLORS.crane
+	craneIcon.TextSize = 14
+	craneIcon.Font = Enum.Font.GothamBold
+	craneIcon.Parent = currencyBar
+
+	_craneLabel = Instance.new("TextLabel")
+	_craneLabel.Name = "CraneCount"
+	_craneLabel.Size = UDim2.new(0, 60, 1, 0)
+	_craneLabel.Position = UDim2.new(0, 136, 0, 0)
+	_craneLabel.BackgroundTransparency = 1
+	_craneLabel.Text = "0"
+	_craneLabel.TextColor3 = COLORS.crane
+	_craneLabel.TextSize = 14
+	_craneLabel.Font = Enum.Font.GothamBold
+	_craneLabel.TextXAlignment = Enum.TextXAlignment.Left
+	_craneLabel.Parent = currencyBar
 
 	-- Container at bottom of screen
 	local container = Instance.new("Frame")
@@ -457,6 +536,100 @@ local function createUI()
 		end
 	end)
 
+	-- Browse button (below DM toggle)
+	_browseButton = Instance.new("TextButton")
+	_browseButton.Name = "BrowseToggle"
+	_browseButton.Size = UDim2.new(0, 100, 0, 32)
+	_browseButton.Position = UDim2.new(0, 10, 0, 48)
+	_browseButton.BackgroundColor3 = COLORS.folds
+	_browseButton.BorderSizePixel = 0
+	_browseButton.Text = "Browse"
+	_browseButton.TextColor3 = Color3.fromRGB(30, 30, 30)
+	_browseButton.TextSize = 14
+	_browseButton.Font = Enum.Font.GothamBold
+	_browseButton.AutoButtonColor = true
+	_browseButton.Parent = _gui
+
+	local browseCorner = Instance.new("UICorner")
+	browseCorner.CornerRadius = UDim.new(0, 8)
+	browseCorner.Parent = _browseButton
+
+	-- Catalog panel (left side)
+	_catalogPanel = Instance.new("Frame")
+	_catalogPanel.Name = "CatalogPanel"
+	_catalogPanel.Size = UDim2.new(0, 260, 0, 400)
+	_catalogPanel.Position = UDim2.new(0, 10, 0, 86)
+	_catalogPanel.BackgroundColor3 = COLORS.bg
+	_catalogPanel.BackgroundTransparency = 0.1
+	_catalogPanel.BorderSizePixel = 0
+	_catalogPanel.Visible = false
+	_catalogPanel.Parent = _gui
+
+	local catPanelCorner = Instance.new("UICorner")
+	catPanelCorner.CornerRadius = UDim.new(0, 10)
+	catPanelCorner.Parent = _catalogPanel
+
+	-- Search box
+	_catalogSearchBox = Instance.new("TextBox")
+	_catalogSearchBox.Name = "CatalogSearch"
+	_catalogSearchBox.Size = UDim2.new(1, -16, 0, 28)
+	_catalogSearchBox.Position = UDim2.new(0, 8, 0, 8)
+	_catalogSearchBox.BackgroundColor3 = COLORS.bgLight
+	_catalogSearchBox.BorderSizePixel = 0
+	_catalogSearchBox.PlaceholderText = "Search items..."
+	_catalogSearchBox.PlaceholderColor3 = COLORS.textDim
+	_catalogSearchBox.Text = ""
+	_catalogSearchBox.TextColor3 = COLORS.text
+	_catalogSearchBox.TextSize = 13
+	_catalogSearchBox.Font = Enum.Font.Gotham
+	_catalogSearchBox.ClearTextOnFocus = false
+	_catalogSearchBox.Parent = _catalogPanel
+
+	local searchCorner = Instance.new("UICorner")
+	searchCorner.CornerRadius = UDim.new(0, 6)
+	searchCorner.Parent = _catalogSearchBox
+
+	local searchPad = Instance.new("UIPadding")
+	searchPad.PaddingLeft = UDim.new(0, 8)
+	searchPad.PaddingRight = UDim.new(0, 8)
+	searchPad.Parent = _catalogSearchBox
+
+	-- Scrolling frame for items
+	_catalogScroll = Instance.new("ScrollingFrame")
+	_catalogScroll.Name = "CatalogScroll"
+	_catalogScroll.Size = UDim2.new(1, -16, 1, -48)
+	_catalogScroll.Position = UDim2.new(0, 8, 0, 42)
+	_catalogScroll.BackgroundTransparency = 1
+	_catalogScroll.BorderSizePixel = 0
+	_catalogScroll.ScrollBarThickness = 4
+	_catalogScroll.ScrollBarImageColor3 = COLORS.accentDim
+	_catalogScroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	_catalogScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	_catalogScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	_catalogScroll.Parent = _catalogPanel
+
+	local scrollLayout = Instance.new("UIListLayout")
+	scrollLayout.FillDirection = Enum.FillDirection.Vertical
+	scrollLayout.Padding = UDim.new(0, 4)
+	scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	scrollLayout.Parent = _catalogScroll
+
+	-- Browse button toggle
+	_browseButton.Activated:Connect(function()
+		_catalogOpen = not _catalogOpen
+		_catalogPanel.Visible = _catalogOpen
+		if _catalogOpen then
+			loadCatalog()
+		end
+	end)
+
+	-- Search filtering
+	_catalogSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+		if _catalogCache then
+			filterCatalog(_catalogSearchBox.Text)
+		end
+	end)
+
 	_gui.Parent = Player.PlayerGui
 
 	updateStyleHighlights()
@@ -649,11 +822,34 @@ function removeQueueEntry(id: number)
 	end)
 end
 
+function updateCurrencyDisplay()
+	if _foldsLabel then
+		_foldsLabel.Text = tostring(_foldsCount)
+	end
+	if _craneLabel then
+		_craneLabel.Text = tostring(_craneCount)
+	end
+end
+
+
 local TEST_MODELS = { "haiku", "flash_lite", "gpt4o_mini" }
 local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4o" }
 local TEST_SPACING = 8 -- studs between each test model
 
 function submitSingleRequest(prompt: string, category: string, style: string, model: string, placementOffset: Vector3?, labelOverride: string?)
+	-- Deduct cranes before sending request (skip in Studio)
+	if not RunService:IsStudio() then
+		local craneCost = OrigamiConfig.CRANE_COSTS[model] or 1
+		local PlayerDataService = Knit.GetService("PlayerDataService")
+		local deductOk, deductResult = PlayerDataService:DeductCurrency("Cranes", craneCost):await()
+		if not deductOk or not deductResult or not deductResult.success then
+			setStatus("Not enough Cranes!", COLORS.error)
+			return
+		end
+		_craneCount = deductResult.remaining
+		updateCurrencyDisplay()
+	end
+
 	local queueId = addQueueEntry(prompt .. (if labelOverride then " [" .. labelOverride .. "]" else ""), category)
 
 	task.spawn(function()
@@ -1163,10 +1359,216 @@ function addNameLabel(model: Model, name: string)
 	end
 end
 
+local CATEGORY_ICONS = {
+	creature = "C",
+	avatar = "A",
+	vehicle = "V",
+	building = "B",
+	tool = "T",
+	hat = "H",
+	prop = "P",
+}
+
+function loadCatalog()
+	if _catalogCache then
+		renderCatalogItems(_catalogCache)
+		return
+	end
+
+	-- Show loading state
+	for _, child in ipairs(_catalogScroll:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+
+	task.spawn(function()
+		local OrigamiService = Knit.GetService("OrigamiService")
+		local ok, result = OrigamiService:FetchCatalog():await()
+
+		if ok and result and result.success and result.items then
+			_catalogCache = result.items
+			renderCatalogItems(_catalogCache)
+		else
+			setStatus("Failed to load catalog", COLORS.error)
+		end
+	end)
+end
+
+function filterCatalog(searchText: string)
+	if not _catalogCache then
+		return
+	end
+
+	if not searchText or searchText == "" then
+		renderCatalogItems(_catalogCache)
+		return
+	end
+
+	local lower = searchText:lower()
+	local filtered = {}
+	for _, item in ipairs(_catalogCache) do
+		if item.name and item.name:lower():find(lower, 1, true) then
+			table.insert(filtered, item)
+		end
+	end
+	renderCatalogItems(filtered)
+end
+
+function renderCatalogItems(items: { any })
+	-- Clear existing entries
+	for _, child in ipairs(_catalogScroll:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+
+	for i, item in ipairs(items) do
+		local entry = Instance.new("Frame")
+		entry.Name = "CatItem_" .. i
+		entry.Size = UDim2.new(1, 0, 0, 32)
+		entry.BackgroundColor3 = COLORS.bgLight
+		entry.BackgroundTransparency = 0.3
+		entry.BorderSizePixel = 0
+		entry.LayoutOrder = i
+		entry.Parent = _catalogScroll
+
+		local entryCorner = Instance.new("UICorner")
+		entryCorner.CornerRadius = UDim.new(0, 6)
+		entryCorner.Parent = entry
+
+		-- Category icon
+		local icon = Instance.new("TextLabel")
+		icon.Name = "Icon"
+		icon.Size = UDim2.new(0, 20, 1, 0)
+		icon.Position = UDim2.new(0, 4, 0, 0)
+		icon.BackgroundTransparency = 1
+		icon.Text = CATEGORY_ICONS[item.category] or "?"
+		icon.TextColor3 = COLORS.accent
+		icon.TextSize = 12
+		icon.Font = Enum.Font.GothamBold
+		icon.Parent = entry
+
+		-- Name
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Name = "ItemName"
+		nameLabel.Size = UDim2.new(1, -90, 1, 0)
+		nameLabel.Position = UDim2.new(0, 26, 0, 0)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Text = item.name or "Unknown"
+		nameLabel.TextColor3 = COLORS.text
+		nameLabel.TextSize = 12
+		nameLabel.Font = Enum.Font.Gotham
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		nameLabel.Parent = entry
+
+		-- Spawn button with coin cost
+		local spawnBtn = Instance.new("TextButton")
+		spawnBtn.Name = "SpawnBtn"
+		spawnBtn.Size = UDim2.new(0, 56, 0, 24)
+		spawnBtn.Position = UDim2.new(1, -60, 0.5, -12)
+		spawnBtn.BackgroundColor3 = COLORS.folds
+		spawnBtn.BorderSizePixel = 0
+		spawnBtn.Text = tostring(OrigamiConfig.CACHED_ITEM_COST) .. " F"
+		spawnBtn.TextColor3 = Color3.fromRGB(30, 30, 30)
+		spawnBtn.TextSize = 11
+		spawnBtn.Font = Enum.Font.GothamBold
+		spawnBtn.AutoButtonColor = true
+		spawnBtn.Parent = entry
+
+		local spawnCorner = Instance.new("UICorner")
+		spawnCorner.CornerRadius = UDim.new(0, 6)
+		spawnCorner.Parent = spawnBtn
+
+		spawnBtn.Activated:Connect(function()
+			spawnCatalogItem(item)
+		end)
+	end
+end
+
+function spawnCatalogItem(item: { [string]: any })
+	-- Deduct coins (skip in Studio)
+	if not RunService:IsStudio() then
+		local PlayerDataService = Knit.GetService("PlayerDataService")
+		local ok, result = PlayerDataService:DeductCurrency("Folds", OrigamiConfig.CACHED_ITEM_COST):await()
+		if not ok or not result or not result.success then
+			setStatus("Not enough Folds!", COLORS.error)
+			return
+		end
+		_foldsCount = result.remaining
+		updateCurrencyDisplay()
+	end
+
+	-- Fetch full model data from server
+	task.spawn(function()
+		local OrigamiService = Knit.GetService("OrigamiService")
+		local ok, result = OrigamiService:FetchCatalogItem(item.id):await()
+
+		if not ok or not result or not result.success or not result.item then
+			setStatus("Failed to load item", COLORS.error)
+			return
+		end
+
+		local modelData = result.item.result
+		if not modelData then
+			setStatus("Item data missing", COLORS.error)
+			return
+		end
+
+		local cat = modelData.category or item.category or "prop"
+
+		local buildOk, buildErr = pcall(function()
+			local builtModel = OrigamiBuilder.BuildModel(modelData)
+
+			if cat == "tool" then
+				equipAsTool(builtModel, modelData)
+			elseif cat == "hat" then
+				equipAsHat(builtModel, modelData)
+			elseif cat == "vehicle" then
+				spawnVehicle(builtModel, modelData)
+			elseif cat == "avatar" then
+				applyAvatar(builtModel, modelData)
+			elseif cat == "building" then
+				placeBuilding(builtModel, modelData)
+			elseif cat == "creature" then
+				spawnCreature(builtModel, modelData)
+			else
+				placeModel(builtModel, modelData)
+			end
+
+			if cat ~= "tool" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+				local animType = modelData.animation or "idle_bob"
+				OrigamiBuilder.ApplyAnimation(builtModel, animType)
+			end
+		end)
+
+		if buildOk then
+			setStatus("Spawned: " .. (modelData.name or "Item"), COLORS.success)
+			_successSound:Play()
+		else
+			warn("[CatalogSpawn] Build error:", buildErr)
+			setStatus("Build error", COLORS.error)
+			_failSound:Play()
+		end
+	end)
+end
+
 function CreatorController:KnitInit() end
 
 function CreatorController:KnitStart()
 	createUI()
+
+	-- Fetch initial currency balances
+	task.spawn(function()
+		local PlayerDataService = Knit.GetService("PlayerDataService")
+		local ok, balances = PlayerDataService:GetCurrency():await()
+		if ok and balances then
+			_foldsCount = balances.Folds or 0
+			_craneCount = balances.Cranes or 0
+			updateCurrencyDisplay()
+		end
+	end)
 
 	local OrigamiService = Knit.GetService("OrigamiService")
 	OrigamiService.ModelGenerated:Connect(function(modelData) end)

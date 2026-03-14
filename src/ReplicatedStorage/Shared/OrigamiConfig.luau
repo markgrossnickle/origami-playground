@@ -53,6 +53,19 @@ OrigamiConfig.STYLES = {
 	{ key = "freestyle", display = "Freestyle" },
 }
 
+-- Crane costs per model (new LLM generations)
+OrigamiConfig.CRANE_COSTS = {
+	haiku = 1,
+	sonnet = 3,
+	opus = 5,
+	flash_lite = 1,
+	gpt4o_mini = 1,
+	test = 3, -- sum of the 3 cheapest
+}
+
+-- Folds cost to spawn a cached catalog item
+OrigamiConfig.CACHED_ITEM_COST = 10
+
 -- DM (Dungeon Master) mode
 OrigamiConfig.DM = {
 	MAX_SCENE_ITEMS = 15,

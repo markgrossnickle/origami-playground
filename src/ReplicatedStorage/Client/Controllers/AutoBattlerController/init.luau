@@ -10,6 +10,10 @@ local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 -- Types
 ----------------------------------------------------------------------
 
+type AttackType = "single" | "splash" | "rapid" | "piercing"
+type TargetPriority = "nearest" | "weakest" | "strongest" | "fastest"
+type DefenseType = "none" | "armor" | "dodge" | "regen"
+
 type UnitData = {
 	model: Model,
 	name: string,
@@ -21,6 +25,9 @@ type UnitData = {
 	hpBar: BillboardGui?,
 	hpFill: Frame?,
 	alive: boolean,
+	attackType: AttackType,
+	targetPriority: TargetPriority,
+	defenseType: DefenseType,
 }
 
 ----------------------------------------------------------------------
@@ -47,7 +54,21 @@ local ARENA_DEPTH = 20
 local FLOOR_HEIGHT = 0.2
 local COMBAT_TICK = 0.5
 local ATTACK_RANGE = 6
+local SPLASH_RADIUS = 8
 local UNIT_SPACING = 8
+
+local ARMOR_REDUCTION = 0.3 -- 30% damage reduction
+local DODGE_CHANCE = 0.25 -- 25% chance to avoid damage
+local REGEN_PER_TICK = 3 -- HP healed per combat tick
+
+local VALID_ATTACK_TYPES: { [string]: boolean } = { single = true, splash = true, rapid = true, piercing = true }
+local VALID_TARGET_PRIORITIES: { [string]: boolean } =
+	{ nearest = true, weakest = true, strongest = true, fastest = true }
+local VALID_DEFENSE_TYPES: { [string]: boolean } = { none = true, armor = true, dodge = true, regen = true }
+
+local RANDOM_ATTACK_TYPES: { AttackType } = { "single", "splash", "rapid", "piercing" }
+local RANDOM_TARGET_PRIORITIES: { TargetPriority } = { "nearest", "weakest", "strongest", "fastest" }
+local RANDOM_DEFENSE_TYPES: { DefenseType } = { "none", "armor", "dodge", "regen" }
 
 local ENEMY_COLORS = {
 	Color3.fromRGB(200, 60, 60),
@@ -204,17 +225,33 @@ local function refreshUnitList()
 		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 		nameLabel.Parent = entry
 
-		local hpLabel = Instance.new("TextLabel")
-		hpLabel.Name = "HP"
-		hpLabel.Size = UDim2.new(0.4, -6, 1, 0)
-		hpLabel.Position = UDim2.new(0.6, 0, 0, 0)
-		hpLabel.BackgroundTransparency = 1
-		hpLabel.Text = tostring(math.ceil(unit.hp)) .. "/" .. tostring(unit.maxHp) .. " HP"
-		hpLabel.TextColor3 = COLORS.success
-		hpLabel.TextSize = 12
-		hpLabel.Font = Enum.Font.GothamMedium
-		hpLabel.TextXAlignment = Enum.TextXAlignment.Right
-		hpLabel.Parent = entry
+		local statsLabel = Instance.new("TextLabel")
+		statsLabel.Name = "Stats"
+		statsLabel.Size = UDim2.new(0.4, -6, 0.5, 0)
+		statsLabel.Position = UDim2.new(0.6, 0, 0, 0)
+		statsLabel.BackgroundTransparency = 1
+		statsLabel.Text = tostring(math.ceil(unit.hp)) .. "/" .. tostring(unit.maxHp) .. " HP"
+		statsLabel.TextColor3 = COLORS.success
+		statsLabel.TextSize = 11
+		statsLabel.Font = Enum.Font.GothamMedium
+		statsLabel.TextXAlignment = Enum.TextXAlignment.Right
+		statsLabel.Parent = entry
+
+		local stratLabel = Instance.new("TextLabel")
+		stratLabel.Name = "Strategy"
+		stratLabel.Size = UDim2.new(0.4, -6, 0.5, 0)
+		stratLabel.Position = UDim2.new(0.6, 0, 0.5, 0)
+		stratLabel.BackgroundTransparency = 1
+		stratLabel.Text = unit.attackType:sub(1, 3)
+			.. "/"
+			.. unit.targetPriority:sub(1, 3)
+			.. "/"
+			.. unit.defenseType:sub(1, 3)
+		stratLabel.TextColor3 = COLORS.textDim
+		stratLabel.TextSize = 10
+		stratLabel.Font = Enum.Font.Gotham
+		stratLabel.TextXAlignment = Enum.TextXAlignment.Right
+		stratLabel.Parent = entry
 	end
 end
 
@@ -379,6 +416,9 @@ local function spawnEnemyTeam()
 			hpBar = nil,
 			hpFill = nil,
 			alive = true,
+			attackType = RANDOM_ATTACK_TYPES[math.random(1, #RANDOM_ATTACK_TYPES)],
+			targetPriority = RANDOM_TARGET_PRIORITIES[math.random(1, #RANDOM_TARGET_PRIORITIES)],
+			defenseType = RANDOM_DEFENSE_TYPES[math.random(1, #RANDOM_DEFENSE_TYPES)],
 		}
 		createHpBar(unit)
 		table.insert(_enemyUnits, unit)
@@ -455,6 +495,22 @@ local function addPlayerUnit(prompt: string)
 		local hp, damage, speed = deriveStatsFromModel(model)
 		local unitName = if modelData and modelData.name then modelData.name else prompt
 
+		-- Read strategy from LLM response, validate, default to basic
+		local atkType: AttackType = "single"
+		local tgtPriority: TargetPriority = "nearest"
+		local defType: DefenseType = "none"
+		if modelData then
+			if modelData.attackType and VALID_ATTACK_TYPES[modelData.attackType] then
+				atkType = modelData.attackType :: AttackType
+			end
+			if modelData.targetPriority and VALID_TARGET_PRIORITIES[modelData.targetPriority] then
+				tgtPriority = modelData.targetPriority :: TargetPriority
+			end
+			if modelData.defenseType and VALID_DEFENSE_TYPES[modelData.defenseType] then
+				defType = modelData.defenseType :: DefenseType
+			end
+		end
+
 		local unit: UnitData = {
 			model = model,
 			name = unitName,
@@ -466,6 +522,9 @@ local function addPlayerUnit(prompt: string)
 			hpBar = nil,
 			hpFill = nil,
 			alive = true,
+			attackType = atkType,
+			targetPriority = tgtPriority,
+			defenseType = defType,
 		}
 		createHpBar(unit)
 		table.insert(_playerUnits, unit)
@@ -476,7 +535,7 @@ local function addPlayerUnit(prompt: string)
 		-- Spawn matching enemies
 		spawnEnemyTeam()
 
-		setStatus(unitName .. " added! (HP:" .. hp .. " DMG:" .. damage .. ")", COLORS.success)
+		setStatus(unitName .. " [" .. atkType .. "/" .. tgtPriority .. "/" .. defType .. "]", COLORS.success)
 		refreshUnitList()
 		updateFightButton()
 		updateInputState()
@@ -487,23 +546,44 @@ end
 -- Combat
 ----------------------------------------------------------------------
 
-local function findNearestAlive(unit: UnitData, targets: { UnitData }): UnitData?
-	local nearest: UnitData? = nil
-	local nearestDist = math.huge
-
+local function findTarget(unit: UnitData, targets: { UnitData }): UnitData?
 	local unitPos = unit.model:GetPivot().Position
+	local priority = unit.targetPriority
+
+	local best: UnitData? = nil
+	local bestScore = math.huge -- lower is better for nearest/weakest, negated for strongest/fastest
 
 	for _, target in targets do
 		if target.alive and target.model and target.model.PrimaryPart then
 			local dist = (target.model:GetPivot().Position - unitPos).Magnitude
-			if dist < nearestDist then
-				nearestDist = dist
-				nearest = target
+
+			if priority == "nearest" then
+				if dist < bestScore then
+					bestScore = dist
+					best = target
+				end
+			elseif priority == "weakest" then
+				if target.hp < bestScore then
+					bestScore = target.hp
+					best = target
+				end
+			elseif priority == "strongest" then
+				local score = -target.maxHp
+				if score < bestScore then
+					bestScore = score
+					best = target
+				end
+			elseif priority == "fastest" then
+				local score = -target.speed
+				if score < bestScore then
+					bestScore = score
+					best = target
+				end
 			end
 		end
 	end
 
-	return nearest
+	return best
 end
 
 local function moveUnitToward(unit: UnitData, targetPos: Vector3, dt: number)
@@ -545,6 +625,62 @@ local function killUnit(unit: UnitData)
 	end
 end
 
+local function dealDamage(attacker: UnitData, target: UnitData)
+	-- Defense check
+	if target.defenseType == "dodge" then
+		if math.random() < DODGE_CHANCE then
+			return -- dodged
+		end
+	end
+
+	local dmg = attacker.damage
+	if target.defenseType == "armor" and attacker.attackType ~= "piercing" then
+		dmg = dmg * (1 - ARMOR_REDUCTION)
+	end
+
+	target.hp -= dmg
+	updateHpBar(target)
+	if target.hp <= 0 then
+		killUnit(target)
+	end
+end
+
+local function applyAttack(attacker: UnitData, target: UnitData, allTargets: { UnitData })
+	if attacker.attackType == "splash" then
+		-- Damage target + all enemies within SPLASH_RADIUS of target
+		local center = target.model:GetPivot().Position
+		for _, other in allTargets do
+			if other.alive and other.model and other.model.PrimaryPart then
+				local dist = (other.model:GetPivot().Position - center).Magnitude
+				if dist <= SPLASH_RADIUS then
+					dealDamage(attacker, other)
+				end
+			end
+		end
+	elseif attacker.attackType == "rapid" then
+		-- Two hits at reduced damage
+		local origDmg = attacker.damage
+		attacker.damage = math.floor(origDmg * 0.6)
+		dealDamage(attacker, target)
+		if target.alive then
+			dealDamage(attacker, target)
+		end
+		attacker.damage = origDmg
+	else
+		-- single or piercing (piercing handled in dealDamage)
+		dealDamage(attacker, target)
+	end
+end
+
+local function applyRegen(units: { UnitData })
+	for _, unit in units do
+		if unit.alive and unit.defenseType == "regen" and unit.hp < unit.maxHp then
+			unit.hp = math.min(unit.maxHp, unit.hp + REGEN_PER_TICK)
+			updateHpBar(unit)
+		end
+	end
+end
+
 local function runCombat()
 	_fighting = true
 	updateInputState()
@@ -553,10 +689,14 @@ local function runCombat()
 
 	task.spawn(function()
 		while _active and _fighting and teamAlive(_playerUnits) and teamAlive(_enemyUnits) do
-			-- Move phase
+			-- Regen phase
+			applyRegen(_playerUnits)
+			applyRegen(_enemyUnits)
+
+			-- Move phase (always move toward strategy target)
 			for _, unit in _playerUnits do
 				if unit.alive then
-					local target = findNearestAlive(unit, _enemyUnits)
+					local target = findTarget(unit, _enemyUnits)
 					if target and target.model then
 						moveUnitToward(unit, target.model:GetPivot().Position, COMBAT_TICK)
 					end
@@ -564,40 +704,32 @@ local function runCombat()
 			end
 			for _, unit in _enemyUnits do
 				if unit.alive then
-					local target = findNearestAlive(unit, _playerUnits)
+					local target = findTarget(unit, _playerUnits)
 					if target and target.model then
 						moveUnitToward(unit, target.model:GetPivot().Position, COMBAT_TICK)
 					end
 				end
 			end
 
-			-- Attack phase
+			-- Attack phase (uses strategy)
 			for _, unit in _playerUnits do
 				if unit.alive then
-					local target = findNearestAlive(unit, _enemyUnits)
+					local target = findTarget(unit, _enemyUnits)
 					if target and target.alive and target.model then
 						local dist = (unit.model:GetPivot().Position - target.model:GetPivot().Position).Magnitude
 						if dist <= ATTACK_RANGE then
-							target.hp -= unit.damage
-							updateHpBar(target)
-							if target.hp <= 0 then
-								killUnit(target)
-							end
+							applyAttack(unit, target, _enemyUnits)
 						end
 					end
 				end
 			end
 			for _, unit in _enemyUnits do
 				if unit.alive then
-					local target = findNearestAlive(unit, _playerUnits)
+					local target = findTarget(unit, _playerUnits)
 					if target and target.alive and target.model then
 						local dist = (unit.model:GetPivot().Position - target.model:GetPivot().Position).Magnitude
 						if dist <= ATTACK_RANGE then
-							target.hp -= unit.damage
-							updateHpBar(target)
-							if target.hp <= 0 then
-								killUnit(target)
-							end
+							applyAttack(unit, target, _playerUnits)
 						end
 					end
 				end

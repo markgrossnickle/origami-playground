@@ -1,7 +1,8 @@
 --!strict
 --[[
 	TowerDefenseController
-	Tower defense game mode: build origami towers via LLM prompts, defend against waves of enemies.
+	PvP tower defense: Player vs Bot. Both sides earn gold passively, build towers (defend),
+	and send creep (attack). First to destroy the enemy base wins.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -25,53 +26,123 @@ local COLORS = {
 	success = Color3.fromRGB(100, 220, 140),
 	error = Color3.fromRGB(220, 100, 100),
 	danger = Color3.fromRGB(200, 60, 60),
+	gold = Color3.fromRGB(255, 210, 60),
+	botColor = Color3.fromRGB(200, 80, 80),
+	playerColor = Color3.fromRGB(80, 160, 255),
 }
 
--- Game constants
-local MAX_LIVES = 20
+-- Layout constants
 local WAYPOINT_COUNT = 6
 local PATH_LENGTH = 100
 local PATH_Y = 0.5
 local TOWER_OFFSET = 10
-local ENEMY_SPAWN_INTERVAL = 3
+
+-- Combat constants
 local ATTACK_INTERVAL = 1
 local PROJECTILE_SPEED = 0.3
-local BASE_ENEMY_HP = 50
-local HP_PER_WAVE = 20
-local ENEMIES_BASE = 2
+local BASE_HP = 100
+
+-- Economy constants
+local STARTING_GOLD = 100
+local GOLD_PER_SECOND = 5
+local KILL_BONUS = 10
+local TOWER_COST = 50
+
+-- Creep tiers
+local CREEP_TIERS = {
+	Scout = { cost = 20, hp = 40, speed = 14, size = 2, label = "Scout (20g)" },
+	Soldier = { cost = 35, hp = 80, speed = 10, size = 3, label = "Soldier (35g)" },
+	Brute = { cost = 50, hp = 150, speed = 6, size = 4, label = "Brute (50g)" },
+}
+
+-- Bot AI constants
+local BOT_THINK_INTERVAL = 4
+local BOT_MAX_TOWERS = 5
+
+-- Strategy constants
+local ARMOR_REDUCTION = 0.3
+local DODGE_CHANCE = 0.25
+local REGEN_PER_TICK = 2
+local SPLASH_RADIUS = 12
+
+type AttackType = "single" | "splash" | "rapid" | "piercing"
+type TargetPriority = "nearest" | "weakest" | "strongest" | "fastest"
+type DefenseType = "none" | "armor" | "dodge" | "regen"
+
+local VALID_ATTACK_TYPES: { [string]: boolean } = { single = true, splash = true, rapid = true, piercing = true }
+local VALID_TARGET_PRIORITIES: { [string]: boolean } =
+	{ nearest = true, weakest = true, strongest = true, fastest = true }
+local RANDOM_ATTACK_TYPES: { AttackType } = { "single", "splash", "rapid", "piercing" }
+local RANDOM_TARGET_PRIORITIES: { TargetPriority } = { "nearest", "weakest", "strongest", "fastest" }
+local RANDOM_DEFENSE_TYPES: { DefenseType } = { "none", "armor", "dodge", "regen" }
+
+-- Types
+type Tower = {
+	model: Model | BasePart,
+	damage: number,
+	range: number,
+	position: Vector3,
+	side: string,
+	_lastAttack: number,
+	attackType: AttackType,
+	targetPriority: TargetPriority,
+}
+type Creep = {
+	part: BasePart,
+	hp: number,
+	maxHp: number,
+	waypointIndex: number,
+	speed: number,
+	alive: boolean,
+	side: string,
+	tier: string,
+	defenseType: DefenseType,
+}
 
 -- State
 local _gui: ScreenGui? = nil
 local _active = false
-local _lives = MAX_LIVES
-local _wave = 0
-local _waveRunning = false
 local _gameOver = false
 
-local _towers: { { model: Model, damage: number, range: number, position: Vector3 } } = {}
-local _enemies: { { part: BasePart, hp: number, maxHp: number, waypointIndex: number, speed: number, alive: boolean } } =
-	{}
-local _projectiles: { BasePart } = {}
+local _playerGold = STARTING_GOLD
+local _botGold = STARTING_GOLD
+local _playerBaseHP = BASE_HP
+local _botBaseHP = BASE_HP
+
+local _playerTowers: { Tower } = {}
+local _botTowers: { Tower } = {}
+local _playerCreep: { Creep } = {} -- player's creep walk toward bot base
+local _botCreep: { Creep } = {} -- bot's creep walk toward player base
+
 local _waypoints: { Vector3 } = {}
 local _waypointParts: { BasePart } = {}
 local _allInstances: { Instance } = {}
 local _connections: { RBXScriptConnection } = {}
 
--- UI references
-local _waveLabel: TextLabel? = nil
-local _livesLabel: TextLabel? = nil
+-- UI refs
+local _goldLabel: TextLabel? = nil
+local _playerHPLabel: TextLabel? = nil
+local _botHPLabel: TextLabel? = nil
 local _statusLabel: TextLabel? = nil
 local _inputBox: TextBox? = nil
 local _buildButton: TextButton? = nil
-local _startWaveButton: TextButton? = nil
+local _scoutButton: TextButton? = nil
+local _soldierButton: TextButton? = nil
+local _bruteButton: TextButton? = nil
 local _gameOverLabel: TextLabel? = nil
 
+-- World folders
 local _pathFolder: Folder? = nil
 local _towerFolder: Folder? = nil
-local _enemyFolder: Folder? = nil
+local _creepFolder: Folder? = nil
 local _projectileFolder: Folder? = nil
+local _baseFolder: Folder? = nil
 
--- Helpers
+-- Base parts (visual)
+local _playerBasePart: BasePart? = nil
+local _botBasePart: BasePart? = nil
+
+---------- Helpers ----------
 
 local function getPathOrigin(): Vector3
 	local char = Player.Character
@@ -110,7 +181,6 @@ local function createWaypointMarkers()
 		table.insert(_allInstances, marker)
 	end
 
-	-- Draw path lines between waypoints
 	for i = 1, #_waypoints - 1 do
 		local a = _waypoints[i]
 		local b = _waypoints[i + 1]
@@ -129,6 +199,40 @@ local function createWaypointMarkers()
 	end
 end
 
+local function createBases()
+	if #_waypoints < 2 then
+		return
+	end
+
+	-- Player base (left end)
+	local playerBase = Instance.new("Part")
+	playerBase.Shape = Enum.PartType.Block
+	playerBase.Size = Vector3.new(6, 8, 6)
+	playerBase.Position = _waypoints[1] + Vector3.new(-4, 4, 0)
+	playerBase.Anchored = true
+	playerBase.CanCollide = false
+	playerBase.Material = Enum.Material.SmoothPlastic
+	playerBase.Color = COLORS.playerColor
+	playerBase.Transparency = 0.3
+	playerBase.Parent = _baseFolder
+	table.insert(_allInstances, playerBase)
+	_playerBasePart = playerBase
+
+	-- Bot base (right end)
+	local botBase = Instance.new("Part")
+	botBase.Shape = Enum.PartType.Block
+	botBase.Size = Vector3.new(6, 8, 6)
+	botBase.Position = _waypoints[#_waypoints] + Vector3.new(4, 4, 0)
+	botBase.Anchored = true
+	botBase.CanCollide = false
+	botBase.Material = Enum.Material.SmoothPlastic
+	botBase.Color = COLORS.botColor
+	botBase.Transparency = 0.3
+	botBase.Parent = _baseFolder
+	table.insert(_allInstances, botBase)
+	_botBasePart = botBase
+end
+
 local function setStatus(text: string, color: Color3?)
 	if _statusLabel then
 		_statusLabel.Text = text
@@ -137,51 +241,142 @@ local function setStatus(text: string, color: Color3?)
 end
 
 local function updateHUD()
-	if _waveLabel then
-		_waveLabel.Text = "Wave: " .. tostring(_wave)
+	if _goldLabel then
+		_goldLabel.Text = "Gold: " .. tostring(math.floor(_playerGold))
 	end
-	if _livesLabel then
-		_livesLabel.Text = "Lives: " .. tostring(_lives)
-		_livesLabel.TextColor3 = if _lives <= 5 then COLORS.danger else COLORS.text
+	if _playerHPLabel then
+		_playerHPLabel.Text = "Your Base: " .. tostring(math.floor(_playerBaseHP))
+		_playerHPLabel.TextColor3 = if _playerBaseHP <= 30 then COLORS.danger else COLORS.playerColor
+	end
+	if _botHPLabel then
+		_botHPLabel.Text = "Enemy Base: " .. tostring(math.floor(_botBaseHP))
+		_botHPLabel.TextColor3 = if _botBaseHP <= 30 then COLORS.success else COLORS.botColor
+	end
+
+	-- Update creep button states
+	local buttons = {
+		{ btn = _scoutButton, cost = CREEP_TIERS.Scout.cost },
+		{ btn = _soldierButton, cost = CREEP_TIERS.Soldier.cost },
+		{ btn = _bruteButton, cost = CREEP_TIERS.Brute.cost },
+	}
+	for _, entry in ipairs(buttons) do
+		if entry.btn then
+			local canAfford = _playerGold >= entry.cost and not _gameOver
+			entry.btn.AutoButtonColor = canAfford
+			entry.btn.BackgroundColor3 = if canAfford then COLORS.accent else COLORS.disabled
+		end
+	end
+
+	-- Build button: need gold + not game over
+	if _buildButton then
+		local canBuild = _playerGold >= TOWER_COST and not _gameOver
+		_buildButton.AutoButtonColor = canBuild
+		_buildButton.BackgroundColor3 = if canBuild then COLORS.accent else COLORS.disabled
+	end
+
+	-- Update base visuals (flash when low HP)
+	if _playerBasePart then
+		_playerBasePart.Transparency = if _playerBaseHP <= 30 then 0.1 else 0.3
+	end
+	if _botBasePart then
+		_botBasePart.Transparency = if _botBaseHP <= 30 then 0.1 else 0.3
 	end
 end
 
-local function findNearestEnemy(
-	pos: Vector3,
-	range: number
-): {
-	part: BasePart,
-	hp: number,
-	maxHp: number,
-	waypointIndex: number,
-	speed: number,
-	alive: boolean,
-}?
-	local best = nil
-	local bestDist = range + 1
-	for _, enemy in ipairs(_enemies) do
-		if enemy.alive and enemy.part and enemy.part.Parent then
-			local dist = (enemy.part.Position - pos).Magnitude
-			if dist < bestDist then
-				bestDist = dist
-				best = enemy
+---------- Combat ----------
+
+local function findCreepTarget(pos: Vector3, range: number, creepList: { Creep }, priority: TargetPriority): Creep?
+	local best: Creep? = nil
+	local bestScore = math.huge
+
+	for _, creep in ipairs(creepList) do
+		if creep.alive and creep.part and creep.part.Parent then
+			local dist = (creep.part.Position - pos).Magnitude
+			if dist <= range then
+				if priority == "nearest" then
+					if dist < bestScore then
+						bestScore = dist
+						best = creep
+					end
+				elseif priority == "weakest" then
+					if creep.hp < bestScore then
+						bestScore = creep.hp
+						best = creep
+					end
+				elseif priority == "strongest" then
+					local score = -creep.maxHp
+					if score < bestScore then
+						bestScore = score
+						best = creep
+					end
+				elseif priority == "fastest" then
+					-- In TD, "fastest" means closest to reaching your base (most dangerous)
+					local progress: number
+					if creep.side == "player" then
+						-- Player creep walk left→right, higher index = closer to bot base
+						progress = -creep.waypointIndex
+					else
+						-- Bot creep walk right→left, lower index = closer to player base
+						progress = creep.waypointIndex
+					end
+					if progress < bestScore then
+						bestScore = progress
+						best = creep
+					end
+				end
 			end
 		end
 	end
 	return best
 end
 
-local function fireProjectile(from: Vector3, target: BasePart, damage: number)
+local function damageCreep(creep: Creep, damage: number, attackType: AttackType, killerSide: string)
+	if not creep.alive then
+		return
+	end
+
+	-- Defense checks
+	if creep.defenseType == "dodge" then
+		if math.random() < DODGE_CHANCE then
+			return
+		end
+	end
+
+	local dmg = damage
+	if creep.defenseType == "armor" and attackType ~= "piercing" then
+		dmg = dmg * (1 - ARMOR_REDUCTION)
+	end
+
+	creep.hp -= dmg
+	if creep.hp <= 0 then
+		creep.alive = false
+		if creep.part and creep.part.Parent then
+			creep.part:Destroy()
+		end
+		if killerSide == "player" then
+			_playerGold += KILL_BONUS
+		else
+			_botGold += KILL_BONUS
+		end
+	end
+end
+
+local function fireProjectile(
+	from: Vector3,
+	target: BasePart,
+	tower: Tower,
+	targetCreepList: { Creep },
+	killerSide: string
+)
 	local proj = Instance.new("Part")
 	proj.Shape = Enum.PartType.Ball
-	proj.Size = Vector3.new(1, 1, 1)
+	proj.Size = if tower.attackType == "splash" then Vector3.new(1.5, 1.5, 1.5) else Vector3.new(1, 1, 1)
 	proj.Position = from + Vector3.new(0, 3, 0)
 	proj.Anchored = true
 	proj.CanCollide = false
 	proj.Material = Enum.Material.Neon
-	proj.Color = COLORS.accent
+	proj.Color = if killerSide == "player" then COLORS.playerColor else COLORS.botColor
 	proj.Parent = _projectileFolder
-	table.insert(_projectiles, proj)
 	table.insert(_allInstances, proj)
 
 	task.spawn(function()
@@ -193,17 +388,24 @@ local function fireProjectile(from: Vector3, target: BasePart, damage: number)
 			proj.Position = startPos:Lerp(target.Position, t)
 		end
 
-		-- Deal damage to the enemy
-		for _, enemy in ipairs(_enemies) do
-			if enemy.part == target and enemy.alive then
-				enemy.hp -= damage
-				if enemy.hp <= 0 then
-					enemy.alive = false
-					if enemy.part and enemy.part.Parent then
-						enemy.part:Destroy()
+		if tower.attackType == "splash" then
+			-- Damage all creep near impact point
+			local impactPos = if target and target.Parent then target.Position else proj.Position
+			for _, creep in ipairs(targetCreepList) do
+				if creep.alive and creep.part and creep.part.Parent then
+					local dist = (creep.part.Position - impactPos).Magnitude
+					if dist <= SPLASH_RADIUS then
+						damageCreep(creep, tower.damage, tower.attackType, killerSide)
 					end
 				end
-				break
+			end
+		else
+			-- Single target (single, rapid, piercing)
+			for _, creep in ipairs(targetCreepList) do
+				if creep.part == target and creep.alive then
+					damageCreep(creep, tower.damage, tower.attackType, killerSide)
+					break
+				end
 			end
 		end
 
@@ -213,145 +415,256 @@ local function fireProjectile(from: Vector3, target: BasePart, damage: number)
 	end)
 end
 
-local function enemyReachedEnd()
-	_lives -= 1
-	updateHUD()
-	if _lives <= 0 then
+local function checkGameOver()
+	if _gameOver then
+		return
+	end
+
+	local winner: string? = nil
+	if _playerBaseHP <= 0 then
+		_playerBaseHP = 0
+		winner = "bot"
+	elseif _botBaseHP <= 0 then
+		_botBaseHP = 0
+		winner = "player"
+	end
+
+	if winner then
 		_gameOver = true
-		_waveRunning = false
+		updateHUD()
 		if _gameOverLabel then
+			_gameOverLabel.Text = if winner == "player" then "VICTORY!" else "DEFEAT!"
+			_gameOverLabel.TextColor3 = if winner == "player" then COLORS.success else COLORS.danger
 			_gameOverLabel.Visible = true
 		end
-		if _buildButton then
-			_buildButton.AutoButtonColor = false
-			_buildButton.BackgroundColor3 = COLORS.disabled
-		end
-		if _startWaveButton then
-			_startWaveButton.AutoButtonColor = false
-			_startWaveButton.BackgroundColor3 = COLORS.disabled
-		end
-		setStatus("Game Over!", COLORS.danger)
+		setStatus(
+			if winner == "player" then "You destroyed the enemy base!" else "Your base was destroyed!",
+			if winner == "player" then COLORS.success else COLORS.danger
+		)
 	end
 end
 
-local function spawnEnemy(hp: number, speed: number)
-	if #_waypoints < 2 then
+---------- Creep System ----------
+
+local function spawnCreep(side: string, tierName: string)
+	if #_waypoints < 2 or _gameOver then
 		return
+	end
+
+	local tier = CREEP_TIERS[tierName]
+	if not tier then
+		return
+	end
+
+	-- Deduct gold
+	if side == "player" then
+		if _playerGold < tier.cost then
+			return
+		end
+		_playerGold -= tier.cost
+	else
+		if _botGold < tier.cost then
+			return
+		end
+		_botGold -= tier.cost
 	end
 
 	local part = Instance.new("Part")
 	part.Shape = Enum.PartType.Block
-	part.Size = Vector3.new(3, 3, 3)
-	part.Position = _waypoints[1] + Vector3.new(0, 1.5, 0)
+	part.Size = Vector3.new(tier.size, tier.size, tier.size)
 	part.Anchored = true
 	part.CanCollide = false
 	part.Material = Enum.Material.SmoothPlastic
 
-	-- Color: red hue, darker with higher HP
-	local brightness = math.clamp(1 - (hp - BASE_ENEMY_HP) / 300, 0.3, 1)
-	part.Color = Color3.fromRGB(math.floor(220 * brightness), math.floor(40 * brightness), math.floor(40 * brightness))
+	-- Player creep start at player base (waypoint 1), walk toward bot base (last waypoint)
+	-- Bot creep start at bot base (last waypoint), walk toward player base (waypoint 1)
+	if side == "player" then
+		part.Position = _waypoints[1] + Vector3.new(0, tier.size / 2, 0)
+		part.Color = COLORS.playerColor
+	else
+		part.Position = _waypoints[#_waypoints] + Vector3.new(0, tier.size / 2, 0)
+		part.Color = COLORS.botColor
+	end
 
-	part.Parent = _enemyFolder
+	part.Parent = _creepFolder
 	table.insert(_allInstances, part)
 
-	local enemy = {
+	-- Assign defense type: brutes get armor, scouts get dodge, soldiers random
+	local defType: DefenseType = "none"
+	if tierName == "Brute" then
+		defType = "armor"
+	elseif tierName == "Scout" then
+		defType = "dodge"
+	elseif tierName == "Soldier" then
+		defType = RANDOM_DEFENSE_TYPES[math.random(1, #RANDOM_DEFENSE_TYPES)]
+	end
+
+	local creep: Creep = {
 		part = part,
-		hp = hp,
-		maxHp = hp,
-		waypointIndex = 1,
-		speed = speed,
+		hp = tier.hp,
+		maxHp = tier.hp,
+		waypointIndex = if side == "player" then 1 else #_waypoints,
+		speed = tier.speed,
 		alive = true,
+		side = side,
+		tier = tierName,
+		defenseType = defType,
 	}
-	table.insert(_enemies, enemy)
 
-	-- Move enemy along waypoints
+	if side == "player" then
+		table.insert(_playerCreep, creep)
+	else
+		table.insert(_botCreep, creep)
+	end
+
+	updateHUD()
+
+	-- Move creep along waypoints
 	task.spawn(function()
-		while enemy.alive and not _gameOver and enemy.waypointIndex < #_waypoints do
-			local targetIdx = enemy.waypointIndex + 1
-			local target = _waypoints[targetIdx] + Vector3.new(0, 1.5, 0)
-			local start = enemy.part.Position
+		if side == "player" then
+			-- Walk left to right (waypoint 1 → last)
+			while creep.alive and not _gameOver and creep.waypointIndex < #_waypoints do
+				local targetIdx = creep.waypointIndex + 1
+				local target = _waypoints[targetIdx] + Vector3.new(0, tier.size / 2, 0)
+				local start = creep.part.Position
 
-			local dist = (target - start).Magnitude
-			local duration = dist / enemy.speed
-			local elapsed = 0
+				local dist = (target - start).Magnitude
+				local duration = dist / creep.speed
+				local elapsed = 0
 
-			while elapsed < duration and enemy.alive and enemy.part and enemy.part.Parent do
-				local dt = task.wait()
-				elapsed += dt
-				local t = math.min(elapsed / duration, 1)
-				enemy.part.Position = start:Lerp(target, t)
+				while elapsed < duration and creep.alive and creep.part and creep.part.Parent do
+					local dt = task.wait()
+					elapsed += dt
+					local t = math.min(elapsed / duration, 1)
+					creep.part.Position = start:Lerp(target, t)
+				end
+
+				if creep.alive then
+					creep.waypointIndex = targetIdx
+				end
 			end
 
-			if enemy.alive then
-				enemy.waypointIndex = targetIdx
+			-- Reached bot base
+			if creep.alive and creep.waypointIndex >= #_waypoints then
+				creep.alive = false
+				_botBaseHP -= 10
+				if creep.part and creep.part.Parent then
+					creep.part:Destroy()
+				end
+				checkGameOver()
+				updateHUD()
 			end
-		end
+		else
+			-- Walk right to left (last waypoint → 1)
+			while creep.alive and not _gameOver and creep.waypointIndex > 1 do
+				local targetIdx = creep.waypointIndex - 1
+				local target = _waypoints[targetIdx] + Vector3.new(0, tier.size / 2, 0)
+				local start = creep.part.Position
 
-		-- Reached end
-		if enemy.alive and enemy.waypointIndex >= #_waypoints then
-			enemy.alive = false
-			if enemy.part and enemy.part.Parent then
-				enemy.part:Destroy()
+				local dist = (target - start).Magnitude
+				local duration = dist / creep.speed
+				local elapsed = 0
+
+				while elapsed < duration and creep.alive and creep.part and creep.part.Parent do
+					local dt = task.wait()
+					elapsed += dt
+					local t = math.min(elapsed / duration, 1)
+					creep.part.Position = start:Lerp(target, t)
+				end
+
+				if creep.alive then
+					creep.waypointIndex = targetIdx
+				end
 			end
-			enemyReachedEnd()
+
+			-- Reached player base
+			if creep.alive and creep.waypointIndex <= 1 then
+				creep.alive = false
+				_playerBaseHP -= 10
+				if creep.part and creep.part.Parent then
+					creep.part:Destroy()
+				end
+				checkGameOver()
+				updateHUD()
+			end
 		end
 	end)
 end
 
-local function startWave()
-	if _gameOver or _waveRunning then
-		return
+---------- Tower Placement ----------
+
+local function placeTowerAtPosition(model: Model | BasePart, side: string, placePos: Vector3): Tower
+	if typeof(model) == "Instance" and model:IsA("Model") then
+		(model :: Model):PivotTo(CFrame.new(placePos))
+	else
+		(model :: BasePart).Position = placePos
 	end
 
-	_waveRunning = true
-	_wave += 1
-	updateHUD()
-	setStatus("Wave " .. tostring(_wave) .. " incoming!", COLORS.accent)
+	if typeof(model) == "Instance" and model:IsA("Model") then
+		model.Parent = _towerFolder
+	else
+		(model :: BasePart).Parent = _towerFolder
+	end
+	table.insert(_allInstances, model)
 
-	if _startWaveButton then
-		_startWaveButton.AutoButtonColor = false
-		_startWaveButton.BackgroundColor3 = COLORS.disabled
+	local damage: number
+	local range: number
+
+	if model:IsA("Model") then
+		local _, size = model:GetBoundingBox()
+		local volume = size.X * size.Y * size.Z
+		local maxDim = math.max(size.X, size.Y, size.Z)
+		damage = math.max(5, math.floor(volume / 2))
+		range = math.max(15, maxDim * 2)
+		OrigamiBuilder.ApplyAnimation(model, "idle_bob")
+	else
+		damage = 10
+		range = 20
 	end
 
-	local enemyCount = _wave + ENEMIES_BASE
-	local hp = BASE_ENEMY_HP + (_wave * HP_PER_WAVE)
-	local speed = 6 + math.min(_wave * 0.5, 6)
+	local tower: Tower = {
+		model = model,
+		damage = damage,
+		range = range,
+		position = placePos,
+		side = side,
+		_lastAttack = 0,
+		attackType = "single",
+		targetPriority = "nearest",
+	}
 
-	task.spawn(function()
-		for i = 1, enemyCount do
-			if _gameOver or not _active then
-				break
-			end
-			spawnEnemy(hp, speed)
-			if i < enemyCount then
-				task.wait(ENEMY_SPAWN_INTERVAL)
-			end
-		end
+	if side == "player" then
+		table.insert(_playerTowers, tower)
+	else
+		table.insert(_botTowers, tower)
+	end
 
-		-- Wait for all enemies to die or reach end
-		while _active and not _gameOver do
-			local anyAlive = false
-			for _, enemy in ipairs(_enemies) do
-				if enemy.alive then
-					anyAlive = true
-					break
-				end
-			end
-			if not anyAlive then
-				break
-			end
-			task.wait(0.5)
-		end
+	return tower
+end
 
-		_waveRunning = false
-		if not _gameOver and _active then
-			setStatus("Wave " .. tostring(_wave) .. " cleared! Build towers or start next wave.", COLORS.success)
-			if _startWaveButton then
-				_startWaveButton.AutoButtonColor = true
-				_startWaveButton.BackgroundColor3 = COLORS.accent
-			end
-		end
-	end)
+local function getRandomTowerPosition(side: string): Vector3
+	if #_waypoints < 2 then
+		return Vector3.new(0, 2, 0)
+	end
+
+	-- Player towers on left half, bot towers on right half
+	local startIdx, endIdx
+	if side == "player" then
+		startIdx = 1
+		endIdx = math.max(1, math.floor(#_waypoints / 2))
+	else
+		startIdx = math.ceil(#_waypoints / 2) + 1
+		endIdx = #_waypoints
+	end
+
+	local wpIndex = math.random(startIdx, math.max(startIdx, endIdx - 1))
+	local wp = _waypoints[wpIndex]
+	local nextWp = _waypoints[math.min(wpIndex + 1, #_waypoints)]
+	local dir = (nextWp - wp).Unit
+	local perpendicular = Vector3.new(-dir.Z, 0, dir.X)
+	local sideOffset = if math.random() > 0.5 then 1 else -1
+	local offset = perpendicular * (TOWER_OFFSET * sideOffset)
+	return wp + offset + Vector3.new(0, 2, 0)
 end
 
 local function placeTower(modelData: { [string]: any })
@@ -361,36 +674,23 @@ local function placeTower(modelData: { [string]: any })
 		return
 	end
 
-	-- Find placement position: near a waypoint, offset from path
-	local wpIndex = math.random(1, math.max(1, #_waypoints - 1))
-	local wp = _waypoints[wpIndex]
-	local nextWp = _waypoints[math.min(wpIndex + 1, #_waypoints)]
-	local dir = (nextWp - wp).Unit
-	local perpendicular = Vector3.new(-dir.Z, 0, dir.X)
-	local side = if math.random() > 0.5 then 1 else -1
-	local offset = perpendicular * (TOWER_OFFSET * side)
-	local placePos = wp + offset + Vector3.new(0, 2, 0)
+	local placePos = getRandomTowerPosition("player")
+	local tower = placeTowerAtPosition(model, "player", placePos)
 
-	model:PivotTo(CFrame.new(placePos))
-	model.Parent = _towerFolder
-	table.insert(_allInstances, model)
+	-- Read strategy from LLM response
+	if modelData then
+		if modelData.attackType and VALID_ATTACK_TYPES[modelData.attackType] then
+			tower.attackType = modelData.attackType :: AttackType
+		end
+		if modelData.targetPriority and VALID_TARGET_PRIORITIES[modelData.targetPriority] then
+			tower.targetPriority = modelData.targetPriority :: TargetPriority
+		end
+	end
 
-	-- Derive stats from bounding box
-	local _, size = model:GetBoundingBox()
-	local volume = size.X * size.Y * size.Z
-	local maxDim = math.max(size.X, size.Y, size.Z)
-
-	local tower = {
-		model = model,
-		damage = math.max(5, math.floor(volume / 2)),
-		range = math.max(15, maxDim * 2),
-		position = placePos,
-	}
-	table.insert(_towers, tower)
-
-	OrigamiBuilder.ApplyAnimation(model, "idle_bob")
-
-	setStatus(string.format("Tower placed! DMG: %d, Range: %d", tower.damage, math.floor(tower.range)), COLORS.success)
+	setStatus(
+		string.format("Tower [%s/%s] DMG:%d", tower.attackType, tower.targetPriority, tower.damage),
+		COLORS.success
+	)
 end
 
 local function submitPrompt()
@@ -405,7 +705,13 @@ local function submitPrompt()
 		setStatus("Enter a prompt to build a tower!", COLORS.error)
 		return
 	end
+	if _playerGold < TOWER_COST then
+		setStatus("Not enough gold! Need " .. tostring(TOWER_COST), COLORS.error)
+		return
+	end
 
+	_playerGold -= TOWER_COST
+	updateHUD()
 	_inputBox.Text = ""
 	setStatus("Building tower...", COLORS.accent)
 
@@ -425,7 +731,12 @@ local function submitPrompt()
 
 		if ok and result and result.success and result.model then
 			placeTower(result.model)
+			updateHUD()
 		else
+			-- Refund gold on failure
+			_playerGold += TOWER_COST
+			updateHUD()
+
 			local errMsg = "Failed to generate tower"
 			if result and type(result) == "table" and result.error then
 				errMsg = "Error: " .. tostring(result.error)
@@ -437,36 +748,181 @@ local function submitPrompt()
 	end)
 end
 
--- Tower attack loop
+---------- Bot AI ----------
+
+local function spawnBotTower()
+	if #_waypoints < 2 then
+		return
+	end
+
+	local placePos = getRandomTowerPosition("bot")
+
+	-- Simple colored block tower for bot
+	local part = Instance.new("Part")
+	part.Shape = Enum.PartType.Block
+	local s = math.random(3, 5)
+	part.Size = Vector3.new(s, s * 1.5, s)
+	part.Anchored = true
+	part.CanCollide = false
+	part.Material = Enum.Material.SmoothPlastic
+	part.Color = Color3.fromRGB(math.random(150, 220), math.random(50, 100), math.random(50, 100))
+
+	local tower = placeTowerAtPosition(part, "bot", placePos)
+	tower.attackType = RANDOM_ATTACK_TYPES[math.random(1, #RANDOM_ATTACK_TYPES)]
+	tower.targetPriority = RANDOM_TARGET_PRIORITIES[math.random(1, #RANDOM_TARGET_PRIORITIES)]
+end
+
+local function botThink()
+	if _gameOver or not _active then
+		return
+	end
+
+	-- Priority 1: Build tower if fewer than max
+	if _botGold >= TOWER_COST and #_botTowers < BOT_MAX_TOWERS then
+		if math.random() < 0.4 then
+			spawnBotTower()
+			_botGold -= TOWER_COST
+		end
+	end
+
+	-- Priority 2: Send creep
+	if _botGold >= CREEP_TIERS.Scout.cost then
+		local roll = math.random()
+		if roll < 0.4 and _botGold >= CREEP_TIERS.Brute.cost then
+			spawnCreep("bot", "Brute")
+		elseif roll < 0.7 and _botGold >= CREEP_TIERS.Soldier.cost then
+			spawnCreep("bot", "Soldier")
+		else
+			spawnCreep("bot", "Scout")
+		end
+	end
+end
+
+---------- Attack Loop ----------
+
+local function towerAttack(tower: Tower, targetCreepList: { Creep }, killerSide: string)
+	local interval = if tower.attackType == "rapid" then ATTACK_INTERVAL * 0.5 else ATTACK_INTERVAL
+	local now = os.clock()
+	if now - tower._lastAttack < interval then
+		return
+	end
+
+	local target = findCreepTarget(tower.position, tower.range, targetCreepList, tower.targetPriority)
+	if not target then
+		return
+	end
+
+	tower._lastAttack = now
+	local dmg = if tower.attackType == "rapid" then math.floor(tower.damage * 0.6) else tower.damage
+	local effectiveTower: Tower = {
+		model = tower.model,
+		damage = dmg,
+		range = tower.range,
+		position = tower.position,
+		side = tower.side,
+		_lastAttack = tower._lastAttack,
+		attackType = tower.attackType,
+		targetPriority = tower.targetPriority,
+	}
+	fireProjectile(tower.position, target.part, effectiveTower, targetCreepList, killerSide)
+end
+
 local function startAttackLoop()
 	local conn = RunService.Heartbeat:Connect(function()
 		if not _active or _gameOver then
 			return
 		end
 
-		-- Throttle to ~1 attack per second per tower using os.clock
-		-- We store last attack time on the tower table entry
-		local now = os.clock()
-		for _, tower in ipairs(_towers) do
-			local lastAttack = (tower :: any)._lastAttack or 0
-			if now - lastAttack >= ATTACK_INTERVAL then
-				local enemy = findNearestEnemy(tower.position, tower.range)
-				if enemy then
-					(tower :: any)._lastAttack = now
-					fireProjectile(tower.position, enemy.part, tower.damage)
-				end
-			end
+		-- Player towers attack bot creep
+		for _, tower in ipairs(_playerTowers) do
+			towerAttack(tower, _botCreep, "player")
+		end
+
+		-- Bot towers attack player creep
+		for _, tower in ipairs(_botTowers) do
+			towerAttack(tower, _playerCreep, "bot")
 		end
 	end)
 	table.insert(_connections, conn)
 end
 
--- UI Creation
+---------- Economy Loop ----------
+
+local function applyCreepRegen(creepList: { Creep }, dt: number)
+	for _, creep in ipairs(creepList) do
+		if creep.alive and creep.defenseType == "regen" and creep.hp < creep.maxHp then
+			creep.hp = math.min(creep.maxHp, creep.hp + REGEN_PER_TICK * dt)
+		end
+	end
+end
+
+local function startEconomyLoop()
+	local conn = RunService.Heartbeat:Connect(function(dt: number)
+		if not _active or _gameOver then
+			return
+		end
+
+		_playerGold += GOLD_PER_SECOND * dt
+		_botGold += GOLD_PER_SECOND * dt
+
+		-- Regen for creep with regen defense
+		applyCreepRegen(_playerCreep, dt)
+		applyCreepRegen(_botCreep, dt)
+	end)
+	table.insert(_connections, conn)
+
+	-- HUD update at ~4fps (not every frame)
+	task.spawn(function()
+		while _active and not _gameOver do
+			updateHUD()
+			task.wait(0.25)
+		end
+	end)
+end
+
+---------- Bot AI Loop ----------
+
+local function startBotAILoop()
+	task.spawn(function()
+		while _active and not _gameOver do
+			task.wait(BOT_THINK_INTERVAL)
+			botThink()
+		end
+	end)
+end
+
+---------- UI ----------
 
 local function makeCorner(parent: GuiObject, radius: number?)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius or 8)
 	corner.Parent = parent
+end
+
+local function createCreepButton(parent: GuiObject, tierName: string, posX: number): TextButton
+	local tier = CREEP_TIERS[tierName]
+	local btn = Instance.new("TextButton")
+	btn.Name = tierName .. "Button"
+	btn.Size = UDim2.new(0, 90, 1, 0)
+	btn.Position = UDim2.fromOffset(posX, 0)
+	btn.Text = tier.label
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.BackgroundColor3 = COLORS.accent
+	btn.BorderSizePixel = 0
+	btn.TextSize = 13
+	btn.Font = Enum.Font.GothamBold
+	btn.AutoButtonColor = true
+	btn.Parent = parent
+	makeCorner(btn, 6)
+
+	btn.MouseButton1Click:Connect(function()
+		if not _gameOver and _playerGold >= tier.cost then
+			spawnCreep("player", tierName)
+			updateHUD()
+		end
+	end)
+
+	return btn
 end
 
 local function createUI()
@@ -479,10 +935,10 @@ local function createUI()
 	gui.Parent = Player.PlayerGui
 	_gui = gui
 
-	-- Top-left panel: Wave + Lives
+	-- Top-left panel: Gold + Base HPs
 	local infoPanel = Instance.new("Frame")
 	infoPanel.Name = "InfoPanel"
-	infoPanel.Size = UDim2.fromOffset(200, 100)
+	infoPanel.Size = UDim2.fromOffset(220, 120)
 	infoPanel.Position = UDim2.fromOffset(16, 16)
 	infoPanel.BackgroundColor3 = COLORS.bg
 	infoPanel.BackgroundTransparency = 0.2
@@ -492,39 +948,52 @@ local function createUI()
 
 	local infoPadding = Instance.new("UIPadding")
 	infoPadding.PaddingLeft = UDim.new(0, 12)
-	infoPadding.PaddingTop = UDim.new(0, 12)
+	infoPadding.PaddingTop = UDim.new(0, 10)
 	infoPadding.Parent = infoPanel
 
-	local waveLabel = Instance.new("TextLabel")
-	waveLabel.Name = "WaveLabel"
-	waveLabel.Size = UDim2.new(1, 0, 0, 30)
-	waveLabel.BackgroundTransparency = 1
-	waveLabel.Text = "Wave: 0"
-	waveLabel.TextColor3 = COLORS.text
-	waveLabel.TextSize = 22
-	waveLabel.Font = Enum.Font.GothamBold
-	waveLabel.TextXAlignment = Enum.TextXAlignment.Left
-	waveLabel.Parent = infoPanel
-	_waveLabel = waveLabel
+	local goldLabel = Instance.new("TextLabel")
+	goldLabel.Name = "GoldLabel"
+	goldLabel.Size = UDim2.new(1, 0, 0, 28)
+	goldLabel.BackgroundTransparency = 1
+	goldLabel.Text = "Gold: " .. tostring(STARTING_GOLD)
+	goldLabel.TextColor3 = COLORS.gold
+	goldLabel.TextSize = 22
+	goldLabel.Font = Enum.Font.GothamBold
+	goldLabel.TextXAlignment = Enum.TextXAlignment.Left
+	goldLabel.Parent = infoPanel
+	_goldLabel = goldLabel
 
-	local livesLabel = Instance.new("TextLabel")
-	livesLabel.Name = "LivesLabel"
-	livesLabel.Size = UDim2.new(1, 0, 0, 30)
-	livesLabel.Position = UDim2.fromOffset(0, 34)
-	livesLabel.BackgroundTransparency = 1
-	livesLabel.Text = "Lives: " .. tostring(MAX_LIVES)
-	livesLabel.TextColor3 = COLORS.text
-	livesLabel.TextSize = 22
-	livesLabel.Font = Enum.Font.GothamBold
-	livesLabel.TextXAlignment = Enum.TextXAlignment.Left
-	livesLabel.Parent = infoPanel
-	_livesLabel = livesLabel
+	local playerHPLabel = Instance.new("TextLabel")
+	playerHPLabel.Name = "PlayerHPLabel"
+	playerHPLabel.Size = UDim2.new(1, 0, 0, 26)
+	playerHPLabel.Position = UDim2.fromOffset(0, 32)
+	playerHPLabel.BackgroundTransparency = 1
+	playerHPLabel.Text = "Your Base: " .. tostring(BASE_HP)
+	playerHPLabel.TextColor3 = COLORS.playerColor
+	playerHPLabel.TextSize = 18
+	playerHPLabel.Font = Enum.Font.GothamBold
+	playerHPLabel.TextXAlignment = Enum.TextXAlignment.Left
+	playerHPLabel.Parent = infoPanel
+	_playerHPLabel = playerHPLabel
 
-	-- Bottom-center: Input bar
+	local botHPLabel = Instance.new("TextLabel")
+	botHPLabel.Name = "BotHPLabel"
+	botHPLabel.Size = UDim2.new(1, 0, 0, 26)
+	botHPLabel.Position = UDim2.fromOffset(0, 60)
+	botHPLabel.BackgroundTransparency = 1
+	botHPLabel.Text = "Enemy Base: " .. tostring(BASE_HP)
+	botHPLabel.TextColor3 = COLORS.botColor
+	botHPLabel.TextSize = 18
+	botHPLabel.Font = Enum.Font.GothamBold
+	botHPLabel.TextXAlignment = Enum.TextXAlignment.Left
+	botHPLabel.Parent = infoPanel
+	_botHPLabel = botHPLabel
+
+	-- Bottom bar: input + build + creep buttons
 	local bottomBar = Instance.new("Frame")
 	bottomBar.Name = "BottomBar"
-	bottomBar.Size = UDim2.new(0, 500, 0, 100)
-	bottomBar.Position = UDim2.new(0.5, -250, 1, -120)
+	bottomBar.Size = UDim2.new(0, 700, 0, 100)
+	bottomBar.Position = UDim2.new(0.5, -350, 1, -120)
 	bottomBar.BackgroundColor3 = COLORS.bg
 	bottomBar.BackgroundTransparency = 0.2
 	bottomBar.BorderSizePixel = 0
@@ -538,7 +1007,7 @@ local function createUI()
 	barPadding.PaddingBottom = UDim.new(0, 8)
 	barPadding.Parent = bottomBar
 
-	-- Input row
+	-- Input row: prompt + build button
 	local inputRow = Instance.new("Frame")
 	inputRow.Name = "InputRow"
 	inputRow.Size = UDim2.new(1, 0, 0, 36)
@@ -547,8 +1016,8 @@ local function createUI()
 
 	local inputBox = Instance.new("TextBox")
 	inputBox.Name = "PromptInput"
-	inputBox.Size = UDim2.new(1, -120, 1, 0)
-	inputBox.PlaceholderText = "Describe your tower..."
+	inputBox.Size = UDim2.new(1, -130, 1, 0)
+	inputBox.PlaceholderText = "Describe your tower... (50g)"
 	inputBox.Text = ""
 	inputBox.TextColor3 = COLORS.text
 	inputBox.PlaceholderColor3 = COLORS.textDim
@@ -567,20 +1036,20 @@ local function createUI()
 
 	local buildButton = Instance.new("TextButton")
 	buildButton.Name = "BuildButton"
-	buildButton.Size = UDim2.new(0, 108, 1, 0)
-	buildButton.Position = UDim2.new(1, -108, 0, 0)
-	buildButton.Text = "Build Tower"
+	buildButton.Size = UDim2.new(0, 118, 1, 0)
+	buildButton.Position = UDim2.new(1, -118, 0, 0)
+	buildButton.Text = "Build (50g)"
 	buildButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 	buildButton.BackgroundColor3 = COLORS.accent
 	buildButton.BorderSizePixel = 0
-	buildButton.TextSize = 16
+	buildButton.TextSize = 15
 	buildButton.Font = Enum.Font.GothamBold
 	buildButton.AutoButtonColor = true
 	buildButton.Parent = inputRow
 	makeCorner(buildButton, 6)
 	_buildButton = buildButton
 
-	-- Button row: Start Wave + Status
+	-- Bottom row: creep buttons + status
 	local buttonRow = Instance.new("Frame")
 	buttonRow.Name = "ButtonRow"
 	buttonRow.Size = UDim2.new(1, 0, 0, 36)
@@ -588,26 +1057,16 @@ local function createUI()
 	buttonRow.BackgroundTransparency = 1
 	buttonRow.Parent = bottomBar
 
-	local startWaveBtn = Instance.new("TextButton")
-	startWaveBtn.Name = "StartWaveButton"
-	startWaveBtn.Size = UDim2.new(0, 120, 1, 0)
-	startWaveBtn.Text = "Start Wave"
-	startWaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	startWaveBtn.BackgroundColor3 = COLORS.accent
-	startWaveBtn.BorderSizePixel = 0
-	startWaveBtn.TextSize = 16
-	startWaveBtn.Font = Enum.Font.GothamBold
-	startWaveBtn.AutoButtonColor = true
-	startWaveBtn.Parent = buttonRow
-	makeCorner(startWaveBtn, 6)
-	_startWaveButton = startWaveBtn
+	_scoutButton = createCreepButton(buttonRow, "Scout", 0)
+	_soldierButton = createCreepButton(buttonRow, "Soldier", 96)
+	_bruteButton = createCreepButton(buttonRow, "Brute", 192)
 
 	local statusLabel = Instance.new("TextLabel")
 	statusLabel.Name = "StatusLabel"
-	statusLabel.Size = UDim2.new(1, -130, 1, 0)
-	statusLabel.Position = UDim2.fromOffset(130, 0)
+	statusLabel.Size = UDim2.new(1, -300, 1, 0)
+	statusLabel.Position = UDim2.fromOffset(296, 0)
 	statusLabel.BackgroundTransparency = 1
-	statusLabel.Text = "Build towers and start waves!"
+	statusLabel.Text = "Build towers & send creep!"
 	statusLabel.TextColor3 = COLORS.textDim
 	statusLabel.TextSize = 14
 	statusLabel.Font = Enum.Font.Gotham
@@ -622,8 +1081,8 @@ local function createUI()
 	gameOverLabel.Size = UDim2.fromScale(1, 1)
 	gameOverLabel.BackgroundColor3 = COLORS.bg
 	gameOverLabel.BackgroundTransparency = 0.4
-	gameOverLabel.Text = "GAME OVER"
-	gameOverLabel.TextColor3 = COLORS.danger
+	gameOverLabel.Text = "VICTORY!"
+	gameOverLabel.TextColor3 = COLORS.success
 	gameOverLabel.TextSize = 64
 	gameOverLabel.Font = Enum.Font.GothamBlack
 	gameOverLabel.Visible = false
@@ -638,19 +1097,20 @@ local function createUI()
 			submitPrompt()
 		end
 	end)
-	startWaveBtn.MouseButton1Click:Connect(startWave)
 end
 
--- Activation / Cleanup
+---------- Lifecycle ----------
 
 local function resetState()
-	_lives = MAX_LIVES
-	_wave = 0
-	_waveRunning = false
+	_playerGold = STARTING_GOLD
+	_botGold = STARTING_GOLD
+	_playerBaseHP = BASE_HP
+	_botBaseHP = BASE_HP
 	_gameOver = false
-	_towers = {}
-	_enemies = {}
-	_projectiles = {}
+	_playerTowers = {}
+	_botTowers = {}
+	_playerCreep = {}
+	_botCreep = {}
 	_waypoints = {}
 	_waypointParts = {}
 end
@@ -676,19 +1136,25 @@ function TowerDefenseController:Activate()
 	_towerFolder.Parent = workspace
 	table.insert(_allInstances, _towerFolder)
 
-	_enemyFolder = Instance.new("Folder")
-	_enemyFolder.Name = "TD_Enemies"
-	_enemyFolder.Parent = workspace
-	table.insert(_allInstances, _enemyFolder)
+	_creepFolder = Instance.new("Folder")
+	_creepFolder.Name = "TD_Creep"
+	_creepFolder.Parent = workspace
+	table.insert(_allInstances, _creepFolder)
 
 	_projectileFolder = Instance.new("Folder")
 	_projectileFolder.Name = "TD_Projectiles"
 	_projectileFolder.Parent = workspace
 	table.insert(_allInstances, _projectileFolder)
 
-	-- Set up path
+	_baseFolder = Instance.new("Folder")
+	_baseFolder.Name = "TD_Bases"
+	_baseFolder.Parent = workspace
+	table.insert(_allInstances, _baseFolder)
+
+	-- Set up path and bases
 	generateWaypoints()
 	createWaypointMarkers()
+	createBases()
 
 	-- Show UI
 	if _gui then
@@ -698,34 +1164,23 @@ function TowerDefenseController:Activate()
 		end
 	end
 	updateHUD()
-	setStatus("Build towers and start waves!", COLORS.textDim)
+	setStatus("Build towers & send creep!", COLORS.textDim)
 
-	-- Re-enable buttons
-	if _buildButton then
-		_buildButton.AutoButtonColor = true
-		_buildButton.BackgroundColor3 = COLORS.accent
-	end
-	if _startWaveButton then
-		_startWaveButton.AutoButtonColor = true
-		_startWaveButton.BackgroundColor3 = COLORS.accent
-	end
-
-	-- Start tower attack loop
+	-- Start loops
 	startAttackLoop()
+	startEconomyLoop()
+	startBotAILoop()
 end
 
 function TowerDefenseController:Cleanup()
 	_active = false
-	_waveRunning = false
-	_gameOver = true -- stops any running enemy/wave coroutines
+	_gameOver = true
 
-	-- Disconnect all connections
 	for _, conn in ipairs(_connections) do
 		conn:Disconnect()
 	end
 	_connections = {}
 
-	-- Destroy all world instances
 	for _, inst in ipairs(_allInstances) do
 		if inst and inst.Parent then
 			inst:Destroy()
@@ -733,20 +1188,21 @@ function TowerDefenseController:Cleanup()
 	end
 	_allInstances = {}
 
-	-- Clear folders
 	_pathFolder = nil
 	_towerFolder = nil
-	_enemyFolder = nil
+	_creepFolder = nil
 	_projectileFolder = nil
+	_baseFolder = nil
+	_playerBasePart = nil
+	_botBasePart = nil
 
-	-- Reset state
-	_towers = {}
-	_enemies = {}
-	_projectiles = {}
+	_playerTowers = {}
+	_botTowers = {}
+	_playerCreep = {}
+	_botCreep = {}
 	_waypoints = {}
 	_waypointParts = {}
 
-	-- Hide UI
 	if _gui then
 		_gui.Enabled = false
 	end

@@ -6,8 +6,8 @@
 
 export type PlayerData = {
 	-- Currencies
-	Coins: number,
-	Gems: number,
+	Folds: number,
+	Cranes: number,
 
 	-- Shop / Inventory
 	Inventory: { [string]: number },
@@ -28,8 +28,8 @@ export type PlayerData = {
 }
 
 local playerDataTemplate: PlayerData = {
-	Coins = 0,
-	Gems = 0,
+	Folds = 0,
+	Cranes = 0,
 
 	Inventory = {},
 

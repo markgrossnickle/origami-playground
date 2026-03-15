@@ -197,15 +197,16 @@ local function createUI()
 	containerCorner.Parent = container
 
 	-- Minimize/maximize toggle button (top-right of container)
+	local minBtnSize = if IS_MOBILE then 36 else 28
 	local minimizeBtn = Instance.new("TextButton")
 	minimizeBtn.Name = "MinimizeBtn"
-	minimizeBtn.Size = UDim2.new(0, 28, 0, 20)
-	minimizeBtn.Position = UDim2.new(1, -34, 0, 4)
-	minimizeBtn.BackgroundColor3 = COLORS.bgLight
+	minimizeBtn.Size = UDim2.new(0, minBtnSize, 0, minBtnSize)
+	minimizeBtn.Position = UDim2.new(1, -(minBtnSize + 6), 0, 4)
+	minimizeBtn.BackgroundColor3 = COLORS.accent
 	minimizeBtn.BorderSizePixel = 0
-	minimizeBtn.Text = "v"
-	minimizeBtn.TextColor3 = COLORS.textDim
-	minimizeBtn.TextSize = FONT_SM
+	minimizeBtn.Text = "..."
+	minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	minimizeBtn.TextSize = if IS_MOBILE then FONT_LG else FONT_MD
 	minimizeBtn.Font = Enum.Font.GothamBold
 	minimizeBtn.AutoButtonColor = true
 	minimizeBtn.Parent = container
@@ -219,7 +220,7 @@ local function createUI()
 
 	local function toggleMinimize()
 		_uiMinimized = not _uiMinimized
-		minimizeBtn.Text = if _uiMinimized then "^" else "v"
+		minimizeBtn.Text = if _uiMinimized then "..." else "x"
 		for _, row in _collapsibleRows do
 			row.Visible = not _uiMinimized
 		end

@@ -443,10 +443,160 @@ spawnTest(2, 3, "T10: Spring + VectorForce", function(pos)
 end)
 
 ----------------------------------------------------------------------
--- ROW 3-6: PROVEN WORKING OBJECTS (from v2)
+-- ROW 3: LUDICROUS MODE (should launch to space or nothing works)
+----------------------------------------------------------------------
+-- #11: Ludicrous VectorForce (100k newtons up)
+spawnTest(3, 0, "LUDICROUS: 100k VectorForce", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makePart({
+		position = pos - Vector3.new(0, 0.5, 0),
+		size = Vector3.new(8, 0.3, 8),
+		color = Color3.fromRGB(255, 0, 0),
+		anchored = false,
+		density = 0.01,
+	})
+	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
+	att_p0.Axis = Vector3.new(0, 1, 0)
+	local att_p1 = makeAttachment(pad)
+	local prism = Instance.new("PrismaticConstraint")
+	prism.Attachment0 = att_p0
+	prism.Attachment1 = att_p1
+	prism.LimitsEnabled = true
+	prism.LowerLimit = 0
+	prism.UpperLimit = 15
+	prism.Parent = base
+	local att_vf = makeAttachment(pad)
+	local vf = Instance.new("VectorForce")
+	vf.Attachment0 = att_vf
+	vf.Force = Vector3.new(0, 100000, 0)
+	vf.RelativeTo = Enum.ActuatorRelativeTo.World
+	vf.Parent = pad
+end)
+
+-- #12: Ludicrous LinearVelocity (200 studs/s up, infinite force)
+spawnTest(3, 1, "LUDICROUS: LinVel 200 up", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makePart({
+		position = pos - Vector3.new(0, 0.5, 0),
+		size = Vector3.new(8, 0.3, 8),
+		color = Color3.fromRGB(255, 0, 255),
+		anchored = false,
+		density = 0.01,
+	})
+	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
+	att_p0.Axis = Vector3.new(0, 1, 0)
+	local att_p1 = makeAttachment(pad)
+	local prism = Instance.new("PrismaticConstraint")
+	prism.Attachment0 = att_p0
+	prism.Attachment1 = att_p1
+	prism.LimitsEnabled = true
+	prism.LowerLimit = 0
+	prism.UpperLimit = 15
+	prism.Parent = base
+	local att_lv = makeAttachment(pad)
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = att_lv
+	lv.VectorVelocity = Vector3.new(0, 200, 0)
+	lv.MaxForce = math.huge
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.Parent = pad
+end)
+
+-- #13: Ludicrous Spring (stiffness 1 million, zero damping)
+spawnTest(3, 2, "LUDICROUS: 1M Spring", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makePart({
+		position = pos - Vector3.new(0, 0.5, 0),
+		size = Vector3.new(8, 0.3, 8),
+		color = Color3.fromRGB(0, 255, 0),
+		anchored = false,
+		density = 0.01,
+		elasticity = 1.0,
+	})
+	local att0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
+	local att1 = makeAttachment(pad, Vector3.new(0, -0.15, 0))
+	local spring = Instance.new("SpringConstraint")
+	spring.Attachment0 = att0
+	spring.Attachment1 = att1
+	spring.Stiffness = 1000000
+	spring.Damping = 0
+	spring.FreeLength = 5
+	spring.Visible = true
+	spring.Parent = base
+end)
+
+-- #14: Ludicrous AlignPosition (target 500 studs up, max everything)
+spawnTest(3, 3, "LUDICROUS: AlignPos 500up", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makePart({
+		position = pos - Vector3.new(0, 0.5, 0),
+		size = Vector3.new(8, 0.3, 8),
+		color = Color3.fromRGB(0, 200, 255),
+		anchored = false,
+		density = 0.01,
+	})
+	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
+	att_p0.Axis = Vector3.new(0, 1, 0)
+	local att_p1 = makeAttachment(pad)
+	local prism = Instance.new("PrismaticConstraint")
+	prism.Attachment0 = att_p0
+	prism.Attachment1 = att_p1
+	prism.LimitsEnabled = true
+	prism.LowerLimit = 0
+	prism.UpperLimit = 20
+	prism.Parent = base
+	local att_ap = makeAttachment(pad)
+	local ap = Instance.new("AlignPosition")
+	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
+	ap.Attachment0 = att_ap
+	ap.Position = pos + Vector3.new(0, 500, 0)
+	ap.MaxForce = math.huge
+	ap.Responsiveness = 200
+	ap.Parent = pad
+end)
+
+-- #15: No prismatic, just raw VectorForce on free part (see if pad flies)
+spawnTest(3, 4, "LUDICROUS: Free VectorForce", function(pos)
+	local pad = makePart({
+		position = pos - Vector3.new(0, 2, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(255, 255, 0),
+		anchored = false,
+		density = 0.01,
+	})
+	local att_vf = makeAttachment(pad)
+	local vf = Instance.new("VectorForce")
+	vf.Attachment0 = att_vf
+	vf.Force = Vector3.new(0, 50000, 0)
+	vf.RelativeTo = Enum.ActuatorRelativeTo.World
+	vf.Parent = pad
+end)
+
+----------------------------------------------------------------------
+-- ROW 4-7: PROVEN WORKING OBJECTS (from v2)
 ----------------------------------------------------------------------
 -- Seesaw (works!)
-spawnTest(3, 0, "Hinge: Seesaw", function(pos)
+spawnTest(4, 0, "Hinge: Seesaw", function(pos)
 	local post = makePart({
 		position = pos - Vector3.new(0, 1.5, 0),
 		size = Vector3.new(2, 3, 2),
@@ -471,7 +621,7 @@ spawnTest(3, 0, "Hinge: Seesaw", function(pos)
 end)
 
 -- Hinge door (fixed)
-spawnTest(3, 1, "Hinge: Door", function(pos)
+spawnTest(4, 1, "Hinge: Door", function(pos)
 	local frame = makePart({
 		position = pos + Vector3.new(-3, 0, 0),
 		size = Vector3.new(0.5, 8, 1),
@@ -498,7 +648,7 @@ spawnTest(3, 1, "Hinge: Door", function(pos)
 end)
 
 -- Rod hanging sign (works!)
-spawnTest(3, 2, "Rod: Hanging Sign", function(pos)
+spawnTest(4, 2, "Rod: Hanging Sign", function(pos)
 	local bar = makePart({
 		position = pos + Vector3.new(0, 6, 0),
 		size = Vector3.new(6, 0.5, 0.5),
@@ -530,7 +680,7 @@ spawnTest(3, 2, "Rod: Hanging Sign", function(pos)
 end)
 
 -- Rope dangler (works!)
-spawnTest(3, 3, "Rope: Dangler", function(pos)
+spawnTest(4, 3, "Rope: Dangler", function(pos)
 	local hook = makePart({
 		position = pos + Vector3.new(0, 7, 0),
 		size = Vector3.new(1, 1, 1),
@@ -556,7 +706,7 @@ spawnTest(3, 3, "Rope: Dangler", function(pos)
 end)
 
 -- Moving platform (works!)
-spawnTest(4, 0, "Prismatic: Moving Platform", function(pos)
+spawnTest(5, 0, "Prismatic: Moving Platform", function(pos)
 	local rail = makePart({
 		position = pos - Vector3.new(0, 2, 0),
 		size = Vector3.new(16, 0.5, 4),
@@ -598,7 +748,7 @@ spawnTest(4, 0, "Prismatic: Moving Platform", function(pos)
 end)
 
 -- Spinning platform (from v2)
-spawnTest(4, 1, "AngVel: Spin Platform", function(pos)
+spawnTest(5, 1, "AngVel: Spin Platform", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 2.5, 0),
 		size = Vector3.new(1, 1, 1),
@@ -629,7 +779,7 @@ spawnTest(4, 1, "AngVel: Spin Platform", function(pos)
 end)
 
 -- Windmill
-spawnTest(4, 2, "AngVel: Windmill", function(pos)
+spawnTest(5, 2, "AngVel: Windmill", function(pos)
 	local tower = makePart({
 		position = pos,
 		size = Vector3.new(2, 8, 2),
@@ -661,7 +811,7 @@ spawnTest(4, 2, "AngVel: Windmill", function(pos)
 end)
 
 -- Elevator
-spawnTest(4, 3, "Prismatic: Elevator", function(pos)
+spawnTest(5, 3, "Prismatic: Elevator", function(pos)
 	local shaft = makePart({
 		position = pos,
 		size = Vector3.new(1, 12, 1),

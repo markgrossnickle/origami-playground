@@ -1,5 +1,5 @@
 --!strict
--- PhysicsTestGrid v4: All pads have AlignOrientation to stay flat.
+-- PhysicsTestGrid v5: Fixed AlignOrientation (TwoAttachment mode), lowered limits.
 -- Testing momentum-transfer bounce: pad accelerates up → prismatic limit stops pad → player keeps going.
 -- DELETE THIS FILE after testing is complete.
 
@@ -54,28 +54,29 @@ local function makeAtt(parent: BasePart, offset: Vector3?, axis: Vector3?): Atta
 	return att
 end
 
--- Keep a part level (no rotation) -- THIS IS THE KEY FIX
-local function keepFlat(part: BasePart)
-	local att = makeAtt(part)
+-- Keep a part level (no rotation) by matching an anchored reference part's orientation
+local function keepFlat(part: BasePart, referencePart: BasePart)
+	local att0 = makeAtt(part)
+	local att1 = makeAtt(referencePart)
 	local ao = Instance.new("AlignOrientation")
-	ao.Mode = Enum.OrientationAlignmentMode.OneAttachment
-	ao.Attachment0 = att
-	ao.CFrame = CFrame.new() -- world-aligned (flat)
+	ao.Mode = Enum.OrientationAlignmentMode.TwoAttachment
+	ao.Attachment0 = att0
+	ao.Attachment1 = att1
 	ao.MaxTorque = math.huge
 	ao.Responsiveness = 200
 	ao.Parent = part
 end
 
--- Create a standard vertical-only pad with AlignOrientation
+-- Create a standard vertical-only pad with AlignOrientation (stays flat using base as reference)
 local function makeBouncePad(base: BasePart, pos: Vector3, color: Color3, upperLimit: number): Part
 	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
+		position = pos + Vector3.new(0, 0.5, 0),
 		size = Vector3.new(8, 0.5, 8),
 		color = color,
 		anchored = false,
 		density = 0.1,
 	})
-	keepFlat(pad)
+	keepFlat(pad, base)
 	-- Prismatic: vertical only
 	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
 	att0.Axis = Vector3.new(0, 1, 0)
@@ -212,14 +213,14 @@ spawnTest(1, 1, "VForce 5k + limit 5", function(pos)
 	vf.Parent = pad
 end)
 
-spawnTest(1, 2, "VForce 10k + limit 8", function(pos)
+spawnTest(1, 2, "VForce 10k + limit 5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 50, 255), 8)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 50, 255), 5)
 	local att_vf = makeAtt(pad)
 	local vf = Instance.new("VectorForce")
 	vf.Attachment0 = att_vf
@@ -228,14 +229,14 @@ spawnTest(1, 2, "VForce 10k + limit 8", function(pos)
 	vf.Parent = pad
 end)
 
-spawnTest(1, 3, "VForce 20k + limit 10", function(pos)
+spawnTest(1, 3, "VForce 20k + limit 5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 0, 100), 10)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 0, 100), 5)
 	local att_vf = makeAtt(pad)
 	local vf = Instance.new("VectorForce")
 	vf.Attachment0 = att_vf
@@ -264,14 +265,14 @@ spawnTest(2, 0, "LinVel 10 up, limit 5", function(pos)
 	lv.Parent = pad
 end)
 
-spawnTest(2, 1, "LinVel 30 up, limit 8", function(pos)
+spawnTest(2, 1, "LinVel 30 up, limit 5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(50, 255, 150), 8)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(50, 255, 150), 5)
 	local att_lv = makeAtt(pad)
 	local lv = Instance.new("LinearVelocity")
 	lv.Attachment0 = att_lv
@@ -281,14 +282,14 @@ spawnTest(2, 1, "LinVel 30 up, limit 8", function(pos)
 	lv.Parent = pad
 end)
 
-spawnTest(2, 2, "LinVel 60 up, limit 10", function(pos)
+spawnTest(2, 2, "LinVel 60 up, limit 5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(200, 255, 50), 10)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(200, 255, 50), 5)
 	local att_lv = makeAtt(pad)
 	local lv = Instance.new("LinearVelocity")
 	lv.Attachment0 = att_lv
@@ -298,14 +299,14 @@ spawnTest(2, 2, "LinVel 60 up, limit 10", function(pos)
 	lv.Parent = pad
 end)
 
-spawnTest(2, 3, "LinVel 100 up, limit 15", function(pos)
+spawnTest(2, 3, "LinVel 100 up, limit 5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 200, 50), 15)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 200, 50), 5)
 	local att_lv = makeAtt(pad)
 	local lv = Instance.new("LinearVelocity")
 	lv.Attachment0 = att_lv
@@ -318,55 +319,55 @@ end)
 ----------------------------------------------------------------------
 -- ROW 3: ALIGNPOSITION LAUNCHER (pad snaps to high target, carries player)
 ----------------------------------------------------------------------
-spawnTest(3, 0, "AlignPos target +10", function(pos)
+spawnTest(3, 0, "AlignPos target +5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 100, 255), 10)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 100, 255), 5)
 	local att_ap = makeAtt(pad)
 	local ap = Instance.new("AlignPosition")
 	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
 	ap.Attachment0 = att_ap
-	ap.Position = pos + Vector3.new(0, 10, 0)
+	ap.Position = pos + Vector3.new(0, 5, 0)
 	ap.MaxForce = 10000
 	ap.Responsiveness = 50
 	ap.Parent = pad
 end)
 
-spawnTest(3, 1, "AlignPos target +15 fast", function(pos)
+spawnTest(3, 1, "AlignPos target +5 fast", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(200, 50, 200), 15)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(200, 50, 200), 5)
 	local att_ap = makeAtt(pad)
 	local ap = Instance.new("AlignPosition")
 	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
 	ap.Attachment0 = att_ap
-	ap.Position = pos + Vector3.new(0, 15, 0)
+	ap.Position = pos + Vector3.new(0, 5, 0)
 	ap.MaxForce = 30000
 	ap.Responsiveness = 100
 	ap.Parent = pad
 end)
 
-spawnTest(3, 2, "AlignPos target +20 max", function(pos)
+spawnTest(3, 2, "AlignPos target +5 max", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makeBouncePad(base, pos, Color3.fromRGB(150, 0, 255), 20)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(150, 0, 255), 5)
 	local att_ap = makeAtt(pad)
 	local ap = Instance.new("AlignPosition")
 	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
 	ap.Attachment0 = att_ap
-	ap.Position = pos + Vector3.new(0, 20, 0)
+	ap.Position = pos + Vector3.new(0, 5, 0)
 	ap.MaxForce = math.huge
 	ap.Responsiveness = 200
 	ap.Parent = pad
@@ -389,11 +390,6 @@ spawnTest(4, 0, "Motor Flipper slow", function(pos)
 		anchored = false,
 		density = 0.1,
 	})
-	keepFlat(flipper) -- actually don't keep flat, it needs to rotate!
-	-- Remove keepFlat, just use the hinge
-	for _, child in flipper:GetChildren() do
-		if child:IsA("AlignOrientation") then child:Destroy() end
-	end
 	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
 	att0.Axis = Vector3.new(0, 0, 1)
 	local att1 = makeAtt(flipper, Vector3.new(-5, 0, 0))
@@ -572,7 +568,7 @@ spawnTest(6, 0, "Prismatic: Moving Platform", function(pos)
 		color = Color3.fromRGB(50, 200, 50),
 		anchored = false,
 	})
-	keepFlat(platform)
+	keepFlat(platform, rail)
 	local att0 = makeAtt(rail, Vector3.new(0, 0.25, 0))
 	att0.Axis = Vector3.new(1, 0, 0)
 	local att1 = makeAtt(platform, Vector3.new(0, -0.5, 0))
@@ -675,7 +671,7 @@ spawnTest(6, 3, "Prismatic: Elevator", function(pos)
 		color = Color3.fromRGB(50, 150, 255),
 		anchored = false,
 	})
-	keepFlat(platform)
+	keepFlat(platform, shaft)
 	local att0 = makeAtt(shaft)
 	att0.Axis = Vector3.new(0, 1, 0)
 	local att1 = makeAtt(platform)
@@ -703,4 +699,4 @@ spawnTest(6, 3, "Prismatic: Elevator", function(pos)
 	end)
 end)
 
-print("[PhysicsTestGrid v4] Spawned", testNum, "test objects at", tostring(GRID_ORIGIN))
+print("[PhysicsTestGrid v5] Spawned", testNum, "test objects at", tostring(GRID_ORIGIN))

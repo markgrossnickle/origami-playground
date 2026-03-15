@@ -24,6 +24,12 @@
 			"ServerPackages": {
 				"$path": "ServerPackages"
 			}
+		},
+		"HttpService": {
+			"$className": "HttpService",
+			"$properties": {
+				"HttpEnabled": true
+			}
 		}
 	}
 }

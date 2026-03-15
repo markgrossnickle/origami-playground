@@ -1,6 +1,6 @@
 --!strict
--- PhysicsTestGrid v3: 10 trampoline approaches (pure physics, no Touched handlers)
--- Plus proven working objects from v2.
+-- PhysicsTestGrid v4: All pads have AlignOrientation to stay flat.
+-- Testing momentum-transfer bounce: pad accelerates up → prismatic limit stops pad → player keeps going.
 -- DELETE THIS FILE after testing is complete.
 
 local GRID_ORIGIN = Vector3.new(-200, 5, -200)
@@ -13,7 +13,6 @@ local function makeLabel(parent: BasePart, text: string)
 	bb.StudsOffset = Vector3.new(0, 7, 0)
 	bb.AlwaysOnTop = true
 	bb.Parent = parent
-
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.new(1, 0, 1, 0)
 	label.BackgroundTransparency = 0.3
@@ -34,37 +33,61 @@ local function makePart(props: { [string]: any }): Part
 	part.Material = props.material or Enum.Material.SmoothPlastic
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
-	if props.shape then
-		part.Shape = props.shape
-	end
-	if props.transparency then
-		part.Transparency = props.transparency
-	end
-	if props.canCollide ~= nil then
-		part.CanCollide = props.canCollide
-	end
-	if props.massless then
-		part.Massless = true
-	end
+	if props.shape then part.Shape = props.shape end
+	if props.transparency then part.Transparency = props.transparency end
+	if props.canCollide ~= nil then part.CanCollide = props.canCollide end
+	if props.massless then part.Massless = true end
 	if props.density or props.friction or props.elasticity then
 		part.CustomPhysicalProperties = PhysicalProperties.new(
-			props.density or 0.7,
-			props.friction or 0.3,
-			props.elasticity or 0.5,
-			props.frictionWeight or 1,
-			props.elasticityWeight or 1
+			props.density or 0.7, props.friction or 0.3, props.elasticity or 0.5, 1, 1
 		)
 	end
 	part.Parent = workspace
 	return part
 end
 
-local function makeAttachment(parent: BasePart, offset: Vector3?, axis: Vector3?): Attachment
+local function makeAtt(parent: BasePart, offset: Vector3?, axis: Vector3?): Attachment
 	local att = Instance.new("Attachment")
 	if offset then att.Position = offset end
 	if axis then att.Axis = axis end
 	att.Parent = parent
 	return att
+end
+
+-- Keep a part level (no rotation) -- THIS IS THE KEY FIX
+local function keepFlat(part: BasePart)
+	local att = makeAtt(part)
+	local ao = Instance.new("AlignOrientation")
+	ao.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	ao.Attachment0 = att
+	ao.CFrame = CFrame.new() -- world-aligned (flat)
+	ao.MaxTorque = math.huge
+	ao.Responsiveness = 200
+	ao.Parent = part
+end
+
+-- Create a standard vertical-only pad with AlignOrientation
+local function makeBouncePad(base: BasePart, pos: Vector3, color: Color3, upperLimit: number): Part
+	local pad = makePart({
+		position = pos - Vector3.new(0, 0.5, 0),
+		size = Vector3.new(8, 0.5, 8),
+		color = color,
+		anchored = false,
+		density = 0.1,
+	})
+	keepFlat(pad)
+	-- Prismatic: vertical only
+	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
+	att0.Axis = Vector3.new(0, 1, 0)
+	local att1 = makeAtt(pad)
+	local prism = Instance.new("PrismaticConstraint")
+	prism.Attachment0 = att0
+	prism.Attachment1 = att1
+	prism.LimitsEnabled = true
+	prism.LowerLimit = 0
+	prism.UpperLimit = upperLimit
+	prism.Parent = base
+	return pad
 end
 
 local testNum = 0
@@ -88,137 +111,84 @@ end
 task.wait(3)
 
 ----------------------------------------------------------------------
--- ROW 0: TRAMPOLINE TEST 1-3 (Spring variations)
+-- ROW 0: SPRING BOUNCE (pad stays flat, spring rebounds when player jumps)
 ----------------------------------------------------------------------
--- #1: Ultra-stiff spring, featherweight platform
-spawnTest(0, 0, "T1: UltraStiff Spring", function(pos)
+-- Player stands on pad → spring compresses → player jumps → spring flings pad up → pad hits player?
+spawnTest(0, 0, "Spring 2k stiff", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(255, 80, 50),
-		anchored = false,
-		density = 0.01,
-		elasticity = 1.0,
-		elasticityWeight = 100,
-	})
-	local att0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	local att1 = makeAttachment(pad, Vector3.new(0, -0.15, 0))
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 80, 50), 4)
+	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
+	local att1 = makeAtt(pad, Vector3.new(0, -0.25, 0))
 	local spring = Instance.new("SpringConstraint")
 	spring.Attachment0 = att0
 	spring.Attachment1 = att1
-	spring.Stiffness = 50000
+	spring.Stiffness = 2000
 	spring.Damping = 0
 	spring.FreeLength = 2
 	spring.Visible = true
 	spring.Parent = base
 end)
 
--- #2: Pre-loaded spring (FreeLength > distance = always pushing up)
-spawnTest(0, 1, "T2: PreLoaded Spring", function(pos)
+spawnTest(0, 1, "Spring 5k stiff", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(255, 180, 50),
-		anchored = false,
-		density = 0.01,
-		elasticity = 1.0,
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 150, 50), 4)
+	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
+	local att1 = makeAtt(pad, Vector3.new(0, -0.25, 0))
+	local spring = Instance.new("SpringConstraint")
+	spring.Attachment0 = att0
+	spring.Attachment1 = att1
+	spring.Stiffness = 5000
+	spring.Damping = 0
+	spring.FreeLength = 2
+	spring.Visible = true
+	spring.Parent = base
+end)
+
+spawnTest(0, 2, "Spring 10k stiff", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
 	})
-	local att0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	local att1 = makeAttachment(pad, Vector3.new(0, -0.15, 0))
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(50, 255, 100), 4)
+	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
+	local att1 = makeAtt(pad, Vector3.new(0, -0.25, 0))
 	local spring = Instance.new("SpringConstraint")
 	spring.Attachment0 = att0
 	spring.Attachment1 = att1
 	spring.Stiffness = 10000
 	spring.Damping = 0
-	spring.FreeLength = 10 -- much longer than actual distance = always pushing up
+	spring.FreeLength = 2
 	spring.Visible = true
 	spring.Parent = base
-	-- Prismatic to keep it from flying sideways
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad, Vector3.new(0, 0, 0))
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 4
-	prism.Parent = base
 end)
 
--- #3: Triple springs in parallel
-spawnTest(0, 2, "T3: Triple Springs", function(pos)
+----------------------------------------------------------------------
+-- ROW 1: VECTORFORCE LAUNCHER (pad carries player up, limit stops pad)
+-- Concept: pad has constant upward force but gravity keeps it at bottom.
+-- Player stands on it → pad held down by player+gravity.
+-- The upward force means pad+player accelerate up. Prismatic stops pad. Player has momentum.
+----------------------------------------------------------------------
+spawnTest(1, 0, "VForce 3k + limit 5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(50, 255, 100),
-		anchored = false,
-		density = 0.01,
-		elasticity = 1.0,
-	})
-	for _, offset in { Vector3.new(-2, 0, 0), Vector3.new(0, 0, 0), Vector3.new(2, 0, 0) } do
-		local att0 = makeAttachment(base, Vector3.new(offset.X, 0.5, offset.Z))
-		local att1 = makeAttachment(pad, Vector3.new(offset.X, -0.15, offset.Z))
-		local spring = Instance.new("SpringConstraint")
-		spring.Attachment0 = att0
-		spring.Attachment1 = att1
-		spring.Stiffness = 20000
-		spring.Damping = 0
-		spring.FreeLength = 2
-		spring.Visible = true
-		spring.Parent = base
-	end
-end)
-
-----------------------------------------------------------------------
--- ROW 1: TRAMPOLINE TEST 4-6 (Force/velocity based)
-----------------------------------------------------------------------
--- #4: VectorForce up on platform
-spawnTest(1, 0, "T4: VectorForce Up", function(pos)
-	local base = makePart({
-		position = pos - Vector3.new(0, 3, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(100, 100, 255),
-		anchored = false,
-		density = 0.05,
-	})
-	-- Prismatic to keep vertical only
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad)
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 6
-	prism.Parent = base
-	-- Constant upward force
-	local att_vf = makeAttachment(pad)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(100, 100, 255), 5)
+	local att_vf = makeAtt(pad)
 	local vf = Instance.new("VectorForce")
 	vf.Attachment0 = att_vf
 	vf.Force = Vector3.new(0, 3000, 0)
@@ -226,167 +196,254 @@ spawnTest(1, 0, "T4: VectorForce Up", function(pos)
 	vf.Parent = pad
 end)
 
--- #5: LinearVelocity up + Prismatic
-spawnTest(1, 1, "T5: LinVel Up + Prismatic", function(pos)
+spawnTest(1, 1, "VForce 5k + limit 5", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(150, 50, 255),
-		anchored = false,
-		density = 0.05,
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(150, 50, 255), 5)
+	local att_vf = makeAtt(pad)
+	local vf = Instance.new("VectorForce")
+	vf.Attachment0 = att_vf
+	vf.Force = Vector3.new(0, 5000, 0)
+	vf.RelativeTo = Enum.ActuatorRelativeTo.World
+	vf.Parent = pad
+end)
+
+spawnTest(1, 2, "VForce 10k + limit 8", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
 	})
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad)
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 5
-	prism.Parent = base
-	-- Constant upward velocity
-	local att_lv = makeAttachment(pad)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 50, 255), 8)
+	local att_vf = makeAtt(pad)
+	local vf = Instance.new("VectorForce")
+	vf.Attachment0 = att_vf
+	vf.Force = Vector3.new(0, 10000, 0)
+	vf.RelativeTo = Enum.ActuatorRelativeTo.World
+	vf.Parent = pad
+end)
+
+spawnTest(1, 3, "VForce 20k + limit 10", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 0, 100), 10)
+	local att_vf = makeAtt(pad)
+	local vf = Instance.new("VectorForce")
+	vf.Attachment0 = att_vf
+	vf.Force = Vector3.new(0, 20000, 0)
+	vf.RelativeTo = Enum.ActuatorRelativeTo.World
+	vf.Parent = pad
+end)
+
+----------------------------------------------------------------------
+-- ROW 2: LINEAR VELOCITY LAUNCHER (pad moves up at set speed, carries player)
+----------------------------------------------------------------------
+spawnTest(2, 0, "LinVel 10 up, limit 5", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(50, 200, 200), 5)
+	local att_lv = makeAtt(pad)
 	local lv = Instance.new("LinearVelocity")
 	lv.Attachment0 = att_lv
-	lv.VectorVelocity = Vector3.new(0, 20, 0)
-	lv.MaxForce = 5000
+	lv.VectorVelocity = Vector3.new(0, 10, 0)
+	lv.MaxForce = 10000
 	lv.RelativeTo = Enum.ActuatorRelativeTo.World
 	lv.Parent = pad
 end)
 
--- #6: AlignPosition (snaps back to target height)
-spawnTest(1, 2, "T6: AlignPosition Snap", function(pos)
+spawnTest(2, 1, "LinVel 30 up, limit 8", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 3, 0),
 		size = Vector3.new(8, 1, 8),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(255, 50, 255),
-		anchored = false,
-		density = 0.05,
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(50, 255, 150), 8)
+	local att_lv = makeAtt(pad)
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = att_lv
+	lv.VectorVelocity = Vector3.new(0, 30, 0)
+	lv.MaxForce = 20000
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.Parent = pad
+end)
+
+spawnTest(2, 2, "LinVel 60 up, limit 10", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
 	})
-	-- Prismatic for vertical only
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad)
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 6
-	prism.Parent = base
-	-- AlignPosition pulling pad to target height
-	local att_ap = makeAttachment(pad)
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(200, 255, 50), 10)
+	local att_lv = makeAtt(pad)
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = att_lv
+	lv.VectorVelocity = Vector3.new(0, 60, 0)
+	lv.MaxForce = 50000
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.Parent = pad
+end)
+
+spawnTest(2, 3, "LinVel 100 up, limit 15", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 200, 50), 15)
+	local att_lv = makeAtt(pad)
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = att_lv
+	lv.VectorVelocity = Vector3.new(0, 100, 0)
+	lv.MaxForce = math.huge
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.Parent = pad
+end)
+
+----------------------------------------------------------------------
+-- ROW 3: ALIGNPOSITION LAUNCHER (pad snaps to high target, carries player)
+----------------------------------------------------------------------
+spawnTest(3, 0, "AlignPos target +10", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(255, 100, 255), 10)
+	local att_ap = makeAtt(pad)
 	local ap = Instance.new("AlignPosition")
 	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
 	ap.Attachment0 = att_ap
-	ap.Position = pos + Vector3.new(0, 2, 0) -- target position above rest
+	ap.Position = pos + Vector3.new(0, 10, 0)
 	ap.MaxForce = 10000
+	ap.Responsiveness = 50
+	ap.Parent = pad
+end)
+
+spawnTest(3, 1, "AlignPos target +15 fast", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(200, 50, 200), 15)
+	local att_ap = makeAtt(pad)
+	local ap = Instance.new("AlignPosition")
+	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
+	ap.Attachment0 = att_ap
+	ap.Position = pos + Vector3.new(0, 15, 0)
+	ap.MaxForce = 30000
+	ap.Responsiveness = 100
+	ap.Parent = pad
+end)
+
+spawnTest(3, 2, "AlignPos target +20 max", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 3, 0),
+		size = Vector3.new(8, 1, 8),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local pad = makeBouncePad(base, pos, Color3.fromRGB(150, 0, 255), 20)
+	local att_ap = makeAtt(pad)
+	local ap = Instance.new("AlignPosition")
+	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
+	ap.Attachment0 = att_ap
+	ap.Position = pos + Vector3.new(0, 20, 0)
+	ap.MaxForce = math.huge
 	ap.Responsiveness = 200
 	ap.Parent = pad
 end)
 
 ----------------------------------------------------------------------
--- ROW 2: TRAMPOLINE TEST 7-10 (Creative approaches)
+-- ROW 4: MOTOR HINGE FLIPPER (fixed — hinge that swings up and flings player)
 ----------------------------------------------------------------------
--- #7: Massless platform + stiff spring
-spawnTest(2, 0, "T7: Massless + Spring", function(pos)
-	local base = makePart({
-		position = pos - Vector3.new(0, 3, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(255, 255, 50),
-		anchored = false,
-		massless = true,
-		elasticity = 1.0,
-	})
-	local att0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	local att1 = makeAttachment(pad, Vector3.new(0, -0.15, 0))
-	local spring = Instance.new("SpringConstraint")
-	spring.Attachment0 = att0
-	spring.Attachment1 = att1
-	spring.Stiffness = 30000
-	spring.Damping = 0
-	spring.FreeLength = 2
-	spring.Visible = true
-	spring.Parent = base
-end)
-
--- #8: TorsionSpring catapult pad (tilting launcher)
-spawnTest(2, 1, "T8: TorsionSpring Catapult", function(pos)
-	local pivot = makePart({
-		position = pos - Vector3.new(0, 2, 0),
-		size = Vector3.new(2, 2, 2),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos + Vector3.new(0, -0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(50, 200, 255),
-		anchored = false,
-		density = 0.05,
-	})
-	local att0 = makeAttachment(pivot, Vector3.new(0, 1, 0))
-	att0.Axis = Vector3.new(0, 0, 1)
-	local att1 = makeAttachment(pad, Vector3.new(0, 0, 0))
-	att1.Axis = Vector3.new(0, 0, 1)
-	local ts = Instance.new("TorsionSpringConstraint")
-	ts.Attachment0 = att0
-	ts.Attachment1 = att1
-	ts.Stiffness = 5000
-	ts.Damping = 0
-	ts.MaxAngle = 30
-	ts.Parent = pivot
-end)
-
--- #9: Motor-driven hinge flipper (continuous rotation hits player)
-spawnTest(2, 2, "T9: Motor Hinge Flipper", function(pos)
+spawnTest(4, 0, "Motor Flipper slow", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 2.5, 0),
-		size = Vector3.new(3, 1, 8),
+		size = Vector3.new(10, 1, 3),
 		color = Color3.fromRGB(60, 60, 60),
 		anchored = true,
 	})
 	local flipper = makePart({
-		position = pos + Vector3.new(0, -1, 4),
-		size = Vector3.new(3, 0.5, 8),
+		position = pos + Vector3.new(5, -1.5, 0),
+		size = Vector3.new(10, 0.5, 8),
 		color = Color3.fromRGB(255, 100, 100),
 		anchored = false,
-		density = 0.3,
+		density = 0.1,
 	})
-	local att0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att0.Axis = Vector3.new(1, 0, 0)
-	local att1 = makeAttachment(flipper, Vector3.new(0, 0, -4))
-	att1.Axis = Vector3.new(1, 0, 0)
+	keepFlat(flipper) -- actually don't keep flat, it needs to rotate!
+	-- Remove keepFlat, just use the hinge
+	for _, child in flipper:GetChildren() do
+		if child:IsA("AlignOrientation") then child:Destroy() end
+	end
+	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
+	att0.Axis = Vector3.new(0, 0, 1)
+	local att1 = makeAtt(flipper, Vector3.new(-5, 0, 0))
+	att1.Axis = Vector3.new(0, 0, 1)
 	local hinge = Instance.new("HingeConstraint")
 	hinge.Attachment0 = att0
 	hinge.Attachment1 = att1
 	hinge.ActuatorType = Enum.ActuatorType.Motor
-	hinge.AngularVelocity = 5
-	hinge.MotorMaxTorque = 5000
+	hinge.AngularVelocity = 3
+	hinge.MotorMaxTorque = 10000
 	hinge.LimitsEnabled = true
-	hinge.LowerAngle = -10
+	hinge.LowerAngle = -5
+	hinge.UpperAngle = 70
+	hinge.Parent = base
+	task.spawn(function()
+		while hinge.Parent do
+			task.wait(3)
+			hinge.AngularVelocity = -hinge.AngularVelocity
+		end
+	end)
+end)
+
+spawnTest(4, 1, "Motor Flipper fast", function(pos)
+	local base = makePart({
+		position = pos - Vector3.new(0, 2.5, 0),
+		size = Vector3.new(10, 1, 3),
+		color = Color3.fromRGB(60, 60, 60),
+		anchored = true,
+	})
+	local flipper = makePart({
+		position = pos + Vector3.new(5, -1.5, 0),
+		size = Vector3.new(10, 0.5, 8),
+		color = Color3.fromRGB(255, 200, 50),
+		anchored = false,
+		density = 0.1,
+	})
+	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
+	att0.Axis = Vector3.new(0, 0, 1)
+	local att1 = makeAtt(flipper, Vector3.new(-5, 0, 0))
+	att1.Axis = Vector3.new(0, 0, 1)
+	local hinge = Instance.new("HingeConstraint")
+	hinge.Attachment0 = att0
+	hinge.Attachment1 = att1
+	hinge.ActuatorType = Enum.ActuatorType.Motor
+	hinge.AngularVelocity = 8
+	hinge.MotorMaxTorque = 50000
+	hinge.LimitsEnabled = true
+	hinge.LowerAngle = -5
 	hinge.UpperAngle = 80
 	hinge.Parent = base
-	-- Reverse motor direction when it hits limit
 	task.spawn(function()
 		while hinge.Parent do
 			task.wait(2)
@@ -395,208 +452,10 @@ spawnTest(2, 2, "T9: Motor Hinge Flipper", function(pos)
 	end)
 end)
 
--- #10: Spring + VectorForce combo (spring for oscillation + force for energy)
-spawnTest(2, 3, "T10: Spring + VectorForce", function(pos)
-	local base = makePart({
-		position = pos - Vector3.new(0, 3, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(100, 255, 200),
-		anchored = false,
-		density = 0.01,
-		elasticity = 1.0,
-	})
-	-- Prismatic vertical constraint
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad)
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 5
-	prism.Parent = base
-	-- Spring for bounce
-	local att_s0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	local att_s1 = makeAttachment(pad, Vector3.new(0, -0.15, 0))
-	local spring = Instance.new("SpringConstraint")
-	spring.Attachment0 = att_s0
-	spring.Attachment1 = att_s1
-	spring.Stiffness = 30000
-	spring.Damping = 0
-	spring.FreeLength = 3
-	spring.Visible = true
-	spring.Parent = base
-	-- VectorForce for extra push
-	local att_vf = makeAttachment(pad)
-	local vf = Instance.new("VectorForce")
-	vf.Attachment0 = att_vf
-	vf.Force = Vector3.new(0, 2000, 0)
-	vf.RelativeTo = Enum.ActuatorRelativeTo.World
-	vf.Parent = pad
-end)
-
 ----------------------------------------------------------------------
--- ROW 3: LUDICROUS MODE (should launch to space or nothing works)
+-- ROW 5: PROVEN WORKING OBJECTS
 ----------------------------------------------------------------------
--- #11: Ludicrous VectorForce (100k newtons up)
-spawnTest(3, 0, "LUDICROUS: 100k VectorForce", function(pos)
-	local base = makePart({
-		position = pos - Vector3.new(0, 3, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(255, 0, 0),
-		anchored = false,
-		density = 0.01,
-	})
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad)
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 15
-	prism.Parent = base
-	local att_vf = makeAttachment(pad)
-	local vf = Instance.new("VectorForce")
-	vf.Attachment0 = att_vf
-	vf.Force = Vector3.new(0, 100000, 0)
-	vf.RelativeTo = Enum.ActuatorRelativeTo.World
-	vf.Parent = pad
-end)
-
--- #12: Ludicrous LinearVelocity (200 studs/s up, infinite force)
-spawnTest(3, 1, "LUDICROUS: LinVel 200 up", function(pos)
-	local base = makePart({
-		position = pos - Vector3.new(0, 3, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(255, 0, 255),
-		anchored = false,
-		density = 0.01,
-	})
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad)
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 15
-	prism.Parent = base
-	local att_lv = makeAttachment(pad)
-	local lv = Instance.new("LinearVelocity")
-	lv.Attachment0 = att_lv
-	lv.VectorVelocity = Vector3.new(0, 200, 0)
-	lv.MaxForce = math.huge
-	lv.RelativeTo = Enum.ActuatorRelativeTo.World
-	lv.Parent = pad
-end)
-
--- #13: Ludicrous Spring (stiffness 1 million, zero damping)
-spawnTest(3, 2, "LUDICROUS: 1M Spring", function(pos)
-	local base = makePart({
-		position = pos - Vector3.new(0, 3, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(0, 255, 0),
-		anchored = false,
-		density = 0.01,
-		elasticity = 1.0,
-	})
-	local att0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	local att1 = makeAttachment(pad, Vector3.new(0, -0.15, 0))
-	local spring = Instance.new("SpringConstraint")
-	spring.Attachment0 = att0
-	spring.Attachment1 = att1
-	spring.Stiffness = 1000000
-	spring.Damping = 0
-	spring.FreeLength = 5
-	spring.Visible = true
-	spring.Parent = base
-end)
-
--- #14: Ludicrous AlignPosition (target 500 studs up, max everything)
-spawnTest(3, 3, "LUDICROUS: AlignPos 500up", function(pos)
-	local base = makePart({
-		position = pos - Vector3.new(0, 3, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(60, 60, 60),
-		anchored = true,
-	})
-	local pad = makePart({
-		position = pos - Vector3.new(0, 0.5, 0),
-		size = Vector3.new(8, 0.3, 8),
-		color = Color3.fromRGB(0, 200, 255),
-		anchored = false,
-		density = 0.01,
-	})
-	local att_p0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
-	att_p0.Axis = Vector3.new(0, 1, 0)
-	local att_p1 = makeAttachment(pad)
-	local prism = Instance.new("PrismaticConstraint")
-	prism.Attachment0 = att_p0
-	prism.Attachment1 = att_p1
-	prism.LimitsEnabled = true
-	prism.LowerLimit = 0
-	prism.UpperLimit = 20
-	prism.Parent = base
-	local att_ap = makeAttachment(pad)
-	local ap = Instance.new("AlignPosition")
-	ap.Mode = Enum.PositionAlignmentMode.OneAttachment
-	ap.Attachment0 = att_ap
-	ap.Position = pos + Vector3.new(0, 500, 0)
-	ap.MaxForce = math.huge
-	ap.Responsiveness = 200
-	ap.Parent = pad
-end)
-
--- #15: No prismatic, just raw VectorForce on free part (see if pad flies)
-spawnTest(3, 4, "LUDICROUS: Free VectorForce", function(pos)
-	local pad = makePart({
-		position = pos - Vector3.new(0, 2, 0),
-		size = Vector3.new(8, 1, 8),
-		color = Color3.fromRGB(255, 255, 0),
-		anchored = false,
-		density = 0.01,
-	})
-	local att_vf = makeAttachment(pad)
-	local vf = Instance.new("VectorForce")
-	vf.Attachment0 = att_vf
-	vf.Force = Vector3.new(0, 50000, 0)
-	vf.RelativeTo = Enum.ActuatorRelativeTo.World
-	vf.Parent = pad
-end)
-
-----------------------------------------------------------------------
--- ROW 4-7: PROVEN WORKING OBJECTS (from v2)
-----------------------------------------------------------------------
--- Seesaw (works!)
-spawnTest(4, 0, "Hinge: Seesaw", function(pos)
+spawnTest(5, 0, "Hinge: Seesaw", function(pos)
 	local post = makePart({
 		position = pos - Vector3.new(0, 1.5, 0),
 		size = Vector3.new(2, 3, 2),
@@ -610,9 +469,9 @@ spawnTest(4, 0, "Hinge: Seesaw", function(pos)
 		anchored = false,
 		density = 0.2,
 	})
-	local att0 = makeAttachment(post, Vector3.new(0, 1.5, 0))
+	local att0 = makeAtt(post, Vector3.new(0, 1.5, 0))
 	att0.Axis = Vector3.new(0, 0, 1)
-	local att1 = makeAttachment(plank, Vector3.new(0, -0.25, 0))
+	local att1 = makeAtt(plank, Vector3.new(0, -0.25, 0))
 	att1.Axis = Vector3.new(0, 0, 1)
 	local hinge = Instance.new("HingeConstraint")
 	hinge.Attachment0 = att0
@@ -620,8 +479,7 @@ spawnTest(4, 0, "Hinge: Seesaw", function(pos)
 	hinge.Parent = post
 end)
 
--- Hinge door (fixed)
-spawnTest(4, 1, "Hinge: Door", function(pos)
+spawnTest(5, 1, "Hinge: Door", function(pos)
 	local frame = makePart({
 		position = pos + Vector3.new(-3, 0, 0),
 		size = Vector3.new(0.5, 8, 1),
@@ -629,14 +487,14 @@ spawnTest(4, 1, "Hinge: Door", function(pos)
 		anchored = true,
 	})
 	local panel = makePart({
-		position = pos + Vector3.new(0, 0, 0),
+		position = pos,
 		size = Vector3.new(5, 8, 0.5),
 		color = Color3.fromRGB(160, 110, 60),
 		anchored = false,
 	})
-	local att0 = makeAttachment(frame, Vector3.new(0.25, 0, 0))
+	local att0 = makeAtt(frame, Vector3.new(0.25, 0, 0))
 	att0.Axis = Vector3.new(0, 1, 0)
-	local att1 = makeAttachment(panel, Vector3.new(-2.5, 0, 0))
+	local att1 = makeAtt(panel, Vector3.new(-2.5, 0, 0))
 	att1.Axis = Vector3.new(0, 1, 0)
 	local hinge = Instance.new("HingeConstraint")
 	hinge.Attachment0 = att0
@@ -647,8 +505,7 @@ spawnTest(4, 1, "Hinge: Door", function(pos)
 	hinge.Parent = frame
 end)
 
--- Rod hanging sign (works!)
-spawnTest(4, 2, "Rod: Hanging Sign", function(pos)
+spawnTest(5, 2, "Rod: Hanging Sign", function(pos)
 	local bar = makePart({
 		position = pos + Vector3.new(0, 6, 0),
 		size = Vector3.new(6, 0.5, 0.5),
@@ -661,26 +518,19 @@ spawnTest(4, 2, "Rod: Hanging Sign", function(pos)
 		color = Color3.fromRGB(240, 230, 200),
 		anchored = false,
 	})
-	local att0L = makeAttachment(bar, Vector3.new(-2, 0, 0))
-	local att1L = makeAttachment(sign, Vector3.new(-2, 1.5, 0))
-	local rod1 = Instance.new("RodConstraint")
-	rod1.Attachment0 = att0L
-	rod1.Attachment1 = att1L
-	rod1.Length = 2
-	rod1.Visible = true
-	rod1.Parent = bar
-	local att0R = makeAttachment(bar, Vector3.new(2, 0, 0))
-	local att1R = makeAttachment(sign, Vector3.new(2, 1.5, 0))
-	local rod2 = Instance.new("RodConstraint")
-	rod2.Attachment0 = att0R
-	rod2.Attachment1 = att1R
-	rod2.Length = 2
-	rod2.Visible = true
-	rod2.Parent = bar
+	for _, xOff in { -2, 2 } do
+		local a0 = makeAtt(bar, Vector3.new(xOff, 0, 0))
+		local a1 = makeAtt(sign, Vector3.new(xOff, 1.5, 0))
+		local rod = Instance.new("RodConstraint")
+		rod.Attachment0 = a0
+		rod.Attachment1 = a1
+		rod.Length = 2
+		rod.Visible = true
+		rod.Parent = bar
+	end
 end)
 
--- Rope dangler (works!)
-spawnTest(4, 3, "Rope: Dangler", function(pos)
+spawnTest(5, 3, "Rope: Dangler", function(pos)
 	local hook = makePart({
 		position = pos + Vector3.new(0, 7, 0),
 		size = Vector3.new(1, 1, 1),
@@ -695,18 +545,20 @@ spawnTest(4, 3, "Rope: Dangler", function(pos)
 		anchored = false,
 		density = 3,
 	})
-	local att0 = makeAttachment(hook, Vector3.new(0, -0.5, 0))
-	local att1 = makeAttachment(weight, Vector3.new(0, 1.5, 0))
+	local a0 = makeAtt(hook, Vector3.new(0, -0.5, 0))
+	local a1 = makeAtt(weight, Vector3.new(0, 1.5, 0))
 	local rope = Instance.new("RopeConstraint")
-	rope.Attachment0 = att0
-	rope.Attachment1 = att1
+	rope.Attachment0 = a0
+	rope.Attachment1 = a1
 	rope.Length = 5
 	rope.Visible = true
 	rope.Parent = hook
 end)
 
--- Moving platform (works!)
-spawnTest(5, 0, "Prismatic: Moving Platform", function(pos)
+----------------------------------------------------------------------
+-- ROW 6: MORE PROVEN OBJECTS
+----------------------------------------------------------------------
+spawnTest(6, 0, "Prismatic: Moving Platform", function(pos)
 	local rail = makePart({
 		position = pos - Vector3.new(0, 2, 0),
 		size = Vector3.new(16, 0.5, 4),
@@ -720,9 +572,10 @@ spawnTest(5, 0, "Prismatic: Moving Platform", function(pos)
 		color = Color3.fromRGB(50, 200, 50),
 		anchored = false,
 	})
-	local att0 = makeAttachment(rail, Vector3.new(0, 0.25, 0))
+	keepFlat(platform)
+	local att0 = makeAtt(rail, Vector3.new(0, 0.25, 0))
 	att0.Axis = Vector3.new(1, 0, 0)
-	local att1 = makeAttachment(platform, Vector3.new(0, -0.5, 0))
+	local att1 = makeAtt(platform, Vector3.new(0, -0.5, 0))
 	local prism = Instance.new("PrismaticConstraint")
 	prism.Attachment0 = att0
 	prism.Attachment1 = att1
@@ -730,7 +583,7 @@ spawnTest(5, 0, "Prismatic: Moving Platform", function(pos)
 	prism.LowerLimit = -6
 	prism.UpperLimit = 6
 	prism.Parent = rail
-	local att_lv = makeAttachment(platform)
+	local att_lv = makeAtt(platform)
 	local lv = Instance.new("LinearVelocity")
 	lv.Attachment0 = att_lv
 	lv.VectorVelocity = Vector3.new(5, 0, 0)
@@ -747,8 +600,7 @@ spawnTest(5, 0, "Prismatic: Moving Platform", function(pos)
 	end)
 end)
 
--- Spinning platform (from v2)
-spawnTest(5, 1, "AngVel: Spin Platform", function(pos)
+spawnTest(6, 1, "AngVel: Spin Platform", function(pos)
 	local base = makePart({
 		position = pos - Vector3.new(0, 2.5, 0),
 		size = Vector3.new(1, 1, 1),
@@ -761,15 +613,15 @@ spawnTest(5, 1, "AngVel: Spin Platform", function(pos)
 		color = Color3.fromRGB(100, 200, 100),
 		anchored = false,
 	})
-	local att_h0 = makeAttachment(base, Vector3.new(0, 0.5, 0))
+	local att_h0 = makeAtt(base, Vector3.new(0, 0.5, 0))
 	att_h0.Axis = Vector3.new(0, 1, 0)
-	local att_h1 = makeAttachment(disc, Vector3.new(0, -0.5, 0))
+	local att_h1 = makeAtt(disc, Vector3.new(0, -0.5, 0))
 	att_h1.Axis = Vector3.new(0, 1, 0)
 	local hinge = Instance.new("HingeConstraint")
 	hinge.Attachment0 = att_h0
 	hinge.Attachment1 = att_h1
 	hinge.Parent = base
-	local att_av = makeAttachment(disc)
+	local att_av = makeAtt(disc)
 	local av = Instance.new("AngularVelocity")
 	av.Attachment0 = att_av
 	av.AngularVelocity = Vector3.new(0, 1.5, 0)
@@ -778,8 +630,7 @@ spawnTest(5, 1, "AngVel: Spin Platform", function(pos)
 	av.Parent = disc
 end)
 
--- Windmill
-spawnTest(5, 2, "AngVel: Windmill", function(pos)
+spawnTest(6, 2, "AngVel: Windmill", function(pos)
 	local tower = makePart({
 		position = pos,
 		size = Vector3.new(2, 8, 2),
@@ -793,15 +644,15 @@ spawnTest(5, 2, "AngVel: Windmill", function(pos)
 		anchored = false,
 		density = 0.1,
 	})
-	local att_h0 = makeAttachment(tower, Vector3.new(0, 4, -1))
+	local att_h0 = makeAtt(tower, Vector3.new(0, 4, -1))
 	att_h0.Axis = Vector3.new(0, 0, 1)
-	local att_h1 = makeAttachment(blades)
+	local att_h1 = makeAtt(blades)
 	att_h1.Axis = Vector3.new(0, 0, 1)
 	local hinge = Instance.new("HingeConstraint")
 	hinge.Attachment0 = att_h0
 	hinge.Attachment1 = att_h1
 	hinge.Parent = tower
-	local att_av = makeAttachment(blades)
+	local att_av = makeAtt(blades)
 	local av = Instance.new("AngularVelocity")
 	av.Attachment0 = att_av
 	av.AngularVelocity = Vector3.new(0, 0, 3)
@@ -810,8 +661,7 @@ spawnTest(5, 2, "AngVel: Windmill", function(pos)
 	av.Parent = blades
 end)
 
--- Elevator
-spawnTest(5, 3, "Prismatic: Elevator", function(pos)
+spawnTest(6, 3, "Prismatic: Elevator", function(pos)
 	local shaft = makePart({
 		position = pos,
 		size = Vector3.new(1, 12, 1),
@@ -825,9 +675,10 @@ spawnTest(5, 3, "Prismatic: Elevator", function(pos)
 		color = Color3.fromRGB(50, 150, 255),
 		anchored = false,
 	})
-	local att0 = makeAttachment(shaft)
+	keepFlat(platform)
+	local att0 = makeAtt(shaft)
 	att0.Axis = Vector3.new(0, 1, 0)
-	local att1 = makeAttachment(platform)
+	local att1 = makeAtt(platform)
 	local prism = Instance.new("PrismaticConstraint")
 	prism.Attachment0 = att0
 	prism.Attachment1 = att1
@@ -835,7 +686,7 @@ spawnTest(5, 3, "Prismatic: Elevator", function(pos)
 	prism.LowerLimit = -5
 	prism.UpperLimit = 5
 	prism.Parent = shaft
-	local att_lv = makeAttachment(platform)
+	local att_lv = makeAtt(platform)
 	local lv = Instance.new("LinearVelocity")
 	lv.Attachment0 = att_lv
 	lv.VectorVelocity = Vector3.new(0, 3, 0)
@@ -852,4 +703,4 @@ spawnTest(5, 3, "Prismatic: Elevator", function(pos)
 	end)
 end)
 
-print("[PhysicsTestGrid v3] Spawned", testNum, "test objects. Grid at", tostring(GRID_ORIGIN))
+print("[PhysicsTestGrid v4] Spawned", testNum, "test objects at", tostring(GRID_ORIGIN))

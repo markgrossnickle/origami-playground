@@ -901,18 +901,18 @@ local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4
 local TEST_SPACING = 8 -- studs between each test model
 
 function submitSingleRequest(prompt: string, category: string, style: string, model: string, placementOffset: Vector3?, labelOverride: string?)
-	-- Deduct cranes before sending request (skip in Studio)
-	if not RunService:IsStudio() then
-		local craneCost = OrigamiConfig.CRANE_COSTS[model] or 1
-		local PlayerDataService = Knit.GetService("PlayerDataService")
-		local deductOk, deductResult = PlayerDataService:DeductCurrency("Cranes", craneCost):await()
-		if not deductOk or not deductResult or not deductResult.success then
-			setStatus("Not enough Cranes!", COLORS.error)
-			return
-		end
-		_craneCount = deductResult.remaining
-		updateCurrencyDisplay()
-	end
+	-- Currency checks disabled — free building
+	-- if not RunService:IsStudio() then
+	-- 	local craneCost = OrigamiConfig.CRANE_COSTS[model] or 1
+	-- 	local PlayerDataService = Knit.GetService("PlayerDataService")
+	-- 	local deductOk, deductResult = PlayerDataService:DeductCurrency("Cranes", craneCost):await()
+	-- 	if not deductOk or not deductResult or not deductResult.success then
+	-- 		setStatus("Not enough Cranes!", COLORS.error)
+	-- 		return
+	-- 	end
+	-- 	_craneCount = deductResult.remaining
+	-- 	updateCurrencyDisplay()
+	-- end
 
 	local queueId = addQueueEntry(prompt .. (if labelOverride then " [" .. labelOverride .. "]" else ""), category)
 
@@ -1884,17 +1884,17 @@ function renderCatalogItems(items: { any })
 end
 
 function spawnCatalogItem(item: { [string]: any })
-	-- Deduct coins (skip in Studio)
-	if not RunService:IsStudio() then
-		local PlayerDataService = Knit.GetService("PlayerDataService")
-		local ok, result = PlayerDataService:DeductCurrency("Folds", OrigamiConfig.CACHED_ITEM_COST):await()
-		if not ok or not result or not result.success then
-			setStatus("Not enough Folds!", COLORS.error)
-			return
-		end
-		_foldsCount = result.remaining
-		updateCurrencyDisplay()
-	end
+	-- Currency checks disabled — free building
+	-- if not RunService:IsStudio() then
+	-- 	local PlayerDataService = Knit.GetService("PlayerDataService")
+	-- 	local ok, result = PlayerDataService:DeductCurrency("Folds", OrigamiConfig.CACHED_ITEM_COST):await()
+	-- 	if not ok or not result or not result.success then
+	-- 		setStatus("Not enough Folds!", COLORS.error)
+	-- 		return
+	-- 	end
+	-- 	_foldsCount = result.remaining
+	-- 	updateCurrencyDisplay()
+	-- end
 
 	-- Fetch full model data from server
 	task.spawn(function()

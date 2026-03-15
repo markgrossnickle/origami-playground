@@ -319,7 +319,7 @@ local function submitBuild()
 
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:RequestModel(prompt, "building", "lowpoly"):await()
+		local ok, result = OrigamiService:RequestModel(prompt, nil, "freestyle", "flash_lite"):await()
 
 		if not _active then
 			_building = false

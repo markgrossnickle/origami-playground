@@ -89,8 +89,10 @@ local _browseButton: TextButton
 local _catalogPanel: Frame
 local _catalogScroll: ScrollingFrame
 local _catalogSearchBox: TextBox
+local _catalogTypeRow: ScrollingFrame
 local _catalogCache: { any }? = nil
 local _catalogOpen = false
+local _selectedType = "all"
 
 -- Colors
 local COLORS = {
@@ -639,11 +641,61 @@ local function createUI()
 	searchPad.PaddingRight = UDim.new(0, 8)
 	searchPad.Parent = _catalogSearchBox
 
+	-- Type filter row (horizontal scrolling pills)
+	_catalogTypeRow = Instance.new("ScrollingFrame")
+	_catalogTypeRow.Name = "TypeFilterRow"
+	_catalogTypeRow.Size = UDim2.new(1, -16, 0, 26)
+	_catalogTypeRow.Position = UDim2.new(0, 8, 0, 40)
+	_catalogTypeRow.BackgroundTransparency = 1
+	_catalogTypeRow.BorderSizePixel = 0
+	_catalogTypeRow.ScrollBarThickness = 0
+	_catalogTypeRow.ScrollingDirection = Enum.ScrollingDirection.X
+	_catalogTypeRow.AutomaticCanvasSize = Enum.AutomaticSize.X
+	_catalogTypeRow.CanvasSize = UDim2.new(0, 0, 0, 0)
+	_catalogTypeRow.Parent = _catalogPanel
+
+	local typeLayout = Instance.new("UIListLayout")
+	typeLayout.FillDirection = Enum.FillDirection.Horizontal
+	typeLayout.Padding = UDim.new(0, 4)
+	typeLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	typeLayout.Parent = _catalogTypeRow
+
+	for i, typeInfo in ipairs(OrigamiConfig.TYPES) do
+		local pill = Instance.new("TextButton")
+		pill.Name = "Type_" .. typeInfo.key
+		pill.Size = UDim2.new(0, 0, 1, 0)
+		pill.AutomaticSize = Enum.AutomaticSize.X
+		pill.BackgroundColor3 = if typeInfo.key == _selectedType then COLORS.accent else COLORS.bgLight
+		pill.BorderSizePixel = 0
+		pill.Text = typeInfo.display
+		pill.TextColor3 = if typeInfo.key == _selectedType then COLORS.bg else COLORS.textDim
+		pill.TextSize = 11
+		pill.Font = Enum.Font.GothamBold
+		pill.LayoutOrder = i
+		pill.Parent = _catalogTypeRow
+
+		local pillCorner = Instance.new("UICorner")
+		pillCorner.CornerRadius = UDim.new(0, 10)
+		pillCorner.Parent = pill
+
+		local pillPad = Instance.new("UIPadding")
+		pillPad.PaddingLeft = UDim.new(0, 8)
+		pillPad.PaddingRight = UDim.new(0, 8)
+		pillPad.Parent = pill
+
+		pill.Activated:Connect(function()
+			_selectedType = typeInfo.key
+			_catalogCache = nil
+			updateTypeHighlights()
+			loadCatalog()
+		end)
+	end
+
 	-- Scrolling frame for items
 	_catalogScroll = Instance.new("ScrollingFrame")
 	_catalogScroll.Name = "CatalogScroll"
-	_catalogScroll.Size = UDim2.new(1, -16, 1, -48)
-	_catalogScroll.Position = UDim2.new(0, 8, 0, 42)
+	_catalogScroll.Size = UDim2.new(1, -16, 1, -74)
+	_catalogScroll.Position = UDim2.new(0, 8, 0, 70)
 	_catalogScroll.BackgroundTransparency = 1
 	_catalogScroll.BorderSizePixel = 0
 	_catalogScroll.ScrollBarThickness = 4
@@ -714,6 +766,24 @@ function updateCategoryHighlights()
 		else
 			btn.BackgroundColor3 = COLORS.bgLight
 			btn.TextColor3 = COLORS.textDim
+		end
+	end
+end
+
+function updateTypeHighlights()
+	if not _catalogTypeRow then
+		return
+	end
+	for _, pill in ipairs(_catalogTypeRow:GetChildren()) do
+		if pill:IsA("TextButton") then
+			local key = pill.Name:sub(6) -- strip "Type_" prefix
+			if key == _selectedType then
+				pill.BackgroundColor3 = COLORS.accent
+				pill.TextColor3 = COLORS.bg
+			else
+				pill.BackgroundColor3 = COLORS.bgLight
+				pill.TextColor3 = COLORS.textDim
+			end
 		end
 	end
 end
@@ -893,7 +963,7 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:RequestModel(prompt, category, style, model):await()
+		local ok, result = OrigamiService:RequestModel(prompt, category, style, model, category):await()
 
 		if ok and result and result.success and result.model then
 			local modelData = result.model
@@ -1753,9 +1823,11 @@ function loadCatalog()
 		end
 	end
 
+	local typeFilter = if _selectedType ~= "all" then _selectedType else nil
+
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:FetchCatalog():await()
+		local ok, result = OrigamiService:FetchCatalog(nil, typeFilter):await()
 
 		if ok and result and result.success and result.items then
 			_catalogCache = result.items

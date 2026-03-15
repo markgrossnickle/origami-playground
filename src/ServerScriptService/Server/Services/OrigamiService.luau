@@ -60,7 +60,7 @@ local function checkRateLimit(player: Player): (boolean, number)
 	return true, 0
 end
 
-function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string, style: string?, model: string?)
+function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string, style: string?, model: string?, type: string?)
 	-- Validate input
 	if not prompt or prompt == "" then
 		return { success = false, error = "empty_prompt" }
@@ -86,6 +86,7 @@ function OrigamiService.Client:RequestModel(player: Player, prompt: string, cate
 		style = style or "origami",
 		model = model or "haiku",
 		raw = if isRaw then true else nil,
+		type = type,
 	}
 
 	-- Call external API
@@ -496,7 +497,7 @@ function OrigamiService.Client:ReadyVehicle(player: Player, seat: VehicleSeat)
 	end
 end
 
-function OrigamiService.Client:FetchCatalog(player: Player, search: string?)
+function OrigamiService.Client:FetchCatalog(player: Player, search: string?, type: string?)
 	local apiUrl = getApiUrl()
 	if apiUrl == "" then
 		return { success = false, error = "api_not_configured" }
@@ -504,8 +505,15 @@ function OrigamiService.Client:FetchCatalog(player: Player, search: string?)
 
 	local apiKey = getApiKey()
 	local url = apiUrl .. "/api/catalog"
+	local queryParts = {}
 	if search and search ~= "" then
-		url = url .. "?search=" .. HttpService:UrlEncode(search)
+		table.insert(queryParts, "search=" .. HttpService:UrlEncode(search))
+	end
+	if type and type ~= "" and type ~= "all" then
+		table.insert(queryParts, "type=" .. HttpService:UrlEncode(type))
+	end
+	if #queryParts > 0 then
+		url = url .. "?" .. table.concat(queryParts, "&")
 	end
 
 	local ok, response = pcall(function()

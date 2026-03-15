@@ -28,6 +28,21 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "animation", display = "Animate", icon = "🎬" },
 }
 
+-- Catalog types (for filtering/browsing)
+OrigamiConfig.TYPES = {
+	{ key = "all", display = "All" },
+	{ key = "tower", display = "Tower" },
+	{ key = "minion", display = "Minion" },
+	{ key = "battler", display = "Battler" },
+	{ key = "card", display = "Card" },
+	{ key = "creature", display = "Creature" },
+	{ key = "avatar", display = "Avatar" },
+	{ key = "vehicle", display = "Vehicle" },
+	{ key = "tool", display = "Tool" },
+	{ key = "accessory", display = "Accessory" },
+	{ key = "prop", display = "Prop" },
+}
+
 -- AI models
 OrigamiConfig.MODELS = {
 	{ key = "haiku", display = "Haiku" },

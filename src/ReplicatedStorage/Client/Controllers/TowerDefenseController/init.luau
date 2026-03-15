@@ -722,7 +722,7 @@ local function submitPrompt()
 
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:RequestModel(prompt, "building", "origami"):await()
+		local ok, result = OrigamiService:RequestModel(prompt, "building", "origami", nil, "tower"):await()
 
 		if _buildButton then
 			_buildButton.AutoButtonColor = true

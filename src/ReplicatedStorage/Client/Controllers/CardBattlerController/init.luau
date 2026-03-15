@@ -1612,7 +1612,7 @@ createCard = function()
 
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:RequestModel(prompt, "creature", "origami"):await()
+		local ok, result = OrigamiService:RequestModel(prompt, "creature", "origami", nil, "card"):await()
 
 		if _createBtn then
 			_createBtn.Text = "Create Card"

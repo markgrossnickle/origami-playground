@@ -469,7 +469,7 @@ local function addPlayerUnit(prompt: string)
 
 	task.spawn(function()
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local ok, result = OrigamiService:RequestModel(prompt, "creature", "origami"):await()
+		local ok, result = OrigamiService:RequestModel(prompt, "creature", "origami", nil, "battler"):await()
 
 		if not _active then
 			return

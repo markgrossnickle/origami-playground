@@ -217,6 +217,7 @@ local function createUI()
 
 	-- Rows that get hidden when minimized (populated after creation)
 	local _collapsibleRows = {}
+	local inputRow -- forward declare so toggleMinimize closure can capture it
 
 	local function toggleMinimize()
 		_uiMinimized = not _uiMinimized
@@ -396,7 +397,7 @@ local function createUI()
 	end
 
 	-- Input row
-	local inputRow = Instance.new("Frame")
+	inputRow = Instance.new("Frame")
 	inputRow.Name = "InputRow"
 	inputRow.Size = UDim2.new(1, -20, 0, ROW_HEIGHT)
 	inputRow.Position = UDim2.new(0, 10, 0, (BTN_HEIGHT + 12) * 2 + BTN_HEIGHT + 12)

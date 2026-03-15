@@ -169,12 +169,14 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 			TorsionSpring = "TorsionSpringConstraint",
 			AngularVelocity = "AngularVelocity",
 			LinearVelocity = "LinearVelocity",
+			VectorForce = "VectorForce",
 		}
 
 		-- These only act on one part (no part1 needed)
 		local SINGLE_ATTACHMENT = {
 			AngularVelocity = true,
 			LinearVelocity = true,
+			VectorForce = true,
 		}
 
 		local function readVector3(t)
@@ -195,10 +197,13 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 			end
 
 			if SINGLE_ATTACHMENT[cData.type] then
-				-- Single-attachment constraints (AngularVelocity, LinearVelocity)
+				-- Single-attachment constraints (AngularVelocity, LinearVelocity, VectorForce)
 				local att0 = Instance.new("Attachment")
 				if cData.offset0 then
 					att0.Position = readVector3(cData.offset0)
+				end
+				if cData.axis then
+					att0.Axis = readVector3(cData.axis)
 				end
 				att0.Parent = p0
 
@@ -210,11 +215,18 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 						constraint.AngularVelocity = readVector3(cData.angularVelocity)
 					end
 					if cData.maxTorque then constraint.MaxTorque = cData.maxTorque end
+					constraint.RelativeTo = Enum.ActuatorRelativeTo.World
 				elseif cData.type == "LinearVelocity" then
 					if cData.vectorVelocity then
 						constraint.VectorVelocity = readVector3(cData.vectorVelocity)
 					end
 					if cData.maxForce then constraint.MaxForce = cData.maxForce end
+					constraint.RelativeTo = Enum.ActuatorRelativeTo.World
+				elseif cData.type == "VectorForce" then
+					if cData.force then
+						constraint.Force = readVector3(cData.force)
+					end
+					constraint.RelativeTo = Enum.ActuatorRelativeTo.World
 				end
 
 				constraint.Parent = p0
@@ -235,11 +247,17 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 				if cData.offset0 then
 					att0.Position = readVector3(cData.offset0)
 				end
+				if cData.axis then
+					att0.Axis = readVector3(cData.axis)
+				end
 				att0.Parent = p0
 
 				local att1 = Instance.new("Attachment")
 				if cData.offset1 then
 					att1.Position = readVector3(cData.offset1)
+				end
+				if cData.axis then
+					att1.Axis = readVector3(cData.axis)
 				end
 				att1.Parent = p1
 
@@ -256,6 +274,11 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 					if cData.limitsEnabled then constraint.LimitsEnabled = true end
 					if cData.lowerAngle then constraint.LowerAngle = cData.lowerAngle end
 					if cData.upperAngle then constraint.UpperAngle = cData.upperAngle end
+					if cData.actuatorType == "Motor" then
+						constraint.ActuatorType = Enum.ActuatorType.Motor
+						if cData.motorSpeed then constraint.AngularVelocity = cData.motorSpeed end
+						if cData.motorMaxTorque then constraint.MotorMaxTorque = cData.motorMaxTorque end
+					end
 				elseif cData.type == "BallSocket" then
 					if cData.limitsEnabled then constraint.LimitsEnabled = true end
 					if cData.upperAngle then constraint.UpperAngle = cData.upperAngle end

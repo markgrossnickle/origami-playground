@@ -147,6 +147,138 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 		end
 	end
 
+	-- Physics constraints from LLM (springs, hinges, etc.)
+	local constraints = modelData.constraints
+	if constraints and #constraints > 0 then
+		-- Build name→part lookup
+		local partsByName = {}
+		for _, child in ipairs(model:GetChildren()) do
+			if child:IsA("BasePart") then
+				partsByName[child.Name] = child
+			end
+		end
+
+		local CONSTRAINT_CLASS = {
+			Spring = "SpringConstraint",
+			Hinge = "HingeConstraint",
+			BallSocket = "BallSocketConstraint",
+			Weld = "WeldConstraint",
+			Rod = "RodConstraint",
+			Rope = "RopeConstraint",
+			Prismatic = "PrismaticConstraint",
+			TorsionSpring = "TorsionSpringConstraint",
+			AngularVelocity = "AngularVelocity",
+			LinearVelocity = "LinearVelocity",
+		}
+
+		-- These only act on one part (no part1 needed)
+		local SINGLE_ATTACHMENT = {
+			AngularVelocity = true,
+			LinearVelocity = true,
+		}
+
+		local function readVector3(t)
+			return Vector3.new(t[1] or 0, t[2] or 0, t[3] or 0)
+		end
+
+		local maxConstraints = math.min(#constraints, 20)
+		for i = 1, maxConstraints do
+			local cData = constraints[i]
+			local className = CONSTRAINT_CLASS[cData.type]
+			if not className then
+				continue
+			end
+
+			local p0 = partsByName[cData.part0]
+			if not p0 then
+				continue
+			end
+
+			if SINGLE_ATTACHMENT[cData.type] then
+				-- Single-attachment constraints (AngularVelocity, LinearVelocity)
+				local att0 = Instance.new("Attachment")
+				if cData.offset0 then
+					att0.Position = readVector3(cData.offset0)
+				end
+				att0.Parent = p0
+
+				local constraint = Instance.new(className)
+				constraint.Attachment0 = att0
+
+				if cData.type == "AngularVelocity" then
+					if cData.angularVelocity then
+						constraint.AngularVelocity = readVector3(cData.angularVelocity)
+					end
+					if cData.maxTorque then constraint.MaxTorque = cData.maxTorque end
+				elseif cData.type == "LinearVelocity" then
+					if cData.vectorVelocity then
+						constraint.VectorVelocity = readVector3(cData.vectorVelocity)
+					end
+					if cData.maxForce then constraint.MaxForce = cData.maxForce end
+				end
+
+				constraint.Parent = p0
+
+			elseif className == "WeldConstraint" then
+				local p1 = partsByName[cData.part1]
+				if not p1 then continue end
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = p0
+				weld.Part1 = p1
+				weld.Parent = p0
+
+			else
+				local p1 = partsByName[cData.part1]
+				if not p1 then continue end
+
+				local att0 = Instance.new("Attachment")
+				if cData.offset0 then
+					att0.Position = readVector3(cData.offset0)
+				end
+				att0.Parent = p0
+
+				local att1 = Instance.new("Attachment")
+				if cData.offset1 then
+					att1.Position = readVector3(cData.offset1)
+				end
+				att1.Parent = p1
+
+				local constraint = Instance.new(className)
+				constraint.Attachment0 = att0
+				constraint.Attachment1 = att1
+
+				-- Type-specific properties
+				if cData.type == "Spring" then
+					if cData.stiffness then constraint.Stiffness = cData.stiffness end
+					if cData.damping then constraint.Damping = cData.damping end
+					if cData.freeLength then constraint.FreeLength = cData.freeLength end
+				elseif cData.type == "Hinge" then
+					if cData.limitsEnabled then constraint.LimitsEnabled = true end
+					if cData.lowerAngle then constraint.LowerAngle = cData.lowerAngle end
+					if cData.upperAngle then constraint.UpperAngle = cData.upperAngle end
+				elseif cData.type == "BallSocket" then
+					if cData.limitsEnabled then constraint.LimitsEnabled = true end
+					if cData.upperAngle then constraint.UpperAngle = cData.upperAngle end
+				elseif cData.type == "Rod" then
+					if cData.length then constraint.Length = cData.length end
+				elseif cData.type == "Rope" then
+					if cData.length then constraint.Length = cData.length end
+					if cData.restitution then constraint.Restitution = cData.restitution end
+				elseif cData.type == "Prismatic" then
+					if cData.limitsEnabled then constraint.LimitsEnabled = true end
+					if cData.lowerLimit then constraint.LowerLimit = cData.lowerLimit end
+					if cData.upperLimit then constraint.UpperLimit = cData.upperLimit end
+				elseif cData.type == "TorsionSpring" then
+					if cData.stiffness then constraint.Stiffness = cData.stiffness end
+					if cData.damping then constraint.Damping = cData.damping end
+					if cData.maxAngle then constraint.MaxAngle = cData.maxAngle end
+				end
+
+				constraint.Parent = p0
+			end
+		end
+	end
+
 	return model
 end
 
@@ -162,7 +294,7 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 	if animationType == "idle_bob" then
 		local origins = {}
 		for _, part in ipairs(parts) do
-			if part:IsA("BasePart") then
+			if part:IsA("BasePart") and part.Anchored then
 				origins[part] = part.Position
 			end
 		end
@@ -187,7 +319,7 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 	elseif animationType == "bounce" then
 		local origins = {}
 		for _, part in ipairs(parts) do
-			if part:IsA("BasePart") then
+			if part:IsA("BasePart") and part.Anchored then
 				origins[part] = part.Position
 			end
 		end
@@ -216,7 +348,7 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 		-- Wing-like movement on parts named with "wing" or outer parts
 		local wingParts = {}
 		for _, part in ipairs(parts) do
-			if part:IsA("BasePart") then
+			if part:IsA("BasePart") and part.Anchored then
 				local name = part.Name:lower()
 				if name:find("wing") or name:find("fin") or name:find("arm") then
 					table.insert(wingParts, { part = part, origin = part.CFrame })
@@ -236,7 +368,7 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 	elseif animationType == "breathe" then
 		local origins = {}
 		for _, part in ipairs(parts) do
-			if part:IsA("BasePart") then
+			if part:IsA("BasePart") and part.Anchored then
 				origins[part] = part.Size
 			end
 		end

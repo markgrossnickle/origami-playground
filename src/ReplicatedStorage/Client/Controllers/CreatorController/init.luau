@@ -1724,6 +1724,34 @@ function placeModel(model: Model, modelData: { [string]: any })
 	local modelName = modelData.name or "Creation"
 	addNameLabel(model, modelName)
 
+	-- Bounce pad behavior: launch player upward on touch
+	local attrs = modelData.attributes or {}
+	local bounceForce = attrs.Bounce
+	if bounceForce and type(bounceForce) == "number" and bounceForce > 0 then
+		bounceForce = math.clamp(bounceForce, 20, 300)
+		local debounce = {}
+		for _, part in model:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.Touched:Connect(function(hit)
+					local character = hit.Parent
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+					if humanoid and rootPart and not debounce[character] then
+						debounce[character] = true
+						rootPart.AssemblyLinearVelocity = Vector3.new(
+							rootPart.AssemblyLinearVelocity.X,
+							bounceForce,
+							rootPart.AssemblyLinearVelocity.Z
+						)
+						task.delay(0.5, function()
+							debounce[character] = nil
+						end)
+					end
+				end)
+			end
+		end
+	end
+
 	-- Track for clear
 	table.insert(_spawnedModels, model)
 end

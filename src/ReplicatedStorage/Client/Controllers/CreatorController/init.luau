@@ -196,38 +196,14 @@ local function createUI()
 	containerCorner.CornerRadius = UDim.new(0, 12)
 	containerCorner.Parent = container
 
-	-- Minimize button (top-right of container) — hides panel, shows sidebar "Create" button
-	local minBtnSize = if IS_MOBILE then 36 else 28
-	local minimizeBtn = Instance.new("TextButton")
-	minimizeBtn.Name = "MinimizeBtn"
-	minimizeBtn.Size = UDim2.new(0, minBtnSize, 0, minBtnSize)
-	minimizeBtn.Position = UDim2.new(1, -(minBtnSize + 6), 0, 4)
-	minimizeBtn.BackgroundColor3 = COLORS.danger
-	minimizeBtn.BorderSizePixel = 0
-	minimizeBtn.Text = "X"
-	minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	minimizeBtn.TextSize = if IS_MOBILE then FONT_LG else FONT_MD
-	minimizeBtn.Font = Enum.Font.GothamBold
-	minimizeBtn.AutoButtonColor = true
-	minimizeBtn.Parent = container
-
-	local minBtnCorner = Instance.new("UICorner")
-	minBtnCorner.CornerRadius = UDim.new(0, 6)
-	minBtnCorner.Parent = minimizeBtn
-
-	-- Minimize: hides the entire container, shows a sidebar "Create" button instead
+	-- Toggle: hides/shows the container via sidebar "Create" button
 	-- _sidebarCreateBtn is created later in the sidebar section; forward-declared here
 	local _sidebarCreateBtn: TextButton?
 
 	local function toggleMinimize()
 		_uiMinimized = not _uiMinimized
 		container.Visible = not _uiMinimized
-		if _sidebarCreateBtn then
-			_sidebarCreateBtn.Visible = _uiMinimized
-		end
 	end
-
-	minimizeBtn.Activated:Connect(toggleMinimize)
 
 	-- Style buttons row (scrollable)
 	local styleClip = Instance.new("Frame")
@@ -585,9 +561,8 @@ local function createUI()
 	local modesBtn = makeSidebarButton("ModesBtn", "Mode", COLORS.accentDim, 1)
 	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 2)
 
-	-- "Create" sidebar button — visible only when creator UI is minimized
+	-- "Create" sidebar button — always visible, toggles creator panel
 	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 3)
-	_sidebarCreateBtn.Visible = _uiMinimized
 	_sidebarCreateBtn.Activated:Connect(function()
 		toggleMinimize()
 	end)

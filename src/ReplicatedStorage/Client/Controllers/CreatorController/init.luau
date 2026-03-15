@@ -196,15 +196,15 @@ local function createUI()
 	containerCorner.CornerRadius = UDim.new(0, 12)
 	containerCorner.Parent = container
 
-	-- Minimize/maximize toggle button (top-right of container)
+	-- Minimize button (top-right of container) — hides panel, shows sidebar "Create" button
 	local minBtnSize = if IS_MOBILE then 36 else 28
 	local minimizeBtn = Instance.new("TextButton")
 	minimizeBtn.Name = "MinimizeBtn"
 	minimizeBtn.Size = UDim2.new(0, minBtnSize, 0, minBtnSize)
 	minimizeBtn.Position = UDim2.new(1, -(minBtnSize + 6), 0, 4)
-	minimizeBtn.BackgroundColor3 = COLORS.accent
+	minimizeBtn.BackgroundColor3 = COLORS.danger
 	minimizeBtn.BorderSizePixel = 0
-	minimizeBtn.Text = "..."
+	minimizeBtn.Text = "X"
 	minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	minimizeBtn.TextSize = if IS_MOBILE then FONT_LG else FONT_MD
 	minimizeBtn.Font = Enum.Font.GothamBold
@@ -212,26 +212,19 @@ local function createUI()
 	minimizeBtn.Parent = container
 
 	local minBtnCorner = Instance.new("UICorner")
-	minBtnCorner.CornerRadius = UDim.new(0, 4)
+	minBtnCorner.CornerRadius = UDim.new(0, 6)
 	minBtnCorner.Parent = minimizeBtn
 
-	-- Rows that get hidden when minimized (populated after creation)
-	local _collapsibleRows = {}
-	local inputRow -- forward declare so toggleMinimize closure can capture it
+	-- Minimize: hides the entire container, shows a sidebar "Create" button instead
+	-- _sidebarCreateBtn is created later in the sidebar section; forward-declared here
+	local _sidebarCreateBtn: TextButton?
 
 	local function toggleMinimize()
 		_uiMinimized = not _uiMinimized
-		minimizeBtn.Text = if _uiMinimized then "..." else "x"
-		for _, row in _collapsibleRows do
-			row.Visible = not _uiMinimized
+		container.Visible = not _uiMinimized
+		if _sidebarCreateBtn then
+			_sidebarCreateBtn.Visible = _uiMinimized
 		end
-		-- Resize container: minimized = just input row + padding
-		local minH = ROW_HEIGHT + 24
-		container.Size = UDim2.new(containerWidth, 0, 0, if _uiMinimized then minH else containerH)
-		container.Position = UDim2.new(containerX, 0, 1, -(if _uiMinimized then minH + 64 else containerH + 64))
-		-- Move input row to top when minimized
-		inputRow.Position = UDim2.new(0, 10, 0, if _uiMinimized then 8 else (BTN_HEIGHT + 12) * 2 + BTN_HEIGHT + 12)
-		_statusLabel.Visible = not _uiMinimized
 	end
 
 	minimizeBtn.Activated:Connect(toggleMinimize)
@@ -479,11 +472,6 @@ local function createUI()
 	_statusLabel.Font = Enum.Font.Gotham
 	_statusLabel.Parent = container
 
-	-- Register collapsible rows for minimize toggle
-	table.insert(_collapsibleRows, styleClip)
-	table.insert(_collapsibleRows, modelClip)
-	table.insert(_collapsibleRows, categoryRow)
-
 	-- Start minimized on mobile
 	if IS_MOBILE then
 		toggleMinimize()
@@ -596,6 +584,13 @@ local function createUI()
 
 	local modesBtn = makeSidebarButton("ModesBtn", "Mode", COLORS.accentDim, 1)
 	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 2)
+
+	-- "Create" sidebar button — visible only when creator UI is minimized
+	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 3)
+	_sidebarCreateBtn.Visible = _uiMinimized
+	_sidebarCreateBtn.Activated:Connect(function()
+		toggleMinimize()
+	end)
 
 	modesBtn.Activated:Connect(function()
 		local GameModeController = Knit.GetController("GameModeController")

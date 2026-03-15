@@ -1,5 +1,5 @@
 --!strict
--- PhysicsTestGrid v5: Fixed AlignOrientation (TwoAttachment mode), lowered limits.
+-- PhysicsTestGrid v6: Fixed axis mismatch — att1.Axis must match att0.Axis or Prismatic rotates pad.
 -- Testing momentum-transfer bounce: pad accelerates up → prismatic limit stops pad → player keeps going.
 -- DELETE THIS FILE after testing is complete.
 
@@ -67,7 +67,7 @@ local function keepFlat(part: BasePart, referencePart: BasePart)
 	ao.Parent = part
 end
 
--- Create a standard vertical-only pad with AlignOrientation (stays flat using base as reference)
+-- Create a standard vertical-only pad (Prismatic locks orientation + vertical slide)
 local function makeBouncePad(base: BasePart, pos: Vector3, color: Color3, upperLimit: number): Part
 	local pad = makePart({
 		position = pos + Vector3.new(0, 0.5, 0),
@@ -76,11 +76,11 @@ local function makeBouncePad(base: BasePart, pos: Vector3, color: Color3, upperL
 		anchored = false,
 		density = 0.1,
 	})
-	keepFlat(pad, base)
-	-- Prismatic: vertical only
+	-- Prismatic: vertical only — BOTH axes must match or constraint rotates the pad!
 	local att0 = makeAtt(base, Vector3.new(0, 0.5, 0))
 	att0.Axis = Vector3.new(0, 1, 0)
 	local att1 = makeAtt(pad)
+	att1.Axis = Vector3.new(0, 1, 0) -- match att0 so pad stays flat
 	local prism = Instance.new("PrismaticConstraint")
 	prism.Attachment0 = att0
 	prism.Attachment1 = att1
@@ -671,10 +671,10 @@ spawnTest(6, 3, "Prismatic: Elevator", function(pos)
 		color = Color3.fromRGB(50, 150, 255),
 		anchored = false,
 	})
-	keepFlat(platform, shaft)
 	local att0 = makeAtt(shaft)
 	att0.Axis = Vector3.new(0, 1, 0)
 	local att1 = makeAtt(platform)
+	att1.Axis = Vector3.new(0, 1, 0) -- match att0
 	local prism = Instance.new("PrismaticConstraint")
 	prism.Attachment0 = att0
 	prism.Attachment1 = att1
@@ -699,4 +699,4 @@ spawnTest(6, 3, "Prismatic: Elevator", function(pos)
 	end)
 end)
 
-print("[PhysicsTestGrid v5] Spawned", testNum, "test objects at", tostring(GRID_ORIGIN))
+print("[PhysicsTestGrid v6] Spawned", testNum, "test objects at", tostring(GRID_ORIGIN))

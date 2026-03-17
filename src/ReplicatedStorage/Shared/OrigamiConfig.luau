@@ -26,6 +26,7 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "prop", display = "Prop", icon = "🎭" },
 	{ key = "raw", display = "Raw", icon = "📝" },
 	{ key = "animation", display = "Animate", icon = "🎬" },
+	{ key = "emote", display = "Emote", icon = "💃" },
 }
 
 -- Catalog types (for filtering/browsing)
@@ -77,6 +78,12 @@ OrigamiConfig.CRANE_COSTS = {
 	gpt4o_mini = 1,
 	test = 3, -- sum of the 3 cheapest
 }
+
+-- Emote generation cost
+OrigamiConfig.CRANE_COSTS.emote_generation = 1
+
+-- Breeding cost (Cranes per player)
+OrigamiConfig.BREEDING_COST = 2
 
 -- Folds cost to spawn a cached catalog item
 OrigamiConfig.CACHED_ITEM_COST = 10

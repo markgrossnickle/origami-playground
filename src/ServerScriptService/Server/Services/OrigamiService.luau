@@ -398,7 +398,7 @@ function OrigamiService.Client:ResetAvatar(player: Player)
 	return { success = true }
 end
 
-function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vector3, lookY: number, modelName: string, modelSizeData: { X: number, Y: number, Z: number }, physicsData: { Speed: number?, Torque: number?, TurnSpeed: number? }?)
+function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vector3, lookY: number, modelName: string, modelSizeData: { X: number, Y: number, Z: number }, physicsData: { Speed: number?, Torque: number?, TurnSpeed: number?, Grip: number?, TipResistance: number? }?)
 	print("[OrigamiService] CreateVehicleSeat called by", player.Name, "at", position)
 
 	local physics = physicsData or {}
@@ -429,6 +429,9 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 	collisionPlate.Massless = false -- needs mass for ground friction/traction
 	collisionPlate.Anchored = false
 	collisionPlate.Material = Enum.Material.SmoothPlastic
+	-- Set friction based on grip (more wheels = more traction)
+	local friction = 0.3 + (physics.Grip or 0.7) * 0.7
+	collisionPlate.CustomPhysicalProperties = PhysicalProperties.new(0.7, friction, 0.0, friction, 0.0)
 	-- Seat is ~1 stud above ground; plate sits at ground level just below the seat
 	collisionPlate.CFrame = seat.CFrame * CFrame.new(0, -1, 0)
 	collisionPlate.Parent = workspace
@@ -437,6 +440,20 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 	plateWeld.Part0 = seat
 	plateWeld.Part1 = collisionPlate
 	plateWeld.Parent = collisionPlate
+
+	-- Tip resistance: wide/low vehicles resist tipping, tall/narrow ones wobble
+	if (physics.TipResistance or 0) > 0.15 then
+		local attachment = Instance.new("Attachment")
+		attachment.Parent = seat
+		local align = Instance.new("AlignOrientation")
+		align.Mode = Enum.OrientationAlignmentMode.OneAttachment
+		align.Attachment0 = attachment
+		align.CFrame = seat.CFrame
+		align.MaxTorque = 5000 * (physics.TipResistance or 0.5)
+		align.Responsiveness = 10
+		align.RigidityEnabled = false
+		align.Parent = seat
+	end
 
 	-- ProximityPrompt with line-of-sight disabled (visual parts surround the seat)
 	local prompt = Instance.new("ProximityPrompt")

@@ -12,6 +12,8 @@ local Players = game:GetService("Players")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local GameMode = require(ReplicatedStorage.Shared.GameMode)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
+local TDCombat = require(ReplicatedStorage.Shared.TDCombat)
+local TDPathGenerator = require(ReplicatedStorage.Shared.TDPathGenerator)
 
 local Player = Players.LocalPlayer
 
@@ -59,11 +61,11 @@ local CREEP_TIERS = {
 local BOT_THINK_INTERVAL = 4
 local BOT_MAX_TOWERS = 5
 
--- Strategy constants
-local ARMOR_REDUCTION = 0.3
-local DODGE_CHANCE = 0.25
-local REGEN_PER_TICK = 2
-local SPLASH_RADIUS = 12
+-- Strategy constants (shared via TDCombat, kept as local aliases for this controller)
+local ARMOR_REDUCTION = TDCombat.ARMOR_REDUCTION
+local DODGE_CHANCE = TDCombat.DODGE_CHANCE
+local REGEN_PER_TICK = TDCombat.REGEN_PER_TICK
+local SPLASH_RADIUS = TDCombat.SPLASH_RADIUS
 
 type AttackType = "single" | "splash" | "rapid" | "piercing"
 type TargetPriority = "nearest" | "weakest" | "strongest" | "fastest"
@@ -156,13 +158,7 @@ end
 
 local function generateWaypoints()
 	local origin = getPathOrigin()
-	_waypoints = {}
-	for i = 1, WAYPOINT_COUNT do
-		local t = (i - 1) / (WAYPOINT_COUNT - 1)
-		local x = origin.X + t * PATH_LENGTH
-		local z = origin.Z + math.sin(t * math.pi) * 15
-		table.insert(_waypoints, Vector3.new(x, origin.Y, z))
-	end
+	_waypoints = TDPathGenerator.generateLinearPath(origin, PATH_LENGTH, WAYPOINT_COUNT, 15)
 end
 
 local function createWaypointMarkers()
@@ -607,19 +603,12 @@ local function placeTowerAtPosition(model: Model | BasePart, side: string, place
 	end
 	table.insert(_allInstances, model)
 
-	local damage: number
-	local range: number
+	local stats = TDCombat.deriveTowerStats(model)
+	local damage = stats.damage
+	local range = stats.range
 
 	if model:IsA("Model") then
-		local _, size = model:GetBoundingBox()
-		local volume = size.X * size.Y * size.Z
-		local maxDim = math.max(size.X, size.Y, size.Z)
-		damage = math.max(5, math.floor(volume / 2))
-		range = math.max(15, maxDim * 2)
 		OrigamiBuilder.ApplyAnimation(model, "idle_bob")
-	else
-		damage = 10
-		range = 20
 	end
 
 	local tower: Tower = {
@@ -1213,13 +1202,15 @@ function TowerDefenseController:KnitInit() end
 function TowerDefenseController:KnitStart()
 	createUI()
 
-	GameMode.Changed:Connect(function(newMode: string, oldMode: string)
-		if newMode == "tower_defense" then
-			self:Activate()
-		elseif oldMode == "tower_defense" then
-			self:Cleanup()
-		end
-	end)
+	-- Solo PvP TD disabled — "tower_defense" mode now handled by CoopTowerDefenseController.
+	-- Kept as fallback: uncomment below to re-enable solo mode.
+	-- GameMode.Changed:Connect(function(newMode: string, oldMode: string)
+	-- 	if newMode == "tower_defense" then
+	-- 		self:Activate()
+	-- 	elseif oldMode == "tower_defense" then
+	-- 		self:Cleanup()
+	-- 	end
+	-- end)
 end
 
 return TowerDefenseController

@@ -1,0 +1,330 @@
+# Plan: Co-op Tower Defense, Gifting/Breeding, and AI Emotes
+
+## Context
+
+Origami Playground currently has solo Tower Defense (player vs bot), solo Auto Battler, and a sandbox mode where players generate AI models independently. There are no social systems connecting players — no gifting, no cooperative play, no shared expressions.
+
+Inspired by the "Kind Games" paper, we're adding three tightly integrated prosocial systems:
+1. **Co-op Tower Defense** — shared base defense creating interdependence
+2. **Gifting + Creature Breeding** — sacrifice-based gifting + cooperative offspring creation with delayed hatching
+3. **AI Emote System** — LLM-generated body animations with content filtering
+
+These systems form a prosocial loop: breed creatures together → gift offspring → defend together in co-op TD → celebrate with emotes → thank gifts with emotes.
+
+---
+
+## Phase 0: Shared Foundations
+
+### 0A. PlayerData Template Additions
+**Modify:** `src/ServerScriptService/Server/Services/PlayerDataService/Template.luau`
+
+Add to type + template:
+```
+GiftsGiven: number (0)
+GiftsReceived: number (0)
+PendingEggs: {} -- array of { parent1Name, parent2Name, parent1Style, parent2Style, hatchTime, offspringData? }
+HatchedCreatures: {} -- array of serialized modelData
+SavedEmotes: {} -- array of { name, prompt, keyframeData }
+CoopTDWins: number (0)
+CoopTDHighestWave: number (0)
+```
+
+### 0B. GameMode Addition
+**Modify:** `src/ReplicatedStorage/Shared/GameMode.luau`
+
+Add `{ key = "coop_tower_defense", display = "Co-op TD" }` to MODES table.
+
+### 0C. OrigamiConfig Additions
+**Modify:** `src/ReplicatedStorage/Shared/OrigamiConfig.luau`
+
+- Add `"emote"` to CATEGORIES
+- Add `BREEDING_COST = 2` (Cranes)
+- Add `CRANE_COSTS.emote_generation = 1`
+
+### 0D. Extract Shared Combat Module
+**New file:** `src/ReplicatedStorage/Shared/TDCombat.luau`
+
+Extract from TowerDefenseController into reusable module:
+- `findCreepTarget(pos, range, creepList, priority)` → Creep?
+- `damageCreep(creep, damage, attackType, onKill)` (armor/dodge/piercing/splash logic)
+- `deriveTowerStats(model)` → { damage, range } (volume + bounding box calculation)
+- `applyCreepRegen(creepList, dt)`
+- Constants: ARMOR_REDUCTION=0.7, DODGE_CHANCE=0.25, REGEN_PER_TICK=3, SPLASH_RADIUS=8
+
+**Modify:** `src/ReplicatedStorage/Client/Controllers/TowerDefenseController/init.luau` — replace inline combat functions with TDCombat calls.
+
+### 0E. Extract Path Generator
+**New file:** `src/ReplicatedStorage/Shared/TDPathGenerator.luau`
+
+- `generateLinearPath(origin, length, count, curvature)` — existing solo TD pattern
+- `generateConvergingPaths(center, directionCount, pathLength, count)` — co-op paths from N/S/E/W converging on central base
+
+---
+
+## Phase 1: AI Emote System
+
+### 1A. EmoteService (Server)
+**New file:** `src/ServerScriptService/Server/Services/EmoteService.luau`
+
+**Client methods:**
+- `RequestEmote(player, prompt, style?)` — calls LLM with `category: "emote"`, validates response, returns keyframe data
+- `GetSavedEmotes(player)` — reads from PlayerData.SavedEmotes
+- `SaveEmote(player, name, keyframeData)` — writes to PlayerData (max 10)
+- `PlayEmote(player, keyframeData)` — broadcasts to all clients via EmotePlayed signal
+
+**Client signals:**
+- `EmotePlayed` — fires `(player, keyframeData)` to all clients
+
+**LLM request:** `{ prompt: "wave hello", player_id, category: "emote", style: "origami" }`
+
+**LLM response format:**
+```json
+{
+  "success": true,
+  "model": {
+    "name": "Friendly Wave",
+    "category": "emote",
+    "duration": 2.0,
+    "loop": false,
+    "keyframes": [
+      { "time": 0.0, "body_parts": { "RightUpperArm": { "rx": 0, "ry": 0, "rz": -150 } } },
+      { "time": 0.5, "body_parts": { "RightUpperArm": { "rx": 0, "ry": 0, "rz": -170 } } },
+      { "time": 1.0, "body_parts": { "RightUpperArm": { "rx": 0, "ry": 0, "rz": -150 } } }
+    ]
+  }
+}
+```
+
+**Content safety (server-side validation before returning):**
+1. Duration cap: max 5 seconds
+2. Body part whitelist: only 15 R15 part names accepted
+3. Rotation clamp: all rx/ry/rz clamped to [-180, 180]
+4. Banned pose heuristic: reject LowerTorso + leg combos in inappropriate ranges
+5. Max 20 keyframes per emote
+6. Rate limit: reuse OrigamiService pattern (10-sec cooldown)
+
+**Preset emotes (hardcoded, no LLM call):**
+- `"celebration"` — arms up, slight torso lean back
+- `"thank_you"` — bow with right hand on chest
+- `"wave"` — simple right-arm wave
+
+### 1B. EmoteController (Client)
+**New file:** `src/ReplicatedStorage/Client/Controllers/EmoteController/init.luau`
+
+**Emote playback engine:**
+- `playEmote(character, keyframeData)` — iterates keyframes, lerps Motor6D `.Transform` properties on Heartbeat
+- Motor6D mapping: body part name → Motor6D name (RightUpperArm → RightShoulder, Head → Neck, UpperTorso → Waist, etc.)
+- Returns cleanup function (stopped flag + isAlive pattern from CreatureAI)
+
+**Emote wheel UI (activated by `T` key / DPadUp / touch button):**
+- Grid popup showing preset emotes + saved custom emotes
+- "Custom" button opens TextBox for typing prompt → calls EmoteService:RequestEmote
+- All buttons use `.Activated`
+- Responsive sizing (IS_MOBILE/IS_CONSOLE)
+
+**Public API for integration:**
+- `EmoteController:PlayPreset(presetName)` — for other controllers to trigger
+- `EmoteController:PlayOnCharacter(character, keyframeData)` — for remote players
+
+**Remote playback:** Listen to `EmoteService.Client.EmotePlayed`, animate other players' characters.
+
+---
+
+## Phase 2: Gifting System
+
+### 2A. GiftService (Server)
+**New file:** `src/ServerScriptService/Server/Services/GiftService.luau`
+
+**Ownership tracking:** Models get `OwnerUserId` attribute on server registration.
+
+**Client methods:**
+- `RegisterModel(player, model)` — validates model exists, sets OwnerUserId attribute
+- `GiftModel(player, model, targetPlayer)` — validates ownership, transfers atomically, increments GiftsGiven/GiftsReceived in PlayerData, fires signals
+- `GetNearbyPlayers(player)` — returns players within 50 studs
+
+**Client signals:**
+- `GiftReceived` — fires to receiver: `(senderName, modelName)`
+- `GiftSent` — fires to sender: `(receiverName, modelName)`
+
+**Validation:** Server checks OwnerUserId attribute matches sender. Rate limit: 10 gifts/minute.
+
+### 2B. Gift UI Integration
+**Modify:** `src/ReplicatedStorage/Client/Controllers/CreatorController/init.luau`
+
+- **Refactor `_spawnedModels`:** Change from `{ Model }` to `{ { model: Model, modelData: table } }` to preserve modelData for breeding
+- **Model registration:** After every spawn (spawnCreature, placeBuilding, placeModel, spawnVehicle), call `GiftService:RegisterModel(model)`
+- **Gift button:** Add small "Gift" icon button to each model's BillboardGui (name label). Visible when another player is within 50 studs.
+- **Gift flow:** Click Gift → player selection dropdown → confirmation dialog ("Give [Name] to [Player]? You will lose this creation.") → call GiftService:GiftModel → remove from _spawnedModels → sparkle VFX
+- **Receive handler:** Listen to GiftService.Client.GiftReceived → notification banner → auto-play `EmoteController:PlayPreset("thank_you")`
+
+---
+
+## Phase 3: Creature Breeding System
+
+### 3A. BreedingService (Server)
+**New file:** `src/ServerScriptService/Server/Services/BreedingService.luau`
+
+**Server state:**
+- `_breedRequests: { [string]: { player, creatureModel, creatureData, timestamp } }` — pending requests (expire after 30s)
+
+**Client methods:**
+- `RequestBreed(player, creatureModel)` — checks ownership, looks for nearby creature from different player that also has pending request. If match: fires ConfirmBreed to both. If no match: stores pending.
+- `ConfirmBreed(player, requestId)` — when both confirm: deduct BREEDING_COST Cranes from each, call LLM to generate offspring, create egg
+- `CheckEggs(player)` — returns PendingEggs with hatch readiness status
+- `HatchEgg(player, eggIndex)` — if hatchTime passed, returns offspringData, moves to HatchedCreatures
+- `CancelBreed(player)` — cancels pending request
+
+**Client signals:**
+- `BreedRequestReceived` — fires to other player: `(requestId, requesterName, creatureName)`
+- `EggReady` — fires when hatch time passes during session
+
+**LLM breed prompt (constructed server-side from model metadata, NOT user text):**
+```
+"Create a creature offspring that blends traits of parent1: [Parent1Name] and parent2: [Parent2Name], combining their body shapes and colors. Category: creature."
+```
+
+**Egg model:** Hardcoded modelData (oval body + detail parts), colors averaged from parents. Stored in PlayerData.PendingEggs with `hatchTime = os.time() + 86400` (24 hours).
+
+**Veteran bonus:** If creature has `VeteranWaves` attribute (from co-op TD), append `"battle-hardened veteran of N waves"` to breed prompt.
+
+### 3B. BreedingController (Client)
+**New file:** `src/ReplicatedStorage/Client/Controllers/BreedingController/init.luau`
+
+**Proximity detection:** Heartbeat loop (throttled to 2Hz), scan _spawnedModels for creatures within 10 studs of another player's creature. Show ProximityPrompt: "Breed with nearby creature".
+
+**Breed flow:**
+1. Activate ProximityPrompt → call BreedingService:RequestBreed
+2. Other player sees confirmation dialog → both confirm
+3. Egg spawns with OrigamiBuilder + "breathe" animation
+4. BillboardGui countdown: "Hatches in Xh Ym"
+5. On login/timer expiry → CheckEggs → "Egg ready!" notification → HatchEgg → spawnCreature with offspring modelData
+
+---
+
+## Phase 4: Co-op Tower Defense
+
+### 4A. CoopTDService (Server)
+**New file:** `src/ServerScriptService/Server/Services/CoopTDService.luau`
+
+**Server-authoritative.** The existing solo TD is client-side; co-op must be server-authoritative to synchronize multiple players.
+
+**Lobby state:**
+```
+players: { Player }         -- 2-4 players
+baseHP: number              -- starts 200 (scales +50 per player)
+wave: number
+creeps: { CreepState }      -- server tracks position/HP
+towers: { TowerState }      -- server tracks all towers
+gold: { [Player]: number }  -- individual gold (start 100)
+spawnPoints: { Vector3 }    -- 2-4 directions based on player count
+waypoints: { { Vector3 } }  -- per-direction paths converging on center
+```
+
+**Client methods:**
+- `JoinLobby(player)` — join/create lobby (max 4 players)
+- `LeaveLobby(player)` — leave lobby
+- `ReadyUp(player)` — signal ready, wave starts when all ready
+- `PlaceTower(player, modelData, position)` — validate position, deduct 50 gold, create tower
+- `GiftTower(player, towerId, targetPlayer)` — transfer ownership via GiftService
+- `GiftGold(player, targetPlayer, amount)` — transfer gold
+- `GetLobbyState(player)` — full state for reconnection
+
+**Client signals:**
+- `LobbyUpdated`, `WaveStarted`, `CreepSpawned`, `CreepDied`, `CreepReachedBase`
+- `BaseHPChanged`, `TowerPlaced`, `WaveCleared`, `GameOver`, `GoldChanged`
+
+**Wave system:**
+- CreepHP = 40 + wave × 15, count = 3 + wave × 2, speed = 8 + wave × 0.5
+- Directions scale with players: 2 players = 2 dirs, 3 = 3, 4 = 4
+- Defense types cycle: waves 1-3 none, 4-6 armor/dodge mix, 7+ all types
+- 15-second prep phase between waves
+- Combat uses `TDCombat` shared module
+
+**Economy:**
+- Start: 100 gold/player
+- Wave clear bonus: (50 + wave × 10) split among players
+- Kill bonus: 10 gold to tower owner
+- Tower cost: 50 gold
+
+**Victory/Defeat:**
+- Defeat: baseHP ≤ 0
+- Endless mode: track highest wave reached
+- On WaveCleared → trigger celebration emotes for all players
+- On defeat → update CoopTDHighestWave in PlayerData
+
+### 4B. CoopTowerDefenseController (Client)
+**New file:** `src/ReplicatedStorage/Client/Controllers/CoopTowerDefenseController/init.luau`
+
+Activates on `GameMode.Changed` → `"coop_tower_defense"`. Pattern follows existing TowerDefenseController.
+
+**UI layout (responsive):**
+- Shared base HP bar (center-top, large)
+- Individual gold (top-left)
+- Wave counter + prep timer (top-right)
+- Player list with ready status (side panel)
+- Tower build: prompt input + Build button (bottom bar)
+- "Gift Tower" and "Gift Gold" buttons
+
+**World visualization:**
+- Central base part (bigger/more visual than solo)
+- Multiple waypoint paths (via TDPathGenerator.generateConvergingPaths)
+- Creep visuals built from server data via OrigamiBuilder
+- Tower placement preview (ghost model at cursor)
+- Projectile visuals triggered by server signals
+
+**Tower placement flow:**
+1. Type prompt → Build → OrigamiService:RequestModel (category "building", type "tower")
+2. Enter placement mode: ghost follows cursor
+3. Click to confirm → CoopTDService:PlaceTower(modelData, position)
+4. Server validates → broadcasts TowerPlaced → all clients build tower model
+
+---
+
+## Phase 5: Integration Wiring
+
+### 5A. Gift → Emote
+In EmoteController KnitStart: listen to GiftService.Client.GiftReceived → auto-play "thank_you" preset.
+
+### 5B. Co-op TD → Emote
+In CoopTowerDefenseController: listen to WaveCleared signal → `EmoteController:PlayPreset("celebration")`.
+
+### 5C. Co-op TD → Breeding
+In CoopTDService: after WaveCleared, increment `VeteranWaves` attribute on surviving tower models. BreedingService reads this when constructing breed prompts.
+
+---
+
+## File Summary
+
+### New Files (9)
+| File | Type | LOC Est. |
+|------|------|----------|
+| `src/ReplicatedStorage/Shared/TDCombat.luau` | Shared module | ~120 |
+| `src/ReplicatedStorage/Shared/TDPathGenerator.luau` | Shared module | ~80 |
+| `src/ServerScriptService/Server/Services/EmoteService.luau` | Knit Service | ~250 |
+| `src/ReplicatedStorage/Client/Controllers/EmoteController/init.luau` | Knit Controller | ~400 |
+| `src/ServerScriptService/Server/Services/GiftService.luau` | Knit Service | ~180 |
+| `src/ServerScriptService/Server/Services/BreedingService.luau` | Knit Service | ~300 |
+| `src/ReplicatedStorage/Client/Controllers/BreedingController/init.luau` | Knit Controller | ~350 |
+| `src/ServerScriptService/Server/Services/CoopTDService.luau` | Knit Service | ~600 |
+| `src/ReplicatedStorage/Client/Controllers/CoopTowerDefenseController/init.luau` | Knit Controller | ~800 |
+
+### Modified Files (5)
+| File | Changes |
+|------|---------|
+| `src/ServerScriptService/Server/Services/PlayerDataService/Template.luau` | Add 7 new fields |
+| `src/ReplicatedStorage/Shared/GameMode.luau` | Add coop_tower_defense mode |
+| `src/ReplicatedStorage/Shared/OrigamiConfig.luau` | Add emote category, breeding cost |
+| `src/ReplicatedStorage/Client/Controllers/CreatorController/init.luau` | Model registration, gift UI, _spawnedModels refactor |
+| `src/ReplicatedStorage/Client/Controllers/TowerDefenseController/init.luau` | Refactor to use TDCombat + TDPathGenerator |
+
+---
+
+## Verification Plan
+
+1. **Emotes:** Type emote prompt → verify LLM returns keyframes → verify animation plays on character → verify other players see it → verify preset emotes work without LLM call → verify content filter rejects bad rotations
+2. **Gifting:** Spawn a creature → click Gift → select player → verify model transfers → verify GiftsGiven/Received increment → verify thank_you emote auto-plays on receiver
+3. **Breeding:** Two players each spawn a creature → bring near each other → ProximityPrompt appears → both confirm → egg spawns with countdown → wait for hatch (use Cmdr to fast-forward time for testing) → hatch → offspring creature spawns with blended traits
+4. **Co-op TD:** Switch to coop_tower_defense mode → join lobby → all ready up → waves spawn from multiple directions → towers attack → verify kill gold → gift a tower → wave clear triggers celebration → base destroyed shows game over
+5. **Integration:** Gift tower in co-op TD → receiver gets thank_you emote. Breed veteran creature → prompt includes "battle-hardened". Wave clear → celebration emotes visible to all.
+6. **Cross-platform:** Test all UI on mobile (44px touch targets), console (1.5x text), desktop. All buttons use .Activated.
+7. **Linting:** Run `stylua .` and `selene .` after each phase.

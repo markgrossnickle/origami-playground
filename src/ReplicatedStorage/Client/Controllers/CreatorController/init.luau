@@ -24,6 +24,7 @@ local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local GameMode = require(ReplicatedStorage.Shared.GameMode)
+local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 
 local Player = Players.LocalPlayer
 
@@ -59,10 +60,22 @@ local _queueEntries: { { frame: Frame, label: TextLabel, dot: TextLabel } } = {}
 local _nextQueueId = 0
 local _uiMinimized = false
 
--- Track all spawned creations for Clear
-local _spawnedModels: { Model } = {}
+-- Track all spawned creations for Clear + Gifting
+-- Each entry preserves modelData for breeding (Phase 3)
+local _spawnedModels: { { model: Model, modelData: { [string]: any }? } } = {}
 local _equippedTool: Tool? = nil
 local _equippedAccessory: BasePart? = nil
+
+-- Helper to register a spawned model and track it
+local function registerSpawnedModel(model: Model, modelData: { [string]: any }?)
+	table.insert(_spawnedModels, { model = model, modelData = modelData })
+
+	-- Register ownership on server
+	task.spawn(function()
+		local GiftService = Knit.GetService("GiftService")
+		GiftService:RegisterModel(model)
+	end)
+end
 
 -- Attachment slot config: body part name, offset function (from body part size), max accessory size
 local ATTACH_CONFIG = {
@@ -790,9 +803,9 @@ end
 
 function clearAllCreations()
 	-- Remove all spawned models from workspace
-	for _, model in ipairs(_spawnedModels) do
-		if model and model.Parent then
-			model:Destroy()
+	for _, entry in ipairs(_spawnedModels) do
+		if entry.model and entry.model.Parent then
+			entry.model:Destroy()
 		end
 	end
 	_spawnedModels = {}
@@ -992,7 +1005,7 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 
 					-- Label with model name instead of creation name
 					addNameLabel(builtModel, labelOverride or model)
-					table.insert(_spawnedModels, builtModel)
+					registerSpawnedModel(builtModel, modelData)
 
 					local animType = modelData.animation or "idle_bob"
 					OrigamiBuilder.ApplyAnimation(builtModel, animType)
@@ -1200,7 +1213,7 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 	_equippedTool = tool
 
 	-- Track for clear
-	table.insert(_spawnedModels, tool)
+	registerSpawnedModel(tool, modelData)
 
 	-- Auto-equip
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -1553,25 +1566,32 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	-- Seat sits 1 stud above ground (inside lower portion of car)
 	placementPos = Vector3.new(placementPos.X, groundY + 1, placementPos.Z)
 
-	-- Read LLM-driven physics attributes
+	-- Analyze model geometry for shape-driven physics
+	local VehicleAnalyzer = require(ReplicatedStorage.Shared.VehicleAnalyzer)
+	local analysis = VehicleAnalyzer.analyzeModel(model)
+
 	local attrs = modelData.attributes or {}
-	local speed = attrs.Speed or 50
-	local torque = attrs.Torque or 40
-	local turnSpeed = attrs.TurnSpeed or 8
+	local physics = VehicleAnalyzer.derivePhysics(analysis, attrs)
 	local canFly = attrs.CanFly
 	local flySpeed = attrs.FlySpeed or 30
 
 	-- Create server-side VehicleSeat (Sit() requires server authority)
 	local OrigamiService = Knit.GetService("OrigamiService")
-	print("[Vehicle] Requesting server seat at", placementPos)
+	print("[Vehicle] Requesting server seat at", placementPos, "| massRatio:", string.format("%.2f", physics.massRatio), "grip:", string.format("%.2f", physics.grip))
 	local ok, seat =
 		OrigamiService
-			:CreateVehicleSeat(placementPos, lookY, modelName, { X = modelSize.X, Y = modelSize.Y, Z = modelSize.Z }, { Speed = speed, Torque = torque, TurnSpeed = turnSpeed })
+			:CreateVehicleSeat(placementPos, lookY, modelName, { X = modelSize.X, Y = modelSize.Y, Z = modelSize.Z }, {
+				Speed = physics.speed,
+				Torque = physics.torque,
+				TurnSpeed = physics.turnSpeed,
+				Grip = physics.grip,
+				TipResistance = physics.tipResistance,
+			})
 			:await()
 
 	if not ok or not seat then
 		warn("[Vehicle] Failed to create server seat:", seat)
-		table.insert(_spawnedModels, model)
+		registerSpawnedModel(model, modelData)
 		return
 	end
 
@@ -1582,12 +1602,37 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	local modelRise = modelSize.Y / 2 - 1
 	model:PivotTo(seat.CFrame * CFrame.new(0, modelRise, 0))
 
-	-- Weld all visual parts to the server seat — massless so they don't tip it
+	-- Weld all visual parts to the server seat
+	-- Keep 2-4 largest parts with real mass (low density) for weight distribution;
+	-- all other parts stay massless so they don't make the vehicle too heavy.
+	local partsByVolume = {}
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local sz = part.Size
+			table.insert(partsByVolume, { part = part, volume = sz.X * sz.Y * sz.Z })
+		end
+	end
+	table.sort(partsByVolume, function(a, b) return a.volume > b.volume end)
+
+	local heavyCount = math.clamp(#partsByVolume, 0, 4)
+	if heavyCount > 2 then heavyCount = math.min(heavyCount, 2 + math.floor(physics.massRatio)) end
+	heavyCount = math.clamp(heavyCount, 0, 4)
+
+	local heavySet = {}
+	for i = 1, heavyCount do
+		heavySet[partsByVolume[i].part] = true
+	end
+
 	for _, part in ipairs(model:GetDescendants()) do
 		if part:IsA("BasePart") then
 			part.Anchored = false
 			part.CanCollide = false
-			part.Massless = true
+			if heavySet[part] then
+				part.Massless = false
+				part.CustomPhysicalProperties = PhysicalProperties.new(0.1, 0.3, 0.0, 0.3, 0.0)
+			else
+				part.Massless = true
+			end
 			local weld = Instance.new("WeldConstraint")
 			weld.Part0 = seat
 			weld.Part1 = part
@@ -1629,7 +1674,7 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	_vehicleSeat = seat
 
 	-- Track for clear
-	table.insert(_spawnedModels, model)
+	registerSpawnedModel(model, modelData)
 end
 
 function applyAvatar(model: Model, modelData: { [string]: any })
@@ -1665,14 +1710,14 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
 		model.Parent = workspace
-		table.insert(_spawnedModels, model)
+		registerSpawnedModel(model, modelData)
 		return
 	end
 
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
 	if not rootPart then
 		model.Parent = workspace
-		table.insert(_spawnedModels, model)
+		registerSpawnedModel(model, modelData)
 		return
 	end
 
@@ -1688,7 +1733,7 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 	-- Add name label
 	local modelName = modelData.name or "Creature"
 	addNameLabel(model, modelName)
-	table.insert(_spawnedModels, model)
+	registerSpawnedModel(model, modelData)
 
 	-- Start creature AI (shared module handles locomotion + animation)
 	CreatureAI.Start(model, modelData, model:GetPivot().Position, { model, character })
@@ -1698,14 +1743,14 @@ function placeBuilding(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
 		model.Parent = workspace
-		table.insert(_spawnedModels, model)
+		registerSpawnedModel(model, modelData)
 		return
 	end
 
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
 	if not rootPart then
 		model.Parent = workspace
-		table.insert(_spawnedModels, model)
+		registerSpawnedModel(model, modelData)
 		return
 	end
 
@@ -1735,21 +1780,21 @@ function placeBuilding(model: Model, modelData: { [string]: any })
 	local modelName = modelData.name or "Building"
 	addNameLabel(model, modelName)
 
-	table.insert(_spawnedModels, model)
+	registerSpawnedModel(model, modelData)
 end
 
 function placeModel(model: Model, modelData: { [string]: any })
 	local character = Player.Character
 	if not character then
 		model.Parent = workspace
-		table.insert(_spawnedModels, model)
+		registerSpawnedModel(model, modelData)
 		return
 	end
 
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
 	if not rootPart then
 		model.Parent = workspace
-		table.insert(_spawnedModels, model)
+		registerSpawnedModel(model, modelData)
 		return
 	end
 
@@ -1770,19 +1815,19 @@ function placeModel(model: Model, modelData: { [string]: any })
 	addNameLabel(model, modelName)
 
 	-- Track for clear
-	table.insert(_spawnedModels, model)
+	registerSpawnedModel(model, modelData)
 end
 
 function addNameLabel(model: Model, name: string)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "NameLabel"
-	billboard.Size = UDim2.new(0, 200, 0, 40)
+	billboard.Size = UDim2.new(0, 200, 0, 60)
 	billboard.StudsOffset = Vector3.new(0, 5, 0)
 	billboard.AlwaysOnTop = true
 	billboard.MaxDistance = 50
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 1, 0)
+	label.Size = UDim2.new(1, 0, 0, 30)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1792,11 +1837,116 @@ function addNameLabel(model: Model, name: string)
 	label.Font = Enum.Font.GothamBold
 	label.Parent = billboard
 
+	-- Gift button (hidden by default, shown when another player is nearby)
+	local giftBtn = Instance.new("TextButton")
+	giftBtn.Name = "GiftButton"
+	giftBtn.Size = UDim2.new(0, 60, 0, 22)
+	giftBtn.Position = UDim2.new(0.5, -30, 0, 32)
+	giftBtn.Text = "Gift"
+	giftBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	giftBtn.BackgroundColor3 = Color3.fromRGB(80, 180, 120)
+	giftBtn.BorderSizePixel = 0
+	giftBtn.TextSize = 12
+	giftBtn.Font = Enum.Font.GothamBold
+	giftBtn.AutoButtonColor = true
+	giftBtn.Visible = false
+	giftBtn.Parent = billboard
+
+	local giftCorner = Instance.new("UICorner")
+	giftCorner.CornerRadius = UDim.new(0, 6)
+	giftCorner.Parent = giftBtn
+
+	giftBtn.Activated:Connect(function()
+		_initiateGift(model, name)
+	end)
+
 	local target = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
 	if target then
 		billboard.Adornee = target
 		billboard.Parent = target
 	end
+end
+
+-- Gift flow: show nearby players and confirm
+function _initiateGift(model: Model, modelName: string)
+	task.spawn(function()
+		local GiftService = Knit.GetService("GiftService")
+
+		-- Check cooldown first
+		local cooldown = GiftService:GetCooldownRemaining():await()
+		if cooldown > 0 then
+			local mins = math.floor(cooldown / 60)
+			local secs = math.ceil(cooldown % 60)
+			setStatus(string.format("Gift cooldown: %dm %ds", mins, secs), COLORS.error)
+			return
+		end
+
+		local nearby = GiftService:GetNearbyPlayers():await()
+		if #nearby == 0 then
+			setStatus("No players nearby to gift to!", COLORS.error)
+			return
+		end
+
+		-- For simplicity, gift to the nearest player (first in list)
+		-- TODO: player selection UI if multiple nearby
+		local target = nearby[1]
+
+		-- Confirmation via status message + brief delay for cancel
+		setStatus('Gifting "' .. modelName .. '" to ' .. target.name .. "...", COLORS.accent)
+
+		local result = GiftService:GiftModel(model, target.userId):await()
+		if result and result.success then
+			setStatus("Gifted to " .. target.name .. "!", COLORS.success)
+			-- Remove from local tracking
+			for i, entry in ipairs(_spawnedModels) do
+				if entry.model == model then
+					table.remove(_spawnedModels, i)
+					break
+				end
+			end
+		else
+			setStatus(result and result.error or "Gift failed", COLORS.error)
+		end
+	end)
+end
+
+-- Proximity check loop: show/hide gift buttons based on nearby players
+local function startGiftProximityLoop()
+	task.spawn(function()
+		while true do
+			task.wait(0.5) -- 2Hz check
+
+			local character = Player.Character
+			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+			local hasNearbyPlayer = false
+
+			if rootPart then
+				for _, other in ipairs(Players:GetPlayers()) do
+					if other ~= Player then
+						local otherChar = other.Character
+						local otherRoot = otherChar and otherChar:FindFirstChild("HumanoidRootPart")
+						if otherRoot and (rootPart.Position - otherRoot.Position).Magnitude <= 50 then
+							hasNearbyPlayer = true
+							break
+						end
+					end
+				end
+			end
+
+			-- Show/hide gift buttons on all spawned models
+			for _, entry in ipairs(_spawnedModels) do
+				if entry.model and entry.model.Parent then
+					local billboard = entry.model:FindFirstChild("NameLabel", true)
+					if billboard then
+						local giftBtn = billboard:FindFirstChild("GiftButton")
+						if giftBtn then
+							giftBtn.Visible = hasNearbyPlayer
+						end
+					end
+				end
+			end
+		end
+	end)
 end
 
 local CATEGORY_ICONS = {
@@ -2015,6 +2165,29 @@ function CreatorController:KnitStart()
 
 	local OrigamiService = Knit.GetService("OrigamiService")
 	OrigamiService.ModelGenerated:Connect(function(modelData) end)
+
+	-- Gift receive handler: show notification + auto thank-you emote
+	local GiftService = Knit.GetService("GiftService")
+	GiftService.GiftReceived:Connect(function(senderName: string, modelName: string)
+		setStatus(senderName .. ' gifted you "' .. modelName .. '"!', COLORS.success)
+		-- VFX: sparkle at player position
+		local character = Player.Character
+		local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+		if rootPart then
+			VFXUtil.sparkle(rootPart.Position + Vector3.new(0, 3, 0), Color3.fromRGB(255, 210, 60), 25, 2)
+			VFXUtil.risingText(rootPart.Position + Vector3.new(0, 4, 0), "Gift received!", Color3.fromRGB(255, 210, 60))
+		end
+		-- Auto-play thank_you emote
+		task.spawn(function()
+			local EmoteController = Knit.GetController("EmoteController")
+			if EmoteController and EmoteController.PlayPreset then
+				EmoteController:PlayPreset("thank_you")
+			end
+		end)
+	end)
+
+	-- Start gift proximity check loop
+	startGiftProximityLoop()
 
 	-- Hide creator UI when switching away from sandbox, show + clear when returning
 	GameMode.Changed:Connect(function(newMode, oldMode)

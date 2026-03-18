@@ -25,6 +25,21 @@ export type PlayerData = {
 
 	-- Monetization: processed receipt IDs to prevent double-processing
 	ProcessedReceipts: { [string]: boolean },
+
+	-- Prosocial: Gifting
+	GiftsGiven: number,
+	GiftsReceived: number,
+
+	-- Prosocial: Breeding
+	PendingEggs: { any },
+	HatchedCreatures: { any },
+
+	-- Prosocial: Emotes
+	SavedEmotes: { any },
+
+	-- Prosocial: Co-op TD
+	CoopTDWins: number,
+	CoopTDHighestWave: number,
 }
 
 local playerDataTemplate: PlayerData = {
@@ -43,6 +58,17 @@ local playerDataTemplate: PlayerData = {
 	LastSessionStart = 0,
 
 	ProcessedReceipts = {},
+
+	GiftsGiven = 0,
+	GiftsReceived = 0,
+
+	PendingEggs = {},
+	HatchedCreatures = {},
+
+	SavedEmotes = {},
+
+	CoopTDWins = 0,
+	CoopTDHighestWave = 0,
 }
 
 return playerDataTemplate

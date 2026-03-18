@@ -51,12 +51,12 @@ local JOINT_TO_MOTOR: { [string]: string } = {
 }
 
 -- State
-local _gui: ScreenGui? = nil
-local _wheelFrame: Frame? = nil
-local _customInput: TextBox? = nil
-local _statusLabel: TextLabel? = nil
+local _gui = nil
+local _wheelFrame = nil
+local _customInput = nil
+local _statusLabel = nil
 local _wheelVisible = false
-local _activeAnimation: { stopped: boolean }? = nil
+local _activeAnimation = nil
 
 ---------- Motor6D Animation Engine ----------
 
@@ -73,7 +73,7 @@ local function lerpAngle(a: number, b: number, t: number): number
 	return a + (b - a) * t
 end
 
-local function getJointRotation(joints: { [string]: { number } }?, jointName: string): (number, number, number)?
+local function getJointRotation(joints, jointName: string)
 	if not joints then return nil end
 	local rot = joints[jointName]
 	if not rot then return nil end

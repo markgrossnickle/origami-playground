@@ -61,7 +61,7 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 	cleanExpiredRequests()
 
 	-- Look for a pending request from a different player
-	local matchId: string? = nil
+	local matchId = nil
 	local matchReq = nil
 	for id, req in pairs(_breedRequests) do
 		if req.player ~= player and req.player.Parent then -- different player, still connected

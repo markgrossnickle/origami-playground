@@ -59,7 +59,7 @@ local function createLobby()
 		center = Vector3.new(0, 0.5, 0),
 		waypoints = {} :: { { Vector3 } }, -- per-direction paths
 		prepTimer = 0,
-		combatLoop = nil :: RBXScriptConnection?,
+		combatLoop = nil,
 	}
 end
 

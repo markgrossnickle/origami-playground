@@ -27,7 +27,8 @@ local COLORS = {
 
 -- State
 local _eggModels: { { model: Model, eggIndex: number } } = {}
-local _breedPrompt: ProximityPrompt? = nil
+local _eggTimers: { [number]: number } = {} -- eggIndex → remaining seconds (local countdown)
+local _breedPrompt = nil
 local _pendingBreed = false
 
 ---------- Egg Model ----------
@@ -216,9 +217,6 @@ local function refreshEggs()
 		end
 	end)
 end
-
--- Track remaining seconds locally, sync with server every 30s
-local _eggTimers: { [number]: number } = {} -- eggIndex → remaining seconds (local countdown)
 
 local function startTimerLoop()
 	-- Local 1-second countdown (no server calls)

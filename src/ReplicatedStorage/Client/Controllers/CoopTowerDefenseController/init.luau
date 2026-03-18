@@ -39,39 +39,39 @@ local COLORS = {
 }
 
 -- State
-local _gui: ScreenGui? = nil
+local _gui = nil
 local _active = false
 local _inLobby = false
-local _connections: { RBXScriptConnection } = {}
-local _allInstances: { Instance } = {}
-local _creepModels: { [number]: BasePart } = {} -- creepId → visual part
-local _towerModels: { [number]: Model | BasePart } = {} -- towerId → visual
+local _connections = {}
+local _allInstances = {}
+local _creepModels = {} -- creepId → visual part
+local _towerModels = {} -- towerId → visual
 
 -- World folders
-local _pathFolder: Folder? = nil
-local _towerFolder: Folder? = nil
-local _creepFolder: Folder? = nil
-local _projectileFolder: Folder? = nil
-local _baseFolder: Folder? = nil
+local _pathFolder = nil
+local _towerFolder = nil
+local _creepFolder = nil
+local _projectileFolder = nil
+local _baseFolder = nil
 
 -- UI refs
-local _lobbyFrame: Frame? = nil
-local _gameFrame: Frame? = nil
-local _goldLabel: TextLabel? = nil
-local _baseHPLabel: TextLabel? = nil
-local _waveLabel: TextLabel? = nil
-local _statusLabel: TextLabel? = nil
-local _inputBox: TextBox? = nil
-local _buildButton: TextButton? = nil
-local _readyButton: TextButton? = nil
-local _playerListFrame: Frame? = nil
-local _gameOverLabel: TextLabel? = nil
+local _lobbyFrame = nil
+local _gameFrame = nil
+local _goldLabel = nil
+local _baseHPLabel = nil
+local _waveLabel = nil
+local _statusLabel = nil
+local _inputBox = nil
+local _buildButton = nil
+local _readyButton = nil
+local _playerListFrame = nil
+local _gameOverLabel = nil
 
 -- Cached state
 local _currentGold = 0
 local _currentBaseHP = 0
 local _currentWave = 0
-local _basePart: BasePart? = nil
+local _basePart = nil
 
 ---------- Helpers ----------
 

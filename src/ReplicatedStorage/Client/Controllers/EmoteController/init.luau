@@ -73,10 +73,10 @@ local function lerpAngle(a: number, b: number, t: number): number
 	return a + (b - a) * t
 end
 
-local function getJointRotation(joints, jointName: string)
-	if not joints then return nil end
+local function getJointRotation(joints, jointName: string): (number, number, number)
+	if not joints then return 0, 0, 0 end
 	local rot = joints[jointName]
-	if not rot then return nil end
+	if not rot then return 0, 0, 0 end
 	return rot[1] or 0, rot[2] or 0, rot[3] or 0
 end
 
@@ -126,10 +126,6 @@ function _playEmoteOnCharacter(character: Model, emoteData: { [string]: any }): 
 
 					local px, py, pz = getJointRotation(prevKF.joints, jointName)
 					local nx, ny, nz = getJointRotation(nextKF.joints, jointName)
-
-					-- Default to zero (rest pose) if joint not in keyframe
-					px = px or 0; py = py or 0; pz = pz or 0
-					nx = nx or 0; ny = ny or 0; nz = nz or 0
 
 					local rx = math.rad(lerpAngle(px, nx, t))
 					local ry = math.rad(lerpAngle(py, ny, t))

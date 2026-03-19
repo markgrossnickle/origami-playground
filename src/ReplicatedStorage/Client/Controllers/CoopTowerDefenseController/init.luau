@@ -412,9 +412,9 @@ function submitBuildPrompt()
 			placePos = Vector3.new(placePos.X, 0.5, placePos.Z)
 
 			local CoopTDService = Knit.GetService("CoopTDService")
-			local placeResult = CoopTDService:PlaceTower(result.model, { x = placePos.X, y = placePos.Y, z = placePos.Z }):await()
+			local placeOk, placeResult = CoopTDService:PlaceTower(result.model, { x = placePos.X, y = placePos.Y, z = placePos.Z }):await()
 
-			if placeResult and placeResult.success then
+			if placeOk and placeResult and placeResult.success then
 				setStatus("Tower placed!", COLORS.success)
 			else
 				setStatus(placeResult and placeResult.error or "Failed to place", COLORS.error)
@@ -480,8 +480,8 @@ function CoopTowerDefenseController:Activate()
 	-- Auto-join lobby
 	task.spawn(function()
 		local CoopTDService = Knit.GetService("CoopTDService")
-		local result = CoopTDService:JoinLobby():await()
-		if result and result.success then
+		local ok, result = CoopTDService:JoinLobby():await()
+		if ok and result and result.success then
 			_inLobby = true
 			_currentGold = result.gold or 100
 			_currentBaseHP = result.baseHP or 200

@@ -11,17 +11,21 @@ end
 
 local function getPartVolume(part: BasePart): number
 	local size = part.Size
-	if part.Shape == Enum.PartType.Ball then
-		local radius = math.min(size.X, size.Y, size.Z) / 2
-		return (4 / 3) * math.pi * radius ^ 3
-	elseif part.Shape == Enum.PartType.Cylinder then
-		local radius = math.min(size.Y, size.Z) / 2
-		local height = size.X
-		return math.pi * radius ^ 2 * height
-	else
-		-- Block (default)
-		return size.X * size.Y * size.Z
+	-- WedgePart and other special parts don't have .Shape — only Part does
+	if part:IsA("Part") then
+		if part.Shape == Enum.PartType.Ball then
+			local radius = math.min(size.X, size.Y, size.Z) / 2
+			return (4 / 3) * math.pi * radius ^ 3
+		elseif part.Shape == Enum.PartType.Cylinder then
+			local radius = math.min(size.Y, size.Z) / 2
+			local height = size.X
+			return math.pi * radius ^ 2 * height
+		end
+	elseif part:IsA("WedgePart") then
+		return size.X * size.Y * size.Z * 0.5
 	end
+	-- Block / default
+	return size.X * size.Y * size.Z
 end
 
 function VehicleAnalyzer.analyzeModel(model: Model): { [string]: any }

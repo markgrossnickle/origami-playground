@@ -954,8 +954,8 @@ function updateCurrencyDisplay()
 end
 
 
-local TEST_MODELS = { "haiku", "flash_lite", "gpt4o_mini" }
-local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4o" }
+local TEST_MODELS = { "haiku", "flash_lite", "gpt4o_mini", "gpt_nano", "gpt_mini" }
+local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4o", gpt_nano = "Nano", gpt_mini = "Mini" }
 local TEST_SPACING = 8 -- studs between each test model
 
 function submitSingleRequest(prompt: string, category: string, style: string, model: string, placementOffset: Vector3?, labelOverride: string?)

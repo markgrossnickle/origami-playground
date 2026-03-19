@@ -210,8 +210,9 @@ local function refreshEggs()
 
 	task.spawn(function()
 		local BreedingService = Knit.GetService("BreedingService")
-		local eggs = BreedingService:CheckEggs():await()
+		local success, eggs = BreedingService:CheckEggs():await()
 
+		if not success or type(eggs) ~= "table" then return end
 		for _, eggInfo in ipairs(eggs) do
 			spawnEggInWorld(eggInfo.index, eggInfo)
 		end
@@ -267,7 +268,8 @@ local function startTimerLoop()
 			if #_eggModels == 0 then continue end
 
 			local BreedingService = Knit.GetService("BreedingService")
-			local eggs = BreedingService:CheckEggs():await()
+			local ok, eggs = BreedingService:CheckEggs():await()
+			if not ok or type(eggs) ~= "table" then continue end
 			for _, eggInfo in ipairs(eggs) do
 				_eggTimers[eggInfo.index] = eggInfo.remainingSeconds or 0
 			end

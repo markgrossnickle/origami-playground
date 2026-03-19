@@ -84,7 +84,7 @@ function OrigamiService.Client:RequestModel(player: Player, prompt: string, cate
 		player_id = tostring(player.UserId),
 		category = if isRaw then nil else category,
 		style = style or "origami",
-		model = model or "haiku",
+		model = model or "flash_lite",
 		raw = if isRaw then true else nil,
 		type = type,
 	}

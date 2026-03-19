@@ -46,7 +46,6 @@ OrigamiConfig.TYPES = {
 
 -- AI models
 OrigamiConfig.MODELS = {
-	{ key = "haiku", display = "Haiku" },
 	{ key = "opus", display = "Opus" },
 	{ key = "flash_lite", display = "Flash" },
 	{ key = "gpt4o_mini", display = "GPT4o" },
@@ -72,13 +71,12 @@ OrigamiConfig.STYLES = {
 
 -- Crane costs per model (new LLM generations)
 OrigamiConfig.CRANE_COSTS = {
-	haiku = 1,
 	opus = 5,
 	flash_lite = 1,
 	gpt4o_mini = 1,
 	gpt_nano = 1,
 	gpt_mini = 1,
-	test = 3, -- sum of the 3 cheapest
+	test = 3, -- sum of the 3 test models
 }
 
 -- Emote generation cost

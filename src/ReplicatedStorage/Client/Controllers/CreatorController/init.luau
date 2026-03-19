@@ -46,7 +46,7 @@ local CreatorController = Knit.CreateController({
 local _trove = Trove.new()
 local _selectedCategory = "creature"
 local _selectedStyle = "origami"
-local _selectedModel = "haiku"
+local _selectedModel = "flash_lite"
 local _gui: ScreenGui
 local _inputBox: TextBox
 local _statusLabel: TextLabel
@@ -954,8 +954,8 @@ function updateCurrencyDisplay()
 end
 
 
-local TEST_MODELS = { "haiku", "flash_lite", "gpt4o_mini", "gpt_nano", "gpt_mini" }
-local TEST_DISPLAY = { haiku = "Haiku", flash_lite = "Flash", gpt4o_mini = "GPT4o", gpt_nano = "Nano", gpt_mini = "Mini" }
+local TEST_MODELS = { "flash_lite", "gpt4o_mini", "gpt_nano" }
+local TEST_DISPLAY = { flash_lite = "Flash", gpt4o_mini = "GPT4o", gpt_nano = "Nano" }
 local TEST_SPACING = 8 -- studs between each test model
 
 function submitSingleRequest(prompt: string, category: string, style: string, model: string, placementOffset: Vector3?, labelOverride: string?)

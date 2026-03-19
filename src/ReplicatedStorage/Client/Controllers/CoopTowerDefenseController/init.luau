@@ -483,7 +483,7 @@ function CoopTowerDefenseController:Activate()
 		local ok, result = CoopTDService:JoinLobby():await()
 		if ok and result and result.success then
 			_inLobby = true
-			_currentGold = result.gold or 100
+			_currentGold = result.gold or 250
 			_currentBaseHP = result.baseHP or 200
 			updateHUD()
 		end

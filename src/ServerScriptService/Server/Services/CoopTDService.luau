@@ -35,9 +35,9 @@ local MAX_PLAYERS = 4
 local MIN_PLAYERS = 1 -- allow solo for testing
 local BASE_HP_PER_PLAYER = 50
 local BASE_HP_START = 200
-local STARTING_GOLD = 100
+local STARTING_GOLD = 250
 local TOWER_COST = 50
-local KILL_BONUS = 10
+local KILL_BONUS = 15
 local PREP_TIME = 15
 local CREEP_MOVE_INTERVAL = 0.1
 

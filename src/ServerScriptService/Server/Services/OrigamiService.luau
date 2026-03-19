@@ -448,7 +448,8 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 		local align = Instance.new("AlignOrientation")
 		align.Mode = Enum.OrientationAlignmentMode.OneAttachment
 		align.Attachment0 = attachment
-		align.CFrame = seat.CFrame
+		local _, yaw, _ = seat.CFrame:ToEulerAnglesYXZ()
+		align.CFrame = CFrame.Angles(0, yaw, 0)
 		align.MaxTorque = 5000 * (physics.TipResistance or 0.5)
 		align.Responsiveness = 10
 		align.RigidityEnabled = false
@@ -473,9 +474,34 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 			-- Transfer network ownership so the client can control vehicle physics
 			seat:SetNetworkOwner(triggerPlayer)
 			seat:Sit(humanoid)
+			prompt.Enabled = false
+
+			-- Ensure all welded parts are unanchored so the vehicle can move
+			for _, weld in ipairs(seat:GetChildren()) do
+				if weld:IsA("WeldConstraint") and weld.Part1 then
+					weld.Part1.Anchored = false
+					-- Also unanchor descendants of the welded part's parent model
+					local parentModel = weld.Part1:FindFirstAncestorOfClass("Model")
+					if parentModel then
+						for _, desc in ipairs(parentModel:GetDescendants()) do
+							if desc:IsA("BasePart") and desc.Anchored then
+								desc.Anchored = false
+							end
+						end
+					end
+				end
+			end
+
 			print("[OrigamiService] Occupant after Sit:", seat.Occupant)
 		else
 			warn("[OrigamiService] No humanoid for", triggerPlayer.Name)
+		end
+	end)
+
+	-- Re-show prompt when player exits vehicle
+	seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+		if not seat.Occupant then
+			prompt.Enabled = true
 		end
 	end)
 

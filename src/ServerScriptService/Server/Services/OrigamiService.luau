@@ -60,7 +60,14 @@ local function checkRateLimit(player: Player): (boolean, number)
 	return true, 0
 end
 
-function OrigamiService.Client:RequestModel(player: Player, prompt: string, category: string, style: string?, model: string?, type: string?)
+function OrigamiService.Client:RequestModel(
+	player: Player,
+	prompt: string,
+	category: string,
+	style: string?,
+	model: string?,
+	type: string?
+)
 	-- Validate input
 	if not prompt or prompt == "" then
 		return { success = false, error = "empty_prompt" }
@@ -212,9 +219,13 @@ function OrigamiService.Client:ApplyAvatar(player: Player, modelData)
 
 	-- Hide shirt/pants
 	local shirt = character:FindFirstChildOfClass("Shirt")
-	if shirt then shirt.ShirtTemplate = "" end
+	if shirt then
+		shirt.ShirtTemplate = ""
+	end
 	local pants = character:FindFirstChildOfClass("Pants")
-	if pants then pants.PantsTemplate = "" end
+	if pants then
+		pants.PantsTemplate = ""
+	end
 
 	-- Build the origami model using OrigamiBuilder
 	local model = OrigamiBuilder.BuildModel(modelData)
@@ -386,11 +397,15 @@ function OrigamiService.Client:ResetAvatar(player: Player)
 	-- Restore shirt/pants
 	if saved._shirtTemplate then
 		local shirt = character:FindFirstChildOfClass("Shirt")
-		if shirt then shirt.ShirtTemplate = saved._shirtTemplate end
+		if shirt then
+			shirt.ShirtTemplate = saved._shirtTemplate
+		end
 	end
 	if saved._pantsTemplate then
 		local pants = character:FindFirstChildOfClass("Pants")
-		if pants then pants.PantsTemplate = saved._pantsTemplate end
+		if pants then
+			pants.PantsTemplate = saved._pantsTemplate
+		end
 	end
 
 	_originalAvatars[player.UserId] = nil
@@ -398,7 +413,20 @@ function OrigamiService.Client:ResetAvatar(player: Player)
 	return { success = true }
 end
 
-function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vector3, lookY: number, modelName: string, modelSizeData: { X: number, Y: number, Z: number }, physicsData: { Speed: number?, Torque: number?, TurnSpeed: number?, Grip: number?, TipResistance: number? }?)
+function OrigamiService.Client:CreateVehicleSeat(
+	player: Player,
+	position: Vector3,
+	lookY: number,
+	modelName: string,
+	modelSizeData: { X: number, Y: number, Z: number },
+	physicsData: {
+		Speed: number?,
+		Torque: number?,
+		TurnSpeed: number?,
+		Grip: number?,
+		TipResistance: number?,
+	}?
+)
 	print("[OrigamiService] CreateVehicleSeat called by", player.Name, "at", position)
 
 	local physics = physicsData or {}
@@ -411,9 +439,15 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 	seat.Anchored = true -- stays anchored until client welds visual parts and calls ReadyVehicle
 	seat.CanCollide = true
 	seat.Transparency = 1
+	-- Keep MaxSpeed/TurnSpeed so VehicleSeat still populates Throttle/Steer from player input
+	-- Set Torque=0 to disable built-in driving (custom constraints handle movement instead)
 	seat.MaxSpeed = physics.Speed or 50
-	seat.Torque = physics.Torque or 40
+	seat.Torque = 0
 	seat.TurnSpeed = physics.TurnSpeed or 8
+	-- Store real physics as attributes for the client drive system
+	seat:SetAttribute("DriveSpeed", physics.Speed or 50)
+	seat:SetAttribute("DriveTorque", physics.Torque or 40)
+	seat:SetAttribute("DriveTurnSpeed", physics.TurnSpeed or 8)
 	seat.Material = Enum.Material.SmoothPlastic
 	seat:SetAttribute("OrigamiVehicle", true)
 	seat:SetAttribute("OwnerUserId", player.UserId)
@@ -441,20 +475,10 @@ function OrigamiService.Client:CreateVehicleSeat(player: Player, position: Vecto
 	plateWeld.Part1 = collisionPlate
 	plateWeld.Parent = collisionPlate
 
-	-- Tip resistance: wide/low vehicles resist tipping, tall/narrow ones wobble
-	if (physics.TipResistance or 0) > 0.15 then
-		local attachment = Instance.new("Attachment")
-		attachment.Parent = seat
-		local align = Instance.new("AlignOrientation")
-		align.Mode = Enum.OrientationAlignmentMode.OneAttachment
-		align.Attachment0 = attachment
-		local _, yaw, _ = seat.CFrame:ToEulerAnglesYXZ()
-		align.CFrame = CFrame.Angles(0, yaw, 0)
-		align.MaxTorque = 5000 * (physics.TipResistance or 0.5)
-		align.Responsiveness = 10
-		align.RigidityEnabled = false
-		align.Parent = seat
-	end
+	-- Drive constraints (LinearVelocity, AlignOrientation) are created CLIENT-SIDE.
+	-- Clients can't write properties on server-created constraint instances —
+	-- network ownership only grants physics simulation, not property mutation.
+	-- Server stores physics params as attributes; client reads them to create constraints.
 
 	-- ProximityPrompt with line-of-sight disabled (visual parts surround the seat)
 	local prompt = Instance.new("ProximityPrompt")

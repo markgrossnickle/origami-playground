@@ -45,7 +45,7 @@ local CreatorController = Knit.CreateController({
 
 local _trove = Trove.new()
 local _selectedCategory = "creature"
-local _selectedStyle = "origami"
+local _selectedStyle = "freestyle"
 local _selectedModel = "flash_lite"
 local _gui: ScreenGui
 local _inputBox: TextBox
@@ -79,13 +79,55 @@ end
 
 -- Attachment slot config: body part name, offset function (from body part size), max accessory size
 local ATTACH_CONFIG = {
-	head = { bodyPart = "Head", offset = function(s) return CFrame.new(0, s.Y / 2, 0) end, maxSize = 3 },
-	face = { bodyPart = "Head", offset = function(s) return CFrame.new(0, 0, -s.Z / 2) end, maxSize = 2.5 },
-	neck = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, s.Y / 2, 0) end, maxSize = 3 },
-	back = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, 0, s.Z / 2) end, maxSize = 5 },
-	chest = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, 0, -s.Z / 2) end, maxSize = 3 },
-	waist = { bodyPart = "LowerTorso", offset = function(s) return CFrame.new(0, 0, 0) end, maxSize = 4 },
-	shoulders = { bodyPart = "UpperTorso", offset = function(s) return CFrame.new(0, s.Y / 2, 0) end, maxSize = 4 },
+	head = {
+		bodyPart = "Head",
+		offset = function(s)
+			return CFrame.new(0, s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
+	face = {
+		bodyPart = "Head",
+		offset = function(s)
+			return CFrame.new(0, 0, -s.Z / 2)
+		end,
+		maxSize = 2.5,
+	},
+	neck = {
+		bodyPart = "UpperTorso",
+		offset = function(s)
+			return CFrame.new(0, s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
+	back = {
+		bodyPart = "UpperTorso",
+		offset = function(s)
+			return CFrame.new(0, 0, s.Z / 2)
+		end,
+		maxSize = 5,
+	},
+	chest = {
+		bodyPart = "UpperTorso",
+		offset = function(s)
+			return CFrame.new(0, 0, -s.Z / 2)
+		end,
+		maxSize = 3,
+	},
+	waist = {
+		bodyPart = "LowerTorso",
+		offset = function(s)
+			return CFrame.new(0, 0, 0)
+		end,
+		maxSize = 4,
+	},
+	shoulders = {
+		bodyPart = "UpperTorso",
+		offset = function(s)
+			return CFrame.new(0, s.Y / 2, 0)
+		end,
+		maxSize = 4,
+	},
 }
 local _activeVehicle: Model? = nil
 local _vehicleSeat: VehicleSeat? = nil
@@ -617,7 +659,10 @@ local function createUI()
 	-- Catalog panel (left side)
 	_catalogPanel = Instance.new("Frame")
 	_catalogPanel.Name = "CatalogPanel"
-	_catalogPanel.Size = if IS_MOBILE then UDim2.new(0.85, 0, 0, 350) elseif IS_CONSOLE then UDim2.new(0, 320, 0, 450) else UDim2.new(0, 260, 0, 400)
+	_catalogPanel.Size = if IS_MOBILE
+		then UDim2.new(0.85, 0, 0, 350)
+		elseif IS_CONSOLE then UDim2.new(0, 320, 0, 450)
+		else UDim2.new(0, 260, 0, 400)
 	_catalogPanel.Position = UDim2.new(0, 10, 0, 86)
 	_catalogPanel.BackgroundColor3 = COLORS.bg
 	_catalogPanel.BackgroundTransparency = 0.1
@@ -953,12 +998,18 @@ function updateCurrencyDisplay()
 	end
 end
 
-
 local TEST_MODELS = { "flash_lite", "gpt4o_mini", "gpt_nano" }
 local TEST_DISPLAY = { flash_lite = "Flash", gpt4o_mini = "GPT4o", gpt_nano = "Nano" }
 local TEST_SPACING = 8 -- studs between each test model
 
-function submitSingleRequest(prompt: string, category: string, style: string, model: string, placementOffset: Vector3?, labelOverride: string?)
+function submitSingleRequest(
+	prompt: string,
+	category: string,
+	style: string,
+	model: string,
+	placementOffset: Vector3?,
+	labelOverride: string?
+)
 	-- Currency checks disabled — free building
 	-- if not RunService:IsStudio() then
 	-- 	local craneCost = OrigamiConfig.CRANE_COSTS[model] or 1
@@ -991,7 +1042,8 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 					local character = Player.Character
 					local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 					if rootPart then
-						local basePos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
+						local basePos = rootPart.Position
+							+ rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
 						local placePos = basePos + placementOffset
 						builtModel.Parent = workspace
 
@@ -1027,7 +1079,14 @@ function submitSingleRequest(prompt: string, category: string, style: string, mo
 						placeModel(builtModel, modelData)
 					end
 
-					if cat ~= "tool" and cat ~= "accessory" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+					if
+						cat ~= "tool"
+						and cat ~= "accessory"
+						and cat ~= "hat"
+						and cat ~= "vehicle"
+						and cat ~= "avatar"
+						and cat ~= "creature"
+					then
 						local animType = modelData.animation or "idle_bob"
 						OrigamiBuilder.ApplyAnimation(builtModel, animType)
 					end
@@ -1097,23 +1156,25 @@ local function executeHitActions(actions, startIndex, hitResult, character, para
 		if action == "raycast" then
 			local range = act.range or 20
 			hitResult = workspace:Raycast(ray.Origin, ray.Direction * range, params)
-
 		elseif action == "destroy" then
 			if hitResult and hitResult.Instance then
 				local radius = act.radius or 0
 				if radius > 0 then
 					for _, p in workspace:GetPartBoundsInRadius(hitResult.Position, radius) do
-						if not p:IsDescendantOf(character) then p:Destroy() end
+						if not p:IsDescendantOf(character) then
+							p:Destroy()
+						end
 					end
 				else
 					hitResult.Instance:Destroy()
 				end
 			end
-
 		elseif action == "force" then
 			if hitResult and hitResult.Instance then
 				local hit = hitResult.Instance
-				if hit.Anchored then hit.Anchored = false end
+				if hit.Anchored then
+					hit.Anchored = false
+				end
 				local mag = act.magnitude or 50
 				local dirType = act.direction or "forward"
 				local forceDir
@@ -1126,7 +1187,6 @@ local function executeHitActions(actions, startIndex, hitResult, character, para
 				end
 				hit.AssemblyLinearVelocity = forceDir * mag
 			end
-
 		elseif action == "recolor" then
 			if hitResult and hitResult.Instance then
 				local hit = hitResult.Instance
@@ -1137,12 +1197,10 @@ local function executeHitActions(actions, startIndex, hitResult, character, para
 					hit.Material = Enum.Material[act.material] or hit.Material
 				end
 			end
-
 		elseif action == "anchor" then
 			if hitResult and hitResult.Instance then
 				hitResult.Instance.Anchored = (act.freeze ~= false)
 			end
-
 		elseif action == "resize" then
 			if hitResult and hitResult.Instance then
 				local scale = math.clamp(act.scale or 1, 0.3, 3)
@@ -1230,11 +1288,15 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 
 		tool.Activated:Connect(function()
 			local now = tick()
-			if now - lastClick < cooldown then return end
+			if now - lastClick < cooldown then
+				return
+			end
 			lastClick = now
 
 			local character = Player.Character
-			if not character then return end
+			if not character then
+				return
+			end
 
 			local camera = workspace.CurrentCamera
 			local mouse = Player:GetMouse()
@@ -1256,7 +1318,9 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 				-- Phase 2: spawn projectiles, defer post-spawn actions to on-hit
 				local act = actions[spawnIndex]
 				local rootPart = character:FindFirstChild("HumanoidRootPart")
-				if not rootPart then return end
+				if not rootPart then
+					return
+				end
 
 				local count = act.count or 1
 				local spread = math.rad(act.spread or 0)
@@ -1296,7 +1360,9 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 					-- On-hit: run post-spawn actions on the touched target
 					if spawnIndex < #actions then
 						proj.Touched:Connect(function(touchedPart)
-							if touchedPart:IsDescendantOf(character) or touchedPart == proj then return end
+							if touchedPart:IsDescendantOf(character) or touchedPart == proj then
+								return
+							end
 							local hitResult = { Instance = touchedPart, Position = proj.Position }
 							executeHitActions(actions, spawnIndex + 1, hitResult, character, params, ray)
 							proj:Destroy()
@@ -1325,10 +1391,16 @@ end
 local function _isEffectKeyDown(keyCode)
 	local keyDown = UserInputService:IsKeyDown(keyCode)
 	if not keyDown then
-		local gpMap = { [Enum.KeyCode.Space] = Enum.KeyCode.ButtonA, [Enum.KeyCode.E] = Enum.KeyCode.ButtonX, [Enum.KeyCode.Q] = Enum.KeyCode.ButtonY }
+		local gpMap = {
+			[Enum.KeyCode.Space] = Enum.KeyCode.ButtonA,
+			[Enum.KeyCode.E] = Enum.KeyCode.ButtonX,
+			[Enum.KeyCode.Q] = Enum.KeyCode.ButtonY,
+		}
 		local gpKey = gpMap[keyCode]
 		if gpKey then
-			keyDown = pcall(function() return UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey) end) and UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey)
+			keyDown = pcall(function()
+				return UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey)
+			end) and UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, gpKey)
 		end
 	end
 	return keyDown
@@ -1338,7 +1410,9 @@ end
 local function _wireFlyEffect(character, attachPart, attrs, keyCode)
 	local flyForce = attrs.FlyForce or 40
 	local rootPart = character:FindFirstChild("HumanoidRootPart")
-	if not rootPart then return end
+	if not rootPart then
+		return
+	end
 
 	local bodyVel = Instance.new("BodyVelocity")
 	bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
@@ -1352,7 +1426,10 @@ local function _wireFlyEffect(character, attachPart, attrs, keyCode)
 	local spinWelds = {}
 	if spinPartsPrefix then
 		for _, child in character:GetChildren() do
-			if (child:GetAttribute("OrigamiAccessory") or child:GetAttribute("OrigamiHat")) and child.Name:lower():find(spinPartsPrefix:lower()) then
+			if
+				(child:GetAttribute("OrigamiAccessory") or child:GetAttribute("OrigamiHat"))
+				and child.Name:lower():find(spinPartsPrefix:lower())
+			then
 				for _, w in child:GetChildren() do
 					if w:IsA("WeldConstraint") then
 						local motor = Instance.new("Motor6D")
@@ -1373,7 +1450,9 @@ local function _wireFlyEffect(character, attachPart, attrs, keyCode)
 	local conn
 	conn = RunService.Heartbeat:Connect(function(dt)
 		if not _accessoryExists(character) or not rootPart.Parent then
-			conn:Disconnect(); bodyVel:Destroy(); return
+			conn:Disconnect()
+			bodyVel:Destroy()
+			return
 		end
 		local keyDown = _isEffectKeyDown(keyCode)
 		bodyVel.Velocity = if keyDown then Vector3.new(0, flyForce, 0) else Vector3.zero
@@ -1389,7 +1468,9 @@ end
 local function _wireSpeedEffect(character, attrs)
 	local boost = attrs.SpeedBoost or 1.5
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
+	if not humanoid then
+		return
+	end
 
 	local origSpeed = humanoid.WalkSpeed
 	humanoid.WalkSpeed = origSpeed * boost
@@ -1417,8 +1498,12 @@ local function _wireGlowEffect(character, keyCode)
 	local inputConn
 	local cleanupConn
 	inputConn = UserInputService.InputBegan:Connect(function(input, processed)
-		if processed then return end
-		if input.KeyCode ~= keyCode then return end
+		if processed then
+			return
+		end
+		if input.KeyCode ~= keyCode then
+			return
+		end
 		glowing = not glowing
 		for part, origMat in origMaterials do
 			if part.Parent then
@@ -1450,7 +1535,9 @@ function equipAsAccessory(model: Model, modelData: { [string]: any })
 	if not attachPart then
 		-- Fallback: try Head for any slot
 		attachPart = character:FindFirstChild("Head")
-		if not attachPart then return end
+		if not attachPart then
+			return
+		end
 	end
 
 	-- Remove previous origami accessory parts
@@ -1572,22 +1659,50 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 
 	local attrs = modelData.attributes or {}
 	local physics = VehicleAnalyzer.derivePhysics(analysis, attrs)
+
+	-- Detect flight: LLM may set locomotion="fly", attrs.CanFly, or name implies aircraft
+	local nameLower = string.lower(modelData.name or "")
 	local canFly = attrs.CanFly
-	local flySpeed = attrs.FlySpeed or 30
+		or modelData.locomotion == "fly"
+		or modelData.locomotion == "float"
+		or string.find(nameLower, "plane")
+		or string.find(nameLower, "aircraft")
+		or string.find(nameLower, "helicopter")
+		or string.find(nameLower, "jet")
+		or string.find(nameLower, "rocket")
+		or string.find(nameLower, "spaceship")
+		or string.find(nameLower, "ufo")
+		or string.find(nameLower, "blimp")
+		or string.find(nameLower, "airship")
+		or string.find(nameLower, "drone")
+	local flySpeed = attrs.FlySpeed or modelData.flySpeed or 30
+	-- Normalize canFly to boolean (string.find returns index, not bool)
+	canFly = canFly and true or false
+	print("[Vehicle] canFly:", canFly, "| name:", modelData.name, "| locomotion:", modelData.locomotion)
 
 	-- Create server-side VehicleSeat (Sit() requires server authority)
 	local OrigamiService = Knit.GetService("OrigamiService")
-	print("[Vehicle] Requesting server seat at", placementPos, "| massRatio:", string.format("%.2f", physics.massRatio), "grip:", string.format("%.2f", physics.grip))
-	local ok, seat =
-		OrigamiService
-			:CreateVehicleSeat(placementPos, lookY, modelName, { X = modelSize.X, Y = modelSize.Y, Z = modelSize.Z }, {
-				Speed = physics.speed,
-				Torque = physics.torque,
-				TurnSpeed = physics.turnSpeed,
-				Grip = physics.grip,
-				TipResistance = physics.tipResistance,
-			})
-			:await()
+	print(
+		"[Vehicle] Requesting server seat at",
+		placementPos,
+		"| massRatio:",
+		string.format("%.2f", physics.massRatio),
+		"grip:",
+		string.format("%.2f", physics.grip)
+	)
+	local ok, seat = OrigamiService:CreateVehicleSeat(
+		placementPos,
+		lookY,
+		modelName,
+		{ X = modelSize.X, Y = modelSize.Y, Z = modelSize.Z },
+		{
+			Speed = physics.speed,
+			Torque = physics.torque,
+			TurnSpeed = physics.turnSpeed,
+			Grip = physics.grip,
+			TipResistance = physics.tipResistance,
+		}
+	):await()
 
 	if not ok or not seat then
 		warn("[Vehicle] Failed to create server seat:", seat)
@@ -1612,10 +1727,14 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 			table.insert(partsByVolume, { part = part, volume = sz.X * sz.Y * sz.Z })
 		end
 	end
-	table.sort(partsByVolume, function(a, b) return a.volume > b.volume end)
+	table.sort(partsByVolume, function(a, b)
+		return a.volume > b.volume
+	end)
 
 	local heavyCount = math.clamp(#partsByVolume, 0, 4)
-	if heavyCount > 2 then heavyCount = math.min(heavyCount, 2 + math.floor(physics.massRatio)) end
+	if heavyCount > 2 then
+		heavyCount = math.min(heavyCount, 2 + math.floor(physics.massRatio))
+	end
 	heavyCount = math.clamp(heavyCount, 0, 4)
 
 	local heavySet = {}
@@ -1648,27 +1767,221 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	OrigamiService:ReadyVehicle(seat):await()
 	print("[Vehicle] Vehicle ready, seat anchored:", seat.Anchored)
 
-	-- Add flight capability if LLM specified CanFly
-	if canFly and seat then
-		local bodyVel = Instance.new("BodyVelocity")
-		bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
-		bodyVel.Velocity = Vector3.zero
-		bodyVel.Parent = seat
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ARCADE DRIVE SYSTEM
+	-- Direct UserInputService input (bypasses VehicleSeat.Throttle/Steer bug)
+	-- AlignOrientation for yaw-accumulation steering + tip resistance
+	-- LinearVelocity Vector mode for full 3-axis control
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local maxSpeed = seat:GetAttribute("DriveSpeed") or 50
+	local baseTurnSpeed = seat:GetAttribute("DriveTurnSpeed") or 3.5
+	local driveTorque = seat:GetAttribute("DriveTorque") or 40
 
-		local flyConn
-		flyConn = RunService.Heartbeat:Connect(function()
-			if not seat or not seat.Parent then
-				flyConn:Disconnect()
-				return
-			end
-			local jumpPressed = UserInputService:IsKeyDown(Enum.KeyCode.Space) or UserInputService:IsGamepadButtonPressed(Enum.UserInputType.Gamepad1, Enum.KeyCode.ButtonA)
-			if seat.Occupant and jumpPressed then
-				bodyVel.Velocity = Vector3.new(0, flySpeed, 0)
-			else
-				bodyVel.Velocity = Vector3.new(0, math.max(-20, seat.AssemblyLinearVelocity.Y - 1), 0)
-			end
+	-- ── DIRECT PHYSICS APPROACH ──
+	-- Constraints (LinearVelocity, AlignOrientation) don't work reliably on
+	-- server-created parts even with network ownership — neither server-created
+	-- nor client-created constraints produce movement.
+	-- Instead, use AssemblyLinearVelocity (direct velocity) + CFrame rotation.
+	-- The network owner has FULL authority over these physics properties.
+	local _, initialYaw, _ = seat.CFrame:ToEulerAnglesYXZ()
+
+	-- Driving state
+	local currentSpeed = 0
+	local currentYaw = initialYaw
+	local vehDebugCounter = 0
+	print(
+		string.format(
+			"[Vehicle] Drive init: yaw=%.2f  LookVector=(%.2f, %.2f, %.2f)  maxSpeed=%d  force=%d  canFly=%s",
+			initialYaw,
+			seat.CFrame.LookVector.X,
+			seat.CFrame.LookVector.Y,
+			seat.CFrame.LookVector.Z,
+			maxSpeed,
+			driveForce,
+			tostring(canFly)
+		)
+	)
+
+	-- Acceleration/deceleration curves — key to arcade feel
+	local ACCEL_RATE = 0.10 -- snappy arcade ramp-up
+	local BRAKE_RATE = 0.18 -- braking is ~2x acceleration, responsive stop
+	local COAST_RATE = 0.04 -- gentle engine braking when coasting
+	local DOWNFORCE = -3 -- push into ground for traction feel
+
+	-- Speed-dependent steering: fast = less turning (prevents spin-outs)
+	local TURN_DAMPENING = 0.5 -- at max speed, turn rate is 50% of base
+	local MIN_SPEED_TO_TURN = 0.5 -- very low threshold so turning feels instant
+
+	-- Flight state
+	local currentAltitudeVel = 0
+	local FLY_ACCEL = 0.12 -- how fast altitude velocity ramps
+	local FLY_HOVER_DAMPING = 0.05 -- gentle settle when not pressing up/down
+
+	-- Safe gamepad helpers (no-op when no gamepad connected)
+	local HAS_GAMEPAD = UserInputService.GamepadEnabled
+
+	local function getGamepadAxis(axisKeyCode: Enum.KeyCode): (number, number)
+		if not HAS_GAMEPAD then
+			return 0, 0
+		end
+		local ok, state = pcall(function()
+			return UserInputService:GetGamepadState(Enum.UserInputType.Gamepad1)
 		end)
+		if not ok or not state then
+			return 0, 0
+		end
+		for _, input in ipairs(state) do
+			if input.KeyCode == axisKeyCode then
+				local x = if math.abs(input.Position.X) > 0.15 then input.Position.X else 0
+				local y = if math.abs(input.Position.Y) > 0.15 then input.Position.Y else 0
+				return x, y
+			end
+		end
+		return 0, 0
 	end
+
+	local function isGamepadDown(buttonKeyCode: Enum.KeyCode): boolean
+		if not HAS_GAMEPAD then
+			return false
+		end
+		local ok, pressed = pcall(function()
+			return UserInputService:IsGamepadButtonDown(Enum.UserInputType.Gamepad1, buttonKeyCode)
+		end)
+		return ok and pressed == true
+	end
+
+	-- Input reading: direct from UserInputService (reliable, no VehicleSeat bug)
+	local function getThrottle(): number
+		local forward = 0
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) or UserInputService:IsKeyDown(Enum.KeyCode.Up) then
+			forward = forward + 1
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) or UserInputService:IsKeyDown(Enum.KeyCode.Down) then
+			forward = forward - 1
+		end
+		local _, gpY = getGamepadAxis(Enum.KeyCode.Thumbstick1)
+		forward = forward + gpY
+		return math.clamp(forward, -1, 1)
+	end
+
+	local function getSteer(): number
+		local steer = 0
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.Left) then
+			steer = steer - 1
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.Right) then
+			steer = steer + 1
+		end
+		local gpX, _ = getGamepadAxis(Enum.KeyCode.Thumbstick1)
+		steer = steer + gpX
+		return math.clamp(steer, -1, 1)
+	end
+
+	local function getAltitude(): number
+		if not canFly then
+			return 0
+		end
+		local alt = 0
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) or isGamepadDown(Enum.KeyCode.ButtonA) then
+			alt = alt + 1
+		end
+		if
+			UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+			or UserInputService:IsKeyDown(Enum.KeyCode.RightShift)
+			or isGamepadDown(Enum.KeyCode.ButtonB)
+		then
+			alt = alt - 1
+		end
+		return math.clamp(alt, -1, 1)
+	end
+
+	-- Unified drive + flight loop
+	local driveConn
+	driveConn = RunService.Heartbeat:Connect(function(dt: number)
+		if not seat or not seat.Parent then
+			driveConn:Disconnect()
+			return
+		end
+
+		local isLocalPlayerSeated = seat.Occupant and seat.Occupant.Parent == Player.Character
+
+		if isLocalPlayerSeated then
+			local throttle = getThrottle()
+			local steer = getSteer()
+			local altitude = getAltitude()
+
+			-- Debug: periodic input logging (every 60 frames)
+			vehDebugCounter = vehDebugCounter + 1
+			if vehDebugCounter % 60 == 1 then
+				local aVel = seat.AssemblyLinearVelocity
+				print(
+					string.format(
+						"[Vehicle] throttle=%.2f steer=%.2f alt=%.2f speed=%.1f yaw=%.2f realVel=(%.1f,%.1f,%.1f) anchored=%s",
+						throttle,
+						steer,
+						altitude,
+						currentSpeed,
+						currentYaw,
+						aVel.X,
+						aVel.Y,
+						aVel.Z,
+						tostring(seat.Anchored)
+					)
+				)
+			end
+
+			-- ── Acceleration with curves ──
+			local targetSpeed = throttle * maxSpeed
+			local rate
+			if throttle == 0 then
+				rate = COAST_RATE
+			elseif math.sign(targetSpeed) ~= math.sign(currentSpeed) and math.abs(currentSpeed) > 1 then
+				rate = BRAKE_RATE
+			else
+				rate = ACCEL_RATE
+			end
+			currentSpeed = currentSpeed + (targetSpeed - currentSpeed) * rate
+
+			-- ── Steering with speed-dependent dampening ──
+			if math.abs(currentSpeed) > MIN_SPEED_TO_TURN then
+				local speedFraction = math.abs(currentSpeed) / maxSpeed
+				local turnMultiplier = 1 - speedFraction * TURN_DAMPENING
+				local effectiveTurnSpeed = baseTurnSpeed * turnMultiplier
+				currentYaw = currentYaw - steer * effectiveTurnSpeed * dt
+			end
+
+			-- ── Altitude (flight vehicles) ──
+			local yVel = DOWNFORCE
+			if canFly then
+				local targetAltVel = altitude * flySpeed
+				if altitude == 0 then
+					-- Hover in place: gently dampen vertical velocity
+					currentAltitudeVel = currentAltitudeVel * (1 - FLY_HOVER_DAMPING)
+				else
+					currentAltitudeVel = currentAltitudeVel + (targetAltVel - currentAltitudeVel) * FLY_ACCEL
+				end
+				yVel = currentAltitudeVel
+			end
+
+			-- ── Apply direct physics (network owner has full authority) ──
+			-- Velocity: set directly on the assembly
+			local forward = CFrame.Angles(0, currentYaw, 0).LookVector
+			local targetVel = forward * currentSpeed + Vector3.new(0, yVel, 0)
+			seat.AssemblyLinearVelocity = targetVel
+
+			-- Orientation: rotate CFrame to match current yaw (keep position, change rotation)
+			-- Preserve current position, only update rotation to prevent jitter
+			local pos = seat.CFrame.Position
+			seat.CFrame = CFrame.new(pos) * CFrame.Angles(0, currentYaw, 0)
+
+			-- Kill angular velocity to prevent spinning/wobble
+			seat.AssemblyAngularVelocity = Vector3.zero
+		else
+			-- No occupant: let physics settle naturally (gravity, friction)
+			currentSpeed = 0
+			currentAltitudeVel = 0
+		end
+	end)
 
 	_activeVehicle = model
 	_vehicleSeat = seat
@@ -2130,7 +2443,14 @@ function spawnCatalogItem(item: { [string]: any })
 				placeModel(builtModel, modelData)
 			end
 
-			if cat ~= "tool" and cat ~= "accessory" and cat ~= "hat" and cat ~= "vehicle" and cat ~= "avatar" and cat ~= "creature" then
+			if
+				cat ~= "tool"
+				and cat ~= "accessory"
+				and cat ~= "hat"
+				and cat ~= "vehicle"
+				and cat ~= "avatar"
+				and cat ~= "creature"
+			then
 				local animType = modelData.animation or "idle_bob"
 				OrigamiBuilder.ApplyAnimation(builtModel, animType)
 			end

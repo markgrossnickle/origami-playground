@@ -46,7 +46,7 @@ local CreatorController = Knit.CreateController({
 local _trove = Trove.new()
 local _selectedCategory = "creature"
 local _selectedStyle = "freestyle"
-local _selectedModel = "flash_lite"
+local _selectedModel = "gpt_nano"
 local _gui: ScreenGui
 local _inputBox: TextBox
 local _statusLabel: TextLabel
@@ -128,7 +128,88 @@ local ATTACH_CONFIG = {
 		end,
 		maxSize = 4,
 	},
+	left_hand = {
+		bodyPart = "LeftHand",
+		fallback = "LeftLowerArm",
+		offset = function(s)
+			return CFrame.new(0, -s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
+	right_hand = {
+		bodyPart = "RightHand",
+		fallback = "RightLowerArm",
+		offset = function(s)
+			return CFrame.new(0, -s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
+	hands = {
+		bodyPart = "RightHand",
+		fallback = "RightLowerArm",
+		offset = function(s)
+			return CFrame.new(0, -s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
+	left_foot = {
+		bodyPart = "LeftFoot",
+		fallback = "LeftLowerLeg",
+		offset = function(s)
+			return CFrame.new(0, -s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
+	right_foot = {
+		bodyPart = "RightFoot",
+		fallback = "RightLowerLeg",
+		offset = function(s)
+			return CFrame.new(0, -s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
+	feet = {
+		bodyPart = "LeftFoot",
+		fallback = "LeftLowerLeg",
+		offset = function(s)
+			return CFrame.new(0, -s.Y / 2, 0)
+		end,
+		maxSize = 3,
+	},
 }
+
+-- Guess the best attachment slot from the accessory name when the LLM doesn't specify
+local SLOT_KEYWORDS = {
+	-- Hands/gloves
+	{ keywords = { "mitten", "glove", "gauntlet", "bracelet", "wristband", "ring", "claw" }, slot = "hands" },
+	-- Feet/shoes
+	{ keywords = { "shoe", "boot", "sandal", "slipper", "sock", "sneaker", "heel" }, slot = "feet" },
+	-- Face
+	{ keywords = { "mask", "glasses", "visor", "monocle", "eyepatch", "nose", "moustache", "beard" }, slot = "face" },
+	-- Back
+	{ keywords = { "wing", "cape", "backpack", "jetpack", "shield", "quiver", "tail" }, slot = "back" },
+	-- Neck
+	{ keywords = { "necklace", "scarf", "collar", "tie", "bowtie", "chain", "pendant" }, slot = "neck" },
+	-- Chest
+	{ keywords = { "armor", "vest", "apron", "badge", "medal", "brooch" }, slot = "chest" },
+	-- Waist
+	{ keywords = { "belt", "sash", "fanny", "holster", "skirt" }, slot = "waist" },
+	-- Shoulders
+	{ keywords = { "pauldron", "epaulette", "parrot", "shoulder" }, slot = "shoulders" },
+	-- Head is the default fallback
+}
+
+local function guessSlot(name: string): string
+	local lower = string.lower(name or "")
+	for _, entry in ipairs(SLOT_KEYWORDS) do
+		for _, kw in ipairs(entry.keywords) do
+			if string.find(lower, kw) then
+				return entry.slot
+			end
+		end
+	end
+	return "head"
+end
 local _activeVehicle: Model? = nil
 local _vehicleSeat: VehicleSeat? = nil
 local _avatarApplied = false
@@ -1104,8 +1185,16 @@ function submitSingleRequest(
 			end
 		else
 			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
-			warn("[OrigamiCreator] Request failed:", errMsg)
-			updateQueueEntry(queueId, "Failed: " .. errMsg:sub(1, 30), COLORS.error)
+			local errReason = ok and result and result.error_reason
+			if errReason then
+				warn("[OrigamiCreator] Request blocked as unsafe — reason:", errReason, "| prompt:", prompt)
+				updateQueueEntry(queueId, "Blocked: " .. errReason, COLORS.error)
+				setStatus("Content blocked: " .. errReason, COLORS.error)
+			else
+				warn("[OrigamiCreator] Request failed:", errMsg)
+				updateQueueEntry(queueId, "Failed: " .. errMsg:sub(1, 60), COLORS.error)
+				setStatus(errMsg:sub(1, 80), COLORS.error)
+			end
 			_failSound:Play()
 		end
 
@@ -1526,19 +1615,24 @@ function equipAsAccessory(model: Model, modelData: { [string]: any })
 		return
 	end
 
-	-- Resolve attachment slot from attributes (backward compat: default to head)
+	-- Resolve attachment slot: LLM attrs > guess from name > default to head
 	local attrs = modelData.attributes or {}
-	local slot = attrs.AttachTo or "head"
+	local slot = attrs.AttachTo or guessSlot(modelData.name)
 	local config = ATTACH_CONFIG[slot] or ATTACH_CONFIG.head
 
 	local attachPart = character:FindFirstChild(config.bodyPart)
+	-- Try fallback body part name (R6 compatibility)
+	if not attachPart and config.fallback then
+		attachPart = character:FindFirstChild(config.fallback)
+	end
 	if not attachPart then
-		-- Fallback: try Head for any slot
+		-- Last resort: try Head
 		attachPart = character:FindFirstChild("Head")
 		if not attachPart then
 			return
 		end
 	end
+	print("[Accessory] Attaching to slot:", slot, "bodyPart:", attachPart.Name, "name:", modelData.name)
 
 	-- Remove previous origami accessory parts
 	for _, child in ipairs(character:GetChildren()) do
@@ -1559,8 +1653,50 @@ function equipAsAccessory(model: Model, modelData: { [string]: any })
 		modelCenter = model.PrimaryPart.Position
 	end
 
-	-- Compute anchor point: body part CFrame + dynamic offset based on part size
-	local anchorCF = attachPart.CFrame * config.offset(attachPart.Size)
+	-- Determine if this is a paired slot (both hands / both feet)
+	local isPaired = (slot == "hands" or slot == "feet")
+	local mirrorPart = nil :: BasePart?
+	if isPaired then
+		if slot == "hands" then
+			local leftConfig = ATTACH_CONFIG.left_hand
+			mirrorPart = character:FindFirstChild(leftConfig.bodyPart) or character:FindFirstChild(leftConfig.fallback)
+		else
+			local leftConfig = ATTACH_CONFIG.left_foot
+			mirrorPart = character:FindFirstChild(leftConfig.bodyPart) or character:FindFirstChild(leftConfig.fallback)
+		end
+	end
+
+	-- Helper: weld a set of parts to a body part at an anchor CFrame
+	local allWeldedParts = {}
+	local function weldPartsTo(bodyPart: BasePart, anchorCF: CFrame, parts: { BasePart }, mirror: boolean)
+		for _, part in ipairs(parts) do
+			local p = if mirror then part:Clone() else part
+			if scale < 1 then
+				p.Size = p.Size * scale
+			end
+
+			local offset = (part.Position - modelCenter) * scale
+			-- Mirror the X offset for the other side
+			if mirror then
+				offset = Vector3.new(-offset.X, offset.Y, offset.Z)
+			end
+			local partRotation = part.CFrame - part.CFrame.Position
+
+			p.Anchored = true
+			p.CanCollide = false
+			p.Massless = true
+			p:SetAttribute("OrigamiAccessory", true)
+			p.CFrame = anchorCF * CFrame.new(offset) * partRotation
+			p.Parent = character
+
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = bodyPart
+			weld.Part1 = p
+			weld.Parent = p
+
+			table.insert(allWeldedParts, p)
+		end
+	end
 
 	-- Collect parts before reparenting
 	local partsToMove = {}
@@ -1570,30 +1706,19 @@ function equipAsAccessory(model: Model, modelData: { [string]: any })
 		end
 	end
 
-	-- Weld each part to the attach body part
-	for _, part in ipairs(partsToMove) do
-		if scale < 1 then
-			part.Size = part.Size * scale
-		end
+	-- Weld to primary side
+	local anchorCF = attachPart.CFrame * config.offset(attachPart.Size)
+	weldPartsTo(attachPart, anchorCF, partsToMove, false)
 
-		local offset = (part.Position - modelCenter) * scale
-		local partRotation = part.CFrame - part.CFrame.Position
-
-		part.Anchored = true
-		part.CanCollide = false
-		part.Massless = true
-		part:SetAttribute("OrigamiAccessory", true)
-		part.CFrame = anchorCF * CFrame.new(offset) * partRotation
-		part.Parent = character
-
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = attachPart
-		weld.Part1 = part
-		weld.Parent = part
+	-- Weld mirrored copy to other side (paired slots)
+	if isPaired and mirrorPart then
+		local mirrorConfig = if slot == "hands" then ATTACH_CONFIG.left_hand else ATTACH_CONFIG.left_foot
+		local mirrorAnchorCF = mirrorPart.CFrame * mirrorConfig.offset(mirrorPart.Size)
+		weldPartsTo(mirrorPart, mirrorAnchorCF, partsToMove, true)
 	end
 
 	-- Unanchor so parts follow via welds
-	for _, part in ipairs(partsToMove) do
+	for _, part in ipairs(allWeldedParts) do
 		if part.Parent then
 			part.Anchored = false
 		end
@@ -1791,13 +1916,12 @@ function spawnVehicle(model: Model, modelData: { [string]: any })
 	local vehDebugCounter = 0
 	print(
 		string.format(
-			"[Vehicle] Drive init: yaw=%.2f  LookVector=(%.2f, %.2f, %.2f)  maxSpeed=%d  force=%d  canFly=%s",
+			"[Vehicle] Drive init: yaw=%.2f  LookVector=(%.2f, %.2f, %.2f)  maxSpeed=%d  canFly=%s",
 			initialYaw,
 			seat.CFrame.LookVector.X,
 			seat.CFrame.LookVector.Y,
 			seat.CFrame.LookVector.Z,
 			maxSpeed,
-			driveForce,
 			tostring(canFly)
 		)
 	)
@@ -2113,14 +2237,21 @@ function placeModel(model: Model, modelData: { [string]: any })
 
 	-- Place model in front of player
 	local placementPos = rootPart.Position + rootPart.CFrame.LookVector * OrigamiConfig.PLACEMENT_DISTANCE
-	placementPos = Vector3.new(placementPos.X, rootPart.Position.Y, placementPos.Z)
+
+	-- Raycast down to find actual ground level at placement position
+	local rayOrigin = Vector3.new(placementPos.X, rootPart.Position.Y + 50, placementPos.Z)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character, model }
+	local rayResult = workspace:Raycast(rayOrigin, Vector3.new(0, -200, 0), params)
+	local groundY = if rayResult then rayResult.Position.Y else (rootPart.Position.Y - 3)
 
 	-- Position the model in front of player, on the ground
 	model.Parent = workspace
 	if model.PrimaryPart then
 		local _, size = model:GetBoundingBox()
 		local halfHeight = size.Y / 2
-		model:PivotTo(CFrame.new(placementPos.X, placementPos.Y + halfHeight, placementPos.Z))
+		model:PivotTo(CFrame.new(placementPos.X, groundY + halfHeight, placementPos.Z))
 	end
 
 	-- Add BillboardGui with name

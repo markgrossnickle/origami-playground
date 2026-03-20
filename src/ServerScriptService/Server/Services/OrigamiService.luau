@@ -146,7 +146,7 @@ function OrigamiService.Client:RequestModel(
 	end
 
 	if not data.success then
-		return { success = false, error = data.error or "generation_failed" }
+		return { success = false, error = data.error or "generation_failed", error_reason = data.error_reason }
 	end
 
 	-- Fire signals

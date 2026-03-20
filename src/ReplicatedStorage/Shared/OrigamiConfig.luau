@@ -20,13 +20,10 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "creature", display = "Creature", icon = "🐉" },
 	{ key = "avatar", display = "Avatar", icon = "🧑" },
 	{ key = "vehicle", display = "Vehicle", icon = "🚗" },
-	{ key = "building", display = "Building", icon = "🏠" },
 	{ key = "tool", display = "Tool", icon = "🔧" },
 	{ key = "accessory", display = "Accessory", icon = "🎩" },
 	{ key = "prop", display = "Prop", icon = "🎭" },
-	{ key = "raw", display = "Raw", icon = "📝" },
 	{ key = "animation", display = "Animate", icon = "🎬" },
-	{ key = "emote", display = "Emote", icon = "💃" },
 }
 
 -- Catalog types (for filtering/browsing)
@@ -44,19 +41,17 @@ OrigamiConfig.TYPES = {
 	{ key = "prop", display = "Prop" },
 }
 
--- AI models
+-- AI models (cheapest → most expensive)
 OrigamiConfig.MODELS = {
-	{ key = "opus", display = "Opus" },
-	{ key = "flash_lite", display = "Flash" },
-	{ key = "gpt4o_mini", display = "GPT4o" },
-	{ key = "gpt_nano", display = "Nano" },
-	{ key = "gpt_mini", display = "Mini" },
+	{ key = "flash25_lite", display = "FL 2.5 Lite" },
+	{ key = "flash3", display = "Gem 3 Flash" },
+	{ key = "gemini_pro", display = "Gem 3.1 Pro" },
+	{ key = "opus", display = "Opus 4.6" },
 	{ key = "test", display = "Test All" },
 }
 
 -- Art styles
 OrigamiConfig.STYLES = {
-	{ key = "origami", display = "Origami" },
 	{ key = "lowpoly", display = "Low Poly" },
 	{ key = "voxel", display = "Voxel" },
 	{ key = "balloon", display = "Balloon" },
@@ -71,12 +66,11 @@ OrigamiConfig.STYLES = {
 
 -- Crane costs per model (new LLM generations)
 OrigamiConfig.CRANE_COSTS = {
-	opus = 5,
-	flash_lite = 1,
-	gpt4o_mini = 1,
-	gpt_nano = 1,
-	gpt_mini = 1,
-	test = 3, -- sum of the 3 test models
+	flash25_lite = 1,
+	flash3 = 2,
+	gemini_pro = 5,
+	opus = 10,
+	test = 3,
 }
 
 -- Emote generation cost

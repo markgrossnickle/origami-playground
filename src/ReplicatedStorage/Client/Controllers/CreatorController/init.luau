@@ -2749,6 +2749,35 @@ function CreatorController:KnitStart()
 	-- Start gift proximity check loop
 	startGiftProximityLoop()
 
+	-- Chat command: /vehicletest
+	local TextChatService = game:GetService("TextChatService")
+	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		TextChatService.SendingMessage:Connect(function(msg)
+			if string.lower(msg.Text) == "/vehicletest" then
+				local character = Player.Character
+				local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+				if rootPart then
+					task.spawn(function()
+						OrigamiService:CreateTestVehicleRing(rootPart.Position)
+					end)
+				end
+			end
+		end)
+	else
+		-- Legacy chat fallback
+		Player.Chatted:Connect(function(message)
+			if string.lower(message) == "/vehicletest" then
+				local character = Player.Character
+				local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+				if rootPart then
+					task.spawn(function()
+						OrigamiService:CreateTestVehicleRing(rootPart.Position)
+					end)
+				end
+			end
+		end)
+	end
+
 	-- Hide creator UI when switching away from sandbox, show + clear when returning
 	GameMode.Changed:Connect(function(newMode, oldMode)
 		if newMode == "sandbox" then

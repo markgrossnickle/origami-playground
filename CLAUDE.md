@@ -359,6 +359,14 @@ Before shipping any UI change, verify:
 
 See template documentation for: **MonetizationService**, **AnalyticsService**, **ShopService/ShopController**, **DailyRewardController**, **LiveConfigService**, **Cmdr**. Config files in `src/ReplicatedStorage/Shared/` (`MonetizationConfig.luau`, `ShopConfig.luau`, `GameConfig.luau`).
 
+## Git Workflow
+
+- **Always commit and push before ending a session.** Never leave uncommitted local changes — they cause divergence when other sessions work on the same repo.
+- **Commit directly to `main`** — this project publishes to Roblox via GitHub Actions on push to main.
+- **Pull before starting work** — run `git pull` at the start of every session to avoid conflicts.
+- **Push immediately after committing** — don't batch commits locally.
+- **Small, frequent commits** — one commit per logical change, push each one right away.
+
 ## Conventions
 
 - Services in `Services/` (folder with `init.luau` or single `.luau` file)

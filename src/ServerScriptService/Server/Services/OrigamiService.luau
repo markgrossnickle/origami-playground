@@ -497,8 +497,9 @@ function OrigamiService.Client:CreateVehicleSeat(
 			print("[OrigamiService] Sitting", triggerPlayer.Name, "in seat")
 			-- Transfer network ownership so the client can control vehicle physics
 			seat:SetNetworkOwner(triggerPlayer)
-			seat:Sit(humanoid)
 			prompt.Enabled = false
+			seat.Anchored = false -- ensure seat is unanchored when sitting
+			seat:Sit(humanoid)
 
 			-- Ensure all welded parts are unanchored so the vehicle can move
 			for _, weld in ipairs(seat:GetChildren()) do
@@ -648,6 +649,218 @@ function OrigamiService.Client:FetchCatalogItem(player: Player, itemId: string)
 	end
 
 	return { success = true, item = data }
+end
+
+function OrigamiService.Client:CreateTestVehicleRing(player: Player, centerPos: Vector3)
+	print("[OrigamiService] CreateTestVehicleRing called by", player.Name)
+
+	local RADIUS = 30
+	local VARIANTS = {
+		{ name = "1-Standard", setup = "standard" },
+		{ name = "2-NoPlate", setup = "no_plate" },
+		{ name = "3-NoAlign", setup = "no_align" },
+		{ name = "4-AllMassless", setup = "all_massless" },
+		{ name = "5-AllCanCollide", setup = "all_cancollide" },
+		{ name = "6-NoWelds", setup = "no_welds" },
+		{ name = "7-SeatOnly", setup = "seat_only" },
+		{ name = "8-GroundLevel", setup = "ground_level" },
+		{ name = "9-HighTorque", setup = "high_torque" },
+		{ name = "10-UnanchorFirst", setup = "unanchor_first" },
+	}
+
+	-- Helper: build a simple box car body (1 body block + 4 wheel cylinders) welded to seat
+	local function buildCarBody(seat: VehicleSeat, variant: string)
+		local parts = {}
+
+		-- Body block on top of seat
+		local body = Instance.new("Part")
+		body.Name = "Body"
+		body.Size = Vector3.new(6, 2, 10)
+		body.CFrame = seat.CFrame * CFrame.new(0, 1.5, 0)
+		body.Color = Color3.fromRGB(80, 140, 200)
+		body.Material = Enum.Material.SmoothPlastic
+		body.Anchored = false
+		body.CanCollide = (variant == "all_cancollide")
+		body.Massless = (variant == "all_massless")
+		body.Parent = workspace
+		table.insert(parts, body)
+
+		if variant ~= "seat_only" then
+			-- 4 wheels
+			local wheelPositions = {
+				CFrame.new(-3.5, -0.5, 3.5),  -- front-left
+				CFrame.new(3.5, -0.5, 3.5),   -- front-right
+				CFrame.new(-3.5, -0.5, -3.5), -- rear-left
+				CFrame.new(3.5, -0.5, -3.5),  -- rear-right
+			}
+			for i, offset in ipairs(wheelPositions) do
+				local wheel = Instance.new("Part")
+				wheel.Name = "wheel_" .. i
+				wheel.Shape = Enum.PartType.Cylinder
+				wheel.Size = Vector3.new(1.5, 2, 2)
+				wheel.CFrame = seat.CFrame * offset * CFrame.Angles(0, 0, math.rad(90))
+				wheel.Color = Color3.fromRGB(40, 40, 40)
+				wheel.Material = Enum.Material.SmoothPlastic
+				wheel.Anchored = false
+				wheel.CanCollide = (variant == "all_cancollide")
+				wheel.Massless = (variant == "all_massless")
+				wheel.Parent = workspace
+				table.insert(parts, wheel)
+			end
+		end
+
+		-- Weld parts to seat (unless no_welds variant)
+		if variant ~= "no_welds" then
+			for _, part in ipairs(parts) do
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = seat
+				weld.Part1 = part
+				weld.Parent = seat
+			end
+		end
+
+		return parts
+	end
+
+	local folder = Instance.new("Folder")
+	folder.Name = "VehicleTestRing_" .. player.Name
+	folder.Parent = workspace
+
+	for i, variant in ipairs(VARIANTS) do
+		local angle = (i - 1) * (2 * math.pi / #VARIANTS)
+		local x = centerPos.X + math.cos(angle) * RADIUS
+		local z = centerPos.Z + math.sin(angle) * RADIUS
+		local seatY = if variant.setup == "ground_level" then centerPos.Y else centerPos.Y + 3
+		local pos = Vector3.new(x, seatY, z)
+
+		-- Face toward center
+		local lookAt = Vector3.new(centerPos.X, seatY, centerPos.Z)
+		local seatCF = CFrame.lookAt(pos, lookAt)
+
+		-- Create VehicleSeat
+		local seat = Instance.new("VehicleSeat")
+		seat.Name = "TestSeat_" .. variant.name
+		seat.Size = Vector3.new(2, 0.5, 2)
+		seat.CFrame = seatCF
+		seat.CanCollide = true
+		seat.Transparency = 1
+		seat.Material = Enum.Material.SmoothPlastic
+		seat:SetAttribute("OrigamiVehicle", true)
+		seat:SetAttribute("OwnerUserId", player.UserId)
+		seat:SetAttribute("TestVariant", variant.name)
+
+		-- Variant-specific speed/torque
+		if variant.setup == "high_torque" then
+			seat.MaxSpeed = 100
+			seat.Torque = 200
+			seat.TurnSpeed = 8
+		else
+			seat.MaxSpeed = 50
+			seat.Torque = 40
+			seat.TurnSpeed = 8
+		end
+
+		-- Anchoring: most start anchored, except unanchor_first
+		seat.Anchored = (variant.setup ~= "unanchor_first")
+		seat.Parent = folder
+
+		-- Collision plate (unless no_plate or seat_only)
+		local plate = nil
+		if variant.setup ~= "no_plate" and variant.setup ~= "seat_only" then
+			plate = Instance.new("Part")
+			plate.Name = "CollisionPlate"
+			plate.Size = Vector3.new(5, 0.5, 8)
+			plate.Transparency = 1
+			plate.CanCollide = true
+			plate.Massless = false
+			plate.Anchored = false
+			plate.Material = Enum.Material.SmoothPlastic
+			plate.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.8, 0.0, 0.8, 0.0)
+			plate.CFrame = seat.CFrame * CFrame.new(0, -1, 0)
+			plate.Parent = folder
+
+			local plateWeld = Instance.new("WeldConstraint")
+			plateWeld.Part0 = seat
+			plateWeld.Part1 = plate
+			plateWeld.Parent = plate
+		end
+
+		-- AlignOrientation (unless no_align or seat_only)
+		if variant.setup ~= "no_align" and variant.setup ~= "seat_only" then
+			local attachment = Instance.new("Attachment")
+			attachment.Parent = seat
+			local align = Instance.new("AlignOrientation")
+			align.Mode = Enum.OrientationAlignmentMode.OneAttachment
+			align.Attachment0 = attachment
+			local _, yaw, _ = seat.CFrame:ToEulerAnglesYXZ()
+			align.CFrame = CFrame.Angles(0, yaw, 0)
+			align.MaxTorque = 5000 * 0.5
+			align.Responsiveness = 10
+			align.RigidityEnabled = false
+			align.Parent = seat
+		end
+
+		-- Build car body
+		local bodyParts = buildCarBody(seat, variant.setup)
+		for _, part in ipairs(bodyParts) do
+			part.Parent = folder
+		end
+
+		-- ProximityPrompt
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ObjectText = variant.name
+		prompt.ActionText = "Drive"
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 20
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = seat
+
+		prompt.Triggered:Connect(function(triggerPlayer: Player)
+			local character = triggerPlayer.Character
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				seat:SetNetworkOwner(triggerPlayer)
+				prompt.Enabled = false
+				seat.Anchored = false
+				seat:Sit(humanoid)
+
+				-- Unanchor welded parts
+				for _, weld in ipairs(seat:GetChildren()) do
+					if weld:IsA("WeldConstraint") and weld.Part1 then
+						weld.Part1.Anchored = false
+					end
+				end
+
+				print("[VehicleTest] Player sat in variant:", variant.name)
+			end
+		end)
+
+		seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+			if not seat.Occupant then
+				prompt.Enabled = true
+			end
+		end)
+
+		-- BillboardGui label
+		local billboard = Instance.new("BillboardGui")
+		billboard.Size = UDim2.new(0, 200, 0, 50)
+		billboard.StudsOffset = Vector3.new(0, 5, 0)
+		billboard.AlwaysOnTop = true
+		billboard.Parent = seat
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, 0, 1, 0)
+		label.BackgroundTransparency = 1
+		label.Text = variant.name
+		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.TextStrokeTransparency = 0
+		label.TextScaled = true
+		label.Font = Enum.Font.GothamBold
+		label.Parent = billboard
+	end
+
+	print("[OrigamiService] Created test vehicle ring with 10 variants for", player.Name)
+	return true
 end
 
 function OrigamiService:KnitInit()

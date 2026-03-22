@@ -22,7 +22,8 @@ local MAX_EGGS = 1 -- players start with 1 egg slot
 local REQUEST_EXPIRY = 30 -- pending requests expire after 30 seconds
 
 -- Pending breed requests: requestId → { player, creatureModel, creatureData, timestamp }
-local _breedRequests: { [string]: { player: Player, creatureName: string, creatureStyle: string, timestamp: number } } = {}
+local _breedRequests: { [string]: { player: Player, creatureName: string, creatureStyle: string, timestamp: number } } =
+	{}
 local _nextRequestId = 0
 
 local function generateRequestId(): string
@@ -98,8 +99,9 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 
 		local breedPrompt = string.format(
 			"Create a baby creature offspring that blends traits of two parents: '%s' and '%s'. "
-			.. "Combine their body shapes, colors, and features into a cute smaller offspring. Category: creature.",
-			parent1Name, parent2Name
+				.. "Combine their body shapes, colors, and features into a cute smaller offspring. Category: creature.",
+			parent1Name,
+			parent2Name
 		)
 
 		-- Call LLM (server-side call to Client method with player)
@@ -243,6 +245,10 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 	local pendingEggs = data.PendingEggs or {}
 	table.remove(pendingEggs, eggIndex)
 	PlayerDataService:Write(player, { "PendingEggs" }, pendingEggs)
+
+	-- Reward Paper Token for hatching
+	local paper = PlayerDataService:Read(player, { "Paper" }) or 0
+	PlayerDataService:Write(player, { "Paper" }, paper + 1)
 
 	return {
 		success = true,

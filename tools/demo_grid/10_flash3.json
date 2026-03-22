@@ -1,0 +1,638 @@
+{
+  "name": "Chunky Monster Truck (Gem 3 Flash)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "chassis_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        10.0,
+        1.5,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "body_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        12.0,
+        2.0,
+        6.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "cab_roof",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        7.0,
+        0.0
+      ],
+      "size": [
+        5.0,
+        2.0,
+        5.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "windshield",
+      "shape": "Block",
+      "position": [
+        1.6,
+        7.0,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.8,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        150,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "wheel_FL",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        2.5,
+        4.5
+      ],
+      "size": [
+        5.0,
+        5.0,
+        2.5
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_FR",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        2.5,
+        -4.5
+      ],
+      "size": [
+        5.0,
+        5.0,
+        2.5
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_BL",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        2.5,
+        4.5
+      ],
+      "size": [
+        5.0,
+        5.0,
+        2.5
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_BR",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        2.5,
+        -4.5
+      ],
+      "size": [
+        5.0,
+        5.0,
+        2.5
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "shock_FL",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        4.0,
+        3.0
+      ],
+      "size": [
+        3.0,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "shock_FR",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        4.0,
+        -3.0
+      ],
+      "size": [
+        3.0,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "shock_BL",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        4.0,
+        3.0
+      ],
+      "size": [
+        3.0,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "shock_BR",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        4.0,
+        -3.0
+      ],
+      "size": [
+        3.0,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "exhaust_L",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        6.5,
+        3.2
+      ],
+      "size": [
+        4.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "exhaust_R",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        6.5,
+        -3.2
+      ],
+      "size": [
+        4.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "exhaust_smoke_L",
+      "shape": "Ball",
+      "position": [
+        -4.0,
+        7.0,
+        3.2
+      ],
+      "size": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Neon",
+      "transparency": 0.5
+    },
+    {
+      "name": "headlight_L",
+      "shape": "Block",
+      "position": [
+        6.0,
+        5.2,
+        2.0
+      ],
+      "size": [
+        0.3,
+        1.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        200
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "headlight_R",
+      "shape": "Block",
+      "position": [
+        6.0,
+        5.2,
+        -2.0
+      ],
+      "size": [
+        0.3,
+        1.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        200
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "grille",
+      "shape": "Block",
+      "position": [
+        6.0,
+        5.2,
+        0.0
+      ],
+      "size": [
+        0.2,
+        0.8,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "bumper_front",
+      "shape": "Block",
+      "position": [
+        6.5,
+        4.2,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.0,
+        7.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "monster_horn_L",
+      "shape": "Wedge",
+      "position": [
+        4.0,
+        6.0,
+        2.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        -20
+      ],
+      "color": [
+        240,
+        240,
+        240
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "monster_horn_R",
+      "shape": "Wedge",
+      "position": [
+        4.0,
+        6.0,
+        -2.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        -20
+      ],
+      "color": [
+        240,
+        240,
+        240
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "roll_bar_1",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        7.0,
+        2.5
+      ],
+      "size": [
+        4.0,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "roll_bar_2",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        7.0,
+        -2.5
+      ],
+      "size": [
+        4.0,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "bed_side_L",
+      "shape": "Block",
+      "position": [
+        -4.5,
+        5.5,
+        3.0
+      ],
+      "size": [
+        3.0,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "bed_side_R",
+      "shape": "Block",
+      "position": [
+        -4.5,
+        5.5,
+        -3.0
+      ],
+      "size": [
+        3.0,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "walk",
+  "description": "A high-clearance monster truck with oversized tires, heavy suspension, and ivory horns on the hood.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "vehicle"
+}

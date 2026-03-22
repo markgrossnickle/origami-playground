@@ -1,0 +1,561 @@
+{
+  "name": "Sandworm (FL 2.5 Lite)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Block",
+      "position": [
+        -7.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "seg_2",
+      "shape": "Block",
+      "position": [
+        -5.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "seg_3",
+      "shape": "Block",
+      "position": [
+        -3.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "seg_4",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "seg_5",
+      "shape": "Block",
+      "position": [
+        1.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "seg_6",
+      "shape": "Block",
+      "position": [
+        3.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "seg_7",
+      "shape": "Block",
+      "position": [
+        5.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "seg_8",
+      "shape": "Block",
+      "position": [
+        7.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "head_mouth",
+      "shape": "Block",
+      "position": [
+        9.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "jaw_lower",
+      "shape": "Block",
+      "position": [
+        10.5,
+        0.8,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.5,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        150,
+        120
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "mouth_detail_1",
+      "shape": "Block",
+      "position": [
+        10.5,
+        1.5,
+        0.8
+      ],
+      "size": [
+        0.2,
+        0.2,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "mouth_detail_2",
+      "shape": "Block",
+      "position": [
+        10.5,
+        1.5,
+        -0.8
+      ],
+      "size": [
+        0.2,
+        0.2,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "ground_piece_1",
+      "shape": "Block",
+      "position": [
+        -8.0,
+        -1.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        2.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_2",
+      "shape": "Block",
+      "position": [
+        -6.0,
+        -1.2,
+        0.0
+      ],
+      "size": [
+        4.0,
+        2.4,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_3",
+      "shape": "Block",
+      "position": [
+        -4.0,
+        -1.4,
+        0.0
+      ],
+      "size": [
+        4.0,
+        2.8,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_4",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        -1.6,
+        0.0
+      ],
+      "size": [
+        4.0,
+        3.2,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_5",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -1.8,
+        0.0
+      ],
+      "size": [
+        4.0,
+        3.6,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_6",
+      "shape": "Block",
+      "position": [
+        2.0,
+        -2.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_7",
+      "shape": "Block",
+      "position": [
+        4.0,
+        -2.2,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.4,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_8",
+      "shape": "Block",
+      "position": [
+        6.0,
+        -2.4,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.8,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_9",
+      "shape": "Block",
+      "position": [
+        8.0,
+        -2.6,
+        0.0
+      ],
+      "size": [
+        4.0,
+        5.2,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "ground_piece_10",
+      "shape": "Block",
+      "position": [
+        10.0,
+        -2.8,
+        0.0
+      ],
+      "size": [
+        4.0,
+        5.6,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        100,
+        50
+      ],
+      "material": "Sand"
+    }
+  ],
+  "animation": "breathe",
+  "locomotion": "slither",
+  "description": "A colossal sandworm with a segmented body emerging from a pile of sand.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "creature"
+}

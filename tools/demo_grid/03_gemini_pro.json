@@ -1,0 +1,583 @@
+{
+  "name": "Majestic Eagle (Gem 3.1 Pro)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "size": [
+        4.5,
+        2.5,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        -10
+      ],
+      "color": [
+        80,
+        50,
+        20
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        2.5,
+        6.2,
+        0.0
+      ],
+      "size": [
+        2.2,
+        2.2,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "seg_3",
+      "shape": "Ball",
+      "position": [
+        3.6,
+        6.4,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "beak_upper",
+      "shape": "Wedge",
+      "position": [
+        4.8,
+        6.4,
+        0.0
+      ],
+      "size": [
+        1.2,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        0,
+        90,
+        -15
+      ],
+      "color": [
+        230,
+        180,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "jaw_lower",
+      "shape": "Block",
+      "position": [
+        4.6,
+        6.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        0.3,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        230,
+        180,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        3.8,
+        6.7,
+        0.8
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        3.8,
+        6.7,
+        -0.8
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wing_L_1",
+      "shape": "Block",
+      "position": [
+        0.5,
+        6.8,
+        2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        4.0
+      ],
+      "rotation": [
+        -10,
+        -15,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        15
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "wing_L_2",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        7.3,
+        6.5
+      ],
+      "size": [
+        2.5,
+        0.3,
+        4.5
+      ],
+      "rotation": [
+        -15,
+        -25,
+        0
+      ],
+      "color": [
+        60,
+        35,
+        10
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "wing_L_3",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        7.5,
+        9.5
+      ],
+      "size": [
+        1.5,
+        0.2,
+        3.5
+      ],
+      "rotation": [
+        -15,
+        -35,
+        0
+      ],
+      "color": [
+        50,
+        30,
+        10
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "wing_R_1",
+      "shape": "Block",
+      "position": [
+        0.5,
+        6.8,
+        -2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        4.0
+      ],
+      "rotation": [
+        10,
+        15,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        15
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "wing_R_2",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        7.3,
+        -6.5
+      ],
+      "size": [
+        2.5,
+        0.3,
+        4.5
+      ],
+      "rotation": [
+        15,
+        25,
+        0
+      ],
+      "color": [
+        60,
+        35,
+        10
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "wing_R_3",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        7.5,
+        -9.5
+      ],
+      "size": [
+        1.5,
+        0.2,
+        3.5
+      ],
+      "rotation": [
+        15,
+        35,
+        0
+      ],
+      "color": [
+        50,
+        30,
+        10
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tail_1",
+      "shape": "Block",
+      "position": [
+        -3.0,
+        5.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        0.4,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tail_2",
+      "shape": "Block",
+      "position": [
+        -3.2,
+        5.5,
+        1.2
+      ],
+      "size": [
+        2.8,
+        0.3,
+        1.5
+      ],
+      "rotation": [
+        5,
+        15,
+        15
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tail_3",
+      "shape": "Block",
+      "position": [
+        -3.2,
+        5.5,
+        -1.2
+      ],
+      "size": [
+        2.8,
+        0.3,
+        1.5
+      ],
+      "rotation": [
+        -5,
+        -15,
+        15
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Cylinder",
+      "position": [
+        -0.5,
+        4.5,
+        0.8
+      ],
+      "size": [
+        1.8,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -60
+      ],
+      "color": [
+        80,
+        50,
+        20
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BL_2",
+      "shape": "Cylinder",
+      "position": [
+        0.8,
+        3.2,
+        0.8
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        230,
+        180,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "talon_L_1",
+      "shape": "Wedge",
+      "position": [
+        1.8,
+        2.4,
+        0.8
+      ],
+      "size": [
+        0.8,
+        0.6,
+        0.2
+      ],
+      "rotation": [
+        0,
+        90,
+        -30
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Cylinder",
+      "position": [
+        -0.5,
+        4.5,
+        -0.8
+      ],
+      "size": [
+        1.8,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -60
+      ],
+      "color": [
+        80,
+        50,
+        20
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BR_2",
+      "shape": "Cylinder",
+      "position": [
+        0.8,
+        3.2,
+        -0.8
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        230,
+        180,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "talon_R_1",
+      "shape": "Wedge",
+      "position": [
+        1.8,
+        2.4,
+        -0.8
+      ],
+      "size": [
+        0.8,
+        0.6,
+        0.2
+      ],
+      "rotation": [
+        0,
+        90,
+        -30
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    }
+  ],
+  "animation": "idle_bob",
+  "locomotion": "fly",
+  "description": "A majestic eagle swooping mid-flight with its broad wings outstretched and sharp talons extended.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "creature"
+}

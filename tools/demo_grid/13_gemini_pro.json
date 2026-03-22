@@ -1,0 +1,634 @@
+{
+  "name": "Grandfather Clock (Gem 3.1 Pro)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        1.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trunk_back",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.1,
+        -0.65
+      ],
+      "size": [
+        2.4,
+        6.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trunk_left",
+      "shape": "Block",
+      "position": [
+        -1.1,
+        4.1,
+        -0.05
+      ],
+      "size": [
+        0.2,
+        6.2,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trunk_right",
+      "shape": "Block",
+      "position": [
+        1.1,
+        4.1,
+        -0.05
+      ],
+      "size": [
+        0.2,
+        6.2,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "pendulum_rod",
+      "shape": "Cylinder",
+      "position": [
+        0.15,
+        4.5,
+        -0.2
+      ],
+      "size": [
+        3.5,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        82
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pendulum_bob",
+      "shape": "Cylinder",
+      "position": [
+        0.35,
+        2.8,
+        -0.2
+      ],
+      "size": [
+        0.1,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        90,
+        8
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "weight_left",
+      "shape": "Cylinder",
+      "position": [
+        -0.4,
+        5.0,
+        -0.3
+      ],
+      "size": [
+        1.5,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "weight_right",
+      "shape": "Cylinder",
+      "position": [
+        0.4,
+        4.6,
+        -0.3
+      ],
+      "size": [
+        1.5,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "glass_door",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.1,
+        0.45
+      ],
+      "size": [
+        2.0,
+        6.2,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        230,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.6
+    },
+    {
+      "name": "door_handle",
+      "shape": "Ball",
+      "position": [
+        0.85,
+        4.1,
+        0.5
+      ],
+      "size": [
+        0.15,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "trim_middle",
+      "shape": "Block",
+      "position": [
+        0.0,
+        7.3,
+        0.0
+      ],
+      "size": [
+        2.8,
+        0.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "hood_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        8.6,
+        0.0
+      ],
+      "size": [
+        2.6,
+        2.2,
+        1.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "clock_face_base",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        8.6,
+        0.65
+      ],
+      "size": [
+        0.1,
+        1.9,
+        1.9
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "clock_face_white",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        8.6,
+        0.67
+      ],
+      "size": [
+        0.1,
+        1.7,
+        1.7
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        245,
+        245,
+        240
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "center_pin",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        8.6,
+        0.72
+      ],
+      "size": [
+        0.15,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "minute_hand",
+      "shape": "Block",
+      "position": [
+        0.0,
+        8.95,
+        0.7
+      ],
+      "size": [
+        0.1,
+        0.7,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "hour_hand",
+      "shape": "Block",
+      "position": [
+        0.15,
+        8.6,
+        0.71
+      ],
+      "size": [
+        0.4,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "hood_top_trim",
+      "shape": "Block",
+      "position": [
+        0.0,
+        9.8,
+        0.0
+      ],
+      "size": [
+        2.8,
+        0.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "finial_center_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        10.15,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.3,
+        0.4
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "finial_center_top",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        10.45,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "finial_left_base",
+      "shape": "Block",
+      "position": [
+        -1.1,
+        10.15,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "finial_left_top",
+      "shape": "Ball",
+      "position": [
+        -1.1,
+        10.4,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "finial_right_base",
+      "shape": "Block",
+      "position": [
+        1.1,
+        10.15,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "finial_right_top",
+      "shape": "Ball",
+      "position": [
+        1.1,
+        10.4,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    }
+  ],
+  "animation": "none",
+  "description": "An elegant wooden grandfather clock featuring a glass door, brass weights, and a swinging pendulum mid-motion.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "prop"
+}

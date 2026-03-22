@@ -1,0 +1,244 @@
+{
+  "name": "Glowing Enchanted Blade (FL 2.5 Lite)",
+  "category": "tool",
+  "parts": [
+    {
+      "name": "blade_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "size": [
+        12.0,
+        0.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "blade_tip",
+      "shape": "Wedge",
+      "position": [
+        6.25,
+        6.0,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "hilt",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        2.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard_left",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        5.0,
+        1.5
+      ],
+      "size": [
+        2.0,
+        0.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        50,
+        0,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard_right",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        5.0,
+        -1.5
+      ],
+      "size": [
+        2.0,
+        0.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        50,
+        0,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "gem_left",
+      "shape": "Ball",
+      "position": [
+        -2.5,
+        5.0,
+        1.5
+      ],
+      "size": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0
+    },
+    {
+      "name": "gem_right",
+      "shape": "Ball",
+      "position": [
+        -2.5,
+        5.0,
+        -1.5
+      ],
+      "size": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0
+    },
+    {
+      "name": "gem_center",
+      "shape": "Ball",
+      "position": [
+        -1.5,
+        5.0,
+        0.0
+      ],
+      "size": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Glass",
+      "transparency": 0
+    },
+    {
+      "name": "handle",
+      "shape": "Cylinder",
+      "position": [
+        -2.5,
+        4.0,
+        0.0
+      ],
+      "size": [
+        1.2,
+        2.0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        25,
+        0
+      ],
+      "material": "Wood",
+      "transparency": 0
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A radiant magical sword with a purple jeweled crossguard.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

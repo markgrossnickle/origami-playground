@@ -1,0 +1,426 @@
+{
+  "name": "Bubbling Cauldron (FL 2.5 Lite)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "cauldron_body",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cauldron_rim",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        4.0,
+        0.0
+      ],
+      "size": [
+        4.2,
+        0.4,
+        4.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cauldron_handle_L",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        0.3,
+        1.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cauldron_handle_R",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        0.3,
+        1.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        -90
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cauldron_leg_1",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        1.0,
+        1.5
+      ],
+      "size": [
+        0.5,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cauldron_leg_2",
+      "shape": "Block",
+      "position": [
+        1.5,
+        1.0,
+        1.5
+      ],
+      "size": [
+        0.5,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cauldron_leg_3",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        1.0,
+        -1.5
+      ],
+      "size": [
+        0.5,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cauldron_leg_4",
+      "shape": "Block",
+      "position": [
+        1.5,
+        1.0,
+        -1.5
+      ],
+      "size": [
+        0.5,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "potion_base",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        3.8,
+        0.2,
+        3.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        150,
+        0
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0.2
+    },
+    {
+      "name": "potion_bubble_1",
+      "shape": "Ball",
+      "position": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        0
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "potion_bubble_2",
+      "shape": "Ball",
+      "position": [
+        -0.8,
+        4.2,
+        -0.3
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        0
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "potion_bubble_3",
+      "shape": "Ball",
+      "position": [
+        0.2,
+        4.4,
+        -0.9
+      ],
+      "size": [
+        0.45,
+        0.45,
+        0.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        0
+      ],
+      "material": "Glass",
+      "transparency": 0.35
+    },
+    {
+      "name": "overflow_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        4.3,
+        0.0
+      ],
+      "size": [
+        3.9,
+        0.3,
+        3.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        150,
+        0
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "overflow_drip_1",
+      "shape": "Ball",
+      "position": [
+        1.8,
+        4.3,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        150,
+        0
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "overflow_drip_2",
+      "shape": "Ball",
+      "position": [
+        -1.8,
+        4.3,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        150,
+        0
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "overflow_drip_3",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        4.3,
+        1.8
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        150,
+        0
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    }
+  ],
+  "animation": "idle_bob",
+  "description": "A cast-iron cauldron with a bubbling green potion overflowing its rim, supported by four sturdy legs.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

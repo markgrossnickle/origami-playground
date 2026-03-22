@@ -1,0 +1,886 @@
+{
+  "name": "Chinese Dragon (FL 2.5 Lite)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_2",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        0.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_3",
+      "shape": "Block",
+      "position": [
+        -4.0,
+        0.4,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_4",
+      "shape": "Block",
+      "position": [
+        -6.0,
+        0.6,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_5",
+      "shape": "Block",
+      "position": [
+        -8.0,
+        0.8,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_6",
+      "shape": "Block",
+      "position": [
+        -10.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_7",
+      "shape": "Block",
+      "position": [
+        -12.0,
+        1.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_8",
+      "shape": "Block",
+      "position": [
+        -14.0,
+        1.4,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_9",
+      "shape": "Block",
+      "position": [
+        -16.0,
+        1.6,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_10",
+      "shape": "Block",
+      "position": [
+        -18.0,
+        1.8,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_11",
+      "shape": "Block",
+      "position": [
+        -20.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_12",
+      "shape": "Block",
+      "position": [
+        -22.0,
+        2.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_13",
+      "shape": "Block",
+      "position": [
+        -24.0,
+        2.4,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_14",
+      "shape": "Block",
+      "position": [
+        -26.0,
+        2.6,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_15",
+      "shape": "Block",
+      "position": [
+        -28.0,
+        2.8,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_16",
+      "shape": "Block",
+      "position": [
+        -30.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_17",
+      "shape": "Block",
+      "position": [
+        -32.0,
+        3.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_18",
+      "shape": "Block",
+      "position": [
+        -34.0,
+        3.4,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_19",
+      "shape": "Block",
+      "position": [
+        -36.0,
+        3.6,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_20",
+      "shape": "Block",
+      "position": [
+        -38.0,
+        3.8,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.2,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "head",
+      "shape": "Block",
+      "position": [
+        1.5,
+        0.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "snout",
+      "shape": "Block",
+      "position": [
+        3.5,
+        0.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        2.7,
+        1.0,
+        0.8
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        2.7,
+        1.0,
+        -0.8
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "horn_L",
+      "shape": "Block",
+      "position": [
+        1.8,
+        2.0,
+        0.7
+      ],
+      "size": [
+        0.8,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "horn_R",
+      "shape": "Block",
+      "position": [
+        1.8,
+        2.0,
+        -0.7
+      ],
+      "size": [
+        0.8,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "whisker_L_1",
+      "shape": "Block",
+      "position": [
+        2.8,
+        0.7,
+        1.3
+      ],
+      "size": [
+        0.6,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "whisker_L_2",
+      "shape": "Block",
+      "position": [
+        2.8,
+        0.4,
+        1.4
+      ],
+      "size": [
+        0.6,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "whisker_R_1",
+      "shape": "Block",
+      "position": [
+        2.8,
+        0.7,
+        -1.3
+      ],
+      "size": [
+        0.6,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        30
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "whisker_R_2",
+      "shape": "Block",
+      "position": [
+        2.8,
+        0.4,
+        -1.4
+      ],
+      "size": [
+        0.6,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tail_tip",
+      "shape": "Block",
+      "position": [
+        -40.0,
+        4.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wing_L_1",
+      "shape": "Block",
+      "position": [
+        -8.0,
+        1.5,
+        2.5
+      ],
+      "size": [
+        4.0,
+        0.5,
+        2.0
+      ],
+      "rotation": [
+        0,
+        -30,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "wing_R_1",
+      "shape": "Block",
+      "position": [
+        -8.0,
+        1.5,
+        -2.5
+      ],
+      "size": [
+        4.0,
+        0.5,
+        2.0
+      ],
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "wing_L_2",
+      "shape": "Block",
+      "position": [
+        -12.0,
+        2.2,
+        2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        1.8
+      ],
+      "rotation": [
+        0,
+        -25,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "wing_R_2",
+      "shape": "Block",
+      "position": [
+        -12.0,
+        2.2,
+        -2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        1.8
+      ],
+      "rotation": [
+        0,
+        25,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Fabric"
+    }
+  ],
+  "animation": "breathe",
+  "locomotion": "fly",
+  "description": "A long, serpentine Chinese dragon with golden scales, sharp horns, and flowing whiskers, soaring through the air.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "creature"
+}

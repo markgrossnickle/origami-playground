@@ -45,14 +45,10 @@ function Server:_setupWorld()
 		base.Parent = workspace
 	end
 
-	-- Model competition grid
-	local gridOk, gridErr = pcall(function()
-		local CompetitionGrid = require(ReplicatedStorage.Shared.CompetitionGrid)
-		CompetitionGrid.Build()
-	end)
-	if not gridOk then
-		warn("[Server] CompetitionGrid failed: " .. tostring(gridErr))
-	end
+	-- Competition grid disabled — replaced by shopkeeper NPCs
+	-- Shopkeepers are spawned by ShopKeeperService:KnitStart()
+	-- local CompetitionGrid = require(ReplicatedStorage.Shared.CompetitionGrid)
+	-- CompetitionGrid.Build()
 
 	-- Lighting — warm afternoon light for paper aesthetic
 	Lighting.ClockTime = 14

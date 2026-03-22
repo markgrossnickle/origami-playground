@@ -1,0 +1,635 @@
+{
+  "name": "Crystal Golem (Gem 3.1 Pro)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.5,
+        0.0
+      ],
+      "size": [
+        2.5,
+        2.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "seg_2",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        6.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        4.0,
+        3.5
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "seg_3",
+      "shape": "Block",
+      "position": [
+        0.2,
+        5.5,
+        0.0
+      ],
+      "size": [
+        1.5,
+        2.5,
+        1.5
+      ],
+      "rotation": [
+        45,
+        45,
+        0
+      ],
+      "color": [
+        200,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "seg_4",
+      "shape": "Block",
+      "position": [
+        0.5,
+        9.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        2.5,
+        2.2
+      ],
+      "rotation": [
+        10,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        180,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "horn_head_spike",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        10.5,
+        0.0
+      ],
+      "size": [
+        1.5,
+        2.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        -90,
+        15
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "eye_L",
+      "shape": "Block",
+      "position": [
+        1.6,
+        9.2,
+        0.6
+      ],
+      "size": [
+        0.3,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        15,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "eye_R",
+      "shape": "Block",
+      "position": [
+        1.6,
+        9.2,
+        -0.6
+      ],
+      "size": [
+        0.3,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        -15,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "jaw_lower",
+      "shape": "Wedge",
+      "position": [
+        1.2,
+        8.0,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.0,
+        2.4
+      ],
+      "rotation": [
+        0,
+        -90,
+        -180
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.8,
+        1.2
+      ],
+      "size": [
+        1.8,
+        2.5,
+        1.8
+      ],
+      "rotation": [
+        0,
+        15,
+        0
+      ],
+      "color": [
+        0,
+        120,
+        220
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "leg_BL_2",
+      "shape": "Wedge",
+      "position": [
+        0.5,
+        1.0,
+        1.3
+      ],
+      "size": [
+        2.5,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        0,
+        180,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.8,
+        -1.2
+      ],
+      "size": [
+        1.8,
+        2.5,
+        1.8
+      ],
+      "rotation": [
+        0,
+        -15,
+        0
+      ],
+      "color": [
+        0,
+        120,
+        220
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "leg_BR_2",
+      "shape": "Wedge",
+      "position": [
+        0.5,
+        1.0,
+        -1.3
+      ],
+      "size": [
+        2.5,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        0,
+        180,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        6.0,
+        2.8
+      ],
+      "size": [
+        1.8,
+        3.5,
+        1.8
+      ],
+      "rotation": [
+        15,
+        0,
+        -15
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "leg_FL_2",
+      "shape": "Wedge",
+      "position": [
+        0.5,
+        3.5,
+        3.2
+      ],
+      "size": [
+        2.0,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        180,
+        90,
+        15
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        6.0,
+        -2.8
+      ],
+      "size": [
+        1.8,
+        3.5,
+        1.8
+      ],
+      "rotation": [
+        15,
+        0,
+        15
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "leg_FR_2",
+      "shape": "Wedge",
+      "position": [
+        0.5,
+        3.5,
+        -3.2
+      ],
+      "size": [
+        2.0,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        180,
+        90,
+        -15
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "horn_shoulder_L",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        8.0,
+        3.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.2
+    },
+    {
+      "name": "horn_shoulder_R",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        8.0,
+        -3.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        180,
+        -30
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.2
+    },
+    {
+      "name": "horn_back_1",
+      "shape": "Wedge",
+      "position": [
+        -1.5,
+        7.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        4.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        30
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "horn_back_2",
+      "shape": "Wedge",
+      "position": [
+        -1.5,
+        6.0,
+        1.5
+      ],
+      "size": [
+        1.5,
+        3.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        45
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "horn_back_3",
+      "shape": "Wedge",
+      "position": [
+        -1.5,
+        6.0,
+        -1.5
+      ],
+      "size": [
+        1.5,
+        3.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        45
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "horn_chest_spike",
+      "shape": "Wedge",
+      "position": [
+        1.8,
+        6.5,
+        0.0
+      ],
+      "size": [
+        1.5,
+        2.5,
+        2.0
+      ],
+      "rotation": [
+        0,
+        -90,
+        -25
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.2
+    },
+    {
+      "name": "horn_arm_spike_L",
+      "shape": "Wedge",
+      "position": [
+        -0.8,
+        4.5,
+        3.5
+      ],
+      "size": [
+        1.0,
+        2.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "horn_arm_spike_R",
+      "shape": "Wedge",
+      "position": [
+        -0.8,
+        4.5,
+        -3.5
+      ],
+      "size": [
+        1.0,
+        2.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    }
+  ],
+  "animation": "breathe",
+  "locomotion": "walk",
+  "description": "A towering golem constructed entirely of jagged, translucent cyan crystal shards with a glowing core.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "creature"
+}

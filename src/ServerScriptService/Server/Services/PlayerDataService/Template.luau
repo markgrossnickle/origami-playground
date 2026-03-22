@@ -8,6 +8,7 @@ export type PlayerData = {
 	-- Currencies
 	Folds: number,
 	Cranes: number,
+	Paper: number, -- Paper Tokens for Workshop (FL 2.5 Lite) creations
 
 	-- Shop / Inventory
 	Inventory: { [string]: number },
@@ -45,6 +46,7 @@ export type PlayerData = {
 local playerDataTemplate: PlayerData = {
 	Folds = 0,
 	Cranes = 0,
+	Paper = 3, -- New players start with 3 Paper Tokens
 
 	Inventory = {},
 

@@ -1,0 +1,530 @@
+{
+  "name": "Rowboat (Gem 3.1 Pro)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "floor_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        10.0,
+        0.5,
+        3.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "floor_bow",
+      "shape": "Block",
+      "position": [
+        5.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        2.6,
+        0.5,
+        2.6
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "side_left",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        -1.7
+      ],
+      "size": [
+        10.2,
+        1.6,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "side_right",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        1.7
+      ],
+      "size": [
+        10.2,
+        1.6,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stern",
+      "shape": "Block",
+      "position": [
+        -4.9,
+        1.5,
+        0.0
+      ],
+      "size": [
+        0.4,
+        1.6,
+        3.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "bow_side_left",
+      "shape": "Block",
+      "position": [
+        5.9,
+        1.5,
+        -0.85
+      ],
+      "size": [
+        2.8,
+        1.6,
+        0.4
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "bow_side_right",
+      "shape": "Block",
+      "position": [
+        5.9,
+        1.5,
+        0.85
+      ],
+      "size": [
+        2.8,
+        1.6,
+        0.4
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "trim_left",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.35,
+        -1.7
+      ],
+      "size": [
+        10.4,
+        0.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        205,
+        133,
+        63
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trim_right",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.35,
+        1.7
+      ],
+      "size": [
+        10.4,
+        0.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        205,
+        133,
+        63
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trim_stern",
+      "shape": "Block",
+      "position": [
+        -4.9,
+        2.35,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.2,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        205,
+        133,
+        63
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trim_bow_left",
+      "shape": "Block",
+      "position": [
+        6.0,
+        2.35,
+        -0.85
+      ],
+      "size": [
+        3.0,
+        0.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        205,
+        133,
+        63
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trim_bow_right",
+      "shape": "Block",
+      "position": [
+        6.0,
+        2.35,
+        0.85
+      ],
+      "size": [
+        3.0,
+        0.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        205,
+        133,
+        63
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "seat_stern",
+      "shape": "Block",
+      "position": [
+        -3.5,
+        1.3,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.2,
+        3.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "seat_bow",
+      "shape": "Block",
+      "position": [
+        3.5,
+        1.3,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.2,
+        3.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "oar_lock_left",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.5,
+        -1.8
+      ],
+      "size": [
+        0.15,
+        0.4,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        169,
+        169,
+        169
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "oar_lock_right",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.5,
+        1.8
+      ],
+      "size": [
+        0.15,
+        0.4,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        169,
+        169,
+        169
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "oar_shaft_left",
+      "shape": "Block",
+      "position": [
+        0.5,
+        2.6,
+        -3.5
+      ],
+      "size": [
+        0.25,
+        0.25,
+        6.0
+      ],
+      "rotation": [
+        15,
+        -20,
+        0
+      ],
+      "color": [
+        222,
+        184,
+        135
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "oar_blade_left",
+      "shape": "Block",
+      "position": [
+        1.4,
+        2.1,
+        -6.1
+      ],
+      "size": [
+        0.2,
+        0.9,
+        1.6
+      ],
+      "rotation": [
+        15,
+        -20,
+        0
+      ],
+      "color": [
+        222,
+        184,
+        135
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "oar_shaft_right",
+      "shape": "Block",
+      "position": [
+        0.5,
+        2.6,
+        3.5
+      ],
+      "size": [
+        0.25,
+        0.25,
+        6.0
+      ],
+      "rotation": [
+        -15,
+        20,
+        0
+      ],
+      "color": [
+        222,
+        184,
+        135
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "oar_blade_right",
+      "shape": "Block",
+      "position": [
+        1.4,
+        2.1,
+        6.1
+      ],
+      "size": [
+        0.2,
+        0.9,
+        1.6
+      ],
+      "rotation": [
+        -15,
+        20,
+        0
+      ],
+      "color": [
+        222,
+        184,
+        135
+      ],
+      "material": "Wood",
+      "transparency": 0
+    }
+  ],
+  "animation": "none",
+  "description": "A classic wooden rowboat with plank detailing, built-in bench seats, and a pair of resting oars ready for a river journey.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "vehicle"
+}

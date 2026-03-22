@@ -1,0 +1,739 @@
+{
+  "name": "Catapult (Gem 3.1 Pro)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "wheel_FL",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        1.5,
+        -4.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        70,
+        45,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_FR",
+      "shape": "Cylinder",
+      "position": [
+        3.5,
+        1.5,
+        -4.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        70,
+        45,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_BL",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        1.5,
+        3.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        70,
+        45,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_BR",
+      "shape": "Cylinder",
+      "position": [
+        3.5,
+        1.5,
+        3.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        70,
+        45,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "axle_F",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.5,
+        -4.0
+      ],
+      "size": [
+        7.5,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "axle_B",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.5,
+        3.0
+      ],
+      "size": [
+        7.5,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "frame_L",
+      "shape": "Block",
+      "position": [
+        -2.5,
+        2.2,
+        -0.5
+      ],
+      "size": [
+        1.0,
+        1.0,
+        10.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "frame_R",
+      "shape": "Block",
+      "position": [
+        2.5,
+        2.2,
+        -0.5
+      ],
+      "size": [
+        1.0,
+        1.0,
+        10.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "frame_cross_F",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        -4.0
+      ],
+      "size": [
+        4.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "frame_cross_B",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        3.0
+      ],
+      "size": [
+        4.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "frame_cross_M",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        0.0
+      ],
+      "size": [
+        4.0,
+        1.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "pillar_L",
+      "shape": "Block",
+      "position": [
+        -2.5,
+        5.2,
+        -0.5
+      ],
+      "size": [
+        1.0,
+        5.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "pillar_R",
+      "shape": "Block",
+      "position": [
+        2.5,
+        5.2,
+        -0.5
+      ],
+      "size": [
+        1.0,
+        5.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "brace_L",
+      "shape": "Wedge",
+      "position": [
+        -2.5,
+        3.7,
+        1.5
+      ],
+      "size": [
+        1.0,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "color": [
+        80,
+        50,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "brace_R",
+      "shape": "Wedge",
+      "position": [
+        2.5,
+        3.7,
+        1.5
+      ],
+      "size": [
+        1.0,
+        3.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "color": [
+        80,
+        50,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "stop_bar",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        7.2,
+        -1.2
+      ],
+      "size": [
+        6.5,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        60,
+        35,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "stop_bar_padding",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        7.2,
+        -1.2
+      ],
+      "size": [
+        4.5,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        150,
+        130,
+        110
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tension_bundle",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        3.2,
+        -0.5
+      ],
+      "size": [
+        6.0,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "throwing_arm",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.3,
+        1.6
+      ],
+      "size": [
+        1.0,
+        9.0,
+        1.0
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        50,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "cup_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        8.4,
+        4.7
+      ],
+      "size": [
+        2.6,
+        0.4,
+        2.6
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "cup_wall_L",
+      "shape": "Block",
+      "position": [
+        -1.2,
+        8.6,
+        4.9
+      ],
+      "size": [
+        0.2,
+        0.6,
+        2.6
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "cup_wall_R",
+      "shape": "Block",
+      "position": [
+        1.2,
+        8.6,
+        4.9
+      ],
+      "size": [
+        0.2,
+        0.6,
+        2.6
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "cup_wall_B",
+      "shape": "Block",
+      "position": [
+        0.0,
+        7.8,
+        5.5
+      ],
+      "size": [
+        2.2,
+        0.6,
+        0.2
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "boulder",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        9.3,
+        4.4
+      ],
+      "size": [
+        2.2,
+        2.2,
+        2.2
+      ],
+      "rotation": [
+        15,
+        30,
+        45
+      ],
+      "color": [
+        110,
+        115,
+        120
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "winch_drum",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.8,
+        3.8
+      ],
+      "size": [
+        5.5,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        90,
+        60,
+        40
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "winch_handle_L",
+      "shape": "Block",
+      "position": [
+        -3.1,
+        2.8,
+        3.8
+      ],
+      "size": [
+        0.4,
+        3.0,
+        0.4
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        60,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "winch_handle_R",
+      "shape": "Block",
+      "position": [
+        3.1,
+        2.8,
+        3.8
+      ],
+      "size": [
+        0.4,
+        3.0,
+        0.4
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        60,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "winch_rope",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.5,
+        4.2
+      ],
+      "size": [
+        0.2,
+        6.0,
+        0.2
+      ],
+      "rotation": [
+        -10,
+        0,
+        0
+      ],
+      "color": [
+        210,
+        180,
+        140
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    }
+  ],
+  "animation": "none",
+  "locomotion": "stationary",
+  "description": "A heavy wooden medieval catapult, tensioned and loaded with a large cobblestone boulder ready to fire.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "prop"
+}

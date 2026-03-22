@@ -123,6 +123,10 @@ function GiftService.Client:GiftModel(player: Player, model: Instance, targetUse
 	local giftsReceived = PlayerDataService:Read(targetPlayer, { "GiftsReceived" }) or 0
 	PlayerDataService:Write(targetPlayer, { "GiftsReceived" }, giftsReceived + 1)
 
+	-- Reward Paper Token for gifting
+	local paper = PlayerDataService:Read(player, { "Paper" }) or 0
+	PlayerDataService:Write(player, { "Paper" }, paper + 1)
+
 	-- Get model name for notifications
 	local modelName = "Creation"
 	if model:IsA("Model") then

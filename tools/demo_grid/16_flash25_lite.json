@@ -1,0 +1,437 @@
+{
+  "name": "Campfire with Pot (FL 2.5 Lite)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "fire_base_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "log_1",
+      "shape": "Cylinder",
+      "position": [
+        -1.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "log_2",
+      "shape": "Cylinder",
+      "position": [
+        1.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "log_3",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "log_4",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.5,
+        -1.0
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "embers_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.3,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        140,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "flame_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.8,
+        0.0
+      ],
+      "size": [
+        0.6,
+        1.0,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        69,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "flame_2",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.8,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.4
+    },
+    {
+      "name": "tripod_leg_1",
+      "shape": "Cylinder",
+      "position": [
+        -0.8,
+        2.0,
+        0.0
+      ],
+      "size": [
+        0.2,
+        2.5,
+        0.2
+      ],
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "tripod_leg_2",
+      "shape": "Cylinder",
+      "position": [
+        0.8,
+        2.0,
+        0.0
+      ],
+      "size": [
+        0.2,
+        2.5,
+        0.2
+      ],
+      "rotation": [
+        0,
+        -30,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "tripod_leg_3",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.0,
+        -1.5
+      ],
+      "size": [
+        0.2,
+        2.5,
+        0.2
+      ],
+      "rotation": [
+        -30,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "tripod_top",
+      "shape": "Block",
+      "position": [
+        0.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.2,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pot_body",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.6,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pot_handle_L",
+      "shape": "Cylinder",
+      "position": [
+        -0.7,
+        3.8,
+        0.0
+      ],
+      "size": [
+        0.1,
+        0.5,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pot_handle_R",
+      "shape": "Cylinder",
+      "position": [
+        0.7,
+        3.8,
+        0.0
+      ],
+      "size": [
+        0.1,
+        0.5,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pot_handle_connection_L",
+      "shape": "Ball",
+      "position": [
+        -0.7,
+        3.8,
+        0.0
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pot_handle_connection_R",
+      "shape": "Ball",
+      "position": [
+        0.7,
+        3.8,
+        0.0
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A cozy campfire with logs, flames, and a metal pot hanging over it on a tripod.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

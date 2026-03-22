@@ -1,0 +1,636 @@
+{
+  "name": "Chinese Dragon (Gem 3 Flash)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        -5.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        -4.2,
+        2.3,
+        0.5
+      ],
+      "size": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_3",
+      "shape": "Ball",
+      "position": [
+        -3.4,
+        2.8,
+        0.8
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_4",
+      "shape": "Ball",
+      "position": [
+        -2.6,
+        3.2,
+        0.5
+      ],
+      "size": [
+        1.4,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_5",
+      "shape": "Ball",
+      "position": [
+        -1.8,
+        3.5,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_6",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        3.2,
+        -0.5
+      ],
+      "size": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_7",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        2.8,
+        -0.8
+      ],
+      "size": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_8",
+      "shape": "Ball",
+      "position": [
+        1.0,
+        3.2,
+        -0.5
+      ],
+      "size": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_9",
+      "shape": "Ball",
+      "position": [
+        2.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        1.6,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_10",
+      "shape": "Block",
+      "position": [
+        3.5,
+        3.8,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "jaw_lower",
+      "shape": "Block",
+      "position": [
+        3.6,
+        3.1,
+        0.0
+      ],
+      "size": [
+        1.6,
+        0.4,
+        1.4
+      ],
+      "rotation": [
+        5,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        4.2,
+        4.2,
+        0.5
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        4.2,
+        4.2,
+        -0.5
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "horn_1",
+      "shape": "Cylinder",
+      "position": [
+        3.0,
+        4.8,
+        0.4
+      ],
+      "size": [
+        1.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        240,
+        240,
+        240
+      ],
+      "material": "Marble"
+    },
+    {
+      "name": "horn_2",
+      "shape": "Cylinder",
+      "position": [
+        3.0,
+        4.8,
+        -0.4
+      ],
+      "size": [
+        1.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        240,
+        240,
+        240
+      ],
+      "material": "Marble"
+    },
+    {
+      "name": "whisker_L",
+      "shape": "Cylinder",
+      "position": [
+        4.4,
+        3.7,
+        0.9
+      ],
+      "size": [
+        2.5,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        15,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "whisker_R",
+      "shape": "Cylinder",
+      "position": [
+        4.4,
+        3.7,
+        -0.9
+      ],
+      "size": [
+        2.5,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        -15,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Block",
+      "position": [
+        2.5,
+        2.5,
+        1.0
+      ],
+      "size": [
+        0.5,
+        1.2,
+        0.5
+      ],
+      "rotation": [
+        20,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Block",
+      "position": [
+        2.5,
+        2.5,
+        -1.0
+      ],
+      "size": [
+        0.5,
+        1.2,
+        0.5
+      ],
+      "rotation": [
+        -20,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        2.0,
+        1.0
+      ],
+      "size": [
+        0.5,
+        1.2,
+        0.5
+      ],
+      "rotation": [
+        20,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        2.0,
+        -1.0
+      ],
+      "size": [
+        0.5,
+        1.2,
+        0.5
+      ],
+      "rotation": [
+        -20,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "top_fin_1",
+      "shape": "Wedge",
+      "position": [
+        -1.8,
+        4.3,
+        0.0
+      ],
+      "size": [
+        0.2,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "top_fin_2",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        3.6,
+        -0.8
+      ],
+      "size": [
+        0.2,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "top_fin_3",
+      "shape": "Wedge",
+      "position": [
+        2.0,
+        4.3,
+        0.0
+      ],
+      "size": [
+        0.2,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "tail_1",
+      "shape": "Ball",
+      "position": [
+        -5.8,
+        1.8,
+        -0.2
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Fabric"
+    }
+  ],
+  "animation": "idle_bob",
+  "locomotion": "fly",
+  "description": "An elegant red and gold celestial dragon with a long serpentine body.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "creature"
+}

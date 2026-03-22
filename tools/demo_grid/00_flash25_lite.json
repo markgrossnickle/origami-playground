@@ -1,0 +1,361 @@
+{
+  "name": "Giant Octopus (FL 2.5 Lite)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "size": [
+        3.5,
+        3.5,
+        3.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seg_3",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        -4.0,
+        0.0
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "head",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        2.5,
+        2.5,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        2.2,
+        1.5
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        1.0,
+        2.2,
+        1.5
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "tentacle_1",
+      "shape": "Cylinder",
+      "position": [
+        1.5,
+        -2.0,
+        0.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tentacle_2",
+      "shape": "Cylinder",
+      "position": [
+        -1.5,
+        -2.0,
+        0.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tentacle_3",
+      "shape": "Cylinder",
+      "position": [
+        1.5,
+        -2.0,
+        -0.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        135,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tentacle_4",
+      "shape": "Cylinder",
+      "position": [
+        -1.5,
+        -2.0,
+        -0.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        -135,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tentacle_5",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        -3.5,
+        1.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tentacle_6",
+      "shape": "Cylinder",
+      "position": [
+        -0.5,
+        -3.5,
+        1.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        -45,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tentacle_7",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        -3.5,
+        -1.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        -45,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tentacle_8",
+      "shape": "Cylinder",
+      "position": [
+        -0.5,
+        -3.5,
+        -1.5
+      ],
+      "size": [
+        0.8,
+        4.0,
+        0.8
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        50,
+        150
+      ],
+      "material": "SmoothPlastic"
+    }
+  ],
+  "animation": "float",
+  "locomotion": "float",
+  "description": "A large, mysterious octopus with glowing eyes and eight curling tentacles.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "creature"
+}

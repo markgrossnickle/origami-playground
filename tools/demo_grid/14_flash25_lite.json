@@ -1,0 +1,262 @@
+{
+  "name": "Giant Crystal Ball on Ornate Stand (FL 2.5 Lite)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "crystal_ball",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        150,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "inner_glow",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        200,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "stand_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        5.0,
+        1.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        75,
+        0
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "stand_pedestal",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        1.5,
+        4.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        75,
+        0
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "stand_top",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.75,
+        0.0
+      ],
+      "size": [
+        4.0,
+        0.5,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        75,
+        0
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "ornate_detail_1",
+      "shape": "Block",
+      "position": [
+        1.8,
+        4.75,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Foil"
+    },
+    {
+      "name": "ornate_detail_2",
+      "shape": "Block",
+      "position": [
+        -1.8,
+        4.75,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Foil"
+    },
+    {
+      "name": "ornate_detail_3",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.75,
+        1.8
+      ],
+      "size": [
+        0.4,
+        0.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Foil"
+    },
+    {
+      "name": "ornate_detail_4",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.75,
+        -1.8
+      ],
+      "size": [
+        0.4,
+        0.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Foil"
+    },
+    {
+      "name": "ornate_detail_5",
+      "shape": "Block",
+      "position": [
+        0.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Foil"
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A large, clear crystal ball sitting on a wooden stand with ornate gold details, glowing with an inner light.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

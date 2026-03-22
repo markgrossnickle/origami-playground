@@ -38,6 +38,7 @@ local DevProducts: { [string]: DevProductEntry } = {
 	["500Coins"] = { Id = 0, Name = "500 Coins", Handler = "_handleCoinProduct" },
 	["1000Coins"] = { Id = 0, Name = "1000 Coins", Handler = "_handleCoinProduct" },
 	VIPBoost = { Id = 0, Name = "VIP Boost (1hr)", Handler = "_handleBoostProduct" },
+	ProCreation = { Id = 0, Name = "Pro Creation", Handler = "_handleProCreation" },
 }
 
 -- Coin amounts for dev products (used by _handleCoinProduct)
@@ -48,11 +49,13 @@ local DevProductCoinAmounts: { [string]: number } = {
 }
 
 -- Daily login rewards (7-day cycle, repeats)
+-- Day 1: Paper Tokens (Workshop creations) + Coins
+-- Day 4: Extra Paper Tokens
 local DailyRewards: { DailyReward } = {
-	{ Type = "Currency", Currency = "Coins", Amount = 50, Description = "50 Coins" },
+	{ Type = "Currency", Currency = "Paper", Amount = 3, Description = "3 Paper Tokens" },
 	{ Type = "Currency", Currency = "Coins", Amount = 75, Description = "75 Coins" },
 	{ Type = "Currency", Currency = "Coins", Amount = 100, Description = "100 Coins" },
-	{ Type = "Currency", Currency = "Coins", Amount = 150, Description = "150 Coins" },
+	{ Type = "Currency", Currency = "Paper", Amount = 2, Description = "2 Paper Tokens" },
 	{ Type = "Currency", Currency = "Coins", Amount = 200, Description = "200 Coins" },
 	{ Type = "Currency", Currency = "Coins", Amount = 300, Description = "300 Coins" },
 	{ Type = "Currency", Currency = "Gems", Amount = 10, Description = "10 Gems" },

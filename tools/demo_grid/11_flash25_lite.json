@@ -1,0 +1,361 @@
+{
+  "name": "Wooden Rowboat (FL 2.5 Lite)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "hull_bottom",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -0.8,
+        0.0
+      ],
+      "size": [
+        14.0,
+        1.2,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "hull_side_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        2.2
+      ],
+      "size": [
+        14.0,
+        1.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "hull_side_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        -2.2
+      ],
+      "size": [
+        14.0,
+        1.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "hull_front",
+      "shape": "Wedge",
+      "position": [
+        7.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.2,
+        4.0
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "hull_back",
+      "shape": "Wedge",
+      "position": [
+        -7.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.2,
+        4.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "seat_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -0.2,
+        0.0
+      ],
+      "size": [
+        4.0,
+        0.4,
+        3.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "seat_support_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -0.6,
+        1.2
+      ],
+      "size": [
+        4.0,
+        0.4,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "seat_support_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -0.6,
+        -1.2
+      ],
+      "size": [
+        4.0,
+        0.4,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_1",
+      "shape": "Block",
+      "position": [
+        4.0,
+        1.2,
+        2.5
+      ],
+      "size": [
+        8.0,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        -30,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_blade_1",
+      "shape": "Block",
+      "position": [
+        8.1,
+        1.2,
+        2.5
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        -30,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_2",
+      "shape": "Block",
+      "position": [
+        4.0,
+        1.2,
+        -2.5
+      ],
+      "size": [
+        8.0,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_blade_2",
+      "shape": "Block",
+      "position": [
+        8.1,
+        1.2,
+        -2.5
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oarlock_L",
+      "shape": "Block",
+      "position": [
+        3.0,
+        0.8,
+        1.8
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oarlock_R",
+      "shape": "Block",
+      "position": [
+        3.0,
+        0.8,
+        -1.8
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "Wood"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "stationary",
+  "description": "A simple wooden rowboat with two oars.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "vehicle"
+}

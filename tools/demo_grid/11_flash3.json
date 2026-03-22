@@ -1,0 +1,411 @@
+{
+  "name": "Wooden Rowboat (Gem 3 Flash)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "hull_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        12.0,
+        0.8,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        92,
+        64,
+        43
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "side_left",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        -2.25
+      ],
+      "size": [
+        12.0,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        110,
+        77,
+        52
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "side_right",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        2.25
+      ],
+      "size": [
+        12.0,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        110,
+        77,
+        52
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "rear_stern",
+      "shape": "Block",
+      "position": [
+        -6.25,
+        1.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        110,
+        77,
+        52
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "bow_point",
+      "shape": "Wedge",
+      "position": [
+        7.5,
+        1.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        110,
+        77,
+        52
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "bow_interior_filler",
+      "shape": "Block",
+      "position": [
+        6.0,
+        1.2,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.5,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        92,
+        64,
+        43
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "front_seat",
+      "shape": "Block",
+      "position": [
+        3.5,
+        1.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.5,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        133,
+        94,
+        66
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "back_seat",
+      "shape": "Block",
+      "position": [
+        -3.5,
+        1.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.5,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        133,
+        94,
+        66
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_lock_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.5,
+        -2.25
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "oar_lock_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.5,
+        2.25
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "oar_shaft_L",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        2.8,
+        -4.0
+      ],
+      "size": [
+        8.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        20,
+        15
+      ],
+      "color": [
+        163,
+        124,
+        96
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_blade_L",
+      "shape": "Block",
+      "position": [
+        -5.8,
+        1.8,
+        -5.5
+      ],
+      "size": [
+        2.0,
+        1.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        20,
+        15
+      ],
+      "color": [
+        163,
+        124,
+        96
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_shaft_R",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        2.8,
+        4.0
+      ],
+      "size": [
+        8.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -20,
+        -15
+      ],
+      "color": [
+        163,
+        124,
+        96
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "oar_blade_R",
+      "shape": "Block",
+      "position": [
+        -5.8,
+        1.8,
+        5.5
+      ],
+      "size": [
+        2.0,
+        1.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        -20,
+        -15
+      ],
+      "color": [
+        163,
+        124,
+        96
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "rim_trim_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.55,
+        -2.25
+      ],
+      "size": [
+        12.0,
+        0.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        74,
+        51,
+        34
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "rim_trim_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.55,
+        2.25
+      ],
+      "size": [
+        12.0,
+        0.2,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        74,
+        51,
+        34
+      ],
+      "material": "Wood"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "float",
+  "description": "A sturdy wooden rowboat with weathered oars, ready for a calm lake.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "vehicle"
+}

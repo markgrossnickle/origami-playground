@@ -1,0 +1,895 @@
+{
+  "name": "Chinese Dragon (Gem 3.1 Pro)",
+  "category": "creature",
+  "animation": "idle_bob",
+  "locomotion": "float",
+  "description": "A majestic serpentine dragon with golden whiskers, horns, and spines snaking gracefully through the air.",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        6.0,
+        4.0,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "jaw_lower",
+      "shape": "Block",
+      "position": [
+        6.5,
+        3.5,
+        0.0
+      ],
+      "size": [
+        1.4,
+        0.6,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        -10
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "horn_L",
+      "shape": "Cylinder",
+      "position": [
+        5.6,
+        4.8,
+        0.6
+      ],
+      "size": [
+        1.5,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        30,
+        0,
+        -30
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "horn_R",
+      "shape": "Cylinder",
+      "position": [
+        5.6,
+        4.8,
+        -0.6
+      ],
+      "size": [
+        1.5,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        30,
+        0,
+        30
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "whisker_L_1",
+      "shape": "Cylinder",
+      "position": [
+        6.8,
+        3.6,
+        1.0
+      ],
+      "size": [
+        2.5,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        10,
+        -30,
+        -20
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "whisker_R_1",
+      "shape": "Cylinder",
+      "position": [
+        6.8,
+        3.6,
+        -1.0
+      ],
+      "size": [
+        2.5,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        -10,
+        30,
+        -20
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        6.4,
+        4.3,
+        0.6
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        255,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        6.4,
+        4.3,
+        -0.6
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        255,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "seg_2",
+      "shape": "Cylinder",
+      "position": [
+        4.8,
+        3.6,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        25
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "spine_2",
+      "shape": "Wedge",
+      "position": [
+        4.8,
+        4.4,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        90,
+        25
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seg_3",
+      "shape": "Cylinder",
+      "position": [
+        3.4,
+        2.8,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        40
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "spine_3",
+      "shape": "Wedge",
+      "position": [
+        3.4,
+        3.6,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        90,
+        40
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seg_4",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        2.2,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        10
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "spine_4",
+      "shape": "Wedge",
+      "position": [
+        2.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        90,
+        10
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seg_5",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        2.4,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -25
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "spine_5",
+      "shape": "Wedge",
+      "position": [
+        0.5,
+        3.2,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        90,
+        -25
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seg_6",
+      "shape": "Cylinder",
+      "position": [
+        -1.0,
+        3.2,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -40
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "spine_6",
+      "shape": "Wedge",
+      "position": [
+        -1.0,
+        4.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        90,
+        -40
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seg_7",
+      "shape": "Cylinder",
+      "position": [
+        -2.4,
+        3.8,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "spine_7",
+      "shape": "Wedge",
+      "position": [
+        -2.4,
+        4.6,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        90,
+        -15
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seg_8",
+      "shape": "Cylinder",
+      "position": [
+        -3.8,
+        3.6,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "spine_8",
+      "shape": "Wedge",
+      "position": [
+        -3.8,
+        4.3,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.8,
+        0.3
+      ],
+      "rotation": [
+        0,
+        90,
+        15
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "tail_1",
+      "shape": "Cylinder",
+      "position": [
+        -5.2,
+        3.0,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        30
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "tail_2",
+      "shape": "Cylinder",
+      "position": [
+        -6.6,
+        2.2,
+        0.0
+      ],
+      "size": [
+        1.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        30
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "tail_3",
+      "shape": "Cylinder",
+      "position": [
+        -8.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        1.8,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        220,
+        40,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "tail_4",
+      "shape": "Ball",
+      "position": [
+        -9.2,
+        1.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Cylinder",
+      "position": [
+        2.8,
+        1.6,
+        1.2
+      ],
+      "size": [
+        1.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        20,
+        0,
+        60
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Cylinder",
+      "position": [
+        2.8,
+        1.6,
+        -1.2
+      ],
+      "size": [
+        1.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        -20,
+        0,
+        60
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "foot_FL",
+      "shape": "Ball",
+      "position": [
+        2.4,
+        1.2,
+        1.5
+      ],
+      "size": [
+        0.6,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "foot_FR",
+      "shape": "Ball",
+      "position": [
+        2.4,
+        1.2,
+        -1.5
+      ],
+      "size": [
+        0.6,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        3.2,
+        1.2
+      ],
+      "size": [
+        1.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        20,
+        0,
+        -45
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        3.2,
+        -1.2
+      ],
+      "size": [
+        1.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        -20,
+        0,
+        -45
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "foot_BL",
+      "shape": "Ball",
+      "position": [
+        -1.5,
+        2.7,
+        1.5
+      ],
+      "size": [
+        0.6,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "foot_BR",
+      "shape": "Ball",
+      "position": [
+        -1.5,
+        2.7,
+        -1.5
+      ],
+      "size": [
+        0.6,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Foil",
+      "transparency": 0
+    }
+  ],
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "creature"
+}

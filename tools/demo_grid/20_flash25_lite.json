@@ -1,0 +1,510 @@
+{
+  "name": "War Hammer (FL 2.5 Lite)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "handle_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        -10.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        20.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "head_top",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -18.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "head_bottom",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -22.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "head_side_L",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        -20.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        4.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "head_side_R",
+      "shape": "Block",
+      "position": [
+        1.0,
+        -20.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        4.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "rune_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -18.5,
+        0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_2",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -19.5,
+        0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_3",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -20.5,
+        0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_4",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -21.5,
+        0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_5",
+      "shape": "Block",
+      "position": [
+        0.5,
+        -19.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_6",
+      "shape": "Block",
+      "position": [
+        0.5,
+        -20.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_7",
+      "shape": "Block",
+      "position": [
+        0.5,
+        -21.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_8",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        -19.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_9",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        -20.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_10",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        -21.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_11",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -18.0,
+        -0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_12",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -19.0,
+        -0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_13",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -20.0,
+        -0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "rune_14",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -21.0,
+        -0.5
+      ],
+      "size": [
+        0.1,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "end_cap",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        -16.0,
+        0.0
+      ],
+      "size": [
+        0.6,
+        1.0,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A massive war hammer with a metallic head etched with glowing runes.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

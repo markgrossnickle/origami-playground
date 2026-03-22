@@ -1,0 +1,562 @@
+{
+  "name": "Futuristic Hoverbike (Gem 3 Flash)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "main_chassis",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        10.0,
+        1.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        40,
+        40,
+        45
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "front_nose",
+      "shape": "Wedge",
+      "position": [
+        6.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        2.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        25
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "rear_fender",
+      "shape": "Wedge",
+      "position": [
+        -6.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        2.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        25
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "seat_back",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        2.0,
+        2.5
+      ],
+      "rotation": [
+        15,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "pod_front_L",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        1.5,
+        2.5
+      ],
+      "size": [
+        5.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        60,
+        60,
+        65
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pod_front_R",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        1.5,
+        -2.5
+      ],
+      "size": [
+        5.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        60,
+        60,
+        65
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pod_rear_L",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        1.5,
+        2.5
+      ],
+      "size": [
+        5.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        60,
+        60,
+        65
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "pod_rear_R",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        1.5,
+        -2.5
+      ],
+      "size": [
+        5.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        60,
+        60,
+        65
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "glow_core_FL",
+      "shape": "Ball",
+      "position": [
+        6.6,
+        1.5,
+        2.5
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "glow_core_FR",
+      "shape": "Ball",
+      "position": [
+        6.6,
+        1.5,
+        -2.5
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "glow_core_RL",
+      "shape": "Ball",
+      "position": [
+        -6.6,
+        1.5,
+        2.5
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "glow_core_RR",
+      "shape": "Ball",
+      "position": [
+        -6.6,
+        1.5,
+        -2.5
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "handlebar_post",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        20,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "handle_L",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        4.2,
+        1.2
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "handle_R",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        4.2,
+        -1.2
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "headlight",
+      "shape": "Block",
+      "position": [
+        7.8,
+        3.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.8,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "wing_L",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        2.0,
+        3.0
+      ],
+      "size": [
+        6.0,
+        0.5,
+        2.0
+      ],
+      "rotation": [
+        10,
+        0,
+        0
+      ],
+      "color": [
+        40,
+        40,
+        45
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "wing_R",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        2.0,
+        -3.0
+      ],
+      "size": [
+        6.0,
+        0.5,
+        2.0
+      ],
+      "rotation": [
+        -10,
+        0,
+        0
+      ],
+      "color": [
+        40,
+        40,
+        45
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "rear_stabilizer",
+      "shape": "Block",
+      "position": [
+        -7.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        3.0,
+        0.2
+      ],
+      "rotation": [
+        20,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        110
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "underside_glow",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        8.0,
+        0.2,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "control_screen",
+      "shape": "Block",
+      "position": [
+        4.5,
+        3.8,
+        0.0
+      ],
+      "size": [
+        0.1,
+        0.8,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        0,
+        50,
+        50
+      ],
+      "material": "Glass"
+    },
+    {
+      "name": "screen_data",
+      "shape": "Block",
+      "position": [
+        4.55,
+        3.85,
+        0.0
+      ],
+      "size": [
+        0.1,
+        0.6,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        0,
+        255,
+        150
+      ],
+      "material": "Neon"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "float",
+  "description": "A high-speed aerodynamic hoverbike with quad-thruster stabilization and neon cooling vents.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "vehicle"
+}

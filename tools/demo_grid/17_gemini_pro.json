@@ -1,0 +1,556 @@
+{
+  "name": "Enchanted Blade (Gem 3.1 Pro)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "grip",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        0.6,
+        2.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        60,
+        40,
+        20
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "pommel",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pommel_jewel_F",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.5,
+        0.45
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "pommel_jewel_B",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.5,
+        -0.45
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.7,
+        0.0
+      ],
+      "size": [
+        3.2,
+        0.6,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard_L",
+      "shape": "Block",
+      "position": [
+        -1.6,
+        2.9,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        30
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard_R",
+      "shape": "Block",
+      "position": [
+        1.6,
+        2.9,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "jewel_center_F",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.7,
+        0.45
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "jewel_center_B",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.7,
+        -0.45
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "jewel_L",
+      "shape": "Ball",
+      "position": [
+        -1.6,
+        3.3,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "jewel_R",
+      "shape": "Ball",
+      "position": [
+        1.6,
+        3.3,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_L_F",
+      "shape": "Block",
+      "position": [
+        -0.8,
+        2.7,
+        0.45
+      ],
+      "size": [
+        0.1,
+        0.4,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_L_B",
+      "shape": "Block",
+      "position": [
+        -0.8,
+        2.7,
+        -0.45
+      ],
+      "size": [
+        0.1,
+        0.4,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_R_F",
+      "shape": "Block",
+      "position": [
+        0.8,
+        2.7,
+        0.45
+      ],
+      "size": [
+        0.1,
+        0.4,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_R_B",
+      "shape": "Block",
+      "position": [
+        0.8,
+        2.7,
+        -0.45
+      ],
+      "size": [
+        0.1,
+        0.4,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "blade_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.5,
+        0.0
+      ],
+      "size": [
+        1.2,
+        5.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "blade_tip",
+      "shape": "Block",
+      "position": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "size": [
+        0.85,
+        0.85,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "blade_core_F",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.5,
+        0.25
+      ],
+      "size": [
+        0.4,
+        4.8,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "blade_core_B",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.5,
+        -0.25
+      ],
+      "size": [
+        0.4,
+        4.8,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "blade_tip_core_F",
+      "shape": "Block",
+      "position": [
+        0.0,
+        7.8,
+        0.25
+      ],
+      "size": [
+        0.28,
+        0.28,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        200,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "blade_tip_core_B",
+      "shape": "Block",
+      "position": [
+        0.0,
+        7.8,
+        -0.25
+      ],
+      "size": [
+        0.28,
+        0.28,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        200,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    }
+  ],
+  "animation": "idle_bob",
+  "description": "A mythical glowing sword with a jeweled golden crossguard.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "prop"
+}

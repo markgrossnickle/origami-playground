@@ -1,0 +1,488 @@
+{
+  "name": "Ladybug (Gem 3 Flash)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        7.0,
+        4.5,
+        7.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        3.5,
+        2.0,
+        0.0
+      ],
+      "size": [
+        2.5,
+        2.5,
+        3.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "shell_line",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.2,
+        0.0
+      ],
+      "size": [
+        6.8,
+        0.2,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spot_1",
+      "shape": "Ball",
+      "position": [
+        1.5,
+        4.3,
+        1.8
+      ],
+      "size": [
+        1.2,
+        0.5,
+        1.2
+      ],
+      "rotation": [
+        15,
+        0,
+        10
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spot_2",
+      "shape": "Ball",
+      "position": [
+        1.5,
+        4.3,
+        -1.8
+      ],
+      "size": [
+        1.2,
+        0.5,
+        1.2
+      ],
+      "rotation": [
+        -15,
+        0,
+        10
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spot_3",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        4.5,
+        2.2
+      ],
+      "size": [
+        1.4,
+        0.5,
+        1.4
+      ],
+      "rotation": [
+        20,
+        0,
+        0
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spot_4",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        4.5,
+        -2.2
+      ],
+      "size": [
+        1.4,
+        0.5,
+        1.4
+      ],
+      "rotation": [
+        -20,
+        0,
+        0
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spot_5",
+      "shape": "Ball",
+      "position": [
+        -3.2,
+        3.8,
+        1.2
+      ],
+      "size": [
+        1.0,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        10,
+        0,
+        -15
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spot_6",
+      "shape": "Ball",
+      "position": [
+        -3.2,
+        3.8,
+        -1.2
+      ],
+      "size": [
+        1.0,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        -10,
+        0,
+        -15
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        4.4,
+        2.5,
+        1.0
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        4.4,
+        2.5,
+        -1.0
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "antenna_L",
+      "shape": "Cylinder",
+      "position": [
+        4.8,
+        3.5,
+        0.8
+      ],
+      "size": [
+        1.5,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "antenna_R",
+      "shape": "Cylinder",
+      "position": [
+        4.8,
+        3.5,
+        -0.8
+      ],
+      "size": [
+        1.5,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        10,
+        10,
+        10
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        1.0,
+        3.0
+      ],
+      "size": [
+        2.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        60
+      ],
+      "color": [
+        15,
+        15,
+        15
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        1.0,
+        -3.0
+      ],
+      "size": [
+        2.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        60
+      ],
+      "color": [
+        15,
+        15,
+        15
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_ML_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.0,
+        3.8
+      ],
+      "size": [
+        2.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        15,
+        15,
+        15
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_MR_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.0,
+        -3.8
+      ],
+      "size": [
+        2.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        15,
+        15,
+        15
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Cylinder",
+      "position": [
+        -2.5,
+        1.0,
+        3.0
+      ],
+      "size": [
+        2.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        120
+      ],
+      "color": [
+        15,
+        15,
+        15
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Cylinder",
+      "position": [
+        -2.5,
+        1.0,
+        -3.0
+      ],
+      "size": [
+        2.0,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        120
+      ],
+      "color": [
+        15,
+        15,
+        15
+      ],
+      "material": "SmoothPlastic"
+    }
+  ],
+  "animation": "idle_bob",
+  "locomotion": "walk",
+  "description": "A round, red ladybug with black spots and tiny walking legs.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "creature"
+}

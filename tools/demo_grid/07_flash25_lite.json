@@ -1,0 +1,685 @@
+{
+  "name": "Pirate Ship (FL 2.5 Lite)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "hull_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        16.0,
+        4.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "deck_front",
+      "shape": "Block",
+      "position": [
+        5.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        1.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "deck_back",
+      "shape": "Block",
+      "position": [
+        -5.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        1.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "cabin_base",
+      "shape": "Block",
+      "position": [
+        -7.0,
+        4.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        160,
+        82,
+        45
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "cabin_roof",
+      "shape": "Wedge",
+      "position": [
+        -7.0,
+        6.0,
+        0.0
+      ],
+      "size": [
+        3.0,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "mast_main",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        8.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "sail_main_1",
+      "shape": "Block",
+      "position": [
+        0.5,
+        7.0,
+        2.8
+      ],
+      "size": [
+        4.0,
+        5.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        -20,
+        0
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "sail_main_2",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        7.0,
+        -2.8
+      ],
+      "size": [
+        4.0,
+        5.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        20,
+        0
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "mast_fore",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        5.5,
+        0.0
+      ],
+      "size": [
+        0.4,
+        7.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "sail_fore_1",
+      "shape": "Block",
+      "position": [
+        4.5,
+        6.5,
+        2.8
+      ],
+      "size": [
+        3.0,
+        4.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        -15,
+        0
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "sail_fore_2",
+      "shape": "Block",
+      "position": [
+        3.5,
+        6.5,
+        -2.8
+      ],
+      "size": [
+        3.0,
+        4.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        15,
+        0
+      ],
+      "color": [
+        245,
+        245,
+        245
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "cannon_port_1",
+      "shape": "Cylinder",
+      "position": [
+        3.0,
+        2.5,
+        3.5
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        105,
+        105,
+        105
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "cannon_port_2",
+      "shape": "Cylinder",
+      "position": [
+        3.0,
+        2.5,
+        -3.5
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        105,
+        105,
+        105
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "cannon_starboard_1",
+      "shape": "Cylinder",
+      "position": [
+        -3.0,
+        2.5,
+        3.5
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        105,
+        105,
+        105
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "cannon_starboard_2",
+      "shape": "Cylinder",
+      "position": [
+        -3.0,
+        2.5,
+        -3.5
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        105,
+        105,
+        105
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "wheel_port_1",
+      "shape": "Ball",
+      "position": [
+        2.8,
+        2.0,
+        3.2
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_port_2",
+      "shape": "Ball",
+      "position": [
+        2.8,
+        2.0,
+        -3.2
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_starboard_1",
+      "shape": "Ball",
+      "position": [
+        -2.8,
+        2.0,
+        3.2
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_starboard_2",
+      "shape": "Ball",
+      "position": [
+        -2.8,
+        2.0,
+        -3.2
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "flagpole",
+      "shape": "Cylinder",
+      "position": [
+        -7.5,
+        6.5,
+        0.0
+      ],
+      "size": [
+        0.3,
+        3.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "flag",
+      "shape": "Block",
+      "position": [
+        -8.5,
+        7.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        10
+      ],
+      "color": [
+        255,
+        0,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "deck_rail_front_L",
+      "shape": "Block",
+      "position": [
+        5.0,
+        4.0,
+        2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "deck_rail_front_R",
+      "shape": "Block",
+      "position": [
+        5.0,
+        4.0,
+        -2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "deck_rail_back_L",
+      "shape": "Block",
+      "position": [
+        -5.0,
+        4.0,
+        2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "deck_rail_back_R",
+      "shape": "Block",
+      "position": [
+        -5.0,
+        4.0,
+        -2.8
+      ],
+      "size": [
+        3.5,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "deck_rail_main_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.0,
+        2.8
+      ],
+      "size": [
+        8.0,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "deck_rail_main_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.0,
+        -2.8
+      ],
+      "size": [
+        8.0,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    }
+  ],
+  "animation": "none",
+  "description": "A classic wooden pirate ship with two masts, sails, and cannons.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "vehicle"
+}

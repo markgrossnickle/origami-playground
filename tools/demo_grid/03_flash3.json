@@ -1,0 +1,411 @@
+{
+  "name": "Eagle (Gem 3 Flash)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        2.5,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        84,
+        54,
+        39
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        2.5,
+        5.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        3.2,
+        5.8,
+        0.7
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        3.2,
+        5.8,
+        -0.7
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "beak_top",
+      "shape": "Wedge",
+      "position": [
+        3.8,
+        5.5,
+        0.0
+      ],
+      "size": [
+        1.2,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        0,
+        90,
+        180
+      ],
+      "color": [
+        255,
+        200,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "beak_bottom",
+      "shape": "Wedge",
+      "position": [
+        3.7,
+        5.1,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        230,
+        180,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wing_L_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.8,
+        3.5
+      ],
+      "size": [
+        3.0,
+        0.5,
+        5.0
+      ],
+      "rotation": [
+        0,
+        15,
+        10
+      ],
+      "color": [
+        64,
+        44,
+        34
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "wing_L_2",
+      "shape": "Block",
+      "position": [
+        0.0,
+        6.2,
+        7.5
+      ],
+      "size": [
+        3.5,
+        0.3,
+        6.0
+      ],
+      "rotation": [
+        0,
+        -5,
+        5
+      ],
+      "color": [
+        54,
+        34,
+        24
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "wing_R_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.8,
+        -3.5
+      ],
+      "size": [
+        3.0,
+        0.5,
+        5.0
+      ],
+      "rotation": [
+        0,
+        -15,
+        -10
+      ],
+      "color": [
+        64,
+        44,
+        34
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "wing_R_2",
+      "shape": "Block",
+      "position": [
+        0.0,
+        6.2,
+        -7.5
+      ],
+      "size": [
+        3.5,
+        0.3,
+        6.0
+      ],
+      "rotation": [
+        0,
+        5,
+        -5
+      ],
+      "color": [
+        54,
+        34,
+        24
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "tail_1",
+      "shape": "Wedge",
+      "position": [
+        -3.5,
+        5.2,
+        0.0
+      ],
+      "size": [
+        3.0,
+        0.4,
+        4.0
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        3.8,
+        0.8
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        200,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        3.8,
+        -0.8
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        200,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "talon_L1",
+      "shape": "Wedge",
+      "position": [
+        1.2,
+        3.2,
+        0.8
+      ],
+      "size": [
+        0.6,
+        0.3,
+        0.2
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "talon_R1",
+      "shape": "Wedge",
+      "position": [
+        1.2,
+        3.2,
+        -0.8
+      ],
+      "size": [
+        0.6,
+        0.3,
+        0.2
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "feather_detail_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.2,
+        0.0
+      ],
+      "size": [
+        3.8,
+        1.0,
+        2.3
+      ],
+      "rotation": [
+        5,
+        0,
+        0
+      ],
+      "color": [
+        94,
+        64,
+        49
+      ],
+      "material": "Fabric"
+    }
+  ],
+  "animation": "flutter",
+  "locomotion": "fly",
+  "description": "A majestic eagle with a white head and massive wingspan, soaring through the sky.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "creature"
+}

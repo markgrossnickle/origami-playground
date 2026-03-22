@@ -1,0 +1,436 @@
+{
+  "name": "Medieval Catapult (FL 2.5 Lite)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "base_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        1.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "support_1",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        1.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        2.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "support_2",
+      "shape": "Block",
+      "position": [
+        1.5,
+        1.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        2.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "axle_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "arm_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        6.0,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        20
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "bucket_base",
+      "shape": "Block",
+      "position": [
+        2.8,
+        2.2,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.5,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        20
+      ],
+      "color": [
+        105,
+        105,
+        105
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "bucket_side_L",
+      "shape": "Block",
+      "position": [
+        2.8,
+        2.45,
+        0.45
+      ],
+      "size": [
+        0.5,
+        0.3,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        20
+      ],
+      "color": [
+        105,
+        105,
+        105
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "bucket_side_R",
+      "shape": "Block",
+      "position": [
+        2.8,
+        2.45,
+        -0.45
+      ],
+      "size": [
+        0.5,
+        0.3,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        20
+      ],
+      "color": [
+        105,
+        105,
+        105
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "rope_1",
+      "shape": "Cylinder",
+      "position": [
+        -1.5,
+        2.5,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.5,
+        0.1
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "rope_2",
+      "shape": "Cylinder",
+      "position": [
+        -1.5,
+        2.5,
+        -0.5
+      ],
+      "size": [
+        0.1,
+        0.5,
+        0.1
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "rope_3",
+      "shape": "Cylinder",
+      "position": [
+        1.5,
+        2.5,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.5,
+        0.1
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "rope_4",
+      "shape": "Cylinder",
+      "position": [
+        1.5,
+        2.5,
+        -0.5
+      ],
+      "size": [
+        0.1,
+        0.5,
+        0.1
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "tension_bar_1",
+      "shape": "Block",
+      "position": [
+        -1.5,
+        1.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        0.5,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tension_bar_2",
+      "shape": "Block",
+      "position": [
+        1.5,
+        1.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        0.5,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "stone_base_1",
+      "shape": "Block",
+      "position": [
+        -2.5,
+        0.75,
+        1.0
+      ],
+      "size": [
+        1.0,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Concrete"
+    },
+    {
+      "name": "stone_base_2",
+      "shape": "Block",
+      "position": [
+        -2.5,
+        0.75,
+        -1.0
+      ],
+      "size": [
+        1.0,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Concrete"
+    },
+    {
+      "name": "boulder",
+      "shape": "Ball",
+      "position": [
+        2.8,
+        2.5,
+        0.0
+      ],
+      "size": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        128,
+        128,
+        128
+      ],
+      "material": "Concrete"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "stationary",
+  "description": "A wooden catapult designed to launch heavy projectiles.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

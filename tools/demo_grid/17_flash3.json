@@ -1,0 +1,427 @@
+{
+  "name": "Enchanted Blade (Gem 3 Flash)",
+  "category": "tool",
+  "parts": [
+    {
+      "name": "pommel",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.4,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pommel_gem",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.1,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "handle",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.4,
+        0.0
+      ],
+      "size": [
+        1.8,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        60,
+        40,
+        30
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard_center",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.4,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.4,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard_wing_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.5,
+        1.0
+      ],
+      "size": [
+        0.6,
+        0.3,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard_wing_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.5,
+        -1.0
+      ],
+      "size": [
+        0.6,
+        0.3,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        212,
+        175,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "gem_center",
+      "shape": "Ball",
+      "position": [
+        0.3,
+        2.4,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "gem_L",
+      "shape": "Ball",
+      "position": [
+        0.1,
+        2.6,
+        1.5
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "gem_R",
+      "shape": "Ball",
+      "position": [
+        0.1,
+        2.6,
+        -1.5
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "blade_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.2,
+        0.0
+      ],
+      "size": [
+        0.2,
+        5.5,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        190,
+        210,
+        225
+      ],
+      "material": "Glass",
+      "transparency": 0.2
+    },
+    {
+      "name": "blade_core_glow",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.2,
+        0.0
+      ],
+      "size": [
+        0.1,
+        5.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "blade_edge_L",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        8.2,
+        0.2
+      ],
+      "size": [
+        0.2,
+        0.6,
+        0.4
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        190,
+        210,
+        225
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "blade_edge_R",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        8.2,
+        -0.2
+      ],
+      "size": [
+        0.2,
+        0.6,
+        0.4
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        190,
+        210,
+        225
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "rune_1",
+      "shape": "Block",
+      "position": [
+        0.12,
+        4.5,
+        0.0
+      ],
+      "size": [
+        0.1,
+        0.4,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_2",
+      "shape": "Block",
+      "position": [
+        0.12,
+        5.5,
+        0.0
+      ],
+      "size": [
+        0.1,
+        0.4,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_3",
+      "shape": "Block",
+      "position": [
+        0.12,
+        6.5,
+        0.0
+      ],
+      "size": [
+        0.1,
+        0.4,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    }
+  ],
+  "animation": "spin_slow",
+  "locomotion": "float",
+  "description": "A legendary glass-steel blade infused with lunar energy and set with sapphires.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "prop"
+}

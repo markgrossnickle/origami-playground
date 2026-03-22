@@ -1,0 +1,493 @@
+{
+  "name": "Giant Sandworm (Gem 3 Flash)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        5.0,
+        4.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        20
+      ],
+      "color": [
+        194,
+        178,
+        128
+      ],
+      "material": "Sand",
+      "transparency": 0
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        1.5,
+        2.5,
+        0.0
+      ],
+      "size": [
+        4.8,
+        4.5,
+        4.8
+      ],
+      "rotation": [
+        0,
+        0,
+        35
+      ],
+      "color": [
+        180,
+        160,
+        110
+      ],
+      "material": "Sand",
+      "transparency": 0
+    },
+    {
+      "name": "seg_3",
+      "shape": "Ball",
+      "position": [
+        3.5,
+        5.0,
+        0.0
+      ],
+      "size": [
+        4.5,
+        4.5,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        50
+      ],
+      "color": [
+        194,
+        178,
+        128
+      ],
+      "material": "Sand",
+      "transparency": 0
+    },
+    {
+      "name": "seg_4",
+      "shape": "Ball",
+      "position": [
+        6.0,
+        7.5,
+        0.0
+      ],
+      "size": [
+        4.2,
+        4.2,
+        4.2
+      ],
+      "rotation": [
+        0,
+        0,
+        65
+      ],
+      "color": [
+        180,
+        160,
+        110
+      ],
+      "material": "Sand",
+      "transparency": 0
+    },
+    {
+      "name": "seg_5",
+      "shape": "Ball",
+      "position": [
+        8.5,
+        10.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        80
+      ],
+      "color": [
+        194,
+        178,
+        128
+      ],
+      "material": "Sand",
+      "transparency": 0
+    },
+    {
+      "name": "mouth_inner",
+      "shape": "Ball",
+      "position": [
+        9.0,
+        10.2,
+        0.0
+      ],
+      "size": [
+        3.2,
+        3.2,
+        3.2
+      ],
+      "rotation": [
+        0,
+        0,
+        80
+      ],
+      "color": [
+        100,
+        40,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "jaw_lower",
+      "shape": "Wedge",
+      "position": [
+        10.5,
+        9.0,
+        0.0
+      ],
+      "size": [
+        3.0,
+        1.2,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        -160
+      ],
+      "color": [
+        160,
+        140,
+        100
+      ],
+      "material": "Sand",
+      "transparency": 0
+    },
+    {
+      "name": "tooth_1",
+      "shape": "Cylinder",
+      "position": [
+        10.0,
+        11.5,
+        1.0
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        245,
+        245,
+        220
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tooth_2",
+      "shape": "Cylinder",
+      "position": [
+        10.0,
+        11.5,
+        -1.0
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        245,
+        245,
+        220
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tooth_3",
+      "shape": "Cylinder",
+      "position": [
+        10.2,
+        10.5,
+        1.5
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        245,
+        245,
+        220
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tooth_4",
+      "shape": "Cylinder",
+      "position": [
+        10.2,
+        10.5,
+        -1.5
+      ],
+      "size": [
+        1.5,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        245,
+        245,
+        220
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "dirt_1",
+      "shape": "Wedge",
+      "position": [
+        -3.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        3.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        130,
+        110,
+        80
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "dirt_2",
+      "shape": "Wedge",
+      "position": [
+        2.0,
+        0.5,
+        3.5
+      ],
+      "size": [
+        4.0,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        130,
+        110,
+        80
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "dirt_3",
+      "shape": "Wedge",
+      "position": [
+        2.0,
+        0.5,
+        -3.5
+      ],
+      "size": [
+        4.0,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "color": [
+        130,
+        110,
+        80
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "dirt_4",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        0.2,
+        3.0
+      ],
+      "size": [
+        3.0,
+        1.0,
+        3.0
+      ],
+      "rotation": [
+        15,
+        45,
+        0
+      ],
+      "color": [
+        100,
+        85,
+        60
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "dirt_5",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        0.2,
+        -3.0
+      ],
+      "size": [
+        3.0,
+        1.0,
+        3.0
+      ],
+      "rotation": [
+        -15,
+        -45,
+        0
+      ],
+      "color": [
+        100,
+        85,
+        60
+      ],
+      "material": "Sand"
+    },
+    {
+      "name": "spine_1",
+      "shape": "Wedge",
+      "position": [
+        1.5,
+        4.8,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        30
+      ],
+      "color": [
+        60,
+        50,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_2",
+      "shape": "Wedge",
+      "position": [
+        3.5,
+        7.3,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        60,
+        50,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_3",
+      "shape": "Wedge",
+      "position": [
+        6.0,
+        9.6,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        60
+      ],
+      "color": [
+        60,
+        50,
+        40
+      ],
+      "material": "SmoothPlastic"
+    }
+  ],
+  "animation": "breathe",
+  "locomotion": "slither",
+  "description": "A massive, segmented sandworm bursting forth from the desert earth with a tooth-filled maw.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "creature"
+}

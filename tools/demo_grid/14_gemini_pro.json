@@ -1,0 +1,478 @@
+{
+  "name": "Crystal Ball (Gem 3.1 Pro)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "base_bottom",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        5.0,
+        0.8,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "base_foot_1",
+      "shape": "Ball",
+      "position": [
+        2.0,
+        0.2,
+        2.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "base_foot_2",
+      "shape": "Ball",
+      "position": [
+        -2.0,
+        0.2,
+        2.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "base_foot_3",
+      "shape": "Ball",
+      "position": [
+        2.0,
+        0.2,
+        -2.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "base_foot_4",
+      "shape": "Ball",
+      "position": [
+        -2.0,
+        0.2,
+        -2.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "base_tier_2",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.2,
+        0.0
+      ],
+      "size": [
+        4.0,
+        0.6,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pedestal_pillar",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        2.5,
+        2.0,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        70,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "holder_base",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        3.8,
+        0.0
+      ],
+      "size": [
+        4.5,
+        0.6,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "prong_n",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        4.8,
+        1.8
+      ],
+      "size": [
+        1.5,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        15,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "prong_s",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        4.8,
+        -1.8
+      ],
+      "size": [
+        1.5,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        -15,
+        180,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "prong_e",
+      "shape": "Wedge",
+      "position": [
+        1.8,
+        4.8,
+        0.0
+      ],
+      "size": [
+        0.5,
+        2.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        -15
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "prong_w",
+      "shape": "Wedge",
+      "position": [
+        -1.8,
+        4.8,
+        0.0
+      ],
+      "size": [
+        0.5,
+        2.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        -90,
+        15
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crystal_outer",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        6.5,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        220,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "crystal_inner",
+      "shape": "Ball",
+      "position": [
+        0.1,
+        6.5,
+        0.1
+      ],
+      "size": [
+        3.5,
+        3.5,
+        3.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "crystal_core",
+      "shape": "Ball",
+      "position": [
+        -0.1,
+        6.5,
+        -0.1
+      ],
+      "size": [
+        1.5,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "magic_spark_1",
+      "shape": "Ball",
+      "position": [
+        1.0,
+        7.5,
+        0.5
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        100,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "magic_spark_2",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        6.0,
+        -1.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        255,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "magic_spark_3",
+      "shape": "Ball",
+      "position": [
+        0.5,
+        5.5,
+        1.0
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A giant mystical crystal ball glowing with inner magic, resting on an ornate gold and wood pedestal.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "prop"
+}

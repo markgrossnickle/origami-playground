@@ -131,6 +131,28 @@ function MonetizationService:_handleBoostProduct(_player: Player, _productName: 
 	return true
 end
 
+-- Per-player flag: player has paid for one Pro creation (consumed on use)
+local _proCreationAllowed: { [number]: boolean } = {}
+
+function MonetizationService:_handleProCreation(player: Player, _productName: string): boolean
+	_proCreationAllowed[player.UserId] = true
+	return true
+end
+
+--- Check if the player has a pending Pro creation credit and consume it.
+function MonetizationService:ConsumeProCreation(player: Player): boolean
+	if _proCreationAllowed[player.UserId] then
+		_proCreationAllowed[player.UserId] = nil
+		return true
+	end
+	return false
+end
+
+--- Check if the player has a Pro creation credit (does NOT consume).
+function MonetizationService:HasProCreation(player: Player): boolean
+	return _proCreationAllowed[player.UserId] == true
+end
+
 function MonetizationService:_processReceipt(receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
 	local playerId = receiptInfo.PlayerId
 	local receiptId = tostring(receiptInfo.PurchaseId)
@@ -291,6 +313,18 @@ function MonetizationService.Client:IsPremium(player: Player): boolean
 	return self.Server:IsPremium(player)
 end
 
+function MonetizationService.Client:PromptProCreation(player: Player)
+	self.Server:PromptProduct(player, "ProCreation")
+end
+
+function MonetizationService.Client:ConsumeProCreation(player: Player): boolean
+	return self.Server:ConsumeProCreation(player)
+end
+
+function MonetizationService.Client:HasProCreation(player: Player): boolean
+	return self.Server:HasProCreation(player)
+end
+
 -- ============================================================================
 -- Lifecycle
 -- ============================================================================
@@ -338,6 +372,7 @@ function MonetizationService:KnitInit()
 	-- Player cleanup
 	Players.PlayerRemoving:Connect(function(player)
 		gamePassCache[player] = nil
+		_proCreationAllowed[player.UserId] = nil
 	end)
 end
 

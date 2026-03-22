@@ -1,0 +1,336 @@
+{
+  "name": "Eagle (FL 2.5 Lite)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.2,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "seg_2",
+      "shape": "Block",
+      "position": [
+        -3.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "wing_L_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.0,
+        3.0
+      ],
+      "size": [
+        4.0,
+        0.4,
+        3.0
+      ],
+      "rotation": [
+        0,
+        30,
+        -40
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "wing_R_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.0,
+        -3.0
+      ],
+      "size": [
+        4.0,
+        0.4,
+        3.0
+      ],
+      "rotation": [
+        0,
+        -30,
+        40
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "tail_1",
+      "shape": "Block",
+      "position": [
+        -4.5,
+        -0.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        0.4,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "head",
+      "shape": "Block",
+      "position": [
+        1.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        1.2,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "beak",
+      "shape": "Wedge",
+      "position": [
+        1.8,
+        0.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.3,
+        0.5
+      ],
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        1.5,
+        0.8,
+        0.3
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        1.5,
+        0.8,
+        -0.3
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "talon_L_1",
+      "shape": "Block",
+      "position": [
+        -3.5,
+        -1.5,
+        0.5
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "talon_R_1",
+      "shape": "Block",
+      "position": [
+        -3.5,
+        -1.5,
+        -0.5
+      ],
+      "size": [
+        0.5,
+        1.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "talon_L_2",
+      "shape": "Block",
+      "position": [
+        -3.8,
+        -1.8,
+        0.8
+      ],
+      "size": [
+        0.4,
+        0.8,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "talon_R_2",
+      "shape": "Block",
+      "position": [
+        -3.8,
+        -1.8,
+        -0.8
+      ],
+      "size": [
+        0.4,
+        0.8,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal"
+    }
+  ],
+  "animation": "flutter",
+  "locomotion": "fly",
+  "description": "A majestic eagle captured mid-flight, its wings outstretched and talons extended.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "creature"
+}

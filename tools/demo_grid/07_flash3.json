@@ -1,0 +1,557 @@
+{
+  "name": "Pirate Ship (Gem 3 Flash)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "hull_bottom",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        10.0,
+        1.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "hull_bow_lower",
+      "shape": "Wedge",
+      "position": [
+        6.5,
+        1.0,
+        0.0
+      ],
+      "size": [
+        3.0,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        -90,
+        0
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "hull_stern_castle",
+      "shape": "Block",
+      "position": [
+        -5.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        3.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        70,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "rail_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        2.3
+      ],
+      "size": [
+        10.0,
+        1.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        60,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "rail_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        -2.3
+      ],
+      "size": [
+        10.0,
+        1.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        60,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "mast_main",
+      "shape": "Cylinder",
+      "position": [
+        -1.0,
+        6.0,
+        0.0
+      ],
+      "size": [
+        10.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "yardarm_main_lower",
+      "shape": "Cylinder",
+      "position": [
+        -1.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        0.3,
+        6.0,
+        0.3
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "yardarm_main_upper",
+      "shape": "Cylinder",
+      "position": [
+        -1.0,
+        9.0,
+        0.0
+      ],
+      "size": [
+        0.3,
+        5.0,
+        0.3
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "sail_main",
+      "shape": "Block",
+      "position": [
+        -1.2,
+        7.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        4.5,
+        5.5
+      ],
+      "rotation": [
+        0,
+        0,
+        2
+      ],
+      "color": [
+        245,
+        245,
+        235
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "mast_fore",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        8.0,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "sail_fore",
+      "shape": "Block",
+      "position": [
+        3.8,
+        6.0,
+        0.0
+      ],
+      "size": [
+        0.1,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        2
+      ],
+      "color": [
+        245,
+        245,
+        235
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "bowsprit",
+      "shape": "Cylinder",
+      "position": [
+        8.5,
+        2.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        75
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "cannon_L1",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        1.8,
+        2.0
+      ],
+      "size": [
+        1.8,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cannon_R1",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        1.8,
+        -2.0
+      ],
+      "size": [
+        1.8,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cannon_L2",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        1.8,
+        2.0
+      ],
+      "size": [
+        1.8,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cannon_R2",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        1.8,
+        -2.0
+      ],
+      "size": [
+        1.8,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "stern_window",
+      "shape": "Block",
+      "position": [
+        -7.1,
+        2.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.5,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "flag_black",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        10.5,
+        0.8
+      ],
+      "size": [
+        0.1,
+        1.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        10,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "skull_print",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        10.5,
+        0.85
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "steering_wheel_base",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        4.2,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        82,
+        52,
+        33
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "steering_wheel",
+      "shape": "Cylinder",
+      "position": [
+        -3.8,
+        4.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        60,
+        40,
+        20
+      ],
+      "material": "Wood",
+      "transparency": 0
+    }
+  ],
+  "animation": "none",
+  "locomotion": "float",
+  "description": "A classic pirate galleon with tattered white sails, bronze-colored wood, and side-mounted cannons.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "vehicle"
+}

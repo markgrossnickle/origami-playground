@@ -66,6 +66,16 @@ local _spawnedModels: { { model: Model, modelData: { [string]: any }? } } = {}
 local _equippedTool: Tool? = nil
 local _equippedAccessory: BasePart? = nil
 
+-- Shop mode state
+local _shopMode: string? = nil -- nil = free, "browse" / "create_lite" / "create_pro"
+local _lockedModel: string? = nil -- when set, model selector is locked
+local _activeShopPosition: Vector3? = nil -- for distance-based auto-close
+
+-- Forward declarations for UI elements/functions hoisted from createUI
+local _sidebarCreateBtn: TextButton? = nil
+local _modelClip: Frame? = nil
+local _toggleMinimize: (() -> ())? = nil
+
 -- Helper to register a spawned model and track it
 local function registerSpawnedModel(model: Model, modelData: { [string]: any }?)
 	table.insert(_spawnedModels, { model = model, modelData = modelData })
@@ -335,13 +345,12 @@ local function createUI()
 	containerCorner.Parent = container
 
 	-- Toggle: hides/shows the container via sidebar "Create" button
-	-- _sidebarCreateBtn is created later in the sidebar section; forward-declared here
-	local _sidebarCreateBtn: TextButton?
 
 	local function toggleMinimize()
 		_uiMinimized = not _uiMinimized
 		container.Visible = not _uiMinimized
 	end
+	_toggleMinimize = toggleMinimize
 
 	-- Style buttons row (scrollable)
 	local styleClip = Instance.new("Frame")
@@ -396,13 +405,13 @@ local function createUI()
 	end
 
 	-- Model selector row (scrollable)
-	local modelClip = Instance.new("Frame")
-	modelClip.Name = "ModelClip"
-	modelClip.Size = UDim2.new(1, -20, 0, BTN_HEIGHT)
-	modelClip.Position = UDim2.new(0, 10, 0, BTN_HEIGHT + 12)
-	modelClip.BackgroundTransparency = 1
-	modelClip.ClipsDescendants = true
-	modelClip.Parent = container
+	_modelClip = Instance.new("Frame")
+	_modelClip.Name = "ModelClip"
+	_modelClip.Size = UDim2.new(1, -20, 0, BTN_HEIGHT)
+	_modelClip.Position = UDim2.new(0, 10, 0, BTN_HEIGHT + 12)
+	_modelClip.BackgroundTransparency = 1
+	_modelClip.ClipsDescendants = true
+	_modelClip.Parent = container
 
 	local modelRow = Instance.new("ScrollingFrame")
 	modelRow.Name = "ModelRow"
@@ -414,7 +423,7 @@ local function createUI()
 	modelRow.ScrollingDirection = Enum.ScrollingDirection.X
 	modelRow.AutomaticCanvasSize = Enum.AutomaticSize.X
 	modelRow.CanvasSize = UDim2.new(0, 0, 0, BTN_HEIGHT)
-	modelRow.Parent = modelClip
+	modelRow.Parent = _modelClip
 
 	local modelLayout = Instance.new("UIListLayout")
 	modelLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -704,6 +713,7 @@ local function createUI()
 	_sidebarCreateBtn.Activated:Connect(function()
 		toggleMinimize()
 	end)
+	_sidebarCreateBtn.Visible = false
 
 	modesBtn.Activated:Connect(function()
 		local GameModeController = Knit.GetController("GameModeController")
@@ -732,6 +742,7 @@ local function createUI()
 	_browseButton.Font = Enum.Font.GothamBold
 	_browseButton.AutoButtonColor = true
 	_browseButton.Parent = _gui
+	_browseButton.Visible = false
 
 	local browseCorner = Instance.new("UICorner")
 	browseCorner.CornerRadius = UDim.new(0, 8)
@@ -1207,6 +1218,54 @@ function submitPrompt()
 	if not prompt or prompt:match("^%s*$") then
 		setStatus("Type something first!", COLORS.error)
 		return
+	end
+
+	-- Shop currency checks
+	if _shopMode == "create_lite" then
+		-- Deduct 1 Paper Token
+		local PlayerDataService = Knit.GetService("PlayerDataService")
+		local ok, paper = PlayerDataService:Read():await()
+		local paperCount = if ok and paper then (paper.Paper or 0) else 0
+		if paperCount < OrigamiConfig.PAPER_COST_PER_CREATION then
+			setStatus("Need Paper Tokens! Earn them by gifting, breeding, or winning games.", COLORS.error)
+			return
+		end
+		-- Deduct server-side
+		local deductOk, deductResult = PlayerDataService:DeductCurrency("Paper", OrigamiConfig.PAPER_COST_PER_CREATION)
+			:await()
+		if not deductOk or not deductResult or not deductResult.success then
+			setStatus("Not enough Paper Tokens!", COLORS.error)
+			return
+		end
+	elseif _shopMode == "create_pro" then
+		-- Check if player already has a pro creation credit (from a previous purchase)
+		local MonetizationService = Knit.GetService("MonetizationService")
+		local hasOk, hasCredit = MonetizationService:HasProCreation():await()
+		if not hasOk or not hasCredit then
+			-- Prompt Robux purchase and wait for receipt processing
+			MonetizationService:PromptProCreation()
+			setStatus("Complete Robux purchase to create...", COLORS.folds)
+			-- Poll for up to 60 seconds for the receipt to process
+			local credited = false
+			for _ = 1, 60 do
+				task.wait(1)
+				local checkOk, checkResult = MonetizationService:HasProCreation():await()
+				if checkOk and checkResult then
+					credited = true
+					break
+				end
+			end
+			if not credited then
+				setStatus("Purchase not completed.", COLORS.error)
+				return
+			end
+		end
+		-- Consume the credit
+		local consumeOk, consumed = MonetizationService:ConsumeProCreation():await()
+		if not consumeOk or not consumed then
+			setStatus("Pro creation credit not available.", COLORS.error)
+			return
+		end
 	end
 
 	local category = _selectedCategory
@@ -2598,6 +2657,56 @@ function spawnCatalogItem(item: { [string]: any })
 	end)
 end
 
+function CreatorController:OpenShop(shopType: string, lockedModel: string?, shopPosition: Vector3?)
+	_shopMode = shopType
+	_lockedModel = lockedModel
+	_activeShopPosition = shopPosition
+
+	if shopType == "browse" then
+		-- Open catalog panel directly
+		_catalogOpen = true
+		_catalogPanel.Visible = true
+		loadCatalog()
+	elseif shopType == "create_lite" or shopType == "create_pro" then
+		-- Show create panel
+		if _uiMinimized and _toggleMinimize then
+			_toggleMinimize()
+		end
+		-- Lock model selection
+		if lockedModel then
+			_selectedModel = lockedModel
+			updateModelHighlights()
+		end
+		-- Hide model row so user can't change it
+		if _modelClip then
+			_modelClip.Visible = false
+		end
+	end
+end
+
+function CreatorController:CloseShop()
+	if not _shopMode then
+		return
+	end
+
+	_shopMode = nil
+	_lockedModel = nil
+	_activeShopPosition = nil
+
+	-- Hide panels
+	if _catalogOpen then
+		_catalogOpen = false
+		_catalogPanel.Visible = false
+	end
+	if not _uiMinimized and _toggleMinimize then
+		_toggleMinimize() -- hide create panel
+	end
+	-- Restore model row visibility
+	if _modelClip then
+		_modelClip.Visible = true
+	end
+end
+
 function CreatorController:KnitInit() end
 
 function CreatorController:KnitStart()
@@ -2648,6 +2757,39 @@ function CreatorController:KnitStart()
 		else
 			clearAllCreations()
 			_gui.Enabled = false
+		end
+	end)
+
+	-- ShopKeeper integration: open shop UI when player interacts with a shopkeeper
+	local ShopKeeperService = Knit.GetService("ShopKeeperService")
+	ShopKeeperService.ShopOpened:Connect(function(shopId, shopType, lockedModel)
+		-- Find shop position from ShopkeeperData
+		local ShopkeeperData = require(ReplicatedStorage.Shared.ShopkeeperData)
+		local shopPos = nil
+		for _, shop in ipairs(ShopkeeperData.SHOPS) do
+			if shop.id == shopId then
+				shopPos = Vector3.new(shop.position[1], shop.position[2], shop.position[3])
+				break
+			end
+		end
+		CreatorController:OpenShop(shopType, lockedModel, shopPos)
+	end)
+
+	-- Distance-based auto-close: if player walks away from the shop, close it
+	RunService.Heartbeat:Connect(function()
+		if not _shopMode or not _activeShopPosition then
+			return
+		end
+		local character = Player.Character
+		if not character then
+			return
+		end
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+		if not rootPart then
+			return
+		end
+		if (rootPart.Position - _activeShopPosition).Magnitude > 25 then
+			CreatorController:CloseShop()
 		end
 	end)
 end

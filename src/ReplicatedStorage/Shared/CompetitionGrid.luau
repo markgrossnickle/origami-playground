@@ -189,6 +189,14 @@ local function buildStyleGrid(gridFolder: Folder, styleKey: string, styleResults
 					builtModel:PivotTo(CFrame.new(cellPos))
 					builtModel.Parent = gridFolder
 
+					-- Apply animation from model data
+					local animType = modelData.animation
+					if animType and animType ~= "none" then
+						pcall(function()
+							OrigamiBuilder.ApplyAnimation(builtModel, animType)
+						end)
+					end
+
 					local primaryPart = builtModel.PrimaryPart or builtModel:FindFirstChildWhichIsA("BasePart")
 					if primaryPart then
 						local displayName = modelDisplay[modelKey] or modelKey

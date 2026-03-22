@@ -1,0 +1,316 @@
+{
+  "name": "Golden Trident (FL 2.5 Lite)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "handle_base",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        -3.0,
+        0.0
+      ],
+      "size": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "handle_grip",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        -1.5,
+        0.0
+      ],
+      "size": [
+        0.7,
+        1.0,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        160,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "handle_top",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "prong_center",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        0.4,
+        1.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "prong_left",
+      "shape": "Cylinder",
+      "position": [
+        -0.8,
+        2.5,
+        0.0
+      ],
+      "size": [
+        0.4,
+        1.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        20
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "prong_right",
+      "shape": "Cylinder",
+      "position": [
+        0.8,
+        2.5,
+        0.0
+      ],
+      "size": [
+        0.4,
+        1.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -20
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "energy_center",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "energy_left",
+      "shape": "Ball",
+      "position": [
+        -1.2,
+        3.8,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "energy_right",
+      "shape": "Ball",
+      "position": [
+        1.2,
+        3.8,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "energy_spark_1",
+      "shape": "Block",
+      "position": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_spark_2",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        4.0,
+        -0.5
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_spark_3",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.5,
+        0.5
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A golden trident with crackling energy around its prongs.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

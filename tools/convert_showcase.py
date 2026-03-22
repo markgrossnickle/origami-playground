@@ -1,55 +1,43 @@
 """
-Convert demo_showcase (v1=origami prompt) and demo_showcase_v2 (no origami prompt)
-into CompetitionData.luau with side-by-side columns.
-
-Layout: 8 columns = v1_model1, v2_model1, v1_model2, v2_model2, ...
-        15 rows = 5 creatures, 5 vehicles, 5 props
+Convert demo_grid JSON files into CompetitionData.luau for the in-game grid.
+Layout: rows = prompts, columns = 3 models (cheapest to most expensive).
 """
 
 import json, os
 
 SCRIPT_DIR = os.path.dirname(__file__)
-V1_DIR = os.path.join(SCRIPT_DIR, "demo_showcase")
-V2_DIR = os.path.join(SCRIPT_DIR, "demo_showcase_v2")
+GRID_DIR = os.path.join(SCRIPT_DIR, "demo_grid")
 OUT_PATH = os.path.join(SCRIPT_DIR, "..", "src", "ReplicatedStorage", "Shared", "CompetitionData.luau")
 
-# Models in price order (cheapest first)
-MODELS = ["flash25_lite", "flash_lite", "flash25", "flash3"]
+MODELS = ["flash25_lite", "flash3", "gemini_pro"]
 MODEL_DISPLAY = {
-    "flash25_lite": "FL 2.5 Lite",
-    "flash_lite": "FL 3.1 Lite",
-    "flash25": "Gem 2.5 Flash",
-    "flash3": "Gem 3 Flash",
+    "flash25_lite": "FL 2.5 Lite (~$0.001/gen)",
+    "flash3": "Gem 3 Flash (~$0.05/gen)",
+    "gemini_pro": "Gem 3.1 Pro (~$0.20/gen)",
 }
 
-# Column order: v1, v2 interleaved per model = 8 columns
-# Column keys: flash25_lite_v1, flash25_lite_v2, flash_lite_v1, flash_lite_v2, ...
-COLUMNS = []
-COLUMN_DISPLAY = {}
-for m in MODELS:
-    v1_key = f"{m}_v1"
-    v2_key = f"{m}_v2"
-    COLUMNS.append(v1_key)
-    COLUMNS.append(v2_key)
-    COLUMN_DISPLAY[v1_key] = f"{MODEL_DISPLAY[m]} (old)"
-    COLUMN_DISPLAY[v2_key] = f"{MODEL_DISPLAY[m]} (new)"
-
 PROMPTS = [
-    {"category": "creature", "prompt": "a tiny round hedgehog with big curious eyes"},
-    {"category": "creature", "prompt": "a three-headed serpent coiled around itself"},
-    {"category": "creature", "prompt": "a massive armored rhino beetle standing upright"},
-    {"category": "creature", "prompt": "a ghostly jellyfish trailing long glowing tentacles"},
-    {"category": "creature", "prompt": "a baby phoenix with smoldering feathers and a long tail"},
-    {"category": "vehicle", "prompt": "a flying carpet with tassels and cushions"},
-    {"category": "vehicle", "prompt": "a steampunk motorcycle with oversized exhaust pipes"},
-    {"category": "vehicle", "prompt": "a submarine shaped like a hammerhead shark"},
-    {"category": "vehicle", "prompt": "a hovering food truck selling tacos"},
-    {"category": "vehicle", "prompt": "a giant snail with a saddle on its shell"},
-    {"category": "prop", "prompt": "an ancient treasure chest overflowing with gold coins"},
-    {"category": "prop", "prompt": "a magical bookshelf with floating glowing books"},
-    {"category": "prop", "prompt": "a campfire with roasting marshmallows on sticks"},
-    {"category": "prop", "prompt": "a broken robot slumped against a wall sparking"},
-    {"category": "prop", "prompt": "a giant mushroom house with a tiny door and windows"},
+    {"category": "creature", "prompt": "a giant octopus with eight curling tentacles and glowing eyes"},
+    {"category": "creature", "prompt": "a perfectly round pufferfish puffed up with tiny spines all over"},
+    {"category": "creature", "prompt": "an enormous sandworm bursting out of the ground, long segmented body"},
+    {"category": "creature", "prompt": "a majestic eagle mid-flight with outstretched wings and talons"},
+    {"category": "creature", "prompt": "a crystal golem made entirely of jagged translucent shards"},
+    {"category": "creature", "prompt": "a tiny ladybug with spotted shell and delicate antennae"},
+    {"category": "creature", "prompt": "a long Chinese dragon snaking through the air with whiskers and horns"},
+    {"category": "vehicle", "prompt": "a pirate ship with sails and cannons"},
+    {"category": "vehicle", "prompt": "a futuristic hoverbike with glowing engine pods"},
+    {"category": "vehicle", "prompt": "a hot air balloon with a wicker basket and colorful panels"},
+    {"category": "vehicle", "prompt": "a chunky monster truck with oversized wheels"},
+    {"category": "vehicle", "prompt": "a wooden rowboat with oars"},
+    {"category": "prop", "prompt": "a bubbling cauldron with green potion overflowing"},
+    {"category": "prop", "prompt": "a grandfather clock with a swinging pendulum"},
+    {"category": "prop", "prompt": "a giant crystal ball on an ornate stand, glowing from within"},
+    {"category": "prop", "prompt": "a medieval catapult loaded with a boulder"},
+    {"category": "prop", "prompt": "a cozy campfire with a pot hanging over it on a tripod"},
+    {"category": "prop", "prompt": "a glowing enchanted blade with a jeweled crossguard"},
+    {"category": "prop", "prompt": "a wizard staff with a spiraling crystal at the top"},
+    {"category": "prop", "prompt": "a golden trident crackling with energy"},
+    {"category": "prop", "prompt": "a massive war hammer with runes etched into the head"},
 ]
 
 
@@ -84,49 +72,28 @@ def lua_value(v, indent=2) -> str:
     return str(v)
 
 
-def load_model(directory, category, prompt_idx, model):
-    fname = os.path.join(directory, f"{category}_{prompt_idx:02d}_{model}.json")
-    if os.path.exists(fname):
-        try:
-            with open(fname) as f:
-                data = json.load(f)
-            if data.get("parts"):
-                # Strip "Origami" prefix from names
-                if "name" in data:
-                    data["name"] = data["name"].replace("Origami ", "").replace("origami ", "")
-                return data
-        except Exception as e:
-            print(f"  Error reading {fname}: {e}")
-    return None
-
-
 def main():
     lines = []
     lines.append("-- AUTO-GENERATED by convert_showcase.py - do not edit by hand")
     lines.append("local CompetitionData = {}\n")
 
-    # Columns list (8 columns)
     lines.append("CompetitionData.MODELS = {")
-    for c in COLUMNS:
-        lines.append(f'\t"{c}",')
+    for m in MODELS:
+        lines.append(f'\t"{m}",')
     lines.append("}\n")
 
-    # Display names
     lines.append("CompetitionData.MODEL_DISPLAY = {")
-    for k, v in COLUMN_DISPLAY.items():
+    for k, v in MODEL_DISPLAY.items():
         lines.append(f"\t{k} = {lua_string(v)},")
     lines.append("}\n")
 
-    # Styles
     lines.append('CompetitionData.STYLES = { "freestyle" }\n')
 
-    # Prompts
     lines.append("CompetitionData.PROMPTS = {")
     for p in PROMPTS:
         lines.append(f'\t{{ category = "{p["category"]}", prompt = {lua_string(p["prompt"])} }},')
     lines.append("}\n")
 
-    # Results - interleaved v1/v2 per model
     lines.append("CompetitionData.RESULTS = {")
     lines.append("\tfreestyle = {")
 
@@ -134,27 +101,25 @@ def main():
     fail_count = 0
 
     for prompt_idx, prompt_info in enumerate(PROMPTS):
-        cat = prompt_info["category"]
         for model in MODELS:
-            # v1 (origami prompt)
-            v1_key = f"{prompt_idx + 1}_{model}_v1"
-            data = load_model(V1_DIR, cat, prompt_idx, model)
-            if data:
-                lines.append(f'\t\t["{v1_key}"] = {lua_value(data, 2)},')
-                ok_count += 1
-            else:
-                fail_count += 1
-                print(f"  Missing v1: {cat}_{prompt_idx:02d}_{model}")
+            fname = os.path.join(GRID_DIR, f"{prompt_idx:02d}_{model}.json")
+            key = f"{prompt_idx + 1}_{model}"
 
-            # v2 (no origami prompt)
-            v2_key = f"{prompt_idx + 1}_{model}_v2"
-            data = load_model(V2_DIR, cat, prompt_idx, model)
-            if data:
-                lines.append(f'\t\t["{v2_key}"] = {lua_value(data, 2)},')
-                ok_count += 1
-            else:
-                fail_count += 1
-                print(f"  Missing v2: {cat}_{prompt_idx:02d}_{model}")
+            if os.path.exists(fname):
+                try:
+                    with open(fname) as f:
+                        data = json.load(f)
+                    if "name" in data:
+                        data["name"] = data["name"].replace("Origami ", "").replace("origami ", "")
+                    if data.get("parts"):
+                        lines.append(f'\t\t["{key}"] = {lua_value(data, 2)},')
+                        ok_count += 1
+                        continue
+                except Exception as e:
+                    print(f"  Error reading {fname}: {e}")
+
+            fail_count += 1
+            print(f"  Missing: {fname}")
 
     lines.append("\t},")
     lines.append("}\n")

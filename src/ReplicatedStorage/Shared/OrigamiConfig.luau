@@ -65,12 +65,13 @@ OrigamiConfig.STYLES = {
 }
 
 -- Crane costs per model (new LLM generations)
+-- Actual API costs: Lite ~$0.001, Flash ~$0.05, Pro ~$0.20, Opus ~$0.40
 OrigamiConfig.CRANE_COSTS = {
 	flash25_lite = 1,
-	flash3 = 2,
-	gemini_pro = 5,
-	opus = 10,
-	test = 3,
+	flash3 = 5,
+	gemini_pro = 20,
+	opus = 40,
+	test = 10,
 }
 
 -- Emote generation cost
@@ -81,5 +82,9 @@ OrigamiConfig.BREEDING_COST = 2
 
 -- Folds cost to spawn a cached catalog item
 OrigamiConfig.CACHED_ITEM_COST = 10
+
+-- Shop costs
+OrigamiConfig.PAPER_COST_PER_CREATION = 1 -- Paper Tokens for Workshop (FL 2.5 Lite)
+OrigamiConfig.PRO_CREATION_PRODUCT_ID = 0 -- DevProduct ID for Atelier (Gem 3.1 Pro) — set to real ID when ready
 
 return OrigamiConfig

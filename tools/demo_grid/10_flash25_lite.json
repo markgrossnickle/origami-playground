@@ -1,0 +1,487 @@
+{
+  "name": "Chunky Monster Truck (FL 2.5 Lite)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "body_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        0.0
+      ],
+      "size": [
+        10.0,
+        2.5,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "cabin",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        3.7,
+        0.0
+      ],
+      "size": [
+        3.0,
+        2.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "windshield_front",
+      "shape": "Block",
+      "position": [
+        -3.3,
+        4.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.8,
+        3.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "roof",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        4.7,
+        0.0
+      ],
+      "size": [
+        1.0,
+        0.3,
+        3.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "wheel_FL",
+      "shape": "Ball",
+      "position": [
+        4.5,
+        1.5,
+        2.8
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_FR",
+      "shape": "Ball",
+      "position": [
+        4.5,
+        1.5,
+        -2.8
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_BL",
+      "shape": "Ball",
+      "position": [
+        -4.5,
+        1.5,
+        2.8
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "wheel_BR",
+      "shape": "Ball",
+      "position": [
+        -4.5,
+        1.5,
+        -2.8
+      ],
+      "size": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tire_tread_FL",
+      "shape": "Cylinder",
+      "position": [
+        4.5,
+        1.5,
+        2.8
+      ],
+      "size": [
+        2.2,
+        0.3,
+        2.2
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tire_tread_FR",
+      "shape": "Cylinder",
+      "position": [
+        4.5,
+        1.5,
+        -2.8
+      ],
+      "size": [
+        2.2,
+        0.3,
+        2.2
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tire_tread_BL",
+      "shape": "Cylinder",
+      "position": [
+        -4.5,
+        1.5,
+        2.8
+      ],
+      "size": [
+        2.2,
+        0.3,
+        2.2
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "tire_tread_BR",
+      "shape": "Cylinder",
+      "position": [
+        -4.5,
+        1.5,
+        -2.8
+      ],
+      "size": [
+        2.2,
+        0.3,
+        2.2
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spoiler_base",
+      "shape": "Block",
+      "position": [
+        -5.8,
+        3.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "spoiler_support_L",
+      "shape": "Block",
+      "position": [
+        -5.3,
+        2.5,
+        1.5
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "spoiler_support_R",
+      "shape": "Block",
+      "position": [
+        -5.3,
+        2.5,
+        -1.5
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        0,
+        0
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "headlight_L",
+      "shape": "Block",
+      "position": [
+        -5.3,
+        2.5,
+        1.5
+      ],
+      "size": [
+        0.2,
+        1.0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "headlight_R",
+      "shape": "Block",
+      "position": [
+        -5.3,
+        2.5,
+        -1.5
+      ],
+      "size": [
+        0.2,
+        1.0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "exhaust_pipe_L",
+      "shape": "Cylinder",
+      "position": [
+        -3.0,
+        1.8,
+        1.5
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "exhaust_pipe_R",
+      "shape": "Cylinder",
+      "position": [
+        -3.0,
+        1.8,
+        -1.5
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Metal"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "stationary",
+  "description": "A chunky monster truck with oversized wheels and a spoiler.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "vehicle"
+}

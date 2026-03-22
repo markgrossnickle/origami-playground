@@ -1,0 +1,164 @@
+{
+  "name": "Wizard Staff (FL 2.5 Lite)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "staff_handle",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "size": [
+        0.4,
+        12.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "crystal_base",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        12.0,
+        0.0
+      ],
+      "size": [
+        0.8,
+        0.5,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        75,
+        0,
+        130
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "crystal_spiral_1",
+      "shape": "Block",
+      "position": [
+        0.2,
+        13.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        148,
+        0,
+        211
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "crystal_spiral_2",
+      "shape": "Block",
+      "position": [
+        -0.2,
+        13.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        148,
+        0,
+        211
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "crystal_spiral_3",
+      "shape": "Block",
+      "position": [
+        0.0,
+        14.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        148,
+        0,
+        211
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "crystal_top",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        15.5,
+        0.0
+      ],
+      "size": [
+        0.7,
+        0.7,
+        0.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        106,
+        90,
+        205
+      ],
+      "material": "Glass",
+      "transparency": 0.2
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A magical wizard staff with a glowing, spiraling crystal at the top.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "prop"
+}

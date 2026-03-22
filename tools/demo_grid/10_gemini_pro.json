@@ -1,0 +1,921 @@
+{
+  "name": "Monster Truck (Gem 3.1 Pro)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "wheel_FL",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        3.0,
+        -4.5
+      ],
+      "size": [
+        3.0,
+        6.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_FR",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        3.0,
+        4.5
+      ],
+      "size": [
+        3.0,
+        6.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_BL",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        3.0,
+        -4.5
+      ],
+      "size": [
+        3.0,
+        6.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_BR",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        3.0,
+        4.5
+      ],
+      "size": [
+        3.0,
+        6.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "hubcap_FL",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        3.0,
+        -4.5
+      ],
+      "size": [
+        3.2,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "hubcap_FR",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        3.0,
+        4.5
+      ],
+      "size": [
+        3.2,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "hubcap_BL",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        3.0,
+        -4.5
+      ],
+      "size": [
+        3.2,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "hubcap_BR",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        3.0,
+        4.5
+      ],
+      "size": [
+        3.2,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "axle_front",
+      "shape": "Cylinder",
+      "position": [
+        4.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        8.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "axle_rear",
+      "shape": "Cylinder",
+      "position": [
+        -4.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        8.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "chassis_frame",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.5,
+        0.0
+      ],
+      "size": [
+        12.0,
+        1.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "shock_FL",
+      "shape": "Cylinder",
+      "position": [
+        3.5,
+        3.8,
+        -2.0
+      ],
+      "size": [
+        2.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        200,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "shock_FR",
+      "shape": "Cylinder",
+      "position": [
+        3.5,
+        3.8,
+        2.0
+      ],
+      "size": [
+        2.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        200,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "shock_BL",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        3.8,
+        -2.0
+      ],
+      "size": [
+        2.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        200,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "shock_BR",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        3.8,
+        2.0
+      ],
+      "size": [
+        2.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        200,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "body_lower",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        5.5,
+        0.0
+      ],
+      "size": [
+        8.0,
+        1.5,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "hood",
+      "shape": "Block",
+      "position": [
+        4.5,
+        5.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        1.5,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "bumper_front",
+      "shape": "Block",
+      "position": [
+        6.5,
+        4.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.2,
+        7.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "bumper_rear",
+      "shape": "Block",
+      "position": [
+        -5.5,
+        4.5,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.2,
+        7.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "engine_block",
+      "shape": "Block",
+      "position": [
+        4.5,
+        6.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        2.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        120,
+        120,
+        120
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "engine_scoop",
+      "shape": "Block",
+      "position": [
+        4.5,
+        7.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        200,
+        200
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "grille",
+      "shape": "Block",
+      "position": [
+        6.1,
+        5.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.2,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "headlight_L",
+      "shape": "Block",
+      "position": [
+        6.1,
+        5.5,
+        -2.5
+      ],
+      "size": [
+        0.3,
+        0.8,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        200
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "headlight_R",
+      "shape": "Block",
+      "position": [
+        6.1,
+        5.5,
+        2.5
+      ],
+      "size": [
+        0.3,
+        0.8,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        200
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "windshield",
+      "shape": "Block",
+      "position": [
+        2.0,
+        7.2,
+        0.0
+      ],
+      "size": [
+        0.4,
+        2.5,
+        5.8
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        150,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "back_window",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        7.2,
+        0.0
+      ],
+      "size": [
+        0.4,
+        2.5,
+        5.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "pillar_L",
+      "shape": "Block",
+      "position": [
+        0.0,
+        7.2,
+        -2.8
+      ],
+      "size": [
+        4.0,
+        2.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "pillar_R",
+      "shape": "Block",
+      "position": [
+        0.0,
+        7.2,
+        2.8
+      ],
+      "size": [
+        4.0,
+        2.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "roof",
+      "shape": "Block",
+      "position": [
+        0.0,
+        8.6,
+        0.0
+      ],
+      "size": [
+        4.4,
+        0.4,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "bed_wall_back",
+      "shape": "Block",
+      "position": [
+        -4.8,
+        6.75,
+        0.0
+      ],
+      "size": [
+        0.4,
+        1.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "bed_wall_L",
+      "shape": "Block",
+      "position": [
+        -3.4,
+        6.75,
+        -2.8
+      ],
+      "size": [
+        2.8,
+        1.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "bed_wall_R",
+      "shape": "Block",
+      "position": [
+        -3.4,
+        6.75,
+        2.8
+      ],
+      "size": [
+        2.8,
+        1.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        205,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "rollbar_L",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        7.5,
+        -2.5
+      ],
+      "size": [
+        3.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "rollbar_R",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        7.5,
+        2.5
+      ],
+      "size": [
+        3.0,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "rollbar_top",
+      "shape": "Cylinder",
+      "position": [
+        -3.5,
+        9.0,
+        0.0
+      ],
+      "size": [
+        5.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    }
+  ],
+  "animation": "none",
+  "locomotion": "stationary",
+  "description": "A powerful monster truck with massive slate wheels, a lifted diamond-plate suspension, and a bright green pickup body featuring an exposed supercharged engine.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "vehicle"
+}

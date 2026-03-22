@@ -1,0 +1,611 @@
+{
+  "name": "Hot Air Balloon (FL 2.5 Lite)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "balloon_top",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "balloon_mid_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        4.0,
+        0.0
+      ],
+      "size": [
+        4.5,
+        4.5,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "balloon_mid_2",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        4.8,
+        4.8,
+        4.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "balloon_bottom",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        4.5,
+        4.5,
+        4.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        255
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        3.0,
+        3.5
+      ],
+      "size": [
+        0.5,
+        4.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_2",
+      "shape": "Block",
+      "position": [
+        0.0,
+        3.0,
+        -3.5
+      ],
+      "size": [
+        0.5,
+        4.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        165,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_3",
+      "shape": "Block",
+      "position": [
+        3.5,
+        3.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_4",
+      "shape": "Block",
+      "position": [
+        -3.5,
+        3.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        255
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_5",
+      "shape": "Block",
+      "position": [
+        2.5,
+        3.0,
+        2.5
+      ],
+      "size": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        0
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_6",
+      "shape": "Block",
+      "position": [
+        -2.5,
+        3.0,
+        -2.5
+      ],
+      "size": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        128,
+        0,
+        128
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_7",
+      "shape": "Block",
+      "position": [
+        2.5,
+        3.0,
+        -2.5
+      ],
+      "size": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        255
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "panel_8",
+      "shape": "Block",
+      "position": [
+        -2.5,
+        3.0,
+        2.5
+      ],
+      "size": [
+        0.5,
+        4.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        128,
+        128
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "basket_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -2.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "basket_wall_1",
+      "shape": "Block",
+      "position": [
+        0.9,
+        -1.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "basket_wall_2",
+      "shape": "Block",
+      "position": [
+        -0.9,
+        -1.5,
+        0.0
+      ],
+      "size": [
+        0.2,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "basket_wall_3",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -1.5,
+        0.9
+      ],
+      "size": [
+        2.0,
+        2.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "basket_wall_4",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -1.5,
+        -0.9
+      ],
+      "size": [
+        2.0,
+        2.0,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        139,
+        69,
+        19
+      ],
+      "material": "Wood"
+    },
+    {
+      "name": "rope_1",
+      "shape": "Cylinder",
+      "position": [
+        1.1,
+        -1.0,
+        1.1
+      ],
+      "size": [
+        0.1,
+        1.5,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "rope_2",
+      "shape": "Cylinder",
+      "position": [
+        -1.1,
+        -1.0,
+        1.1
+      ],
+      "size": [
+        0.1,
+        1.5,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "rope_3",
+      "shape": "Cylinder",
+      "position": [
+        1.1,
+        -1.0,
+        -1.1
+      ],
+      "size": [
+        0.1,
+        1.5,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "rope_4",
+      "shape": "Cylinder",
+      "position": [
+        -1.1,
+        -1.0,
+        -1.1
+      ],
+      "size": [
+        0.1,
+        1.5,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        100
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "burner_base",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        -3.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "burner_tube",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        -4.0,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "burner_flame",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        -4.5,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        100,
+        0
+      ],
+      "material": "Neon"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "float",
+  "description": "A colorful hot air balloon with a wicker basket and visible burners.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "vehicle"
+}

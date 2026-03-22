@@ -1,0 +1,511 @@
+{
+  "name": "Hot Air Balloon (Gem 3 Flash)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "basket_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        5.0,
+        0.5,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        101,
+        67,
+        33
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "basket_wall_front",
+      "shape": "Block",
+      "position": [
+        2.25,
+        1.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        120,
+        80,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "basket_wall_back",
+      "shape": "Block",
+      "position": [
+        -2.25,
+        1.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        2.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        120,
+        80,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "basket_wall_left",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        2.25
+      ],
+      "size": [
+        4.0,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        120,
+        80,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "basket_wall_right",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.5,
+        -2.25
+      ],
+      "size": [
+        4.0,
+        2.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        120,
+        80,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "strut_fl",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        4.0,
+        2.0
+      ],
+      "size": [
+        3.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "strut_fr",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        4.0,
+        -2.0
+      ],
+      "size": [
+        3.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "strut_bl",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        4.0,
+        2.0
+      ],
+      "size": [
+        3.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "strut_br",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        4.0,
+        -2.0
+      ],
+      "size": [
+        3.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "burner",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.8,
+        0.0
+      ],
+      "size": [
+        1.5,
+        0.4,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "flame",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        3.5,
+        0.0
+      ],
+      "size": [
+        1.2,
+        1.5,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        100,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "balloon_bottom",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        6.5,
+        0.0
+      ],
+      "size": [
+        6.0,
+        5.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        50,
+        50
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "balloon_mid",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        9.5,
+        0.0
+      ],
+      "size": [
+        10.0,
+        8.0,
+        10.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        200,
+        50
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "panel_red",
+      "shape": "Ball",
+      "position": [
+        3.5,
+        9.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        7.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        50,
+        50
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "panel_blue",
+      "shape": "Ball",
+      "position": [
+        -3.5,
+        9.5,
+        0.0
+      ],
+      "size": [
+        4.0,
+        7.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        255
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "panel_yellow",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        9.5,
+        3.5
+      ],
+      "size": [
+        4.0,
+        7.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        50
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "panel_purple",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        9.5,
+        -3.5
+      ],
+      "size": [
+        4.0,
+        7.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        50,
+        255
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "balloon_top",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        12.0,
+        0.0
+      ],
+      "size": [
+        8.0,
+        5.0,
+        8.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "rope_1",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        5.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        75
+      ],
+      "color": [
+        200,
+        180,
+        150
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "rope_2",
+      "shape": "Cylinder",
+      "position": [
+        -2.5,
+        5.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        -75
+      ],
+      "color": [
+        200,
+        180,
+        150
+      ],
+      "material": "Fabric"
+    }
+  ],
+  "animation": "none",
+  "locomotion": "fly",
+  "description": "A vibrant hot air balloon with a rustic wicker basket and multi-colored thermal panels.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "vehicle"
+}

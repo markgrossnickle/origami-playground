@@ -123,7 +123,9 @@ local function spawnWave(lobby)
 
 	for dir = 1, dirCount do
 		local path = lobby.waypoints[dir]
-		if not path or #path < 2 then continue end
+		if not path or #path < 2 then
+			continue
+		end
 
 		for i = 1, stats.count do
 			lobby.nextCreepId += 1
@@ -145,7 +147,9 @@ local function spawnWave(lobby)
 
 			-- Broadcast spawn (with delay for stagger)
 			task.delay(creep.spawnDelay, function()
-				if not creep.alive then return end
+				if not creep.alive then
+					return
+				end
 				broadcastAll(lobby, "CreepSpawned", {
 					id = creep.id,
 					hp = creep.hp,
@@ -162,14 +166,18 @@ end
 
 local function moveCreeps(lobby, dt: number)
 	for _, creep in ipairs(lobby.creeps) do
-		if not creep.alive then continue end
+		if not creep.alive then
+			continue
+		end
 		if creep.spawnDelay and creep.spawnDelay > 0 then
 			creep.spawnDelay -= dt
 			continue
 		end
 
 		local path = lobby.waypoints[creep.direction]
-		if not path then continue end
+		if not path then
+			continue
+		end
 
 		local nextIdx = creep.waypointIndex + 1
 		if nextIdx > #path then
@@ -213,7 +221,9 @@ local function towerAttackLoop(lobby, dt: number)
 	for _, tower in ipairs(lobby.towers) do
 		local now = os.clock()
 		local interval = if tower.attackType == "rapid" then 0.5 else 1.0
-		if now - (tower._lastAttack or 0) < interval then continue end
+		if now - (tower._lastAttack or 0) < interval then
+			continue
+		end
 
 		-- Build temp creep list for TDCombat
 		local creepTargets = {}
@@ -235,7 +245,9 @@ local function towerAttackLoop(lobby, dt: number)
 		end
 
 		local target = TDCombat.findCreepTarget(tower.position, tower.range, creepTargets, tower.targetPriority)
-		if not target then continue end
+		if not target then
+			continue
+		end
 
 		tower._lastAttack = now
 		local dmg = if tower.attackType == "rapid" then math.floor(tower.damage * 0.6) else tower.damage
@@ -292,7 +304,9 @@ end
 
 local function checkWaveCleared(lobby)
 	for _, c in ipairs(lobby.creeps) do
-		if c.alive then return false end
+		if c.alive then
+			return false
+		end
 	end
 	return true
 end
@@ -303,7 +317,9 @@ local function startCombatLoop(lobby)
 	end
 
 	lobby.combatLoop = RunService.Heartbeat:Connect(function(dt: number)
-		if lobby.phase ~= "combat" then return end
+		if lobby.phase ~= "combat" then
+			return
+		end
 
 		moveCreeps(lobby, dt)
 		towerAttackLoop(lobby, dt)
@@ -334,6 +350,9 @@ local function startCombatLoop(lobby)
 				if lobby.wave > highestWave then
 					PlayerDataService:Write(p, { "CoopTDHighestWave" }, lobby.wave)
 				end
+				-- Reward Paper Token for winning
+				local paper = PlayerDataService:Read(p, { "Paper" }) or 0
+				PlayerDataService:Write(p, { "Paper" }, paper + 1)
 			end
 
 			broadcastAll(lobby, "WaveCleared", { wave = lobby.wave, goldBonus = bonus })

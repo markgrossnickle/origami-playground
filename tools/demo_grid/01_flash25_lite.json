@@ -1,0 +1,386 @@
+{
+  "name": "Pufferfish (FL 2.5 Lite)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        4.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        180,
+        50
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_1",
+      "shape": "Ball",
+      "position": [
+        3.0,
+        1.0,
+        1.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_2",
+      "shape": "Ball",
+      "position": [
+        2.0,
+        3.0,
+        1.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_3",
+      "shape": "Ball",
+      "position": [
+        1.0,
+        3.0,
+        2.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_4",
+      "shape": "Ball",
+      "position": [
+        -3.0,
+        1.0,
+        1.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_5",
+      "shape": "Ball",
+      "position": [
+        -2.0,
+        3.0,
+        1.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_6",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        3.0,
+        2.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_7",
+      "shape": "Ball",
+      "position": [
+        1.0,
+        -3.0,
+        1.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_8",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        -2.5,
+        2.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_9",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        -3.0,
+        1.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_10",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        -2.5,
+        -2.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_11",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        1.0,
+        3.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "spine_12",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        1.0,
+        -3.0
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        160,
+        40
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        1.5,
+        0.5,
+        2.5
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        -1.5,
+        0.5,
+        2.5
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic"
+    }
+  ],
+  "animation": "idle_bob",
+  "locomotion": "float",
+  "description": "A round, inflated pufferfish covered in small spines with beady black eyes.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "creature"
+}

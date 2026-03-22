@@ -1,0 +1,712 @@
+{
+  "name": "Futuristic Hoverbike (Gem 3.1 Pro)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "lower_frame",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "size": [
+        10.0,
+        1.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        240,
+        240,
+        245
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "seat_base",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        1.0,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        35
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "chassis_front",
+      "shape": "Block",
+      "position": [
+        3.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        240,
+        240,
+        245
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "chassis_rear",
+      "shape": "Block",
+      "position": [
+        -4.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        3.0,
+        1.5,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        240,
+        240,
+        245
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "dashboard",
+      "shape": "Block",
+      "position": [
+        1.5,
+        3.0,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.5,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        50,
+        50,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "handlebars",
+      "shape": "Cylinder",
+      "position": [
+        1.0,
+        3.8,
+        0.0
+      ],
+      "size": [
+        4.0,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        105
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "windshield",
+      "shape": "Block",
+      "position": [
+        2.2,
+        4.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        2.0,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        150,
+        220,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "pod_L_core",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.2,
+        3.0
+      ],
+      "size": [
+        12.0,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "pod_R_core",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.2,
+        -3.0
+      ],
+      "size": [
+        12.0,
+        1.4,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "casing_L_top",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.0,
+        3.0
+      ],
+      "size": [
+        11.0,
+        0.4,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        240,
+        240,
+        245
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "casing_R_top",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.0,
+        -3.0
+      ],
+      "size": [
+        11.0,
+        0.4,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        240,
+        240,
+        245
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "casing_L_bottom",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.4,
+        3.0
+      ],
+      "size": [
+        11.0,
+        0.4,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "casing_R_bottom",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.4,
+        -3.0
+      ],
+      "size": [
+        11.0,
+        0.4,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        55
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "strut_front_L",
+      "shape": "Block",
+      "position": [
+        3.0,
+        1.2,
+        1.8
+      ],
+      "size": [
+        1.5,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        105
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "strut_rear_L",
+      "shape": "Block",
+      "position": [
+        -3.0,
+        1.2,
+        1.8
+      ],
+      "size": [
+        1.5,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        105
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "strut_front_R",
+      "shape": "Block",
+      "position": [
+        3.0,
+        1.2,
+        -1.8
+      ],
+      "size": [
+        1.5,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        105
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "strut_rear_R",
+      "shape": "Block",
+      "position": [
+        -3.0,
+        1.2,
+        -1.8
+      ],
+      "size": [
+        1.5,
+        0.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        100,
+        105
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "emitter_front_L",
+      "shape": "Ball",
+      "position": [
+        4.0,
+        0.2,
+        3.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "emitter_rear_L",
+      "shape": "Ball",
+      "position": [
+        -4.0,
+        0.2,
+        3.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "emitter_front_R",
+      "shape": "Ball",
+      "position": [
+        4.0,
+        0.2,
+        -3.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "emitter_rear_R",
+      "shape": "Ball",
+      "position": [
+        -4.0,
+        0.2,
+        -3.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "intake_L",
+      "shape": "Cylinder",
+      "position": [
+        6.0,
+        1.2,
+        3.0
+      ],
+      "size": [
+        1.0,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "intake_R",
+      "shape": "Cylinder",
+      "position": [
+        6.0,
+        1.2,
+        -3.0
+      ],
+      "size": [
+        1.0,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "nozzle_L",
+      "shape": "Cylinder",
+      "position": [
+        -6.5,
+        1.2,
+        3.0
+      ],
+      "size": [
+        1.0,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "nozzle_R",
+      "shape": "Cylinder",
+      "position": [
+        -6.5,
+        1.2,
+        -3.0
+      ],
+      "size": [
+        1.0,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "exhaust_L",
+      "shape": "Cylinder",
+      "position": [
+        -7.5,
+        1.2,
+        3.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        100,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "exhaust_R",
+      "shape": "Cylinder",
+      "position": [
+        -7.5,
+        1.2,
+        -3.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        100,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.3
+    }
+  ],
+  "animation": "none",
+  "description": "A sleek, futuristic hoverbike with powerful glowing cyan engine pods and a bright orange exhaust.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "vehicle"
+}

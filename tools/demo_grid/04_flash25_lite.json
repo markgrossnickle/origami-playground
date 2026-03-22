@@ -1,0 +1,555 @@
+{
+  "name": "Crystal Golem (FL 2.5 Lite)",
+  "category": "creature",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        3.0,
+        4.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "seg_2",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        2.8,
+        3.0,
+        2.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "seg_3",
+      "shape": "Block",
+      "position": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "size": [
+        2.6,
+        2.5,
+        2.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        -1.5,
+        0.8
+      ],
+      "size": [
+        1.0,
+        2.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Block",
+      "position": [
+        1.0,
+        -1.5,
+        0.8
+      ],
+      "size": [
+        1.0,
+        2.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Block",
+      "position": [
+        -1.0,
+        -1.5,
+        -0.8
+      ],
+      "size": [
+        1.0,
+        2.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Block",
+      "position": [
+        1.0,
+        -1.5,
+        -0.8
+      ],
+      "size": [
+        1.0,
+        2.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "head_shard_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        5.0,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "head_shard_2",
+      "shape": "Block",
+      "position": [
+        0.4,
+        5.8,
+        0.4
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "head_shard_3",
+      "shape": "Block",
+      "position": [
+        -0.4,
+        5.8,
+        0.4
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        -0.5,
+        6.0,
+        0.8
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        0.5,
+        6.0,
+        0.8
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "arm_L_1",
+      "shape": "Block",
+      "position": [
+        -2.0,
+        2.5,
+        1.2
+      ],
+      "size": [
+        0.8,
+        2.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        -20,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "arm_R_1",
+      "shape": "Block",
+      "position": [
+        2.0,
+        2.5,
+        1.2
+      ],
+      "size": [
+        0.8,
+        2.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        20,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "crystal_shard_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.5,
+        0.0
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "crystal_shard_2",
+      "shape": "Block",
+      "position": [
+        0.8,
+        3.5,
+        0.8
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "crystal_shard_3",
+      "shape": "Block",
+      "position": [
+        -0.8,
+        3.5,
+        0.8
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "crystal_shard_4",
+      "shape": "Block",
+      "position": [
+        0.8,
+        2.5,
+        -0.8
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "crystal_shard_5",
+      "shape": "Block",
+      "position": [
+        -0.8,
+        2.5,
+        -0.8
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "crystal_shard_6",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        1.3
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "crystal_shard_7",
+      "shape": "Block",
+      "position": [
+        0.0,
+        0.5,
+        -1.3
+      ],
+      "size": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        173,
+        216,
+        230
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    }
+  ],
+  "animation": "idle_bob",
+  "locomotion": "walk",
+  "description": "A towering golem constructed from jagged, translucent crystal shards, emanating a faint blue glow.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "creature"
+}

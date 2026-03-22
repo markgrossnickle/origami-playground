@@ -1,0 +1,686 @@
+{
+  "name": "Campfire (Gem 3.1 Pro)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "stone_1",
+      "shape": "Ball",
+      "position": [
+        1.3,
+        0.2,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.4,
+        0.6
+      ],
+      "rotation": [
+        10,
+        45,
+        0
+      ],
+      "color": [
+        130,
+        130,
+        130
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stone_2",
+      "shape": "Ball",
+      "position": [
+        0.9,
+        0.2,
+        0.9
+      ],
+      "size": [
+        0.7,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        -10,
+        20,
+        15
+      ],
+      "color": [
+        120,
+        120,
+        120
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stone_3",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.2,
+        1.3
+      ],
+      "size": [
+        0.6,
+        0.4,
+        0.7
+      ],
+      "rotation": [
+        0,
+        80,
+        -10
+      ],
+      "color": [
+        140,
+        140,
+        140
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stone_4",
+      "shape": "Ball",
+      "position": [
+        -0.9,
+        0.2,
+        0.9
+      ],
+      "size": [
+        0.5,
+        0.4,
+        0.5
+      ],
+      "rotation": [
+        15,
+        -45,
+        0
+      ],
+      "color": [
+        110,
+        110,
+        110
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stone_5",
+      "shape": "Ball",
+      "position": [
+        -1.3,
+        0.2,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.5,
+        0.7
+      ],
+      "rotation": [
+        -5,
+        0,
+        20
+      ],
+      "color": [
+        125,
+        125,
+        125
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stone_6",
+      "shape": "Ball",
+      "position": [
+        -0.9,
+        0.2,
+        -0.9
+      ],
+      "size": [
+        0.7,
+        0.4,
+        0.5
+      ],
+      "rotation": [
+        0,
+        -30,
+        -10
+      ],
+      "color": [
+        135,
+        135,
+        135
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stone_7",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.2,
+        -1.3
+      ],
+      "size": [
+        0.6,
+        0.4,
+        0.6
+      ],
+      "rotation": [
+        10,
+        90,
+        0
+      ],
+      "color": [
+        115,
+        115,
+        115
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stone_8",
+      "shape": "Ball",
+      "position": [
+        0.9,
+        0.2,
+        -0.9
+      ],
+      "size": [
+        0.6,
+        0.5,
+        0.6
+      ],
+      "rotation": [
+        -15,
+        60,
+        5
+      ],
+      "color": [
+        130,
+        130,
+        130
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "log_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.35,
+        0.0
+      ],
+      "size": [
+        2.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        20,
+        0
+      ],
+      "color": [
+        80,
+        50,
+        30
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "log_2",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.45,
+        0.0
+      ],
+      "size": [
+        2.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        -40,
+        0
+      ],
+      "color": [
+        70,
+        45,
+        25
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "log_3",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.55,
+        0.0
+      ],
+      "size": [
+        2.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        80,
+        0
+      ],
+      "color": [
+        85,
+        55,
+        35
+      ],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "flame_core",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.9,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.2,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        140,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "flame_high",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.4,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.8,
+        0.6
+      ],
+      "rotation": [
+        45,
+        45,
+        0
+      ],
+      "color": [
+        255,
+        200,
+        50
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "flame_side",
+      "shape": "Wedge",
+      "position": [
+        0.3,
+        1.1,
+        0.2
+      ],
+      "size": [
+        0.4,
+        0.7,
+        0.4
+      ],
+      "rotation": [
+        0,
+        30,
+        0
+      ],
+      "color": [
+        255,
+        80,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tripod_leg_1",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.8,
+        1.6
+      ],
+      "size": [
+        0.25,
+        6.2,
+        0.25
+      ],
+      "rotation": [
+        -22,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        70,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "tripod_leg_2",
+      "shape": "Block",
+      "position": [
+        -1.4,
+        2.8,
+        -0.8
+      ],
+      "size": [
+        0.25,
+        6.2,
+        0.25
+      ],
+      "rotation": [
+        11,
+        0,
+        19
+      ],
+      "color": [
+        100,
+        70,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "tripod_leg_3",
+      "shape": "Block",
+      "position": [
+        1.4,
+        2.8,
+        -0.8
+      ],
+      "size": [
+        0.25,
+        6.2,
+        0.25
+      ],
+      "rotation": [
+        11,
+        0,
+        -19
+      ],
+      "color": [
+        100,
+        70,
+        45
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "tripod_tie",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        5.5,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        180,
+        150
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "chain",
+      "shape": "Block",
+      "position": [
+        0.0,
+        4.3,
+        0.0
+      ],
+      "size": [
+        0.1,
+        2.2,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pot_body",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        1.4,
+        2.0,
+        2.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pot_stew",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        3.15,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        160,
+        90,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stew_bubble_1",
+      "shape": "Ball",
+      "position": [
+        0.4,
+        3.2,
+        0.3
+      ],
+      "size": [
+        0.3,
+        0.3,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        110,
+        50
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "stew_bubble_2",
+      "shape": "Ball",
+      "position": [
+        -0.3,
+        3.2,
+        -0.4
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        190,
+        120,
+        60
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "pot_handle_top",
+      "shape": "Block",
+      "position": [
+        0.0,
+        3.7,
+        0.0
+      ],
+      "size": [
+        2.2,
+        0.1,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pot_handle_side_1",
+      "shape": "Block",
+      "position": [
+        1.05,
+        3.15,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.2,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "pot_handle_side_2",
+      "shape": "Block",
+      "position": [
+        -1.05,
+        3.15,
+        0.0
+      ],
+      "size": [
+        0.1,
+        1.2,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal",
+      "transparency": 0
+    }
+  ],
+  "animation": "none",
+  "description": "A cozy stone-ringed campfire with a dark iron pot of stew hanging from a rustic wooden tripod.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "prop"
+}

@@ -1,0 +1,427 @@
+{
+  "name": "Giant Crystal Ball (Gem 3 Flash)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "base_plate",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.2,
+        0.0
+      ],
+      "size": [
+        0.4,
+        5.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        120,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "base_pedestal",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.8,
+        0.0
+      ],
+      "size": [
+        1.2,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "stem",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.8,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        120,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "cup_base",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "size": [
+        3.5,
+        1.5,
+        3.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "claw_1",
+      "shape": "Wedge",
+      "position": [
+        2.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "claw_2",
+      "shape": "Wedge",
+      "position": [
+        -2.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        195
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "claw_3",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        3.0,
+        2.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        2.0
+      ],
+      "rotation": [
+        15,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "claw_4",
+      "shape": "Wedge",
+      "position": [
+        0.0,
+        3.0,
+        -2.0
+      ],
+      "size": [
+        0.5,
+        1.0,
+        2.0
+      ],
+      "rotation": [
+        -15,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "crystal_orb",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        4.5,
+        0.0
+      ],
+      "size": [
+        5.0,
+        5.0,
+        5.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        220,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "inner_glow",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        4.5,
+        0.2
+      ],
+      "size": [
+        3.0,
+        3.0,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "magic_swirl_1",
+      "shape": "Ball",
+      "position": [
+        0.8,
+        5.0,
+        0.8
+      ],
+      "size": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.5
+    },
+    {
+      "name": "magic_swirl_2",
+      "shape": "Ball",
+      "position": [
+        -0.8,
+        4.0,
+        -0.8
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        180,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.6
+    },
+    {
+      "name": "gem_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.8,
+        1.6
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "gem_2",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.8,
+        -1.6
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "gem_3",
+      "shape": "Ball",
+      "position": [
+        1.6,
+        0.8,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "gem_4",
+      "shape": "Ball",
+      "position": [
+        -1.6,
+        0.8,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        100
+      ],
+      "material": "Neon",
+      "transparency": 0
+    }
+  ],
+  "animation": "idle_bob",
+  "locomotion": "stationary",
+  "description": "A massive, swirling crystal ball resting on a jewel-encrusted golden stand.",
+  "model_used": "gemini-3-flash-preview",
+  "category_hint": "prop"
+}

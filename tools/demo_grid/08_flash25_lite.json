@@ -1,0 +1,464 @@
+{
+  "name": "Futuristic Hoverbike (FL 2.5 Lite)",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "body_main",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        14.0,
+        1.5,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        40,
+        40,
+        40
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "body_front",
+      "shape": "Block",
+      "position": [
+        6.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "body_rear",
+      "shape": "Block",
+      "position": [
+        -6.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "cockpit_base",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.2,
+        0.0
+      ],
+      "size": [
+        7.0,
+        1.0,
+        3.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "cockpit_windshield",
+      "shape": "Wedge",
+      "position": [
+        3.5,
+        2.8,
+        0.0
+      ],
+      "size": [
+        4.0,
+        1.5,
+        3.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        150,
+        200,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "engine_pod_L",
+      "shape": "Cylinder",
+      "position": [
+        -7.0,
+        0.8,
+        3.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "engine_pod_R",
+      "shape": "Cylinder",
+      "position": [
+        -7.0,
+        0.8,
+        -3.0
+      ],
+      "size": [
+        1.5,
+        3.0,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "engine_glow_L",
+      "shape": "Ball",
+      "position": [
+        -9.2,
+        0.8,
+        3.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "engine_glow_R",
+      "shape": "Ball",
+      "position": [
+        -9.2,
+        0.8,
+        -3.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon"
+    },
+    {
+      "name": "thruster_L",
+      "shape": "Cylinder",
+      "position": [
+        -9.5,
+        0.8,
+        3.0
+      ],
+      "size": [
+        0.8,
+        1.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "thruster_R",
+      "shape": "Cylinder",
+      "position": [
+        -9.5,
+        0.8,
+        -3.0
+      ],
+      "size": [
+        0.8,
+        1.0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        80,
+        80,
+        80
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "seat_rest",
+      "shape": "Block",
+      "position": [
+        0.5,
+        2.5,
+        0.0
+      ],
+      "size": [
+        2.0,
+        1.5,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        60,
+        60,
+        60
+      ],
+      "material": "Fabric"
+    },
+    {
+      "name": "handlebar_L",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        2.8,
+        1.2
+      ],
+      "size": [
+        0.3,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "handlebar_R",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        2.8,
+        -1.2
+      ],
+      "size": [
+        0.3,
+        1.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        -45,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "stabilizer_L",
+      "shape": "Block",
+      "position": [
+        -4.0,
+        0.5,
+        2.5
+      ],
+      "size": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        45,
+        45,
+        45
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "stabilizer_R",
+      "shape": "Block",
+      "position": [
+        -4.0,
+        0.5,
+        -2.5
+      ],
+      "size": [
+        4.0,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        45,
+        45,
+        45
+      ],
+      "material": "Metal"
+    },
+    {
+      "name": "hover_pad_front",
+      "shape": "Block",
+      "position": [
+        3.5,
+        0.2,
+        0.0
+      ],
+      "size": [
+        2.0,
+        0.3,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.5
+    },
+    {
+      "name": "hover_pad_rear",
+      "shape": "Block",
+      "position": [
+        -3.5,
+        0.2,
+        0.0
+      ],
+      "size": [
+        2.0,
+        0.3,
+        3.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.5
+    }
+  ],
+  "animation": "none",
+  "locomotion": "float",
+  "description": "A sleek, futuristic hoverbike with glowing blue engine pods and a clear canopy.",
+  "model_used": "gemini-2.5-flash-lite",
+  "category_hint": "vehicle"
+}

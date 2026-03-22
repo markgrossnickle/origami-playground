@@ -1,0 +1,530 @@
+{
+  "name": "Golden Trident (Gem 3.1 Pro)",
+  "category": "prop",
+  "parts": [
+    {
+      "name": "shaft",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        4.5,
+        0.0
+      ],
+      "size": [
+        0.3,
+        9.0,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "pommel",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "grip",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        3.0,
+        0.0
+      ],
+      "size": [
+        0.35,
+        1.8,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        80,
+        20,
+        20
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "crossguard",
+      "shape": "Block",
+      "position": [
+        0.0,
+        9.0,
+        0.0
+      ],
+      "size": [
+        1.8,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "center_prong",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        10.0,
+        0.0
+      ],
+      "size": [
+        0.25,
+        2.0,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "center_tip",
+      "shape": "Block",
+      "position": [
+        0.0,
+        11.1,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        45,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "left_prong_base",
+      "shape": "Cylinder",
+      "position": [
+        -0.65,
+        9.25,
+        0.0
+      ],
+      "size": [
+        0.25,
+        0.8,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "right_prong_base",
+      "shape": "Cylinder",
+      "position": [
+        0.65,
+        9.25,
+        0.0
+      ],
+      "size": [
+        0.25,
+        0.8,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "left_prong",
+      "shape": "Cylinder",
+      "position": [
+        -0.95,
+        9.8,
+        0.0
+      ],
+      "size": [
+        0.25,
+        1.2,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "right_prong",
+      "shape": "Cylinder",
+      "position": [
+        0.95,
+        9.8,
+        0.0
+      ],
+      "size": [
+        0.25,
+        1.2,
+        0.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "left_tip",
+      "shape": "Block",
+      "position": [
+        -0.95,
+        10.5,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        45,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "right_tip",
+      "shape": "Block",
+      "position": [
+        0.95,
+        10.5,
+        0.0
+      ],
+      "size": [
+        0.3,
+        0.5,
+        0.3
+      ],
+      "rotation": [
+        45,
+        0,
+        45
+      ],
+      "color": [
+        255,
+        215,
+        0
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "energy_arc_1",
+      "shape": "Cylinder",
+      "position": [
+        -0.2,
+        1.5,
+        0.2
+      ],
+      "size": [
+        0.1,
+        2.0,
+        0.1
+      ],
+      "rotation": [
+        30,
+        45,
+        15
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_arc_2",
+      "shape": "Cylinder",
+      "position": [
+        0.2,
+        3.5,
+        -0.2
+      ],
+      "size": [
+        0.1,
+        2.5,
+        0.1
+      ],
+      "rotation": [
+        15,
+        -45,
+        30
+      ],
+      "color": [
+        150,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_arc_3",
+      "shape": "Cylinder",
+      "position": [
+        -0.2,
+        5.5,
+        0.2
+      ],
+      "size": [
+        0.1,
+        2.0,
+        0.1
+      ],
+      "rotation": [
+        45,
+        60,
+        -15
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_arc_4",
+      "shape": "Cylinder",
+      "position": [
+        0.2,
+        7.5,
+        -0.2
+      ],
+      "size": [
+        0.1,
+        2.2,
+        0.1
+      ],
+      "rotation": [
+        -30,
+        -60,
+        45
+      ],
+      "color": [
+        150,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_cross_crack",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        8.8,
+        0.3
+      ],
+      "size": [
+        0.1,
+        1.5,
+        0.1
+      ],
+      "rotation": [
+        10,
+        0,
+        80
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_prong_left",
+      "shape": "Cylinder",
+      "position": [
+        -0.5,
+        10.2,
+        0.1
+      ],
+      "size": [
+        0.1,
+        1.5,
+        0.1
+      ],
+      "rotation": [
+        15,
+        0,
+        45
+      ],
+      "color": [
+        150,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_prong_right",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        9.8,
+        -0.1
+      ],
+      "size": [
+        0.1,
+        1.8,
+        0.1
+      ],
+      "rotation": [
+        -15,
+        0,
+        -60
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "energy_spark_top",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        11.5,
+        0.1
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    }
+  ],
+  "animation": "spin_slow",
+  "description": "A brilliant golden trident wrapped in crackling, volatile cyan energy.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "prop"
+}

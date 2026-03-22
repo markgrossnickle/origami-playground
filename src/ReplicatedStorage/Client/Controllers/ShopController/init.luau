@@ -67,7 +67,7 @@ function ShopController:_buildUI()
 	local gui = createInstance("ScreenGui", {
 		Name = "ShopGui",
 		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		ZIndexBehavior = Enum.ZIndexBehavior.Global,
 		Enabled = false,
 		Parent = PlayerGui,
 	}) :: ScreenGui
@@ -91,19 +91,20 @@ function ShopController:_buildUI()
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = if IS_MOBILE then UDim2.fromScale(0.95, 0.9) else UDim2.fromScale(0.7, 0.8),
 		BackgroundColor3 = Color3.fromRGB(30, 30, 40),
+		ClipsDescendants = true,
+		ZIndex = 2,
 		Parent = gui,
 	}) :: Frame
 	createInstance("UICorner", { CornerRadius = UDim.new(0, 12), Parent = container })
 
-	-- Header with title and currency
+	-- Header with title and currency (no UICorner — container's ClipsDescendants handles top rounding)
 	local header = createInstance("Frame", {
 		Name = "Header",
 		Size = UDim2.new(1, 0, 0, 50),
 		BackgroundColor3 = Color3.fromRGB(40, 40, 55),
-		ZIndex = 2,
+		ZIndex = 3,
 		Parent = container,
 	}) :: Frame
-	createInstance("UICorner", { CornerRadius = UDim.new(0, 12), Parent = header })
 
 	createInstance("TextLabel", {
 		Name = "Title",
@@ -115,7 +116,7 @@ function ShopController:_buildUI()
 		Position = UDim2.new(0, 16, 0, 0),
 		BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left,
-		ZIndex = 2,
+		ZIndex = 3,
 		Parent = header,
 	})
 
@@ -125,7 +126,7 @@ function ShopController:_buildUI()
 		Size = UDim2.new(0.5, 0, 1, 0),
 		Position = UDim2.new(0.5, 0, 0, 0),
 		BackgroundTransparency = 1,
-		ZIndex = 2,
+		ZIndex = 3,
 		Parent = header,
 	}) :: Frame
 	createInstance("UIListLayout", {
@@ -155,7 +156,7 @@ function ShopController:_buildUI()
 			Size = UDim2.new(0, 120, 1, 0),
 			BackgroundTransparency = 1,
 			TextXAlignment = Enum.TextXAlignment.Right,
-			ZIndex = 2,
+			ZIndex = 3,
 			Parent = currencyFrame,
 		}) :: TextLabel
 		self._currencyLabels[entry.name] = label
@@ -171,7 +172,7 @@ function ShopController:_buildUI()
 		Size = UDim2.new(0, math.max(BUTTON_MIN_SIZE, 40), 0, math.max(BUTTON_MIN_SIZE, 40)),
 		Position = UDim2.new(1, -50, 0, 5),
 		BackgroundColor3 = Color3.fromRGB(180, 50, 50),
-		ZIndex = 2,
+		ZIndex = 4,
 		Parent = header,
 	}) :: TextButton
 	createInstance("UICorner", { CornerRadius = UDim.new(0, 8), Parent = closeBtn })

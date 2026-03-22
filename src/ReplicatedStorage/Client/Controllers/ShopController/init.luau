@@ -100,6 +100,7 @@ function ShopController:_buildUI()
 		Name = "Header",
 		Size = UDim2.new(1, 0, 0, 50),
 		BackgroundColor3 = Color3.fromRGB(40, 40, 55),
+		ZIndex = 2,
 		Parent = container,
 	}) :: Frame
 	createInstance("UICorner", { CornerRadius = UDim.new(0, 12), Parent = header })
@@ -114,6 +115,7 @@ function ShopController:_buildUI()
 		Position = UDim2.new(0, 16, 0, 0),
 		BackgroundTransparency = 1,
 		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 2,
 		Parent = header,
 	})
 
@@ -123,6 +125,7 @@ function ShopController:_buildUI()
 		Size = UDim2.new(0.5, 0, 1, 0),
 		Position = UDim2.new(0.5, 0, 0, 0),
 		BackgroundTransparency = 1,
+		ZIndex = 2,
 		Parent = header,
 	}) :: Frame
 	createInstance("UIListLayout", {
@@ -152,6 +155,7 @@ function ShopController:_buildUI()
 			Size = UDim2.new(0, 120, 1, 0),
 			BackgroundTransparency = 1,
 			TextXAlignment = Enum.TextXAlignment.Right,
+			ZIndex = 2,
 			Parent = currencyFrame,
 		}) :: TextLabel
 		self._currencyLabels[entry.name] = label
@@ -167,6 +171,7 @@ function ShopController:_buildUI()
 		Size = UDim2.new(0, math.max(BUTTON_MIN_SIZE, 40), 0, math.max(BUTTON_MIN_SIZE, 40)),
 		Position = UDim2.new(1, -50, 0, 5),
 		BackgroundColor3 = Color3.fromRGB(180, 50, 50),
+		ZIndex = 2,
 		Parent = header,
 	}) :: TextButton
 	createInstance("UICorner", { CornerRadius = UDim.new(0, 8), Parent = closeBtn })

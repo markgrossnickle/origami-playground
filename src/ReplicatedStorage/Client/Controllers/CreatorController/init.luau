@@ -23,6 +23,7 @@ local Trove = require(ReplicatedStorage.Packages.Trove)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
+local StarterModels = require(ReplicatedStorage.Shared.StarterModels)
 local GameMode = require(ReplicatedStorage.Shared.GameMode)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 
@@ -706,10 +707,11 @@ local function createUI()
 	end
 
 	local modesBtn = makeSidebarButton("ModesBtn", "Mode", COLORS.accentDim, 1)
-	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 2)
+	local editBtn = makeSidebarButton("EditBtn", "Edit", Color3.fromRGB(220, 160, 60), 2)
+	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 3)
 
 	-- "Create" sidebar button — always visible, toggles creator panel
-	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 3)
+	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 4)
 	_sidebarCreateBtn.Activated:Connect(function()
 		toggleMinimize()
 	end)
@@ -719,6 +721,13 @@ local function createUI()
 		local GameModeController = Knit.GetController("GameModeController")
 		if GameModeController then
 			GameModeController:Toggle()
+		end
+	end)
+
+	editBtn.Activated:Connect(function()
+		local EditController = Knit.GetController("EditController")
+		if EditController then
+			EditController:Toggle()
 		end
 	end)
 
@@ -939,13 +948,21 @@ function updateTypeHighlights()
 end
 
 function clearAllCreations()
-	-- Remove all spawned models from workspace
+	-- Remove all spawned models from workspace (preserve starter models)
+	local kept = {}
 	for _, entry in ipairs(_spawnedModels) do
-		if entry.model and entry.model.Parent then
-			entry.model:Destroy()
+		if entry.model and entry.model.Parent and entry.model:GetAttribute("Starter") then
+			table.insert(kept, entry)
+		else
+			if entry.stopAI then
+				entry.stopAI()
+			end
+			if entry.model and entry.model.Parent then
+				entry.model:Destroy()
+			end
 		end
 	end
-	_spawnedModels = {}
+	_spawnedModels = kept
 
 	-- Remove equipped tool
 	if _equippedTool then
@@ -2232,7 +2249,14 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 	registerSpawnedModel(model, modelData)
 
 	-- Start creature AI (shared module handles locomotion + animation)
-	CreatureAI.Start(model, modelData, model:GetPivot().Position, { model, character })
+	-- Store cleanup function so EditController can pause/resume AI
+	local stopAI = CreatureAI.Start(model, modelData, model:GetPivot().Position, { model, character })
+	-- Attach stopAI to the entry we just registered
+	local entry = _spawnedModels[#_spawnedModels]
+	if entry and entry.model == model then
+		entry.stopAI = stopAI
+		entry.category = "creature"
+	end
 end
 
 function placeBuilding(model: Model, modelData: { [string]: any })
@@ -2707,10 +2731,70 @@ function CreatorController:CloseShop()
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════
+-- Starter Models — scatter pre-built content around spawn
+-- ═══════════════════════════════════════════════════════════════════
+
+local function spawnStarterModels()
+	for _, starterEntry in ipairs(StarterModels.MODELS) do
+		task.spawn(function()
+			local model = OrigamiBuilder.BuildModel(starterEntry.modelData)
+			if not model then
+				return
+			end
+			model:SetAttribute("Starter", true)
+
+			local pos = starterEntry.position
+			local targetX, targetZ = pos[1], pos[3]
+
+			-- Raycast to find ground
+			local rayOrigin = Vector3.new(targetX, 100, targetZ)
+			local params = RaycastParams.new()
+			params.FilterType = Enum.RaycastFilterType.Exclude
+			params.FilterDescendantsInstances = { model }
+			local rayResult = workspace:Raycast(rayOrigin, Vector3.new(0, -200, 0), params)
+			local groundY = if rayResult then rayResult.Position.Y else 0
+
+			model.Parent = workspace
+			if model.PrimaryPart then
+				local cf, size = model:GetBoundingBox()
+				local pivot = model:GetPivot()
+				local pivotAboveBottom = pivot.Position.Y - (cf.Position.Y - size.Y / 2)
+				model:PivotTo(CFrame.new(targetX, groundY + pivotAboveBottom, targetZ))
+			end
+
+			-- Apply animation if specified
+			if starterEntry.animation and starterEntry.animation ~= "none" then
+				OrigamiBuilder.ApplyAnimation(model, starterEntry.animation)
+			end
+
+			local modelName = starterEntry.modelData.name or "Starter"
+			addNameLabel(model, modelName)
+			registerSpawnedModel(model, starterEntry.modelData)
+
+			-- For creatures, start AI
+			if starterEntry.category == "creature" then
+				local character = Player.Character
+				local excludeList = { model }
+				if character then
+					table.insert(excludeList, character)
+				end
+				local stopAI = CreatureAI.Start(model, starterEntry.modelData, model:GetPivot().Position, excludeList)
+				local entry = _spawnedModels[#_spawnedModels]
+				if entry and entry.model == model then
+					entry.stopAI = stopAI
+					entry.category = "creature"
+				end
+			end
+		end)
+	end
+end
+
 function CreatorController:KnitInit() end
 
 function CreatorController:KnitStart()
 	createUI()
+	spawnStarterModels()
 
 	-- Fetch initial currency balances
 	task.spawn(function()
@@ -2792,6 +2876,46 @@ function CreatorController:KnitStart()
 			CreatorController:CloseShop()
 		end
 	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════
+-- Public API for EditController
+-- ═══════════════════════════════════════════════════════════════════
+
+function CreatorController:GetSpawnedModels()
+	return _spawnedModels
+end
+
+function CreatorController:RemoveSpawnedModel(model: Model)
+	for i, entry in ipairs(_spawnedModels) do
+		if entry.model == model then
+			if entry.stopAI then
+				entry.stopAI()
+			end
+			if model.Parent then
+				model:Destroy()
+			end
+			table.remove(_spawnedModels, i)
+			break
+		end
+	end
+end
+
+function CreatorController:RestartCreatureAI(model: Model, modelData: { [string]: any })
+	local character = Player.Character
+	local excludeList = { model }
+	if character then
+		table.insert(excludeList, character)
+	end
+	local stopAI = CreatureAI.Start(model, modelData, model:GetPivot().Position, excludeList)
+	-- Update the entry in _spawnedModels
+	for _, entry in ipairs(_spawnedModels) do
+		if entry.model == model then
+			entry.stopAI = stopAI
+			break
+		end
+	end
+	return stopAI
 end
 
 return CreatorController

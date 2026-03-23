@@ -1,0 +1,531 @@
+{
+  "name": "Clockwork Spider",
+  "category": "creature",
+  "locomotion": "walk",
+  "animation": "flutter",
+  "description": "A tiny mechanical spider built of brass, featuring exposed gears, a winding key, and glowing ruby eyes.",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        1.4,
+        1.2,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        140,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        -1.3,
+        1.3,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.6,
+        1.8
+      ],
+      "rotation": [
+        10,
+        0,
+        0
+      ],
+      "color": [
+        160,
+        120,
+        40
+      ],
+      "material": "Foil",
+      "transparency": 0
+    },
+    {
+      "name": "gear_1",
+      "shape": "Cylinder",
+      "position": [
+        -1.3,
+        2.1,
+        0.0
+      ],
+      "size": [
+        0.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        218,
+        165,
+        32
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "gear_2",
+      "shape": "Cylinder",
+      "position": [
+        -0.8,
+        1.9,
+        0.5
+      ],
+      "size": [
+        0.2,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        200,
+        150,
+        40
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "winding_shaft",
+      "shape": "Cylinder",
+      "position": [
+        -1.6,
+        2.4,
+        -0.4
+      ],
+      "size": [
+        0.8,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "winding_handle",
+      "shape": "Block",
+      "position": [
+        -1.6,
+        2.9,
+        -0.4
+      ],
+      "size": [
+        0.1,
+        0.6,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        140,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        0.6,
+        1.3,
+        0.35
+      ],
+      "size": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        20,
+        60
+      ],
+      "material": "Glass",
+      "transparency": 0.2
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        0.6,
+        1.3,
+        -0.35
+      ],
+      "size": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        220,
+        20,
+        60
+      ],
+      "material": "Glass",
+      "transparency": 0.2
+    },
+    {
+      "name": "eye_L_core",
+      "shape": "Ball",
+      "position": [
+        0.65,
+        1.3,
+        0.35
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "eye_R_core",
+      "shape": "Ball",
+      "position": [
+        0.65,
+        1.3,
+        -0.35
+      ],
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        0,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "jaw_L",
+      "shape": "Wedge",
+      "position": [
+        0.8,
+        0.8,
+        0.25
+      ],
+      "size": [
+        0.4,
+        0.5,
+        0.15
+      ],
+      "rotation": [
+        0,
+        180,
+        -30
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "jaw_R",
+      "shape": "Wedge",
+      "position": [
+        0.8,
+        0.8,
+        -0.25
+      ],
+      "size": [
+        0.4,
+        0.5,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        150,
+        150,
+        150
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        0.5,
+        1.0
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        45,
+        0,
+        -30
+      ],
+      "color": [
+        180,
+        140,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Cylinder",
+      "position": [
+        0.5,
+        0.5,
+        -1.0
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        -45,
+        0,
+        -30
+      ],
+      "color": [
+        180,
+        140,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_ML_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.5,
+        1.2
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        45,
+        0,
+        0
+      ],
+      "color": [
+        160,
+        120,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_MR_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        0.5,
+        -1.2
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        -45,
+        0,
+        0
+      ],
+      "color": [
+        160,
+        120,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_MBL_1",
+      "shape": "Cylinder",
+      "position": [
+        -0.6,
+        0.5,
+        1.2
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        45,
+        0,
+        20
+      ],
+      "color": [
+        180,
+        140,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_MBR_1",
+      "shape": "Cylinder",
+      "position": [
+        -0.6,
+        0.5,
+        -1.2
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        -45,
+        0,
+        20
+      ],
+      "color": [
+        180,
+        140,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Cylinder",
+      "position": [
+        -1.2,
+        0.5,
+        1.0
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        45,
+        0,
+        40
+      ],
+      "color": [
+        160,
+        120,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Cylinder",
+      "position": [
+        -1.2,
+        0.5,
+        -1.0
+      ],
+      "size": [
+        1.6,
+        0.15,
+        0.15
+      ],
+      "rotation": [
+        -45,
+        0,
+        40
+      ],
+      "color": [
+        160,
+        120,
+        40
+      ],
+      "material": "Metal",
+      "transparency": 0
+    }
+  ],
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "creature"
+}

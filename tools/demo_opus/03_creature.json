@@ -1,0 +1,453 @@
+{
+  "name": "Ghostly Jellyfish",
+  "category": "creature",
+  "locomotion": "float",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        9.5,
+        0.0
+      ],
+      "size": [
+        6.0,
+        4.0,
+        6.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        150,
+        230,
+        255
+      ],
+      "material": "Glass",
+      "transparency": 0.5
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        9.0,
+        0.0
+      ],
+      "size": [
+        4.0,
+        3.0,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "node_1",
+      "shape": "Ball",
+      "position": [
+        1.0,
+        9.0,
+        1.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        100,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "node_2",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        9.0,
+        1.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        100,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "node_3",
+      "shape": "Ball",
+      "position": [
+        1.0,
+        9.0,
+        -1.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        100,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "node_4",
+      "shape": "Ball",
+      "position": [
+        -1.0,
+        9.0,
+        -1.0
+      ],
+      "size": [
+        1.2,
+        1.2,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        200,
+        100,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tail_1",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        7.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        200,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.4
+    },
+    {
+      "name": "tail_2",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        4.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        180,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "tail_3",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "size": [
+        3.0,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        150,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "tentacle_1",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        5.5,
+        2.0
+      ],
+      "size": [
+        6.0,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tentacle_2",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        5.0,
+        2.0
+      ],
+      "size": [
+        7.0,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tentacle_3",
+      "shape": "Cylinder",
+      "position": [
+        2.0,
+        6.0,
+        -2.0
+      ],
+      "size": [
+        5.0,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tentacle_4",
+      "shape": "Cylinder",
+      "position": [
+        -2.0,
+        5.25,
+        -2.0
+      ],
+      "size": [
+        6.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tentacle_5",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        5.75,
+        0.0
+      ],
+      "size": [
+        5.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tentacle_6",
+      "shape": "Cylinder",
+      "position": [
+        -2.5,
+        4.75,
+        0.0
+      ],
+      "size": [
+        7.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tentacle_7",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        6.25,
+        2.5
+      ],
+      "size": [
+        4.5,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "tentacle_8",
+      "shape": "Cylinder",
+      "position": [
+        0.0,
+        5.5,
+        -2.5
+      ],
+      "size": [
+        6.0,
+        0.2,
+        0.2
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0.1
+    }
+  ],
+  "animation": "breathe",
+  "description": "A ghostly, translucent jellyfish with neon blue glowing parts and long trailing tentacles.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "creature"
+}

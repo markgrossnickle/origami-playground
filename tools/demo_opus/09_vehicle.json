@@ -1,0 +1,147 @@
+{
+  "name": "Flying Carpet",
+  "category": "vehicle",
+  "animation": "wobble",
+  "parts": [
+    {
+      "name": "carpet_main",
+      "shape": "Block",
+      "position": [0, 0, 0],
+      "size": [8, 0.3, 5],
+      "rotation": [0, 0, 0],
+      "color": [130, 30, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "carpet_border",
+      "shape": "Block",
+      "position": [0, 0.05, 0],
+      "size": [8.4, 0.15, 5.4],
+      "rotation": [0, 0, 0],
+      "color": [180, 140, 40],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "pattern_center",
+      "shape": "Block",
+      "position": [0, 0.2, 0],
+      "size": [3, 0.1, 2],
+      "rotation": [0, 45, 0],
+      "color": [200, 160, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "pattern_diamond",
+      "shape": "Block",
+      "position": [0, 0.22, 0],
+      "size": [1.5, 0.08, 1.5],
+      "rotation": [0, 45, 0],
+      "color": [60, 120, 160],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "pattern_stripe_1",
+      "shape": "Block",
+      "position": [2.5, 0.18, 0],
+      "size": [0.3, 0.08, 4.5],
+      "rotation": [0, 0, 0],
+      "color": [200, 160, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "pattern_stripe_2",
+      "shape": "Block",
+      "position": [-2.5, 0.18, 0],
+      "size": [0.3, 0.08, 4.5],
+      "rotation": [0, 0, 0],
+      "color": [200, 160, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tassel_FL",
+      "shape": "Block",
+      "position": [4.3, -0.3, 2.7],
+      "size": [0.3, 1, 0.3],
+      "rotation": [0, 0, 0],
+      "color": [220, 180, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tassel_FR",
+      "shape": "Block",
+      "position": [4.3, -0.3, -2.7],
+      "size": [0.3, 1, 0.3],
+      "rotation": [0, 0, 0],
+      "color": [220, 180, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tassel_BL",
+      "shape": "Block",
+      "position": [-4.3, -0.3, 2.7],
+      "size": [0.3, 1, 0.3],
+      "rotation": [0, 0, 0],
+      "color": [220, 180, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tassel_BR",
+      "shape": "Block",
+      "position": [-4.3, -0.3, -2.7],
+      "size": [0.3, 1, 0.3],
+      "rotation": [0, 0, 0],
+      "color": [220, 180, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "curl_front",
+      "shape": "Wedge",
+      "position": [4.5, 0.5, 0],
+      "size": [1, 1, 5],
+      "rotation": [0, 0, 0],
+      "color": [130, 30, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "curl_back",
+      "shape": "Wedge",
+      "position": [-4.5, 0.5, 0],
+      "size": [1, 1, 5],
+      "rotation": [0, 180, 0],
+      "color": [130, 30, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "magic_glow",
+      "shape": "Block",
+      "position": [0, -0.3, 0],
+      "size": [6, 0.2, 3.5],
+      "rotation": [0, 0, 0],
+      "color": [255, 200, 80],
+      "material": "Neon",
+      "transparency": 0.5
+    },
+    {
+      "name": "cushion",
+      "shape": "Block",
+      "position": [-0.5, 0.5, 0],
+      "size": [2, 0.6, 2],
+      "rotation": [0, 0, 0],
+      "color": [100, 20, 60],
+      "material": "Fabric",
+      "transparency": 0
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "name": "Enchanted Tree",
+  "category": "prop",
+  "animation": "breathe",
+  "parts": [
+    {
+      "name": "trunk",
+      "shape": "Cylinder",
+      "position": [0, 3, 0],
+      "size": [3, 6, 3],
+      "rotation": [0, 0, 0],
+      "color": [80, 55, 35],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "trunk_base",
+      "shape": "Cylinder",
+      "position": [0, 0.5, 0],
+      "size": [4, 1.5, 4],
+      "rotation": [0, 0, 0],
+      "color": [70, 50, 30],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "root_1",
+      "shape": "Block",
+      "position": [2.5, 0.3, 0],
+      "size": [2.5, 0.8, 1],
+      "rotation": [0, 0, -15],
+      "color": [70, 50, 30],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "root_2",
+      "shape": "Block",
+      "position": [-1.5, 0.3, 2],
+      "size": [2, 0.8, 1],
+      "rotation": [0, 50, -15],
+      "color": [70, 50, 30],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "canopy_1",
+      "shape": "Ball",
+      "position": [0, 8, 0],
+      "size": [8, 5, 8],
+      "rotation": [0, 0, 0],
+      "color": [30, 120, 50],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "canopy_2",
+      "shape": "Ball",
+      "position": [3, 7.5, 2],
+      "size": [5, 4, 5],
+      "rotation": [0, 0, 0],
+      "color": [40, 140, 55],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "canopy_3",
+      "shape": "Ball",
+      "position": [-2, 7.5, -2],
+      "size": [5, 4, 5],
+      "rotation": [0, 0, 0],
+      "color": [35, 130, 45],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "door",
+      "shape": "Block",
+      "position": [1.6, 1.8, 0],
+      "size": [0.2, 2.5, 1.5],
+      "rotation": [0, 0, 0],
+      "color": [120, 70, 30],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "door_handle",
+      "shape": "Ball",
+      "position": [1.8, 1.8, 0.4],
+      "size": [0.25, 0.25, 0.25],
+      "rotation": [0, 0, 0],
+      "color": [200, 170, 50],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "window",
+      "shape": "Cylinder",
+      "position": [1.5, 3.5, 0.8],
+      "size": [0.8, 0.15, 0.8],
+      "rotation": [0, 0, 90],
+      "color": [255, 220, 100],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "fruit_1",
+      "shape": "Ball",
+      "position": [2, 9, 1],
+      "size": [0.8, 0.8, 0.8],
+      "rotation": [0, 0, 0],
+      "color": [255, 100, 50],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "fruit_2",
+      "shape": "Ball",
+      "position": [-1, 8.5, 2.5],
+      "size": [0.7, 0.7, 0.7],
+      "rotation": [0, 0, 0],
+      "color": [255, 200, 50],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "fruit_3",
+      "shape": "Ball",
+      "position": [3, 7, -1],
+      "size": [0.9, 0.9, 0.9],
+      "rotation": [0, 0, 0],
+      "color": [200, 50, 255],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "fruit_4",
+      "shape": "Ball",
+      "position": [-2.5, 8, -2],
+      "size": [0.6, 0.6, 0.6],
+      "rotation": [0, 0, 0],
+      "color": [50, 255, 150],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "fruit_5",
+      "shape": "Ball",
+      "position": [0, 9.5, -1.5],
+      "size": [0.75, 0.75, 0.75],
+      "rotation": [0, 0, 0],
+      "color": [255, 50, 150],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "glow_base",
+      "shape": "Ball",
+      "position": [0, 1, 0],
+      "size": [5, 2, 5],
+      "rotation": [0, 0, 0],
+      "color": [100, 255, 120],
+      "material": "Neon",
+      "transparency": 0.7
+    },
+    {
+      "name": "mushroom_1",
+      "shape": "Ball",
+      "position": [2.8, 0.5, 1.5],
+      "size": [0.8, 0.5, 0.8],
+      "rotation": [0, 0, 0],
+      "color": [255, 80, 80],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "mushroom_stem_1",
+      "shape": "Cylinder",
+      "position": [2.8, 0.2, 1.5],
+      "size": [0.3, 0.4, 0.3],
+      "rotation": [0, 0, 0],
+      "color": [220, 210, 190],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    }
+  ]
+}

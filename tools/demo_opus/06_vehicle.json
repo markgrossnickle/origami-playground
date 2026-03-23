@@ -1,0 +1,217 @@
+{
+  "name": "Steampunk Airship",
+  "category": "vehicle",
+  "animation": "idle_bob",
+  "parts": [
+    {
+      "name": "hull",
+      "shape": "Block",
+      "position": [0, 0, 0],
+      "size": [14, 3, 4],
+      "rotation": [0, 0, 0],
+      "color": [170, 130, 70],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "hull_nose",
+      "shape": "Wedge",
+      "position": [7.5, 0, 0],
+      "size": [3, 3, 4],
+      "rotation": [0, 0, 0],
+      "color": [170, 130, 70],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "hull_stern",
+      "shape": "Wedge",
+      "position": [-7.5, 0, 0],
+      "size": [3, 3, 4],
+      "rotation": [0, 180, 0],
+      "color": [160, 120, 65],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "balloon",
+      "shape": "Ball",
+      "position": [0, 5, 0],
+      "size": [12, 6, 5],
+      "rotation": [0, 0, 0],
+      "color": [140, 90, 50],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "balloon_band_1",
+      "shape": "Block",
+      "position": [2, 5, 0],
+      "size": [0.3, 6.2, 5.2],
+      "rotation": [0, 0, 0],
+      "color": [100, 60, 30],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "balloon_band_2",
+      "shape": "Block",
+      "position": [-2, 5, 0],
+      "size": [0.3, 6.2, 5.2],
+      "rotation": [0, 0, 0],
+      "color": [100, 60, 30],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "deck_railing_L",
+      "shape": "Block",
+      "position": [0, 1.8, 2.2],
+      "size": [12, 0.4, 0.2],
+      "rotation": [0, 0, 0],
+      "color": [120, 80, 40],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "deck_railing_R",
+      "shape": "Block",
+      "position": [0, 1.8, -2.2],
+      "size": [12, 0.4, 0.2],
+      "rotation": [0, 0, 0],
+      "color": [120, 80, 40],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "prop_mount_L",
+      "shape": "Cylinder",
+      "position": [4, 0, 3.5],
+      "size": [1.5, 2, 1.5],
+      "rotation": [0, 0, 90],
+      "color": [80, 80, 80],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "prop_mount_R",
+      "shape": "Cylinder",
+      "position": [4, 0, -3.5],
+      "size": [1.5, 2, 1.5],
+      "rotation": [0, 0, 90],
+      "color": [80, 80, 80],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "propeller_L",
+      "shape": "Block",
+      "position": [4, 0, 4.8],
+      "size": [0.3, 3, 0.6],
+      "rotation": [0, 0, 30],
+      "color": [180, 150, 80],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "propeller_R",
+      "shape": "Block",
+      "position": [4, 0, -4.8],
+      "size": [0.3, 3, 0.6],
+      "rotation": [0, 0, -30],
+      "color": [180, 150, 80],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "smokestack",
+      "shape": "Cylinder",
+      "position": [-4, 3, 0],
+      "size": [1.2, 3, 1.2],
+      "rotation": [0, 0, 0],
+      "color": [60, 60, 60],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "smokestack_top",
+      "shape": "Cylinder",
+      "position": [-4, 4.8, 0],
+      "size": [1.6, 0.4, 1.6],
+      "rotation": [0, 0, 0],
+      "color": [50, 50, 50],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "observation_deck",
+      "shape": "Block",
+      "position": [5, 2.2, 0],
+      "size": [3, 0.3, 3],
+      "rotation": [0, 0, 0],
+      "color": [130, 90, 50],
+      "material": "Wood",
+      "transparency": 0
+    },
+    {
+      "name": "observation_railing",
+      "shape": "Block",
+      "position": [5, 2.8, 0],
+      "size": [3.2, 0.8, 3.2],
+      "rotation": [0, 0, 0],
+      "color": [160, 130, 60],
+      "material": "Metal",
+      "transparency": 0.5
+    },
+    {
+      "name": "rudder",
+      "shape": "Wedge",
+      "position": [-8.5, 1, 0],
+      "size": [2, 2.5, 0.3],
+      "rotation": [0, 180, 0],
+      "color": [140, 100, 50],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "porthole_1",
+      "shape": "Cylinder",
+      "position": [2, 0, 2.1],
+      "size": [0.8, 0.2, 0.8],
+      "rotation": [90, 0, 0],
+      "color": [200, 220, 255],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "porthole_2",
+      "shape": "Cylinder",
+      "position": [0, 0, 2.1],
+      "size": [0.8, 0.2, 0.8],
+      "rotation": [90, 0, 0],
+      "color": [200, 220, 255],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "porthole_3",
+      "shape": "Cylinder",
+      "position": [-2, 0, 2.1],
+      "size": [0.8, 0.2, 0.8],
+      "rotation": [90, 0, 0],
+      "color": [200, 220, 255],
+      "material": "Glass",
+      "transparency": 0.3
+    },
+    {
+      "name": "gear_accent",
+      "shape": "Cylinder",
+      "position": [-3, 1.6, 2.15],
+      "size": [1.2, 0.15, 1.2],
+      "rotation": [90, 0, 0],
+      "color": [200, 170, 60],
+      "material": "Metal",
+      "transparency": 0
+    }
+  ]
+}

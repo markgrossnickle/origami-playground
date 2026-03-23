@@ -1,0 +1,177 @@
+{
+  "name": "Neon Motorcycle",
+  "category": "vehicle",
+  "animation": "idle_bob",
+  "parts": [
+    {
+      "name": "frame",
+      "shape": "Block",
+      "position": [0, 1.5, 0],
+      "size": [6, 1.2, 1.5],
+      "rotation": [0, 0, 0],
+      "color": [20, 20, 25],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "tank",
+      "shape": "Block",
+      "position": [0.5, 2.3, 0],
+      "size": [3, 1, 1.8],
+      "rotation": [0, 0, 0],
+      "color": [15, 15, 20],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "neon_strip_L",
+      "shape": "Block",
+      "position": [0.5, 2.3, 1],
+      "size": [3.2, 0.15, 0.15],
+      "rotation": [0, 0, 0],
+      "color": [0, 220, 255],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "neon_strip_R",
+      "shape": "Block",
+      "position": [0.5, 2.3, -1],
+      "size": [3.2, 0.15, 0.15],
+      "rotation": [0, 0, 0],
+      "color": [0, 220, 255],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "seat",
+      "shape": "Block",
+      "position": [-1, 2.6, 0],
+      "size": [2.5, 0.5, 1.2],
+      "rotation": [-5, 0, 0],
+      "color": [30, 30, 35],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "front_fork",
+      "shape": "Block",
+      "position": [2.8, 1, 0],
+      "size": [0.4, 2.5, 0.4],
+      "rotation": [15, 0, 0],
+      "color": [50, 50, 55],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "front_wheel",
+      "shape": "Cylinder",
+      "position": [3.2, 0.6, 0],
+      "size": [1.2, 0.6, 1.2],
+      "rotation": [0, 0, 90],
+      "color": [180, 200, 220],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "front_wheel_hub",
+      "shape": "Cylinder",
+      "position": [3.2, 0.6, 0],
+      "size": [0.4, 0.8, 0.4],
+      "rotation": [0, 0, 90],
+      "color": [0, 180, 255],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rear_wheel",
+      "shape": "Cylinder",
+      "position": [-2.5, 0.7, 0],
+      "size": [1.4, 0.8, 1.4],
+      "rotation": [0, 0, 90],
+      "color": [180, 200, 220],
+      "material": "Glass",
+      "transparency": 0.4
+    },
+    {
+      "name": "rear_wheel_hub",
+      "shape": "Cylinder",
+      "position": [-2.5, 0.7, 0],
+      "size": [0.5, 1, 0.5],
+      "rotation": [0, 0, 90],
+      "color": [0, 180, 255],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "handlebar_L",
+      "shape": "Cylinder",
+      "position": [2.5, 2.8, 0.8],
+      "size": [0.3, 0.8, 0.3],
+      "rotation": [0, 0, 90],
+      "color": [50, 50, 55],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "handlebar_R",
+      "shape": "Cylinder",
+      "position": [2.5, 2.8, -0.8],
+      "size": [0.3, 0.8, 0.3],
+      "rotation": [0, 0, 90],
+      "color": [50, 50, 55],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "headlight",
+      "shape": "Ball",
+      "position": [3.5, 2, 0],
+      "size": [0.6, 0.6, 0.8],
+      "rotation": [0, 0, 0],
+      "color": [255, 255, 200],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "exhaust_L",
+      "shape": "Cylinder",
+      "position": [-3, 1, 0.8],
+      "size": [0.4, 2, 0.4],
+      "rotation": [0, 0, 90],
+      "color": [60, 60, 65],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "exhaust_R",
+      "shape": "Cylinder",
+      "position": [-3, 1, -0.8],
+      "size": [0.4, 2, 0.4],
+      "rotation": [0, 0, 90],
+      "color": [60, 60, 65],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "neon_underglow",
+      "shape": "Block",
+      "position": [0, 0.3, 0],
+      "size": [5, 0.15, 1.2],
+      "rotation": [0, 0, 0],
+      "color": [0, 180, 255],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "taillight",
+      "shape": "Block",
+      "position": [-3.5, 1.5, 0],
+      "size": [0.2, 0.4, 1],
+      "rotation": [0, 0, 0],
+      "color": [255, 0, 50],
+      "material": "Neon",
+      "transparency": 0
+    }
+  ]
+}

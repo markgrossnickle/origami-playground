@@ -1,0 +1,661 @@
+{
+  "name": "Aurora Fox",
+  "category": "creature",
+  "locomotion": "walk",
+  "animation": "idle_bob",
+  "description": "A magical three-tailed fox with fluffy, aurora-colored fur.",
+  "parts": [
+    {
+      "name": "seg_1",
+      "shape": "Ball",
+      "position": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "size": [
+        3.2,
+        2.2,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        138,
+        43,
+        226
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "seg_2",
+      "shape": "Ball",
+      "position": [
+        1.6,
+        2.4,
+        0.0
+      ],
+      "size": [
+        2.4,
+        2.4,
+        2.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "seg_3",
+      "shape": "Ball",
+      "position": [
+        2.6,
+        3.4,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        105,
+        180
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "snout",
+      "shape": "Block",
+      "position": [
+        3.3,
+        3.2,
+        0.0
+      ],
+      "size": [
+        1.2,
+        0.8,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        -10
+      ],
+      "color": [
+        255,
+        105,
+        180
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "jaw_lower",
+      "shape": "Block",
+      "position": [
+        3.2,
+        2.8,
+        0.0
+      ],
+      "size": [
+        1.0,
+        0.4,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        -5
+      ],
+      "color": [
+        255,
+        182,
+        193
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "nose",
+      "shape": "Ball",
+      "position": [
+        3.9,
+        3.3,
+        0.0
+      ],
+      "size": [
+        0.4,
+        0.3,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "ear_L",
+      "shape": "Block",
+      "position": [
+        2.3,
+        4.3,
+        0.6
+      ],
+      "size": [
+        0.6,
+        1.2,
+        0.4
+      ],
+      "rotation": [
+        0,
+        30,
+        -20
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "ear_R",
+      "shape": "Block",
+      "position": [
+        2.3,
+        4.3,
+        -0.6
+      ],
+      "size": [
+        0.6,
+        1.2,
+        0.4
+      ],
+      "rotation": [
+        0,
+        -30,
+        -20
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "eye_L",
+      "shape": "Ball",
+      "position": [
+        3.2,
+        3.6,
+        0.5
+      ],
+      "size": [
+        0.35,
+        0.4,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "eye_R",
+      "shape": "Ball",
+      "position": [
+        3.2,
+        3.6,
+        -0.5
+      ],
+      "size": [
+        0.35,
+        0.4,
+        0.35
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        255
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "pupil_L",
+      "shape": "Ball",
+      "position": [
+        3.35,
+        3.6,
+        0.55
+      ],
+      "size": [
+        0.15,
+        0.2,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "pupil_R",
+      "shape": "Ball",
+      "position": [
+        3.35,
+        3.6,
+        -0.55
+      ],
+      "size": [
+        0.15,
+        0.2,
+        0.15
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        0,
+        0
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "leg_FL_1",
+      "shape": "Cylinder",
+      "position": [
+        1.2,
+        1.0,
+        0.8
+      ],
+      "size": [
+        1.8,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "leg_FR_1",
+      "shape": "Cylinder",
+      "position": [
+        1.2,
+        1.0,
+        -0.8
+      ],
+      "size": [
+        1.8,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BL_1",
+      "shape": "Cylinder",
+      "position": [
+        -1.0,
+        1.0,
+        0.8
+      ],
+      "size": [
+        1.8,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        138,
+        43,
+        226
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "leg_BR_1",
+      "shape": "Cylinder",
+      "position": [
+        -1.0,
+        1.0,
+        -0.8
+      ],
+      "size": [
+        1.8,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        90
+      ],
+      "color": [
+        138,
+        43,
+        226
+      ],
+      "material": "Fabric",
+      "transparency": 0
+    },
+    {
+      "name": "tail_1",
+      "shape": "Ball",
+      "position": [
+        -1.8,
+        2.5,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.8,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        250,
+        154
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "tail_1_tip",
+      "shape": "Ball",
+      "position": [
+        -3.0,
+        2.8,
+        0.0
+      ],
+      "size": [
+        2.6,
+        2.6,
+        2.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0,
+        255,
+        255
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "tail_2",
+      "shape": "Ball",
+      "position": [
+        -1.5,
+        2.3,
+        1.0
+      ],
+      "size": [
+        1.6,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        65,
+        105,
+        225
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "tail_2_tip",
+      "shape": "Ball",
+      "position": [
+        -2.5,
+        2.6,
+        1.8
+      ],
+      "size": [
+        2.4,
+        2.4,
+        2.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        20,
+        147
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "tail_3",
+      "shape": "Ball",
+      "position": [
+        -1.5,
+        2.3,
+        -1.0
+      ],
+      "size": [
+        1.6,
+        1.6,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        65,
+        105,
+        225
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "tail_3_tip",
+      "shape": "Ball",
+      "position": [
+        -2.5,
+        2.6,
+        -1.8
+      ],
+      "size": [
+        2.4,
+        2.4,
+        2.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        20,
+        147
+      ],
+      "material": "Grass",
+      "transparency": 0
+    },
+    {
+      "name": "tail_1_orb",
+      "shape": "Ball",
+      "position": [
+        -4.0,
+        3.4,
+        0.0
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "tail_2_orb",
+      "shape": "Ball",
+      "position": [
+        -3.4,
+        3.2,
+        2.5
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "tail_3_orb",
+      "shape": "Ball",
+      "position": [
+        -3.4,
+        3.2,
+        -2.5
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0.2
+    }
+  ],
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "creature"
+}

@@ -1,0 +1,217 @@
+{
+  "name": "Ancient Portal",
+  "category": "prop",
+  "animation": "spin_slow",
+  "parts": [
+    {
+      "name": "base_L",
+      "shape": "Block",
+      "position": [-3, 1.5, 0],
+      "size": [2, 3, 2],
+      "rotation": [0, 0, 0],
+      "color": [100, 100, 90],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "base_R",
+      "shape": "Block",
+      "position": [3, 1.5, 0],
+      "size": [2, 3, 2],
+      "rotation": [0, 0, 0],
+      "color": [100, 100, 90],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "pillar_L",
+      "shape": "Block",
+      "position": [-3, 6, 0],
+      "size": [1.5, 6, 1.5],
+      "rotation": [0, 0, 0],
+      "color": [110, 110, 100],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "pillar_R",
+      "shape": "Block",
+      "position": [3, 6, 0],
+      "size": [1.5, 6, 1.5],
+      "rotation": [0, 0, 0],
+      "color": [110, 110, 100],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "arch",
+      "shape": "Block",
+      "position": [0, 10, 0],
+      "size": [8, 2, 1.8],
+      "rotation": [0, 0, 0],
+      "color": [120, 115, 105],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "arch_cap_L",
+      "shape": "Wedge",
+      "position": [-4.5, 10, 0],
+      "size": [1.5, 2, 1.8],
+      "rotation": [0, 0, 0],
+      "color": [120, 115, 105],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "arch_cap_R",
+      "shape": "Wedge",
+      "position": [4.5, 10, 0],
+      "size": [1.5, 2, 1.8],
+      "rotation": [0, 180, 0],
+      "color": [120, 115, 105],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "rune_L1",
+      "shape": "Block",
+      "position": [-3, 4, 0.85],
+      "size": [0.6, 0.6, 0.1],
+      "rotation": [0, 0, 45],
+      "color": [160, 80, 220],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_L2",
+      "shape": "Block",
+      "position": [-3, 6, 0.85],
+      "size": [0.6, 0.6, 0.1],
+      "rotation": [0, 0, 0],
+      "color": [160, 80, 220],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_L3",
+      "shape": "Block",
+      "position": [-3, 8, 0.85],
+      "size": [0.6, 0.6, 0.1],
+      "rotation": [0, 0, 45],
+      "color": [160, 80, 220],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_R1",
+      "shape": "Block",
+      "position": [3, 4, 0.85],
+      "size": [0.6, 0.6, 0.1],
+      "rotation": [0, 0, 45],
+      "color": [160, 80, 220],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_R2",
+      "shape": "Block",
+      "position": [3, 6, 0.85],
+      "size": [0.6, 0.6, 0.1],
+      "rotation": [0, 0, 0],
+      "color": [160, 80, 220],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_R3",
+      "shape": "Block",
+      "position": [3, 8, 0.85],
+      "size": [0.6, 0.6, 0.1],
+      "rotation": [0, 0, 45],
+      "color": [160, 80, 220],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "rune_top",
+      "shape": "Ball",
+      "position": [0, 11.2, 0],
+      "size": [1.2, 1.2, 1.2],
+      "rotation": [0, 0, 0],
+      "color": [200, 100, 255],
+      "material": "Neon",
+      "transparency": 0.2
+    },
+    {
+      "name": "portal_energy",
+      "shape": "Cylinder",
+      "position": [0, 6, 0],
+      "size": [4.5, 0.5, 7],
+      "rotation": [90, 0, 0],
+      "color": [140, 40, 200],
+      "material": "Neon",
+      "transparency": 0.3
+    },
+    {
+      "name": "portal_swirl_1",
+      "shape": "Ball",
+      "position": [1, 6.5, 0.2],
+      "size": [1.5, 1.5, 0.4],
+      "rotation": [0, 0, 30],
+      "color": [180, 80, 255],
+      "material": "Neon",
+      "transparency": 0.4
+    },
+    {
+      "name": "portal_swirl_2",
+      "shape": "Ball",
+      "position": [-1.2, 5.5, 0.2],
+      "size": [1.2, 1.2, 0.4],
+      "rotation": [0, 0, -30],
+      "color": [200, 120, 255],
+      "material": "Neon",
+      "transparency": 0.4
+    },
+    {
+      "name": "portal_core",
+      "shape": "Ball",
+      "position": [0, 6, 0],
+      "size": [1, 1, 0.5],
+      "rotation": [0, 0, 0],
+      "color": [255, 200, 255],
+      "material": "Neon",
+      "transparency": 0.1
+    },
+    {
+      "name": "ground_glow",
+      "shape": "Cylinder",
+      "position": [0, 0.1, 0],
+      "size": [7, 0.15, 7],
+      "rotation": [0, 0, 0],
+      "color": [120, 50, 180],
+      "material": "Neon",
+      "transparency": 0.6
+    },
+    {
+      "name": "debris_1",
+      "shape": "Block",
+      "position": [4, 0.3, 2],
+      "size": [1, 0.6, 0.8],
+      "rotation": [10, 25, 5],
+      "color": [90, 90, 80],
+      "material": "Granite",
+      "transparency": 0
+    },
+    {
+      "name": "debris_2",
+      "shape": "Block",
+      "position": [-3.5, 0.2, -2.5],
+      "size": [0.8, 0.5, 1],
+      "rotation": [-5, 40, 10],
+      "color": [95, 95, 85],
+      "material": "Granite",
+      "transparency": 0
+    }
+  ]
+}

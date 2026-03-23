@@ -1,0 +1,790 @@
+{
+  "name": "Dragon Coaster Car",
+  "category": "vehicle",
+  "parts": [
+    {
+      "name": "chassis",
+      "shape": "Block",
+      "position": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "size": [
+        7.0,
+        0.5,
+        4.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        30,
+        30,
+        30
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_FL",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        0.5,
+        2.2
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_FR",
+      "shape": "Cylinder",
+      "position": [
+        2.5,
+        0.5,
+        -2.2
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_RL",
+      "shape": "Cylinder",
+      "position": [
+        -2.5,
+        0.5,
+        2.2
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "wheel_RR",
+      "shape": "Cylinder",
+      "position": [
+        -2.5,
+        0.5,
+        -2.2
+      ],
+      "size": [
+        1.0,
+        1.5,
+        1.5
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        50,
+        50,
+        50
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "wall_left",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.0,
+        1.8
+      ],
+      "size": [
+        6.0,
+        2.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wall_right",
+      "shape": "Block",
+      "position": [
+        0.0,
+        2.0,
+        -1.8
+      ],
+      "size": [
+        6.0,
+        2.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wall_front",
+      "shape": "Block",
+      "position": [
+        2.8,
+        2.0,
+        0.0
+      ],
+      "size": [
+        0.4,
+        2.0,
+        3.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "wall_back",
+      "shape": "Block",
+      "position": [
+        -2.8,
+        2.5,
+        0.0
+      ],
+      "size": [
+        0.4,
+        3.0,
+        3.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "lap_bar",
+      "shape": "Cylinder",
+      "position": [
+        1.5,
+        2.8,
+        0.0
+      ],
+      "size": [
+        3.2,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "Metal",
+      "transparency": 0
+    },
+    {
+      "name": "dragon_neck",
+      "shape": "Block",
+      "position": [
+        3.6,
+        2.0,
+        0.0
+      ],
+      "size": [
+        1.2,
+        2.0,
+        1.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "dragon_head_base",
+      "shape": "Block",
+      "position": [
+        4.6,
+        3.2,
+        0.0
+      ],
+      "size": [
+        1.8,
+        1.5,
+        2.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "dragon_snout",
+      "shape": "Block",
+      "position": [
+        6.0,
+        3.2,
+        0.0
+      ],
+      "size": [
+        1.5,
+        1.0,
+        1.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "dragon_jaw",
+      "shape": "Block",
+      "position": [
+        5.8,
+        2.3,
+        0.0
+      ],
+      "size": [
+        1.4,
+        0.5,
+        1.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "nostril_left",
+      "shape": "Ball",
+      "position": [
+        6.5,
+        3.8,
+        0.5
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "nostril_right",
+      "shape": "Ball",
+      "position": [
+        6.5,
+        3.8,
+        -0.5
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        20,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "eye_left",
+      "shape": "Ball",
+      "position": [
+        4.8,
+        3.5,
+        1.1
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "eye_right",
+      "shape": "Ball",
+      "position": [
+        4.8,
+        3.5,
+        -1.1
+      ],
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        100,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "horn_left",
+      "shape": "Wedge",
+      "position": [
+        4.0,
+        4.4,
+        0.8
+      ],
+      "size": [
+        1.0,
+        1.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        240,
+        230,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "horn_right",
+      "shape": "Wedge",
+      "position": [
+        4.0,
+        4.4,
+        -0.8
+      ],
+      "size": [
+        1.0,
+        1.5,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        240,
+        230,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "tail_base",
+      "shape": "Block",
+      "position": [
+        -3.5,
+        2.0,
+        0.0
+      ],
+      "size": [
+        1.2,
+        1.5,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "tail_mid",
+      "shape": "Block",
+      "position": [
+        -4.5,
+        2.8,
+        0.0
+      ],
+      "size": [
+        1.2,
+        1.5,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "tail_tip",
+      "shape": "Wedge",
+      "position": [
+        -5.4,
+        3.8,
+        0.0
+      ],
+      "size": [
+        1.0,
+        1.5,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        -45
+      ],
+      "color": [
+        180,
+        20,
+        20
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "spine_1",
+      "shape": "Wedge",
+      "position": [
+        -2.8,
+        4.4,
+        0.0
+      ],
+      "size": [
+        0.8,
+        1.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        240,
+        230,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "spine_2",
+      "shape": "Wedge",
+      "position": [
+        -3.5,
+        3.2,
+        0.0
+      ],
+      "size": [
+        0.8,
+        1.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -15
+      ],
+      "color": [
+        240,
+        230,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "spine_3",
+      "shape": "Wedge",
+      "position": [
+        -4.7,
+        4.1,
+        0.0
+      ],
+      "size": [
+        0.8,
+        1.0,
+        0.4
+      ],
+      "rotation": [
+        0,
+        0,
+        -30
+      ],
+      "color": [
+        240,
+        230,
+        180
+      ],
+      "material": "SmoothPlastic",
+      "transparency": 0
+    },
+    {
+      "name": "flame_left_orange",
+      "shape": "Block",
+      "position": [
+        1.0,
+        2.2,
+        2.05
+      ],
+      "size": [
+        3.0,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        255,
+        100,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "flame_left_yellow",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        1.8,
+        2.06
+      ],
+      "size": [
+        2.0,
+        0.6,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        -10
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "flame_right_orange",
+      "shape": "Block",
+      "position": [
+        1.0,
+        2.2,
+        -2.05
+      ],
+      "size": [
+        3.0,
+        1.0,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        15
+      ],
+      "color": [
+        255,
+        100,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    },
+    {
+      "name": "flame_right_yellow",
+      "shape": "Block",
+      "position": [
+        -0.5,
+        1.8,
+        -2.06
+      ],
+      "size": [
+        2.0,
+        0.6,
+        0.1
+      ],
+      "rotation": [
+        0,
+        0,
+        -10
+      ],
+      "color": [
+        255,
+        255,
+        0
+      ],
+      "material": "Neon",
+      "transparency": 0
+    }
+  ],
+  "animation": "none",
+  "description": "A thrilling dragon-shaped roller coaster car with glowing neon flame decals and metal track wheels.",
+  "model_used": "gemini-3.1-pro-preview",
+  "category_hint": "vehicle"
+}

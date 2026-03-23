@@ -132,9 +132,9 @@ local function setupVehicle(builtModel: Model, position: Vector3, modelData: { [
 		local character = player.Character
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 		if humanoid then
+			seat.Anchored = false
 			seat:SetNetworkOwner(player)
 			prompt.Enabled = false
-			seat.Anchored = false
 			seat:Sit(humanoid)
 		end
 	end)

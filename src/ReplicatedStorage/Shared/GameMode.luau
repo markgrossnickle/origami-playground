@@ -12,6 +12,7 @@ GameMode.MODES = {
 	{ key = "auto_battler", display = "Auto Battler" },
 	{ key = "card_battler", display = "Card Battler" },
 	{ key = "play", display = "Play" },
+	{ key = "mining", display = "Mining" },
 }
 
 GameMode.Current = "sandbox"

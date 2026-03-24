@@ -50,6 +50,84 @@ function Server:_setupWorld()
 	-- local CompetitionGrid = require(ReplicatedStorage.Shared.CompetitionGrid)
 	-- CompetitionGrid.Build()
 
+	-- Mining portal near spawn
+	if not workspace:FindFirstChild("MiningPortal") then
+		local portal = Instance.new("Model")
+		portal.Name = "MiningPortal"
+
+		local leftPillar = Instance.new("Part")
+		leftPillar.Name = "LeftPillar"
+		leftPillar.Size = Vector3.new(2, 10, 2)
+		leftPillar.Position = Vector3.new(20, 5, -15)
+		leftPillar.Anchored = true
+		leftPillar.Material = Enum.Material.SmoothPlastic
+		leftPillar.Color = Color3.fromRGB(180, 150, 110)
+		leftPillar.Parent = portal
+
+		local rightPillar = Instance.new("Part")
+		rightPillar.Name = "RightPillar"
+		rightPillar.Size = Vector3.new(2, 10, 2)
+		rightPillar.Position = Vector3.new(26, 5, -15)
+		rightPillar.Anchored = true
+		rightPillar.Material = Enum.Material.SmoothPlastic
+		rightPillar.Color = Color3.fromRGB(180, 150, 110)
+		rightPillar.Parent = portal
+
+		local arch = Instance.new("Part")
+		arch.Name = "Arch"
+		arch.Size = Vector3.new(8, 2, 2)
+		arch.Position = Vector3.new(23, 11, -15)
+		arch.Anchored = true
+		arch.Material = Enum.Material.SmoothPlastic
+		arch.Color = Color3.fromRGB(180, 150, 110)
+		arch.Parent = portal
+
+		local glow = Instance.new("Part")
+		glow.Name = "Glow"
+		glow.Size = Vector3.new(4, 8, 0.5)
+		glow.Position = Vector3.new(23, 5, -15)
+		glow.Anchored = true
+		glow.Material = Enum.Material.Neon
+		glow.Color = Color3.fromRGB(120, 200, 255)
+		glow.Transparency = 0.3
+		glow.CanCollide = false
+		glow.CastShadow = false
+		glow.Parent = portal
+
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Enter Mine"
+		prompt.ObjectText = "Mining World"
+		prompt.MaxActivationDistance = 8
+		prompt.HoldDuration = 0
+		prompt.Parent = glow
+
+		local billboardGui = Instance.new("BillboardGui")
+		billboardGui.Size = UDim2.new(0, 200, 0, 50)
+		billboardGui.StudsOffset = Vector3.new(0, 8, 0)
+		billboardGui.AlwaysOnTop = true
+		billboardGui.Parent = arch
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, 0, 1, 0)
+		label.BackgroundTransparency = 1
+		label.Text = "Mining World"
+		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.TextStrokeTransparency = 0.5
+		label.TextSize = 22
+		label.Font = Enum.Font.GothamBold
+		label.Parent = billboardGui
+
+		portal.PrimaryPart = glow
+		portal.Parent = workspace
+	end
+
+	-- Create MiningWorld folder
+	if not workspace:FindFirstChild("MiningWorld") then
+		local miningWorld = Instance.new("Folder")
+		miningWorld.Name = "MiningWorld"
+		miningWorld.Parent = workspace
+	end
+
 	-- Lighting — warm afternoon light for paper aesthetic
 	Lighting.ClockTime = 14
 	Lighting.Brightness = 2

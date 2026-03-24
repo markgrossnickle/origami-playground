@@ -1,7 +1,7 @@
 --!strict
--- BlockRegistry: Block definitions for the mining world (pure-cubes variant)
--- All blocks render as standard cubes (Block shape). Origami feel comes from
--- SmoothPlastic material + pastel color palette.
+-- BlockRegistry: Triangular-folds variant. WedgePart pairs as primary block shape.
+-- Ore blocks flagged with isOre=true render as single WedgeParts.
+-- Exceptions: Air, Water, Bedrock use Block shape.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)

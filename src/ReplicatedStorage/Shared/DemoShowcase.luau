@@ -4,7 +4,7 @@ local DemoShowcase = {}
 DemoShowcase.MODELS = {
 	{
 		category = "creature",
-		position = { -35.0, 5, -20.0 },
+		position = { -35.0, 0, -20.0 },
 		prompt = "a majestic phoenix with fiery wings spread wide, trailing embers",
 		modelData = {
 			name = "Majestic Phoenix",
@@ -310,7 +310,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "creature",
-		position = { -33.6, 5, -29.9 },
+		position = { -33.6, 0, -29.9 },
 		prompt = "a tiny mechanical clockwork spider with brass gears and ruby eyes",
 		modelData = {
 			name = "Clockwork Spider",
@@ -526,7 +526,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "creature",
-		position = { -29.4, 5, -38.9 },
+		position = { -29.4, 0, -38.9 },
 		prompt = "a massive armored turtle with a miniature castle on its shell",
 		modelData = {
 			name = "Armored Turtle Castle",
@@ -742,7 +742,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "creature",
-		position = { -22.9, 5, -46.5 },
+		position = { -22.9, 0, -46.5 },
 		prompt = "a ghostly jellyfish that glows neon blue and trails long luminous tentacles",
 		modelData = {
 			name = "Ghostly Jellyfish",
@@ -928,7 +928,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "creature",
-		position = { -14.5, 5, -51.8 },
+		position = { -14.5, 0, -51.8 },
 		prompt = "a fluffy three-tailed fox with aurora-colored fur",
 		modelData = {
 			name = "Aurora Fox",
@@ -1194,7 +1194,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "creature",
-		position = { -5.0, 5, -54.6 },
+		position = { -5.0, 0, -54.6 },
 		prompt = "a stone gargoyle perched with wings folded, glowing cracks in its body",
 		modelData = {
 			name = "Gargoyle",
@@ -1430,7 +1430,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "vehicle",
-		position = { 5.0, 5, -54.6 },
+		position = { 5.0, 0, -54.6 },
 		prompt = "a steampunk airship with propellers, brass hull, and observation deck",
 		modelData = {
 			name = "Steampunk Airship",
@@ -1652,7 +1652,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "vehicle",
-		position = { 14.5, 5, -51.8 },
+		position = { 14.5, 0, -51.8 },
 		prompt = "a dragon-shaped roller coaster car with flame decals",
 		modelData = {
 			name = "Dragon Coaster Car",
@@ -1967,7 +1967,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "vehicle",
-		position = { 22.9, 5, -46.5 },
+		position = { 22.9, 0, -46.5 },
 		prompt = "a sleek neon-lit motorcycle with transparent wheels",
 		modelData = {
 			name = "Neon Motorcycle",
@@ -2149,7 +2149,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "vehicle",
-		position = { 29.4, 5, -38.9 },
+		position = { 29.4, 0, -38.9 },
 		prompt = "a flying carpet with tassels and intricate golden patterns",
 		modelData = {
 			name = "Flying Carpet",
@@ -2301,7 +2301,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "prop",
-		position = { 33.6, 5, -29.9 },
+		position = { 33.6, 0, -29.9 },
 		prompt = "a massive enchanted tree with glowing fruit and a door in its trunk",
 		modelData = {
 			name = "Enchanted Tree",
@@ -2493,7 +2493,7 @@ DemoShowcase.MODELS = {
 	},
 	{
 		category = "prop",
-		position = { 35.0, 5, -20.0 },
+		position = { 35.0, 0, -20.0 },
 		prompt = "an ancient stone portal with swirling purple energy in its center",
 		modelData = {
 			name = "Ancient Portal",

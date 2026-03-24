@@ -26,7 +26,7 @@ PROMPTS = [
 ]
 
 # Layout: semicircle, radius 30 studs, centered at spawn
-CENTER = (0, 5, -20)  # slightly in front of spawn
+CENTER = (0, 0, -20)  # slightly in front of spawn, Y=0 (spawner handles ground)
 RADIUS = 35
 START_ANGLE = -90  # degrees, -90 = left, +90 = right
 

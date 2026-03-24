@@ -55,6 +55,34 @@ function Server:_setupWorld()
 	Lighting.Brightness = 2
 	Lighting.Ambient = Color3.fromRGB(160, 155, 145)
 	Lighting.OutdoorAmbient = Color3.fromRGB(160, 155, 145)
+
+	-- Mining world portal near spawn
+	if not workspace:FindFirstChild("MiningPortal") then
+		local portal = Instance.new("Part")
+		portal.Name = "MiningPortal"
+		portal.Size = Vector3.new(6, 8, 1)
+		portal.Position = Vector3.new(20, 4, 0)
+		portal.Anchored = true
+		portal.CanCollide = false
+		portal.Material = Enum.Material.Neon
+		portal.Color = Color3.fromRGB(100, 200, 255)
+		portal.Transparency = 0.3
+		portal.Parent = workspace
+
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ObjectText = "Mining World"
+		prompt.ActionText = "Enter"
+		prompt.HoldDuration = 0.5
+		prompt.MaxActivationDistance = 10
+		prompt.Parent = portal
+	end
+
+	-- MiningWorld folder for chunk rendering
+	if not workspace:FindFirstChild("MiningWorld") then
+		local folder = Instance.new("Folder")
+		folder.Name = "MiningWorld"
+		folder.Parent = workspace
+	end
 end
 
 function Server:_loadComponentsIn(container: Instance)

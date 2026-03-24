@@ -139,9 +139,11 @@ local function setupVehicle(builtModel: Model, position: Vector3, modelData: { [
 		end
 	end)
 
-	-- Re-show prompt on exit
+	-- Re-anchor and reset on exit
 	seat:GetPropertyChangedSignal("Occupant"):Connect(function()
 		if not seat.Occupant then
+			seat.Anchored = true
+			seat:SetNetworkOwner(nil) -- return to server
 			prompt.Enabled = true
 		end
 	end)

@@ -42,10 +42,12 @@ OrigamiConfig.TYPES = {
 }
 
 -- AI models (cheapest → most expensive)
+-- Stable models: flash_lite (2.5 FL Lite), flash (2.5 Flash), gemini_pro (2.5 Pro)
+-- Preview models available: flash3_lite, flash3, gemini31_pro (lower rate limits)
 OrigamiConfig.MODELS = {
-	{ key = "flash25_lite", display = "FL 2.5 Lite" },
-	{ key = "flash3", display = "Gem 3 Flash" },
-	{ key = "gemini_pro", display = "Gem 3.1 Pro" },
+	{ key = "flash_lite", display = "Flash Lite" },
+	{ key = "flash", display = "Flash" },
+	{ key = "gemini_pro", display = "Gemini Pro" },
 	{ key = "opus", display = "Opus 4.6" },
 	{ key = "test", display = "Test All" },
 }
@@ -67,8 +69,8 @@ OrigamiConfig.STYLES = {
 -- Crane costs per model (new LLM generations)
 -- Actual API costs: Lite ~$0.001, Flash ~$0.05, Pro ~$0.20, Opus ~$0.40
 OrigamiConfig.CRANE_COSTS = {
-	flash25_lite = 1,
-	flash3 = 5,
+	flash_lite = 1,
+	flash = 5,
 	gemini_pro = 20,
 	opus = 40,
 	test = 10,

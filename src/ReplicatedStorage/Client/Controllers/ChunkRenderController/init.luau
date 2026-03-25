@@ -98,14 +98,24 @@ function ChunkRenderController:KnitStart()
 		f.Name = "MiningWorld"
 		f.Parent = workspace
 	end
-	WorldService.ChunkLoaded:Connect(function(cx: number, cy: number, cz: number, compressed: buffer)
+	WorldService.ChunkLoaded:Connect(function(_chunkKey: string, compressed: buffer, cx: number, cy: number, cz: number)
 		self:_renderChunk(cx, cy, cz, compressed)
 	end)
-	WorldService.ChunkUnloaded:Connect(function(cx: number, cy: number, cz: number)
-		self:_unloadChunk(ChunkUtil.chunkKey(cx, cy, cz))
+	WorldService.ChunkUnloaded:Connect(function(chunkKey: string)
+		self:_unloadChunk(chunkKey)
 	end)
 	WorldService.BlockChanged:Connect(
-		function(cx: number, cy: number, cz: number, lx: number, ly: number, lz: number, nb: number)
+		function(
+			_chunkKey: string,
+			_flatIndex: number,
+			nb: number,
+			lx: number,
+			ly: number,
+			lz: number,
+			cx: number,
+			cy: number,
+			cz: number
+		)
 			self:_updateBlock(cx, cy, cz, lx, ly, lz, nb)
 		end
 	)

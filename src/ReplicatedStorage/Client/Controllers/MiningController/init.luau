@@ -117,7 +117,7 @@ function MiningController:_activate()
 	end
 	active = true
 
-	ChunkStreamService.SetMiningMode:Fire(true)
+	ChunkStreamService.EnterMiningWorld:Fire()
 
 	local character = Player.Character
 	if character then
@@ -150,7 +150,7 @@ function MiningController:_deactivate()
 	mining = false
 	targetCx = nil
 
-	ChunkStreamService.SetMiningMode:Fire(false)
+	ChunkStreamService.LeaveMiningWorld:Fire()
 	trove:Clean()
 
 	if highlightPart then
@@ -363,8 +363,7 @@ end
 function MiningController:_updateMiningProgress(progress: number)
 	if highlightPart then
 		highlightPart.Transparency = 0.7 - progress * 0.5
-		highlightPart.Color =
-			Color3.fromRGB(math.floor(255 * (1 - progress)), math.floor(255 * progress), 50)
+		highlightPart.Color = Color3.fromRGB(math.floor(255 * (1 - progress)), math.floor(255 * progress), 50)
 	end
 end
 

@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 -- Platform detection
@@ -1567,6 +1568,29 @@ function equipAsTool(model: Model, modelData: { [string]: any })
 			if not character then
 				return
 			end
+
+			-- Play swing animation: load the default Roblox slash animation
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				local animator = humanoid:FindFirstChildOfClass("Animator")
+				if animator then
+					-- Use built-in Roblox sword slash animation
+					local swingAnim = Instance.new("Animation")
+					swingAnim.AnimationId = "rbxassetid://186934658" -- Default Roblox slash
+					local track = animator:LoadAnimation(swingAnim)
+					track.Priority = Enum.AnimationPriority.Action
+					track:Play()
+					swingAnim:Destroy()
+				end
+			end
+
+			-- Impact sound
+			local hitSound = Instance.new("Sound")
+			hitSound.SoundId = "rbxasset://sounds/electronicpingshort.wav"
+			hitSound.Volume = 1
+			hitSound.Parent = character:FindFirstChild("HumanoidRootPart") or character.PrimaryPart
+			hitSound:Play()
+			Debris:AddItem(hitSound, 1)
 
 			local camera = workspace.CurrentCamera
 			local mouse = Player:GetMouse()

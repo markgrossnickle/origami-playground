@@ -1286,6 +1286,32 @@ function submitDemoModel(prompt: string)
 				local animType = modelData.animation or "idle_bob"
 				OrigamiBuilder.ApplyAnimation(builtModel, animType)
 			end
+
+			-- Wire interactive behaviors from model attributes (BounceForce, etc.)
+			local bounceForce = builtModel:GetAttribute("BounceForce")
+			if bounceForce then
+				local force = tonumber(bounceForce) or 80
+				for _, part in builtModel:GetDescendants() do
+					if part:IsA("BasePart") then
+						part.CanCollide = true
+						part.Touched:Connect(function(hit)
+							local character = hit.Parent
+							if not character then
+								return
+							end
+							local humanoid = character:FindFirstChildOfClass("Humanoid")
+							local rootPart = character:FindFirstChild("HumanoidRootPart")
+							if humanoid and rootPart then
+								rootPart.AssemblyLinearVelocity = Vector3.new(
+									rootPart.AssemblyLinearVelocity.X,
+									force,
+									rootPart.AssemblyLinearVelocity.Z
+								)
+							end
+						end)
+					end
+				end
+			end
 		end)
 
 		if buildOk then

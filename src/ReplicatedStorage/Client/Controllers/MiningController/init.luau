@@ -122,6 +122,7 @@ function MiningController:_activate()
 		return
 	end
 	active = true
+	print("[MiningController] _activate: entering mining world, firing SetMiningMode")
 
 	ChunkStreamService.SetMiningMode:Fire(true)
 
@@ -399,16 +400,22 @@ function MiningController:_setupPortalPrompt()
 	task.spawn(function()
 		local portal = workspace:WaitForChild("MiningPortal", 30)
 		if not portal then
+			warn("[MiningController] MiningPortal not found in workspace")
 			return
 		end
-		local prompt = portal:FindFirstChildOfClass("ProximityPrompt")
-		if prompt then
-			prompt.Triggered:Connect(function(triggerPlayer: Player)
-				if triggerPlayer == Player then
-					GameMode.SetMode("mining")
-				end
-			end)
+		-- ProximityPrompt is on the Glow part (a descendant, not direct child)
+		local prompt = portal:FindFirstChildWhichIsA("ProximityPrompt", true)
+		if not prompt then
+			warn("[MiningController] ProximityPrompt not found in MiningPortal")
+			return
 		end
+		print("[MiningController] Portal prompt connected")
+		prompt.Triggered:Connect(function(triggerPlayer: Player)
+			if triggerPlayer == Player then
+				print("[MiningController] Portal triggered, entering mining mode")
+				GameMode.SetMode("mining")
+			end
+		end)
 	end)
 end
 

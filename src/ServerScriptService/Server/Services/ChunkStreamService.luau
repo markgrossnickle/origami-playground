@@ -32,19 +32,23 @@ function ChunkStreamService:KnitStart()
 
 	self.Client.SetMiningMode:Connect(function(player: Player, enabled: boolean)
 		if enabled then
+			print("[ChunkStreamService] Player entered mining world:", player.Name)
 			self:AddPlayer(player)
 		else
+			print("[ChunkStreamService] Player left mining world:", player.Name)
 			self:RemovePlayer(player)
 		end
 	end)
 
 	local elapsed = 0
+	local tickCount = 0
 	RunService.Heartbeat:Connect(function(dt: number)
 		elapsed = elapsed + dt
 		if elapsed < TICK_INTERVAL then
 			return
 		end
 		elapsed = 0
+		tickCount += 1
 
 		for player, _ in pairs(miningPlayers) do
 			if not player.Parent then
@@ -66,6 +70,24 @@ function ChunkStreamService:KnitStart()
 			local relY = worldPos.Y - offset.Y
 			local relZ = worldPos.Z - offset.Z
 			local pcx, pcy, pcz = ChunkUtil.worldToChunk(relX, relY, relZ)
+
+			if tickCount <= 3 then
+				print(
+					string.format(
+						"[ChunkStreamService] tick %d: pos=(%.0f,%.0f,%.0f) rel=(%.0f,%.0f,%.0f) chunk=(%d,%d,%d)",
+						tickCount,
+						worldPos.X,
+						worldPos.Y,
+						worldPos.Z,
+						relX,
+						relY,
+						relZ,
+						pcx,
+						pcy,
+						pcz
+					)
+				)
+			end
 
 			local desired: { [string]: boolean } = {}
 			for dy = -STREAM_RADIUS_V, STREAM_RADIUS_V do
@@ -102,11 +124,48 @@ function ChunkStreamService:KnitStart()
 					local scx, scy, scz = ChunkUtil.parseChunkKey(key)
 					WorldService:Subscribe(scx, scy, scz)
 					local blockData = WorldService:GetChunkData(scx, scy, scz)
+					local nonAir = 0
+					for i = 0, buffer.len(blockData) - 1 do
+						if buffer.readu8(blockData, i) ~= 0 then
+							nonAir += 1
+						end
+					end
 					local compressed = ChunkSerializer.compress(blockData)
+					print(
+						string.format(
+							"[ChunkStreamService] Subscribe chunk %s (cx=%d,cy=%d,cz=%d): %d non-air blocks, %d bytes compressed",
+							key,
+							scx,
+							scy,
+							scz,
+							nonAir,
+							buffer.len(compressed)
+						)
+					)
 					WorldService.Client.ChunkLoaded:Fire(player, key, compressed, scx, scy, scz)
 					current[key] = true
 					loaded = loaded + 1
 				end
+			end
+
+			if tickCount <= 3 then
+				local desiredCount = 0
+				for _ in desired do
+					desiredCount += 1
+				end
+				local currentCount = 0
+				for _ in current do
+					currentCount += 1
+				end
+				print(
+					string.format(
+						"[ChunkStreamService] tick %d: desired=%d current=%d newLoaded=%d",
+						tickCount,
+						desiredCount,
+						currentCount,
+						loaded
+					)
+				)
 			end
 
 			playerChunks[player] = current

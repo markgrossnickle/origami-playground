@@ -1,6 +1,6 @@
 --!strict
 -- MiningService: Server-authoritative mining validation, damage accumulation, and drop awards
--- Uses WorldService:BreakBlock(chunkKey, flatIndex) API
+-- Uses WorldService:BreakBlock(cx, cy, cz, lx, ly, lz) API
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -63,7 +63,8 @@ function MiningService.Client:MineBlock(
 	local flatIdx = ChunkUtil.flatIndex(lx, ly, lz)
 
 	-- Read block type from chunk data
-	local blockTypeId = WorldService:GetBlock(chunkKey, flatIdx)
+	local chunkData = WorldService:GetChunkData(cx, cy, cz)
+	local blockTypeId = buffer.readu8(chunkData, flatIdx)
 
 	if blockTypeId == BlockType.Air or blockTypeId == BlockType.Bedrock then
 		return false
@@ -93,9 +94,10 @@ function MiningService.Client:MineBlock(
 	if currentDamage >= hardness then
 		-- Block breaks
 		blockDamage[damageKey] = nil
-		local oldType = WorldService:BreakBlock(chunkKey, flatIdx)
+		local success = WorldService:BreakBlock(cx, cy, cz, lx, ly, lz)
 
-		if oldType ~= BlockType.Air then
+		if success then
+			WorldService.Client.BlockChanged:FireAll(cx, cy, cz, lx, ly, lz, BlockType.Air)
 			self.Client.BlockBroken:Fire(player, cx, cy, cz, lx, ly, lz, blockTypeId, blockDef.xp)
 			return true
 		end

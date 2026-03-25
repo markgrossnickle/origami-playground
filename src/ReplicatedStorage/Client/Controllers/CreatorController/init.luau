@@ -2877,6 +2877,31 @@ local function spawnStarterModels()
 			addNameLabel(model, modelName)
 			registerSpawnedModel(model, starterEntry.modelData)
 
+			-- Wire interactive behaviors from model attributes (BounceForce, etc.)
+			local bounceForce = model:GetAttribute("BounceForce")
+			if bounceForce then
+				local force = tonumber(bounceForce) or 80
+				for _, part in model:GetDescendants() do
+					if part:IsA("BasePart") then
+						part.Touched:Connect(function(hit)
+							local character = hit.Parent
+							if not character then
+								return
+							end
+							local humanoid = character:FindFirstChildOfClass("Humanoid")
+							local rootPart = character:FindFirstChild("HumanoidRootPart")
+							if humanoid and rootPart then
+								rootPart.AssemblyLinearVelocity = Vector3.new(
+									rootPart.AssemblyLinearVelocity.X,
+									force,
+									rootPart.AssemblyLinearVelocity.Z
+								)
+							end
+						end)
+					end
+				end
+			end
+
 			-- For creatures, start AI
 			if starterEntry.category == "creature" then
 				local character = Player.Character

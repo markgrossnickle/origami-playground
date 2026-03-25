@@ -36,6 +36,8 @@ function WorldService:KnitInit()
 	pcall(function()
 		deltaStore = DataStoreService:GetDataStore("MiningWorldDeltas_v1")
 	end)
+	print("[WorldService] Initialized with seed:", worldSeed)
+	-- MiningWorld folder is created by Server:_setupWorld(), not here
 end
 
 function WorldService:KnitStart() end

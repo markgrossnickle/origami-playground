@@ -43,6 +43,7 @@ local breakSound: Sound
 local hitSound: Sound
 local MiningService: any = nil
 local ChunkStreamService: any = nil
+local WorldService: any = nil
 
 function MiningController:KnitInit()
 	breakSound = Instance.new("Sound")
@@ -59,10 +60,13 @@ end
 function MiningController:KnitStart()
 	MiningService = Knit.GetService("MiningService")
 	ChunkStreamService = Knit.GetService("ChunkStreamService")
+	WorldService = Knit.GetService("WorldService")
 
 	GameMode.Changed:Connect(function(newMode: string, _oldMode: string)
 		if newMode == "mining" then
-			self:_activate()
+			task.spawn(function()
+				self:_activate()
+			end)
 		elseif active then
 			self:_deactivate()
 		end
@@ -106,15 +110,94 @@ function MiningController:_activate()
 		return
 	end
 	active = true
-	print("[MiningController] _activate: entering mining world, firing EnterMiningWorld")
+	print("[MiningController] _activate: entering mining world")
+
+	-- Show loading screen while chunks stream in
+	local loadingGui = Instance.new("ScreenGui")
+	loadingGui.Name = "MiningLoading"
+	loadingGui.DisplayOrder = 100
+	loadingGui.Parent = Player:WaitForChild("PlayerGui")
+
+	local bg = Instance.new("Frame")
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.BackgroundColor3 = Color3.fromRGB(30, 25, 20)
+	bg.BackgroundTransparency = 0.2
+	bg.BorderSizePixel = 0
+	bg.Parent = loadingGui
+
+	local loadLabel = Instance.new("TextLabel")
+	loadLabel.Size = UDim2.new(0, 300, 0, 60)
+	loadLabel.Position = UDim2.new(0.5, -150, 0.5, -30)
+	loadLabel.BackgroundTransparency = 1
+	loadLabel.Text = "Entering Mining World..."
+	loadLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	loadLabel.TextSize = 24
+	loadLabel.Font = Enum.Font.GothamBold
+	loadLabel.Parent = loadingGui
+
+	-- Start server streaming
 	ChunkStreamService.EnterMiningWorld:Fire()
+
+	-- Wait for first chunks with terrain before teleporting
+	local chunksReceived = 0
+	local readyToTeleport = false
+
+	local waitConn: RBXScriptConnection? = nil
+	waitConn = WorldService.ChunkLoaded:Connect(function(...)
+		chunksReceived += 1
+		if chunksReceived >= 5 and not readyToTeleport then
+			readyToTeleport = true
+			if waitConn then
+				waitConn:Disconnect()
+				waitConn = nil
+			end
+		end
+	end)
+
+	-- Teleport to mining world origin while we wait (but freeze player)
 	local character = Player.Character
-	if character then
-		local rootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if rootPart then
+	local rootPart = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if rootPart then
+		rootPart.CFrame = CFrame.new(WORLD_OFFSET + Vector3.new(0, 200, 0))
+		rootPart.Anchored = true
+	end
+
+	-- Wait for chunks or timeout (10s max)
+	local waitStart = tick()
+	while not readyToTeleport and (tick() - waitStart) < 10 do
+		task.wait(0.1)
+	end
+
+	if waitConn then
+		waitConn:Disconnect()
+	end
+
+	print(string.format("[MiningController] Chunks ready: %d received in %.1fs", chunksReceived, tick() - waitStart))
+
+	-- Unfreeze and position player on surface
+	if rootPart then
+		rootPart.Anchored = false
+		-- Raycast down to find the actual surface
+		local rayOrigin = WORLD_OFFSET + Vector3.new(0, 260, 0)
+		local rayParams = RaycastParams.new()
+		local miningWorld = workspace:FindFirstChild("MiningWorld")
+		if miningWorld then
+			rayParams.FilterType = Enum.RaycastFilterType.Include
+			rayParams.FilterDescendantsInstances = { miningWorld }
+		end
+		local result = workspace:Raycast(rayOrigin, Vector3.new(0, -300, 0), rayParams)
+		if result then
+			print("[MiningController] Surface found at Y=" .. result.Position.Y)
+			rootPart.CFrame = CFrame.new(result.Position + Vector3.new(0, 6, 0))
+		else
+			print("[MiningController] No surface found, using default spawn height")
 			rootPart.CFrame = CFrame.new(WORLD_OFFSET + Vector3.new(0, 200, 0))
 		end
 	end
+
+	-- Remove loading screen
+	loadingGui:Destroy()
+
 	self:_createHighlight()
 	self:_createUI()
 	self:_bindInput()

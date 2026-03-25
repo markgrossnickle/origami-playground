@@ -93,12 +93,25 @@ end
 function ChunkRenderController:KnitInit() end
 function ChunkRenderController:KnitStart()
 	local WorldService = Knit.GetService("WorldService")
+	-- MiningWorld folder is created by Server:_setupWorld()
+	-- Wait for it to replicate to client
 	if not workspace:FindFirstChild("MiningWorld") then
-		local f = Instance.new("Folder")
-		f.Name = "MiningWorld"
-		f.Parent = workspace
+		workspace:WaitForChild("MiningWorld", 10)
 	end
+	print(
+		"[ChunkRenderController] MiningWorld folder:",
+		workspace:FindFirstChild("MiningWorld") and "found" or "NOT FOUND"
+	)
 	WorldService.ChunkLoaded:Connect(function(_chunkKey: string, compressed: buffer, cx: number, cy: number, cz: number)
+		print(
+			string.format(
+				"[ChunkRenderController] Received chunk (%d,%d,%d), compressed size=%d",
+				cx,
+				cy,
+				cz,
+				buffer.len(compressed)
+			)
+		)
 		self:_renderChunk(cx, cy, cz, compressed)
 	end)
 	WorldService.ChunkUnloaded:Connect(function(chunkKey: string)
@@ -221,8 +234,11 @@ function ChunkRenderController:_renderChunk(cx: number, cy: number, cz: number, 
 	local mw = workspace:FindFirstChild("MiningWorld")
 	if mw then
 		folder.Parent = mw
+	else
+		warn("[ChunkRenderController] MiningWorld folder not found!")
 	end
 	chunkFolders[key] = folder
+	print(string.format("[ChunkRenderController] Rendered chunk %s: %d parts created", key, #folder:GetChildren()))
 end
 function ChunkRenderController:_unloadChunk(key: string)
 	local folder = chunkFolders[key]

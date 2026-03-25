@@ -32,20 +32,24 @@ function ChunkStreamService:KnitStart()
 	local WorldService = Knit.GetService("WorldService")
 
 	self.Client.EnterMiningWorld:Connect(function(player: Player)
+		print("[ChunkStreamService] Player entered mining world:", player.Name)
 		self:AddPlayer(player)
 	end)
 
 	self.Client.LeaveMiningWorld:Connect(function(player: Player)
+		print("[ChunkStreamService] Player left mining world:", player.Name)
 		self:RemovePlayer(player)
 	end)
 
 	local elapsed = 0
+	local tickCount = 0
 	RunService.Heartbeat:Connect(function(dt: number)
 		elapsed = elapsed + dt
 		if elapsed < TICK_INTERVAL then
 			return
 		end
 		elapsed = 0
+		tickCount += 1
 
 		for player, _ in pairs(miningPlayers) do
 			if not player.Parent then
@@ -69,6 +73,24 @@ function ChunkStreamService:KnitStart()
 			local relZ = rootPart.Position.Z - offset.Z
 
 			local pcx, pcy, pcz = ChunkUtil.worldToChunk(relX, relY, relZ)
+
+			if tickCount <= 3 then
+				print(
+					string.format(
+						"[ChunkStreamService] tick %d: pos=(%.0f,%.0f,%.0f) rel=(%.0f,%.0f,%.0f) chunk=(%d,%d,%d)",
+						tickCount,
+						rootPart.Position.X,
+						rootPart.Position.Y,
+						rootPart.Position.Z,
+						relX,
+						relY,
+						relZ,
+						pcx,
+						pcy,
+						pcz
+					)
+				)
+			end
 
 			local desired: { [string]: boolean } = {}
 			for dy = -STREAM_RADIUS_V, STREAM_RADIUS_V do
@@ -102,6 +124,26 @@ function ChunkStreamService:KnitStart()
 					current[key] = true
 					loaded = loaded + 1
 				end
+			end
+
+			if tickCount <= 3 then
+				local desiredCount = 0
+				for _ in desired do
+					desiredCount += 1
+				end
+				local currentCount = 0
+				for _ in current do
+					currentCount += 1
+				end
+				print(
+					string.format(
+						"[ChunkStreamService] tick %d: desired=%d current=%d newLoaded=%d",
+						tickCount,
+						desiredCount,
+						currentCount,
+						loaded
+					)
+				)
 			end
 
 			playerChunks[player] = current

@@ -24,6 +24,7 @@ local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local StarterModels = require(ReplicatedStorage.Shared.StarterModels)
+local DemoModels = require(ReplicatedStorage.Shared.DemoModels)
 local GameMode = require(ReplicatedStorage.Shared.GameMode)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 
@@ -66,6 +67,9 @@ local _uiMinimized = false
 local _spawnedModels: { { model: Model, modelData: { [string]: any }? } } = {}
 local _equippedTool: Tool? = nil
 local _equippedAccessory: BasePart? = nil
+
+-- Demo mode state
+local _demoMode = false
 
 -- Shop mode state
 local _shopMode: string? = nil -- nil = free, "browse" / "create_lite" / "create_pro"
@@ -710,8 +714,24 @@ local function createUI()
 	local editBtn = makeSidebarButton("EditBtn", "Edit", Color3.fromRGB(220, 160, 60), 2)
 	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 3)
 
+	-- "Demo" sidebar button — toggles demo mode (pre-built models, no API calls)
+	local demoBtn = makeSidebarButton("DemoBtn", "Demo", Color3.fromRGB(60, 200, 140), 4)
+	demoBtn.Activated:Connect(function()
+		_demoMode = not _demoMode
+		if _demoMode then
+			demoBtn.BackgroundColor3 = COLORS.success
+			-- Show only the input row in a simplified demo UI
+			container.Visible = true
+			_uiMinimized = false
+			setStatus("Demo mode ON — type a prompt to spawn pre-built models", COLORS.success)
+		else
+			demoBtn.BackgroundColor3 = Color3.fromRGB(60, 200, 140)
+			setStatus("Demo mode OFF", COLORS.textDim)
+		end
+	end)
+
 	-- "Create" sidebar button — always visible, toggles creator panel
-	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 4)
+	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 5)
 	_sidebarCreateBtn.Activated:Connect(function()
 		toggleMinimize()
 	end)
@@ -1230,10 +1250,69 @@ function submitSingleRequest(
 	end)
 end
 
+function submitDemoModel(prompt: string)
+	local match = DemoModels.FindMatch(prompt)
+	if not match then
+		setStatus("No demo model found for: " .. prompt:sub(1, 40), COLORS.error)
+		_failSound:Play()
+		return
+	end
+
+	local category = match.category
+	local modelData = match.modelData
+	local queueId = addQueueEntry(prompt, category)
+
+	task.spawn(function()
+		-- Simulate the "folding" delay so it feels like a real generation
+		task.wait(1.5)
+
+		local buildOk, buildErr = pcall(function()
+			local builtModel = OrigamiBuilder.BuildModel(modelData)
+
+			if category == "tool" then
+				equipAsTool(builtModel, modelData)
+			elseif category == "accessory" or category == "hat" then
+				equipAsAccessory(builtModel, modelData)
+			elseif category == "vehicle" then
+				spawnVehicle(builtModel, modelData)
+			elseif category == "avatar" then
+				applyAvatar(builtModel, modelData)
+			elseif category == "building" then
+				placeBuilding(builtModel, modelData)
+			elseif category == "creature" then
+				spawnCreature(builtModel, modelData)
+			else
+				placeModel(builtModel, modelData)
+				local animType = modelData.animation or "idle_bob"
+				OrigamiBuilder.ApplyAnimation(builtModel, animType)
+			end
+		end)
+
+		if buildOk then
+			local modelName = modelData.name or "Creation"
+			updateQueueEntry(queueId, modelName, COLORS.success)
+			_successSound:Play()
+		else
+			warn("[DemoMode] Build error:", buildErr)
+			updateQueueEntry(queueId, "Build error", COLORS.error)
+			_failSound:Play()
+		end
+
+		removeQueueEntry(queueId)
+	end)
+end
+
 function submitPrompt()
 	local prompt = _inputBox.Text
 	if not prompt or prompt:match("^%s*$") then
 		setStatus("Type something first!", COLORS.error)
+		return
+	end
+
+	-- Demo mode: use pre-built models instead of API
+	if _demoMode then
+		_inputBox.Text = ""
+		submitDemoModel(prompt)
 		return
 	end
 

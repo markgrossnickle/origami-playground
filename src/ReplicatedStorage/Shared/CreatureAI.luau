@@ -25,24 +25,20 @@ local function applyCreatureAnimation(model: Model, animParts: { [BasePart]: CFr
 			local idx = tonumber(name:match("%d+")) or 1
 			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
 			animOffset = CFrame.Angles(0, 0, flapAngle)
-
 		elseif name:match("^wing_R") then
 			-- Right wing: flap opposite
 			local idx = tonumber(name:match("%d+")) or 1
 			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
 			animOffset = CFrame.Angles(0, 0, -flapAngle)
-
 		elseif name:match("^tail_") then
 			-- Tail: side-to-side sway
 			local idx = tonumber(name:match("%d+")) or 1
 			local swayAngle = math.sin(t * 3.0 + idx * 0.6) * math.rad(20)
 			animOffset = CFrame.Angles(0, swayAngle, 0)
-
 		elseif name:match("^jaw_") then
 			-- Jaw: open/close
 			local openAngle = (math.sin(t * 2.0) * 0.5 + 0.5) * math.rad(15) -- 0 to 15 degrees
 			animOffset = CFrame.Angles(openAngle, 0, 0)
-
 		elseif name:match("^leg_") then
 			-- Legs: walking cycle. FL/BL move opposite to FR/BR
 			local isLeft = name:match("_[FB]L_")
@@ -50,6 +46,12 @@ local function applyCreatureAnimation(model: Model, animParts: { [BasePart]: CFr
 			local phase = (if isLeft then 0 else math.pi) + (if isFront then 0 else math.pi / 2)
 			local walkAngle = math.sin(t * 5.0 + phase) * math.rad(25)
 			animOffset = CFrame.Angles(walkAngle, 0, 0)
+		elseif name:match("^seg_") then
+			-- Body segments: accordion fold — alternating Y offset + yaw with snappy easing
+			local idx = tonumber(name:match("%d+")) or 1
+			local yOffset = foldCurve(math.sin(t * 3.0 + idx * 1.2)) * 0.3
+			local yawAngle = foldCurve(math.sin(t * 3.0 + idx * 1.2 + math.pi / 4)) * math.rad(12)
+			animOffset = CFrame.new(0, yOffset, 0) * CFrame.Angles(0, yawAngle, 0)
 		end
 		-- else: detail parts (eyes, horns) — no animation, animOffset stays identity
 
@@ -188,12 +190,10 @@ function CreatureAI.Start(
 						baseX = baseX + perpX * sway
 						baseZ = baseZ + perpZ * sway
 						-- Rotate to face movement direction (tangent of the curve)
-						local tangentSway =
-							math.cos(t * math.pi * 4 + slitherPhase) * 1.2 * (math.pi * 4 / distance)
+						local tangentSway = math.cos(t * math.pi * 4 + slitherPhase) * 1.2 * (math.pi * 4 / distance)
 						local yawOffset = math.atan2(tangentSway * perpX, tangentSway * perpZ)
 						finalRot = lookRot * CFrame.Angles(0, yawOffset * 0.3, 0)
 						finalY = baseGroundY + pivotAboveBottom
-
 					elseif locomotion == "fly" then
 						-- Swooping flight: sine wave altitude + bank into turns
 						local swoopY = math.sin(t * math.pi * 2) * 4
@@ -201,7 +201,6 @@ function CreatureAI.Start(
 						-- Bank slightly into the swoop
 						local bankAngle = math.cos(t * math.pi * 2) * math.rad(15)
 						finalRot = lookRot * CFrame.Angles(0, 0, bankAngle)
-
 					elseif locomotion == "float" then
 						-- Gentle hover with vertical bob
 						local bobY = math.sin(tick() * 1.5) * 1.0
@@ -209,7 +208,6 @@ function CreatureAI.Start(
 						-- Slow gentle yaw drift
 						local driftYaw = math.sin(tick() * 0.5) * math.rad(10)
 						finalRot = lookRot * CFrame.Angles(0, driftYaw, 0)
-
 					elseif locomotion == "hop" then
 						-- Parabolic arc per hop
 						local hopIndex = math.floor((step - 1) / hopStepsPerHop)
@@ -219,7 +217,6 @@ function CreatureAI.Start(
 						-- Slight forward tilt during hop
 						local tiltAngle = math.sin(hopT * math.pi) * math.rad(-20)
 						finalRot = lookRot * CFrame.Angles(tiltAngle, 0, 0)
-
 					else -- walk (default)
 						finalY = baseGroundY + pivotAboveBottom
 					end

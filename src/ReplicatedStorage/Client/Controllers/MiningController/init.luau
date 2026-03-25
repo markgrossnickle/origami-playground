@@ -111,7 +111,7 @@ function MiningController:_activate()
 	if character then
 		local rootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if rootPart then
-			rootPart.CFrame = CFrame.new(WORLD_OFFSET + Vector3.new(0, 220, 0))
+			rootPart.CFrame = CFrame.new(WORLD_OFFSET + Vector3.new(0, 200, 0))
 		end
 	end
 	self:_createHighlight()

@@ -30,10 +30,8 @@ local playerSubscriptions: { [Player]: { [string]: boolean } } = {}
 
 function WorldService:KnitInit()
 	seed = math.random(1, 999999)
-
-	local miningWorld = Instance.new("Folder")
-	miningWorld.Name = "MiningWorld"
-	miningWorld.Parent = workspace
+	print("[WorldService] Initialized with seed:", seed)
+	-- MiningWorld folder is created by Server:_setupWorld(), not here
 end
 
 function WorldService:KnitStart()
@@ -121,7 +119,27 @@ function WorldService:Subscribe(player: Player, chunkKey: string)
 
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 	local chunkData = self:GetChunkData(cx, cy, cz)
+
+	-- Count non-air blocks for diagnostic
+	local nonAir = 0
+	for i = 0, 4095 do
+		if buffer.readu8(chunkData, i) ~= 0 then
+			nonAir += 1
+		end
+	end
+
 	local compressed = ChunkSerializer.compress(chunkData)
+	print(
+		string.format(
+			"[WorldService] Subscribe chunk %s (cx=%d,cy=%d,cz=%d): %d non-air blocks, %d bytes compressed",
+			chunkKey,
+			cx,
+			cy,
+			cz,
+			nonAir,
+			buffer.len(compressed)
+		)
+	)
 	self.Client.ChunkLoaded:Fire(player, chunkKey, compressed, cx, cy, cz)
 end
 

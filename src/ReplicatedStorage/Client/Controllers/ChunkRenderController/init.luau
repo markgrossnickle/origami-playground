@@ -140,6 +140,7 @@ local function renderChunk(chunkKey: string, cx: number, cy: number, cz: number,
 
 	folder.Parent = miningWorld
 	chunkFolders[chunkKey] = folder
+	print(string.format("[ChunkRenderController] Rendered chunk %s: %d parts created", chunkKey, #folder:GetChildren()))
 end
 
 local function unloadChunk(chunkKey: string)
@@ -172,6 +173,15 @@ function ChunkRenderController:KnitStart()
 	end)
 
 	WorldService.ChunkLoaded:Connect(function(chunkKey: string, compressed: buffer, cx: number, cy: number, cz: number)
+		print(
+			string.format(
+				"[ChunkRenderController] Received chunk (%d,%d,%d), compressed size=%d",
+				cx,
+				cy,
+				cz,
+				buffer.len(compressed)
+			)
+		)
 		if not active then
 			return
 		end
@@ -213,11 +223,15 @@ function ChunkRenderController:_activate()
 		return
 	end
 	active = true
+	-- MiningWorld folder is created by Server:_setupWorld()
+	-- Wait for it to replicate to client
 	if not workspace:FindFirstChild("MiningWorld") then
-		local folder = Instance.new("Folder")
-		folder.Name = "MiningWorld"
-		folder.Parent = workspace
+		workspace:WaitForChild("MiningWorld", 10)
 	end
+	print(
+		"[ChunkRenderController] MiningWorld folder:",
+		workspace:FindFirstChild("MiningWorld") and "found" or "NOT FOUND"
+	)
 end
 
 function ChunkRenderController:_deactivate()

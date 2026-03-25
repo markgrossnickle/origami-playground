@@ -33,7 +33,7 @@ local trove = Trove.new()
 local active = false
 local mining = false
 local lastMineTick = 0
-local targetRelPos: Vector3? = nil
+local targetCoords: { cx: number, cy: number, cz: number, lx: number, ly: number, lz: number }? = nil
 local highlightPart: Part? = nil
 local screenGui: ScreenGui? = nil
 local floatingTextTemplate: TextLabel? = nil
@@ -68,22 +68,35 @@ function MiningController:KnitStart()
 		end
 	end)
 
-	MiningService.MineResult:Connect(function(success: boolean, info: string, value: number)
-		if success then
+	MiningService.BlockBroken:Connect(
+		function(
+			cx: number,
+			cy: number,
+			cz: number,
+			lx: number,
+			ly: number,
+			lz: number,
+			blockTypeId: number,
+			xp: number
+		)
 			breakSound:Play()
-			self:_showFloatingText("+" .. info, Color3.fromRGB(100, 255, 100))
-			if value and value > 0 then
+			local def = require(ReplicatedStorage.Shared.BlockRegistry).get(blockTypeId)
+			local blockName = if def then def.name else "Block"
+			self:_showFloatingText("+" .. blockName, Color3.fromRGB(100, 255, 100))
+			if xp and xp > 0 then
 				task.delay(0.2, function()
-					self:_showFloatingText("+" .. value .. " XP", Color3.fromRGB(255, 220, 80))
+					self:_showFloatingText("+" .. xp .. " XP", Color3.fromRGB(255, 220, 80))
 				end)
 			end
-		elseif info == "progress" then
-			hitSound:Play()
-			self:_updateMiningProgress(value)
-		elseif info == "tier_too_low" then
-			self:_showFloatingText("Tool too weak!", Color3.fromRGB(255, 80, 80))
 		end
-	end)
+	)
+
+	MiningService.MineProgress:Connect(
+		function(_cx: number, _cy: number, _cz: number, _lx: number, _ly: number, _lz: number, pct: number)
+			hitSound:Play()
+			self:_updateMiningProgress(pct)
+		end
+	)
 
 	self:_setupPortalPrompt()
 end
@@ -107,13 +120,8 @@ function MiningController:_activate()
 	trove:Add(RunService.Heartbeat:Connect(function()
 		self:_update()
 	end))
-	task.spawn(function()
-		local ok, tier = MiningService:GetTier():await()
-		if ok then
-			currentTier = tier
-			self:_updateTierLabel()
-		end
-	end)
+	currentTier = 1
+	self:_updateTierLabel()
 end
 
 function MiningController:_deactivate()
@@ -122,7 +130,7 @@ function MiningController:_deactivate()
 	end
 	active = false
 	mining = false
-	targetRelPos = nil
+	targetCoords = nil
 	ChunkStreamService.LeaveMiningWorld:Fire()
 	trove:Clean()
 	if highlightPart then
@@ -217,20 +225,14 @@ function MiningController:_createUI()
 	upgradeCorner.CornerRadius = UDim.new(0, 8)
 	upgradeCorner.Parent = upgradeBtn
 	upgradeBtn.Activated:Connect(function()
-		task.spawn(function()
-			local ok, result = MiningService:UpgradeTier():await()
-			if ok then
-				local success = result[1]
-				local newTier = result[2]
-				if success then
-					currentTier = newTier
-					self:_updateTierLabel()
-					self:_showFloatingText("Tool upgraded!", Color3.fromRGB(100, 255, 200))
-				else
-					self:_showFloatingText("Max tier!", Color3.fromRGB(255, 200, 80))
-				end
-			end
-		end)
+		if currentTier >= #MiningConfig.TOOL_TIERS then
+			self:_showFloatingText("Max tier!", Color3.fromRGB(255, 200, 80))
+			return
+		end
+		currentTier = currentTier + 1
+		MiningService:SetToolTier(currentTier)
+		self:_updateTierLabel()
+		self:_showFloatingText("Tool upgraded!", Color3.fromRGB(100, 255, 200))
 	end)
 	local crosshair = Instance.new("Frame")
 	crosshair.Name = "Crosshair"
@@ -286,11 +288,20 @@ function MiningController:_update()
 		return
 	end
 	self:_updateTarget()
-	if mining and targetRelPos then
+	if mining and targetCoords then
 		local now = tick()
 		if now - lastMineTick >= MINE_TICK_RATE then
 			lastMineTick = now
-			MiningService.RequestMine:Fire(targetRelPos.X, targetRelPos.Y, targetRelPos.Z)
+			task.spawn(function()
+				MiningService:MineBlock(
+					targetCoords.cx,
+					targetCoords.cy,
+					targetCoords.cz,
+					targetCoords.lx,
+					targetCoords.ly,
+					targetCoords.lz
+				):catch(function() end)
+			end)
 		end
 	end
 end
@@ -315,15 +326,15 @@ function MiningController:_updateTarget()
 			local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 			local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 			local blockPos = ChunkUtil.blockWorldPosition(cx, cy, cz, lx, ly, lz)
-			targetRelPos = blockPos
+			targetCoords = { cx = cx, cy = cy, cz = cz, lx = lx, ly = ly, lz = lz }
 			self:_showHighlight(blockPos + WORLD_OFFSET)
 		else
 			self:_hideHighlight()
-			targetRelPos = nil
+			targetCoords = nil
 		end
 	else
 		self:_hideHighlight()
-		targetRelPos = nil
+		targetCoords = nil
 	end
 end
 

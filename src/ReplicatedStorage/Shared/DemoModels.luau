@@ -164,101 +164,84 @@ DemoModels.MODELS = {
 	},
 
 	-- ═══════════════════════════════════════════════════════════════
-	-- PROP: Trampoline
+	-- PROP: Trampoline 1 — Cylinder discs with rotation (classic)
+	-- Cylinder: X = length along axis, Y/Z = diameter. Rotate Z=90 to make axis point up.
 	-- ═══════════════════════════════════════════════════════════════
 	{
-		keywords = { "trampoline", "bouncy", "bounce pad" },
+		keywords = { "trampoline 1" },
 		category = "prop",
 		modelData = {
-			name = "Trampoline",
+			name = "Trampoline v1",
 			category = "prop",
 			animation = "breathe",
 			parts = {
-				-- Base ring (Cylinder axis is X in Roblox, rotate Z=90 to point up)
 				{
 					name = "ring_base",
 					shape = "Cylinder",
 					position = { 0, 1, 0 },
-					size = { 10, 1, 10 },
+					size = { 1, 10, 10 },
 					rotation = { 0, 0, 90 },
 					color = { 50, 50, 60 },
 					material = "Metal",
 					transparency = 0,
 				},
-				-- Bounce surface
 				{
 					name = "surface",
 					shape = "Cylinder",
 					position = { 0, 1.6, 0 },
-					size = { 9, 0.3, 9 },
+					size = { 0.3, 9, 9 },
 					rotation = { 0, 0, 90 },
 					color = { 30, 30, 30 },
 					material = "Fabric",
 					transparency = 0,
 				},
-				-- Leg front-left
 				{
 					name = "leg_FL",
 					shape = "Cylinder",
 					position = { -3.5, 0.5, 3.5 },
-					size = { 0.6, 1.5, 0.6 },
+					size = { 1.5, 0.6, 0.6 },
 					rotation = { 0, 0, 90 },
 					color = { 60, 60, 70 },
 					material = "Metal",
 					transparency = 0,
 				},
-				-- Leg front-right
 				{
 					name = "leg_FR",
 					shape = "Cylinder",
 					position = { 3.5, 0.5, 3.5 },
-					size = { 0.6, 1.5, 0.6 },
+					size = { 1.5, 0.6, 0.6 },
 					rotation = { 0, 0, 90 },
 					color = { 60, 60, 70 },
 					material = "Metal",
 					transparency = 0,
 				},
-				-- Leg back-left
 				{
 					name = "leg_BL",
 					shape = "Cylinder",
 					position = { -3.5, 0.5, -3.5 },
-					size = { 0.6, 1.5, 0.6 },
+					size = { 1.5, 0.6, 0.6 },
 					rotation = { 0, 0, 90 },
 					color = { 60, 60, 70 },
 					material = "Metal",
 					transparency = 0,
 				},
-				-- Leg back-right
 				{
 					name = "leg_BR",
 					shape = "Cylinder",
 					position = { 3.5, 0.5, -3.5 },
-					size = { 0.6, 1.5, 0.6 },
+					size = { 1.5, 0.6, 0.6 },
 					rotation = { 0, 0, 90 },
 					color = { 60, 60, 70 },
 					material = "Metal",
 					transparency = 0,
 				},
-				-- Safety pad (ring)
 				{
 					name = "pad",
 					shape = "Cylinder",
 					position = { 0, 1.8, 0 },
-					size = { 10.5, 0.4, 10.5 },
+					size = { 0.4, 10.5, 10.5 },
 					rotation = { 0, 0, 90 },
 					color = { 60, 130, 255 },
-					material = "Fabric",
-					transparency = 0,
-				},
-				-- Inner gap (creates visual ring effect)
-				{
-					name = "pad_inner",
-					shape = "Cylinder",
-					position = { 0, 1.85, 0 },
-					size = { 8.5, 0.5, 8.5 },
-					rotation = { 0, 0, 90 },
-					color = { 30, 30, 30 },
 					material = "Fabric",
 					transparency = 0,
 				},
@@ -267,17 +250,337 @@ DemoModels.MODELS = {
 	},
 
 	-- ═══════════════════════════════════════════════════════════════
-	-- PROP: Seesaw
+	-- PROP: Trampoline 2 — All blocks (no cylinder issues)
 	-- ═══════════════════════════════════════════════════════════════
 	{
-		keywords = { "seesaw", "teeter totter", "see saw" },
+		keywords = { "trampoline 2" },
 		category = "prop",
 		modelData = {
-			name = "Seesaw",
+			name = "Trampoline v2",
+			category = "prop",
+			animation = "breathe",
+			parts = {
+				-- Frame (flat wide block as ring substitute)
+				{
+					name = "frame",
+					shape = "Block",
+					position = { 0, 1, 0 },
+					size = { 10, 0.8, 10 },
+					rotation = { 0, 0, 0 },
+					color = { 50, 50, 60 },
+					material = "Metal",
+					transparency = 0,
+				},
+				-- Bounce surface (slightly smaller, sits on top)
+				{
+					name = "surface",
+					shape = "Block",
+					position = { 0, 1.5, 0 },
+					size = { 9, 0.2, 9 },
+					rotation = { 0, 0, 0 },
+					color = { 30, 30, 30 },
+					material = "Fabric",
+					transparency = 0,
+				},
+				-- Leg FL
+				{
+					name = "leg_FL",
+					shape = "Block",
+					position = { -4, 0.3, 4 },
+					size = { 0.6, 1.2, 0.6 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				-- Leg FR
+				{
+					name = "leg_FR",
+					shape = "Block",
+					position = { 4, 0.3, 4 },
+					size = { 0.6, 1.2, 0.6 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				-- Leg BL
+				{
+					name = "leg_BL",
+					shape = "Block",
+					position = { -4, 0.3, -4 },
+					size = { 0.6, 1.2, 0.6 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				-- Leg BR
+				{
+					name = "leg_BR",
+					shape = "Block",
+					position = { 4, 0.3, -4 },
+					size = { 0.6, 1.2, 0.6 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				-- Blue pad border
+				{
+					name = "pad",
+					shape = "Block",
+					position = { 0, 1.6, 0 },
+					size = { 10.5, 0.3, 10.5 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 130, 255 },
+					material = "Fabric",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Trampoline 3 — Ball base + block surface
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "trampoline 3" },
+		category = "prop",
+		modelData = {
+			name = "Trampoline v3",
+			category = "prop",
+			animation = "breathe",
+			parts = {
+				{
+					name = "base",
+					shape = "Ball",
+					position = { 0, 0.8, 0 },
+					size = { 10, 1.5, 10 },
+					rotation = { 0, 0, 0 },
+					color = { 50, 50, 60 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "surface",
+					shape = "Block",
+					position = { 0, 1.6, 0 },
+					size = { 9, 0.2, 9 },
+					rotation = { 0, 0, 0 },
+					color = { 30, 30, 30 },
+					material = "Fabric",
+					transparency = 0,
+				},
+				{
+					name = "pad_ring",
+					shape = "Ball",
+					position = { 0, 1.7, 0 },
+					size = { 10.5, 0.5, 10.5 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 130, 255 },
+					material = "Fabric",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Trampoline 4 — Cylinder using orientation property
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "trampoline 4" },
+		category = "prop",
+		modelData = {
+			name = "Trampoline v4",
+			category = "prop",
+			animation = "breathe",
+			parts = {
+				{
+					name = "ring_base",
+					shape = "Cylinder",
+					position = { 0, 1, 0 },
+					size = { 1, 10, 10 },
+					orientation = { 0, 0, 90 },
+					color = { 50, 50, 60 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "surface",
+					shape = "Cylinder",
+					position = { 0, 1.5, 0 },
+					size = { 0.2, 9, 9 },
+					orientation = { 0, 0, 90 },
+					color = { 30, 30, 30 },
+					material = "Fabric",
+					transparency = 0,
+				},
+				{
+					name = "pad",
+					shape = "Cylinder",
+					position = { 0, 1.6, 0 },
+					size = { 0.3, 10.5, 10.5 },
+					orientation = { 0, 0, 90 },
+					color = { 60, 130, 255 },
+					material = "Fabric",
+					transparency = 0,
+				},
+				{
+					name = "leg_1",
+					shape = "Block",
+					position = { -3.5, 0.4, 3.5 },
+					size = { 0.5, 1, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_2",
+					shape = "Block",
+					position = { 3.5, 0.4, 3.5 },
+					size = { 0.5, 1, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_3",
+					shape = "Block",
+					position = { -3.5, 0.4, -3.5 },
+					size = { 0.5, 1, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_4",
+					shape = "Block",
+					position = { 3.5, 0.4, -3.5 },
+					size = { 0.5, 1, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Trampoline 5 — Flat ball discs (safest, no rotation needed)
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "trampoline", "trampoline 5", "bouncy", "bounce pad" },
+		category = "prop",
+		modelData = {
+			name = "Trampoline",
+			category = "prop",
+			animation = "breathe",
+			parts = {
+				-- Flattened ball as frame ring
+				{
+					name = "frame",
+					shape = "Ball",
+					position = { 0, 1.2, 0 },
+					size = { 10, 0.8, 10 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				-- Bounce surface (flat block)
+				{
+					name = "surface",
+					shape = "Block",
+					position = { 0, 1.7, 0 },
+					size = { 8.5, 0.15, 8.5 },
+					rotation = { 0, 0, 0 },
+					color = { 30, 30, 30 },
+					material = "Fabric",
+					transparency = 0,
+				},
+				-- Blue safety pad (flat ball ring)
+				{
+					name = "pad",
+					shape = "Ball",
+					position = { 0, 1.8, 0 },
+					size = { 10.5, 0.4, 10.5 },
+					rotation = { 0, 0, 0 },
+					color = { 60, 130, 255 },
+					material = "Fabric",
+					transparency = 0,
+				},
+				-- 6 block legs
+				{
+					name = "leg_1",
+					shape = "Block",
+					position = { -3.5, 0.4, 3.5 },
+					size = { 0.5, 1.2, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_2",
+					shape = "Block",
+					position = { 3.5, 0.4, 3.5 },
+					size = { 0.5, 1.2, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_3",
+					shape = "Block",
+					position = { -3.5, 0.4, -3.5 },
+					size = { 0.5, 1.2, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_4",
+					shape = "Block",
+					position = { 3.5, 0.4, -3.5 },
+					size = { 0.5, 1.2, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_5",
+					shape = "Block",
+					position = { -3.5, 0.4, 0 },
+					size = { 0.5, 1.2, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "leg_6",
+					shape = "Block",
+					position = { 3.5, 0.4, 0 },
+					size = { 0.5, 1.2, 0.5 },
+					color = { 60, 60, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Seesaw 1 — Classic wood with wobble
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "seesaw 1" },
+		category = "prop",
+		modelData = {
+			name = "Seesaw v1",
 			category = "prop",
 			animation = "wobble",
 			parts = {
-				-- Fulcrum (triangle base)
 				{
 					name = "fulcrum",
 					shape = "Wedge",
@@ -288,7 +591,6 @@ DemoModels.MODELS = {
 					material = "Wood",
 					transparency = 0,
 				},
-				-- Plank
 				{
 					name = "plank",
 					shape = "Block",
@@ -299,29 +601,26 @@ DemoModels.MODELS = {
 					material = "Wood",
 					transparency = 0,
 				},
-				-- Handle left
 				{
 					name = "handle_L",
-					shape = "Cylinder",
+					shape = "Block",
 					position = { 0, 4, 5.5 },
-					size = { 1.5, 0.4, 0.4 },
+					size = { 0.3, 1.5, 0.3 },
 					rotation = { 0, 0, 0 },
 					color = { 200, 50, 50 },
 					material = "SmoothPlastic",
 					transparency = 0,
 				},
-				-- Handle right
 				{
 					name = "handle_R",
-					shape = "Cylinder",
+					shape = "Block",
 					position = { 0, 4, -5.5 },
-					size = { 1.5, 0.4, 0.4 },
+					size = { 0.3, 1.5, 0.3 },
 					rotation = { 0, 0, 0 },
 					color = { 50, 50, 200 },
 					material = "SmoothPlastic",
 					transparency = 0,
 				},
-				-- Seat left
 				{
 					name = "seat_L",
 					shape = "Block",
@@ -332,7 +631,6 @@ DemoModels.MODELS = {
 					material = "SmoothPlastic",
 					transparency = 0,
 				},
-				-- Seat right
 				{
 					name = "seat_R",
 					shape = "Block",
@@ -343,7 +641,6 @@ DemoModels.MODELS = {
 					material = "SmoothPlastic",
 					transparency = 0,
 				},
-				-- Base platform
 				{
 					name = "base",
 					shape = "Block",
@@ -352,6 +649,366 @@ DemoModels.MODELS = {
 					rotation = { 0, 0, 0 },
 					color = { 100, 100, 100 },
 					material = "Concrete",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Seesaw 2 — Colorful playground style, wider plank
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "seesaw 2" },
+		category = "prop",
+		modelData = {
+			name = "Seesaw v2",
+			category = "prop",
+			animation = "wobble",
+			parts = {
+				{
+					name = "base_pad",
+					shape = "Block",
+					position = { 0, 0.15, 0 },
+					size = { 4, 0.3, 5 },
+					rotation = { 0, 0, 0 },
+					color = { 80, 80, 80 },
+					material = "Concrete",
+					transparency = 0,
+				},
+				{
+					name = "fulcrum_L",
+					shape = "Wedge",
+					position = { -1.2, 1.5, 0 },
+					size = { 0.6, 3, 3 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 200, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "fulcrum_R",
+					shape = "Wedge",
+					position = { 1.2, 1.5, 0 },
+					size = { 0.6, 3, 3 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 200, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "plank",
+					shape = "Block",
+					position = { 0, 3.2, 0 },
+					size = { 3, 0.4, 16 },
+					rotation = { 0, 0, 0 },
+					color = { 50, 180, 80 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "seat_L",
+					shape = "Block",
+					position = { 0, 3.5, 7 },
+					size = { 3, 0.3, 2.5 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 80, 80 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "handle_L",
+					shape = "Block",
+					position = { 0, 4.2, 6 },
+					size = { 0.3, 1.5, 0.3 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 80, 80 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "seat_R",
+					shape = "Block",
+					position = { 0, 3.5, -7 },
+					size = { 3, 0.3, 2.5 },
+					rotation = { 0, 0, 0 },
+					color = { 80, 80, 255 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "handle_R",
+					shape = "Block",
+					position = { 0, 4.2, -6 },
+					size = { 0.3, 1.5, 0.3 },
+					rotation = { 0, 0, 0 },
+					color = { 80, 80, 255 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Seesaw 3 — Metal industrial style
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "seesaw 3" },
+		category = "prop",
+		modelData = {
+			name = "Seesaw v3",
+			category = "prop",
+			animation = "wobble",
+			parts = {
+				{
+					name = "base",
+					shape = "Block",
+					position = { 0, 0.3, 0 },
+					size = { 3, 0.6, 3 },
+					rotation = { 0, 0, 0 },
+					color = { 70, 70, 70 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "fulcrum",
+					shape = "Ball",
+					position = { 0, 1.5, 0 },
+					size = { 2, 2, 2 },
+					rotation = { 0, 0, 0 },
+					color = { 90, 90, 100 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "beam",
+					shape = "Block",
+					position = { 0, 2.6, 0 },
+					size = { 1.5, 0.3, 12 },
+					rotation = { 0, 0, 0 },
+					color = { 180, 180, 190 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "seat_L",
+					shape = "Block",
+					position = { 0, 2.9, 5.5 },
+					size = { 2, 0.2, 1.5 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 100, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "seat_R",
+					shape = "Block",
+					position = { 0, 2.9, -5.5 },
+					size = { 2, 0.2, 1.5 },
+					rotation = { 0, 0, 0 },
+					color = { 50, 100, 255 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "grip_L",
+					shape = "Block",
+					position = { 0, 3.5, 4.5 },
+					size = { 0.2, 1, 0.2 },
+					rotation = { 0, 0, 0 },
+					color = { 180, 180, 190 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "grip_R",
+					shape = "Block",
+					position = { 0, 3.5, -4.5 },
+					size = { 0.2, 1, 0.2 },
+					rotation = { 0, 0, 0 },
+					color = { 180, 180, 190 },
+					material = "Metal",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Seesaw 4 — Neon glow style
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "seesaw 4" },
+		category = "prop",
+		modelData = {
+			name = "Seesaw v4",
+			category = "prop",
+			animation = "wobble",
+			parts = {
+				{
+					name = "base",
+					shape = "Block",
+					position = { 0, 0.2, 0 },
+					size = { 2.5, 0.4, 3 },
+					rotation = { 0, 0, 0 },
+					color = { 30, 30, 40 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "fulcrum",
+					shape = "Wedge",
+					position = { 0, 1.2, 0 },
+					size = { 2, 2, 2.5 },
+					rotation = { 0, 0, 0 },
+					color = { 40, 40, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "plank",
+					shape = "Block",
+					position = { 0, 2.4, 0 },
+					size = { 2.5, 0.3, 14 },
+					rotation = { 0, 0, 0 },
+					color = { 20, 20, 30 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "glow_edge",
+					shape = "Block",
+					position = { 0, 2.55, 0 },
+					size = { 2.6, 0.1, 14.2 },
+					rotation = { 0, 0, 0 },
+					color = { 0, 200, 255 },
+					material = "Neon",
+					transparency = 0.2,
+				},
+				{
+					name = "seat_L",
+					shape = "Block",
+					position = { 0, 2.7, 6 },
+					size = { 2.8, 0.2, 2 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 50, 100 },
+					material = "Neon",
+					transparency = 0.1,
+				},
+				{
+					name = "seat_R",
+					shape = "Block",
+					position = { 0, 2.7, -6 },
+					size = { 2.8, 0.2, 2 },
+					rotation = { 0, 0, 0 },
+					color = { 50, 255, 100 },
+					material = "Neon",
+					transparency = 0.1,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
+	-- PROP: Seesaw 5 — Simple and clean (default match for "seesaw")
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "seesaw", "teeter totter", "see saw", "seesaw 5" },
+		category = "prop",
+		modelData = {
+			name = "Seesaw",
+			category = "prop",
+			animation = "wobble",
+			parts = {
+				{
+					name = "ground_pad",
+					shape = "Block",
+					position = { 0, 0.1, 0 },
+					size = { 3, 0.2, 4 },
+					rotation = { 0, 0, 0 },
+					color = { 100, 100, 100 },
+					material = "Concrete",
+					transparency = 0,
+				},
+				{
+					name = "support_L",
+					shape = "Block",
+					position = { -0.8, 1.5, 0 },
+					size = { 0.4, 3, 0.4 },
+					rotation = { 0, 0, 15 },
+					color = { 180, 120, 60 },
+					material = "Wood",
+					transparency = 0,
+				},
+				{
+					name = "support_R",
+					shape = "Block",
+					position = { 0.8, 1.5, 0 },
+					size = { 0.4, 3, 0.4 },
+					rotation = { 0, 0, -15 },
+					color = { 180, 120, 60 },
+					material = "Wood",
+					transparency = 0,
+				},
+				{
+					name = "crossbar",
+					shape = "Block",
+					position = { 0, 2.8, 0 },
+					size = { 2, 0.3, 0.3 },
+					rotation = { 0, 0, 0 },
+					color = { 160, 100, 40 },
+					material = "Wood",
+					transparency = 0,
+				},
+				{
+					name = "plank",
+					shape = "Block",
+					position = { 0, 3.1, 0 },
+					size = { 2, 0.4, 14 },
+					rotation = { 0, 0, 0 },
+					color = { 140, 90, 40 },
+					material = "Wood",
+					transparency = 0,
+				},
+				{
+					name = "seat_L",
+					shape = "Block",
+					position = { 0, 3.4, 6.5 },
+					size = { 2.2, 0.2, 1.5 },
+					rotation = { 0, 0, 0 },
+					color = { 200, 50, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "seat_R",
+					shape = "Block",
+					position = { 0, 3.4, -6.5 },
+					size = { 2.2, 0.2, 1.5 },
+					rotation = { 0, 0, 0 },
+					color = { 50, 50, 200 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "handle_L",
+					shape = "Block",
+					position = { 0, 4.1, 5.8 },
+					size = { 0.3, 1.2, 0.3 },
+					rotation = { 0, 0, 0 },
+					color = { 200, 50, 50 },
+					material = "Metal",
+					transparency = 0,
+				},
+				{
+					name = "handle_R",
+					shape = "Block",
+					position = { 0, 4.1, -5.8 },
+					size = { 0.3, 1.2, 0.3 },
+					rotation = { 0, 0, 0 },
+					color = { 50, 50, 200 },
+					material = "Metal",
 					transparency = 0,
 				},
 			},

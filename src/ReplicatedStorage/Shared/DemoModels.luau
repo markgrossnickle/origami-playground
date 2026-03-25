@@ -164,8 +164,7 @@ DemoModels.MODELS = {
 	},
 
 	-- ═══════════════════════════════════════════════════════════════
-	-- PROP: Trampoline — Physics-based with high-elasticity bounce surface
-	-- Anchored frame + unanchored bounce mat with SpringConstraints + high elasticity
+	-- PROP: Trampoline — BounceForce 200 launches players sky-high
 	-- ═══════════════════════════════════════════════════════════════
 	{
 		keywords = { "trampoline", "bouncy", "bounce pad" },
@@ -174,48 +173,39 @@ DemoModels.MODELS = {
 			name = "Trampoline",
 			category = "prop",
 			animation = "none",
+			attributes = { BounceForce = 200 },
 			parts = {
-				-- Anchored metal frame ring (stays put)
+				-- Metal frame
 				{
 					name = "frame",
 					shape = "Block",
 					position = { 0, 1.5, 0 },
 					size = { 10, 0.6, 10 },
-					rotation = { 0, 0, 0 },
 					color = { 60, 60, 70 },
 					material = "Metal",
-					transparency = 0,
 					anchored = true,
 				},
-				-- Blue safety pad on frame
+				-- Blue safety pad
 				{
 					name = "pad",
 					shape = "Block",
 					position = { 0, 1.85, 0 },
 					size = { 10.5, 0.3, 10.5 },
-					rotation = { 0, 0, 0 },
 					color = { 60, 130, 255 },
 					material = "Fabric",
-					transparency = 0,
 					anchored = true,
 				},
-				-- Unanchored bounce surface — high elasticity so players bounce off it
+				-- Bounce surface
 				{
 					name = "surface",
 					shape = "Block",
-					position = { 0, 2.1, 0 },
+					position = { 0, 2.0, 0 },
 					size = { 8.5, 0.3, 8.5 },
-					rotation = { 0, 0, 0 },
 					color = { 30, 30, 30 },
 					material = "Fabric",
-					transparency = 0,
-					anchored = false,
-					density = 0.1,
-					friction = 0.8,
-					elasticity = 1.0,
-					elasticityWeight = 100,
+					anchored = true,
 				},
-				-- 6 block legs (anchored)
+				-- 6 legs
 				{
 					name = "leg_1",
 					shape = "Block",
@@ -269,62 +259,6 @@ DemoModels.MODELS = {
 					color = { 60, 60, 70 },
 					material = "Metal",
 					anchored = true,
-				},
-			},
-			constraints = {
-				-- Spring constraints hold the bounce surface to the frame
-				-- Stiff enough to hold it up, bouncy enough to spring back
-				{
-					type = "Spring",
-					part0 = "frame",
-					part1 = "surface",
-					offset0 = { -3, 0.3, -3 },
-					offset1 = { -3, -0.15, -3 },
-					stiffness = 800,
-					damping = 5,
-					freeLength = 0.3,
-				},
-				{
-					type = "Spring",
-					part0 = "frame",
-					part1 = "surface",
-					offset0 = { 3, 0.3, -3 },
-					offset1 = { 3, -0.15, -3 },
-					stiffness = 800,
-					damping = 5,
-					freeLength = 0.3,
-				},
-				{
-					type = "Spring",
-					part0 = "frame",
-					part1 = "surface",
-					offset0 = { -3, 0.3, 3 },
-					offset1 = { -3, -0.15, 3 },
-					stiffness = 800,
-					damping = 5,
-					freeLength = 0.3,
-				},
-				{
-					type = "Spring",
-					part0 = "frame",
-					part1 = "surface",
-					offset0 = { 3, 0.3, 3 },
-					offset1 = { 3, -0.15, 3 },
-					stiffness = 800,
-					damping = 5,
-					freeLength = 0.3,
-				},
-				-- Prismatic constraint to keep the surface moving only vertically
-				{
-					type = "Prismatic",
-					part0 = "frame",
-					part1 = "surface",
-					offset0 = { 0, 0.3, 0 },
-					offset1 = { 0, -0.15, 0 },
-					axis = { 0, 1, 0 },
-					limitsEnabled = true,
-					lowerLimit = -0.5,
-					upperLimit = 2.0,
 				},
 			},
 		},

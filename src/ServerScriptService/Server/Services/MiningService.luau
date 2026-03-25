@@ -83,13 +83,12 @@ function MiningService:_processMine(
 	end
 	state.progress = state.progress + power
 	if state.progress >= state.hardness then
-		local success = WorldService:BreakBlock(cx, cy, cz, lx, ly, lz)
-		if success then
-			WorldService.Client.BlockChanged:FireAll(cx, cy, cz, lx, ly, lz, 0)
+		local oldType = WorldService:BreakBlock(key, index)
+		if oldType ~= 0 then
 			self.Client.BlockBroken:Fire(player, cx, cy, cz, lx, ly, lz, blockTypeId, def.xp)
 		end
 		playerMineState[player] = nil
-		return success
+		return oldType ~= 0
 	else
 		local pct = math.clamp(state.progress / state.hardness, 0, 1)
 		self.Client.MineProgress:Fire(player, cx, cy, cz, lx, ly, lz, pct)

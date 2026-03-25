@@ -55,30 +55,30 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
-				local worldX = chunkWorldX + lx * BLOCK_SIZE
-				local worldY = chunkWorldY + ly * BLOCK_SIZE
-				local worldZ = chunkWorldZ + lz * BLOCK_SIZE
-				local surfaceHeight = fbmHeight(seed, worldX, worldZ)
+				local worldX = chunkWorldX + lx * BLOCK_SIZE -- studs (for noise input)
+				local worldZ = chunkWorldZ + lz * BLOCK_SIZE -- studs (for noise input)
+				local blockY = cy * CHUNK_SIZE + ly -- block coordinate
+				local surfaceHeight = fbmHeight(seed, worldX, worldZ) -- returns blocks
 				local blockType = BlockType.Air
 
-				if worldY <= 0 then
+				if blockY <= 0 then
 					blockType = BlockType.Bedrock
-				elseif worldY <= surfaceHeight then
-					if worldY == surfaceHeight then
+				elseif blockY <= surfaceHeight then
+					if blockY == surfaceHeight then
 						blockType = BlockType.PaperGrass
-					elseif worldY > surfaceHeight - 3 * BLOCK_SIZE then
+					elseif blockY > surfaceHeight - 3 then
 						blockType = BlockType.PaperDirt
-					elseif worldY > 40 then
-						local ore = getOreType(seed, worldX, worldY, worldZ, "shallow")
+					elseif blockY > 30 then
+						local ore = getOreType(seed, worldX, blockY, worldZ, "shallow")
 						blockType = ore or BlockType.Corrugated
-					elseif worldY > 25 then
-						local ore = getOreType(seed, worldX, worldY, worldZ, "shallow")
+					elseif blockY > 20 then
+						local ore = getOreType(seed, worldX, blockY, worldZ, "shallow")
 						blockType = ore or BlockType.Cardstock
-					elseif worldY > 10 then
-						local ore = getOreType(seed, worldX, worldY, worldZ, "deep")
+					elseif blockY > 10 then
+						local ore = getOreType(seed, worldX, blockY, worldZ, "deep")
 						blockType = ore or BlockType.Manila
 					else
-						local ore = getOreType(seed, worldX, worldY, worldZ, "bedrock")
+						local ore = getOreType(seed, worldX, blockY, worldZ, "bedrock")
 						blockType = ore or BlockType.PressedBoard
 					end
 				end
@@ -95,7 +95,7 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 			local worldX = chunkWorldX + lx * BLOCK_SIZE
 			local worldZ = chunkWorldZ + lz * BLOCK_SIZE
 			local surfaceHeight = fbmHeight(seed, worldX, worldZ)
-			local surfaceLocalY = math.floor((surfaceHeight - chunkWorldY) / BLOCK_SIZE)
+			local surfaceLocalY = surfaceHeight - cy * CHUNK_SIZE -- both in blocks
 
 			if surfaceLocalY >= 0 and surfaceLocalY < CHUNK_SIZE - 1 and shouldPlaceTree(seed, worldX, worldZ) then
 				local surfIdx = ChunkUtil.flatIndex(lx, surfaceLocalY, lz)

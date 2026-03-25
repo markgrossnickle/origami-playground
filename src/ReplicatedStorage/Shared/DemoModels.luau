@@ -1897,6 +1897,195 @@ DemoModels.MODELS = {
 	},
 
 	-- ═══════════════════════════════════════════════════════════════
+	-- CREATURE: Pufferfish (float, breathe inflate/deflate)
+	-- ═══════════════════════════════════════════════════════════════
+	{
+		keywords = { "pufferfish", "puffer fish", "puffer", "blowfish" },
+		category = "creature",
+		modelData = {
+			name = "Pufferfish",
+			category = "creature",
+			locomotion = "float",
+			animation = "breathe",
+			attackType = "splash",
+			targetPriority = "nearest",
+			defenseType = "armor",
+			parts = {
+				-- Main body (big round puff)
+				{
+					name = "seg_1",
+					shape = "Ball",
+					position = { 0, 5, 0 },
+					size = { 5, 5, 5 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 210, 80 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Belly (lighter)
+				{
+					name = "seg_2",
+					shape = "Ball",
+					position = { 0, 4, 0.5 },
+					size = { 4, 3.5, 4 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 240, 180 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Left eye (big beady)
+				{
+					name = "eye_white_L",
+					shape = "Ball",
+					position = { -1.8, 6, 1.8 },
+					size = { 1.2, 1.2, 1.0 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 255, 255 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "pupil_L",
+					shape = "Ball",
+					position = { -1.8, 6, 2.3 },
+					size = { 0.6, 0.7, 0.4 },
+					rotation = { 0, 0, 0 },
+					color = { 10, 10, 10 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Right eye (big beady)
+				{
+					name = "eye_white_R",
+					shape = "Ball",
+					position = { 1.8, 6, 1.8 },
+					size = { 1.2, 1.2, 1.0 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 255, 255 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "pupil_R",
+					shape = "Ball",
+					position = { 1.8, 6, 2.3 },
+					size = { 0.6, 0.7, 0.4 },
+					rotation = { 0, 0, 0 },
+					color = { 10, 10, 10 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Mouth (small pouty)
+				{
+					name = "mouth",
+					shape = "Ball",
+					position = { 0, 4.8, 2.6 },
+					size = { 0.8, 0.5, 0.4 },
+					rotation = { 0, 0, 0 },
+					color = { 200, 100, 80 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Tail fin
+				{
+					name = "tail_1",
+					shape = "Block",
+					position = { 0, 5, -3 },
+					size = { 0.2, 2, 1.5 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 180, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Top fin
+				{
+					name = "wing_L_1",
+					shape = "Block",
+					position = { 0, 7.5, 0 },
+					size = { 0.2, 1.5, 2 },
+					rotation = { 0, 0, 0 },
+					color = { 255, 180, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Side fin left
+				{
+					name = "wing_L_2",
+					shape = "Block",
+					position = { -2.8, 5, 0.5 },
+					size = { 1.5, 0.2, 1 },
+					rotation = { 0, 0, 20 },
+					color = { 255, 180, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Side fin right
+				{
+					name = "wing_R_1",
+					shape = "Block",
+					position = { 2.8, 5, 0.5 },
+					size = { 1.5, 0.2, 1 },
+					rotation = { 0, 0, -20 },
+					color = { 255, 180, 50 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				-- Spikes (pufferfish spines)
+				{
+					name = "spike_top",
+					shape = "Wedge",
+					position = { 0, 7.2, 0.5 },
+					size = { 0.4, 0.8, 0.4 },
+					rotation = { 0, 0, 0 },
+					color = { 220, 180, 60 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "spike_front",
+					shape = "Wedge",
+					position = { 0, 5.5, 2.8 },
+					size = { 0.4, 0.6, 0.4 },
+					rotation = { -90, 0, 0 },
+					color = { 220, 180, 60 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "spike_L",
+					shape = "Wedge",
+					position = { -2.5, 5.5, 0 },
+					size = { 0.4, 0.6, 0.4 },
+					rotation = { 0, 0, -90 },
+					color = { 220, 180, 60 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "spike_R",
+					shape = "Wedge",
+					position = { 2.5, 5.5, 0 },
+					size = { 0.4, 0.6, 0.4 },
+					rotation = { 0, 0, 90 },
+					color = { 220, 180, 60 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+				{
+					name = "spike_bottom",
+					shape = "Wedge",
+					position = { 0, 2.8, 0 },
+					size = { 0.4, 0.6, 0.4 },
+					rotation = { 0, 0, 180 },
+					color = { 220, 180, 60 },
+					material = "SmoothPlastic",
+					transparency = 0,
+				},
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════
 	-- CREATURE: Floating Jellyfish (float locomotion)
 	-- ═══════════════════════════════════════════════════════════════
 	{
@@ -2078,6 +2267,14 @@ DemoModels.MODELS = {
 			name = "Epic Hammer",
 			category = "tool",
 			animation = "none",
+			attributes = {
+				Cooldown = 0.5,
+				OnClick = {
+					{ action = "raycast", range = 15 },
+					{ action = "force", magnitude = 60, direction = "away" },
+					{ action = "destroy", radius = 3 },
+				},
+			},
 			parts = {
 				-- Handle (long wooden shaft)
 				{

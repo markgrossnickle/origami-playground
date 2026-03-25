@@ -47,11 +47,10 @@ local function applyCreatureAnimation(model: Model, animParts: { [BasePart]: CFr
 			local walkAngle = math.sin(t * 5.0 + phase) * math.rad(25)
 			animOffset = CFrame.Angles(walkAngle, 0, 0)
 		elseif name:match("^seg_") then
-			-- Body segments: accordion fold — alternating Y offset + yaw with snappy easing
+			-- Body segments: gentle undulation — vertical wave ripples down the body
 			local idx = tonumber(name:match("%d+")) or 1
-			local yOffset = foldCurve(math.sin(t * 3.0 + idx * 1.2)) * 0.3
-			local yawAngle = foldCurve(math.sin(t * 3.0 + idx * 1.2 + math.pi / 4)) * math.rad(12)
-			animOffset = CFrame.new(0, yOffset, 0) * CFrame.Angles(0, yawAngle, 0)
+			local yOffset = math.sin(t * 2.5 + idx * 1.0) * 0.25
+			animOffset = CFrame.new(0, yOffset, 0)
 		end
 		-- else: detail parts (eyes, horns) — no animation, animOffset stays identity
 
@@ -189,10 +188,9 @@ function CreatureAI.Start(
 						local sway = math.sin(t * math.pi * 4 + slitherPhase) * 1.2
 						baseX = baseX + perpX * sway
 						baseZ = baseZ + perpZ * sway
-						-- Rotate to face movement direction (tangent of the curve)
-						local tangentSway = math.cos(t * math.pi * 4 + slitherPhase) * 1.2 * (math.pi * 4 / distance)
-						local yawOffset = math.atan2(tangentSway * perpX, tangentSway * perpZ)
-						finalRot = lookRot * CFrame.Angles(0, yawOffset * 0.3, 0)
+						-- Gentle yaw to follow the S-curve (clamped to avoid spinning)
+						local yawOffset = math.cos(t * math.pi * 4 + slitherPhase) * math.rad(20)
+						finalRot = lookRot * CFrame.Angles(0, yawOffset, 0)
 						finalY = baseGroundY + pivotAboveBottom
 					elseif locomotion == "fly" then
 						-- Swooping flight: sine wave altitude + bank into turns

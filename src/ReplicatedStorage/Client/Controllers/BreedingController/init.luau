@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
+local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 
 local Player = Players.LocalPlayer
@@ -109,7 +110,7 @@ local function spawnEggInWorld(eggIndex: number, eggInfo: { [string]: any })
 	nameLabel.Size = UDim2.new(1, 0, 0, 20)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Text = (eggInfo.parent1Name or "?") .. " x " .. (eggInfo.parent2Name or "?")
-	nameLabel.TextColor3 = COLORS.egg
+	nameLabel.TextColor3 = if eggInfo.rarity then (EggCraftingConfig.RARITY_COLORS[eggInfo.rarity] or COLORS.egg) else COLORS.egg
 	nameLabel.TextStrokeTransparency = 0.5
 	nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	nameLabel.TextSize = 12
@@ -163,8 +164,17 @@ function hatchEgg(eggIndex: number, eggModel: Model?)
 			-- Hatch VFX
 			if eggModel and eggModel.Parent then
 				local eggPos = eggModel:GetPivot().Position
-				VFXUtil.sparkle(eggPos, COLORS.eggReady, 30, 2)
-				VFXUtil.risingText(eggPos + Vector3.new(0, 2, 0), "Hatched!", COLORS.success)
+				local rarityColor = if result.rarity then (EggCraftingConfig.RARITY_COLORS[result.rarity] or COLORS.eggReady) else COLORS.eggReady
+				VFXUtil.sparkle(eggPos, rarityColor, 30, 2)
+				local hatchText = "Hatched!"
+				if result.rarity then
+					hatchText = result.rarity .. " Hatched!"
+				end
+				if result.mutated then
+					hatchText = "MUTATION! " .. hatchText
+					VFXUtil.sparkle(eggPos + Vector3.new(0, 1, 0), Color3.fromRGB(255, 255, 100), 40, 3)
+				end
+				VFXUtil.risingText(eggPos + Vector3.new(0, 2, 0), hatchText, rarityColor)
 				eggModel:Destroy()
 			end
 
@@ -378,6 +388,11 @@ function BreedingController:KnitStart()
 	-- Start loops
 	startTimerLoop()
 	startBreedProximityLoop()
+end
+
+--- Public method for EggCraftingController to call after crafting an egg.
+function BreedingController:refreshEggs()
+	refreshEggs()
 end
 
 return BreedingController

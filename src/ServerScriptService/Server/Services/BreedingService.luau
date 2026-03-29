@@ -8,6 +8,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
+local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
 
 local BreedingService = Knit.CreateService({
 	Name = "BreedingService",
@@ -41,7 +42,7 @@ local function cleanExpiredRequests()
 end
 
 --- Request to breed a creature. Looks for a nearby pending request from another player.
-function BreedingService.Client:RequestBreed(player: Player, creatureName: string, creatureStyle: string?)
+function BreedingService.Client:RequestBreed(player: Player, creatureName: string, creatureStyle: string?, creatureId: string?)
 	-- Check egg capacity
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)
@@ -87,21 +88,66 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 			return { success = false, error = "Other player has no egg slots" }
 		end
 
+		-- Check breed cooldowns (Phase 3)
+		local CreatureService = Knit.GetService("CreatureService")
+		if creatureId then
+			local canBreed, remaining = CreatureService:CanBreed(player, creatureId)
+			if not canBreed then
+				return { success = false, error = string.format("Creature on cooldown (%dh %dm)", math.floor((remaining or 0) / 3600), math.floor(((remaining or 0) % 3600) / 60)) }
+			end
+		end
+		if matchReq.creatureId then
+			local canBreed2, remaining2 = CreatureService:CanBreed(matchReq.player, matchReq.creatureId)
+			if not canBreed2 then
+				return { success = false, error = "Other player's creature is on cooldown" }
+			end
+		end
+
 		local playerCranes = PlayerDataService:Read(player, { "Cranes" }) or 0
 		PlayerDataService:Write(player, { "Cranes" }, playerCranes - cost)
 		local otherCranes = PlayerDataService:Read(matchReq.player, { "Cranes" }) or 0
 		PlayerDataService:Write(matchReq.player, { "Cranes" }, otherCranes - cost)
+
+		-- Set breed cooldowns
+		if creatureId then
+			CreatureService:SetBreedCooldown(player, creatureId)
+		end
+		if matchReq.creatureId then
+			CreatureService:SetBreedCooldown(matchReq.player, matchReq.creatureId)
+		end
 
 		-- Generate offspring via LLM
 		local parent1Name = creatureName or "Creature"
 		local parent2Name = matchReq.creatureName or "Creature"
 		local style = creatureStyle or matchReq.creatureStyle or "origami"
 
+		-- Fetch parent creature data for inheritance
+		local parent1Rarity = "Common"
+		local parent2Rarity = "Common"
+		local parent1Stats = { hp = 50, atk = 8, def = 5, spd = 10 }
+		local parent2Stats = { hp = 50, atk = 8, def = 5, spd = 10 }
+		if creatureId then
+			local c1 = CreatureService:GetCreatureById(player, creatureId)
+			if c1 then
+				parent1Rarity = c1.rarity
+				parent1Stats = c1.stats
+			end
+		end
+		if matchReq.creatureId then
+			local c2 = CreatureService:GetCreatureById(matchReq.player, matchReq.creatureId)
+			if c2 then
+				parent2Rarity = c2.rarity
+				parent2Stats = c2.stats
+			end
+		end
+
 		local breedPrompt = string.format(
-			"Create a baby creature offspring that blends traits of two parents: '%s' and '%s'. "
+			"Create a baby creature offspring that blends traits of two parents: '%s' (%s rarity) and '%s' (%s rarity). "
 				.. "Combine their body shapes, colors, and features into a cute smaller offspring. Category: creature.",
 			parent1Name,
-			parent2Name
+			parent1Rarity,
+			parent2Name,
+			parent2Rarity
 		)
 
 		-- Call LLM (server-side call to Client method with player)
@@ -113,7 +159,7 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 			offspringData = result.model
 		end
 
-		-- Create egg for both players (average colors from parent names as fallback)
+		-- Create egg for both players with inheritance data
 		local hatchTime = os.time() + HATCH_TIME
 		local egg = {
 			parent1Name = parent1Name,
@@ -122,6 +168,13 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 			offspringData = offspringData, -- nil if LLM failed; will retry on hatch
 			breedPrompt = breedPrompt,
 			style = style,
+			source = "bred",
+			parent1Id = creatureId,
+			parent2Id = matchReq.creatureId,
+			parent1Rarity = parent1Rarity,
+			parent2Rarity = parent2Rarity,
+			parent1Stats = parent1Stats,
+			parent2Stats = parent2Stats,
 		}
 
 		-- Both players get an egg
@@ -136,6 +189,13 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 			offspringData = offspringData,
 			breedPrompt = breedPrompt,
 			style = style,
+			source = "bred",
+			parent1Id = creatureId,
+			parent2Id = matchReq.creatureId,
+			parent1Rarity = parent1Rarity,
+			parent2Rarity = parent2Rarity,
+			parent1Stats = parent1Stats,
+			parent2Stats = parent2Stats,
 		}
 		local otherEggs = otherData.PendingEggs or {}
 		table.insert(otherEggs, egg2)
@@ -156,6 +216,7 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 			player = player,
 			creatureName = creatureName or "Creature",
 			creatureStyle = creatureStyle or "origami",
+			creatureId = creatureId,
 			timestamp = os.clock(),
 		}
 
@@ -197,6 +258,9 @@ function BreedingService.Client:CheckEggs(player: Player)
 			hatchTime = egg.hatchTime,
 			ready = now >= egg.hatchTime,
 			remainingSeconds = math.max(0, egg.hatchTime - now),
+			source = egg.source or "bred",
+			rarity = egg.rarity,
+			eggColor = egg.eggColor,
 		})
 	end
 	return eggs
@@ -236,11 +300,55 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 		return { success = false, error = "Offspring generation failed. Try again." }
 	end
 
-	-- Move to hatched creatures
+	-- Move to hatched creatures via CreatureService
 	local offspring = egg.offspringData
-	local hatched = data.HatchedCreatures or {}
-	table.insert(hatched, offspring)
-	PlayerDataService:Write(player, { "HatchedCreatures" }, hatched)
+	local CreatureService = Knit.GetService("CreatureService")
+
+	-- Determine rarity and stats (crafted eggs have these fields, bred eggs default)
+	local rarity = egg.rarity or "Common"
+	local baseStats = egg.baseStats or { hp = 50, atk = 8, def = 5, spd = 10 }
+	local source = egg.source or "bred"
+
+	-- For bred offspring: inherit stats from parents if available (Phase 3)
+	if source == "bred" and egg.parent1Stats and egg.parent2Stats then
+		local p1 = egg.parent1Stats
+		local p2 = egg.parent2Stats
+		baseStats = {
+			hp = math.floor((p1.hp + p2.hp) / 2 * (0.9 + math.random() * 0.2)),
+			atk = math.floor((p1.atk + p2.atk) / 2 * (0.9 + math.random() * 0.2)),
+			def = math.floor((p1.def + p2.def) / 2 * (0.9 + math.random() * 0.2)),
+			spd = math.floor((p1.spd + p2.spd) / 2 * (0.9 + math.random() * 0.2)),
+		}
+		-- Rarity = lower of two parents
+		local r1 = EggCraftingConfig.RARITY_INDEX[egg.parent1Rarity or "Common"] or 1
+		local r2 = EggCraftingConfig.RARITY_INDEX[egg.parent2Rarity or "Common"] or 1
+		rarity = EggCraftingConfig.RARITY_ORDER[math.min(r1, r2)] or "Common"
+
+		-- 5% mutation chance: bump rarity one tier, scale stats
+		if math.random() < EggCraftingConfig.MUTATION_CHANCE then
+			local idx = EggCraftingConfig.RARITY_INDEX[rarity] or 1
+			if idx < #EggCraftingConfig.RARITY_ORDER then
+				rarity = EggCraftingConfig.RARITY_ORDER[idx + 1]
+			end
+			local scale = EggCraftingConfig.MUTATION_STAT_SCALE
+			baseStats.hp = math.floor(baseStats.hp * scale)
+			baseStats.atk = math.floor(baseStats.atk * scale)
+			baseStats.def = math.floor(baseStats.def * scale)
+			baseStats.spd = math.floor(baseStats.spd * scale)
+			egg._mutated = true
+		end
+	end
+
+	local creature = CreatureService:AddCreature(player, {
+		name = offspring.name or ("Baby " .. egg.parent1Name),
+		modelData = offspring,
+		rarity = rarity,
+		stats = baseStats,
+		source = source,
+		parentRecipeId = egg.recipeId,
+		parent1Id = egg.parent1Id,
+		parent2Id = egg.parent2Id,
+	})
 
 	local pendingEggs = data.PendingEggs or {}
 	table.remove(pendingEggs, eggIndex)
@@ -253,7 +361,11 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 	return {
 		success = true,
 		offspringData = offspring,
-		name = offspring.name or ("Baby " .. egg.parent1Name),
+		name = creature.name,
+		rarity = rarity,
+		stats = baseStats,
+		mutated = egg._mutated or false,
+		creatureId = creature.id,
 	}
 end
 

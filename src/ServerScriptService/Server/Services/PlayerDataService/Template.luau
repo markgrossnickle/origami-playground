@@ -47,6 +47,13 @@ export type PlayerData = {
 	EquippedTool: string,
 	BlocksMined: number,
 	DepthReached: number,
+
+	-- Surface Plots
+	PlotData: {
+		plotIndex: number, -- -1 = unclaimed
+		placedBlocks: { [string]: string }, -- "x,y,z" = materialItemId
+		assignedCreatures: { { creatureId: string, localX: number, localZ: number } },
+	},
 }
 
 local playerDataTemplate: PlayerData = {
@@ -82,6 +89,12 @@ local playerDataTemplate: PlayerData = {
 	EquippedTool = "paper_hands",
 	BlocksMined = 0,
 	DepthReached = 0,
+
+	PlotData = {
+		plotIndex = -1,
+		placedBlocks = {},
+		assignedCreatures = {},
+	},
 }
 
 return playerDataTemplate

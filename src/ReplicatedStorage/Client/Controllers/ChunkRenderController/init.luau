@@ -1,8 +1,6 @@
 --!strict
 
-local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
@@ -11,17 +9,16 @@ local ChunkSerializer = require(ReplicatedStorage.Shared.ChunkSerializer)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 
-local TerrainMaterialMap = require(script.TerrainMaterialMap)
-
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
-local POOL_INITIAL = 2000
-local POOL_MAX = 8000
+local PART_POOL_INITIAL = 2000
+local PART_POOL_MAX = 8000
+local WEDGE_POOL_INITIAL = 4000
+local WEDGE_POOL_MAX = 16000
 
--- Special blocks rendered as individual Parts (not terrain)
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
 		or blockTypeId == BlockType.Leaves
@@ -30,26 +27,28 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Receives chunk data from server, renders terrain using Roblox's Terrain system.
-	Special blocks (wood, leaves, egg nodes) rendered as individual Parts.
+	Wedge/triangle renderer: blocks rendered as pairs of WedgeParts creating
+	diagonal fold seams for a low-poly origami paper-fold aesthetic.
+	Merges along X axis for performance while preserving fold detail per row.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
 })
 
 local partPool: { BasePart } = {}
+local wedgePool: { WedgePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
+local renderedWedges: { [string]: { Instance } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
 local chunkContainer: Folder
-local terrain: Terrain
 
 -------------------------------------------------
--- Part pool
+-- Part pool (for special blocks + collision)
 -------------------------------------------------
 
 local function _createPart(): BasePart
@@ -61,12 +60,6 @@ local function _createPart(): BasePart
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	return part
-end
-
-local function _initPool()
-	for _ = 1, POOL_INITIAL do
-		table.insert(partPool, _createPart())
-	end
 end
 
 local function _getPart(): BasePart
@@ -85,11 +78,66 @@ local function _returnPart(part: BasePart)
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
 	part.Transparency = 0
+	for _, child in part:GetChildren() do
+		child:Destroy()
+	end
 	activePartsCount -= 1
-	if #partPool < POOL_MAX then
+	if #partPool < PART_POOL_MAX then
 		table.insert(partPool, part)
 	else
 		part:Destroy()
+	end
+end
+
+-------------------------------------------------
+-- Wedge pool
+-------------------------------------------------
+
+local function _createWedge(): WedgePart
+	local w = Instance.new("WedgePart")
+	w.Anchored = true
+	w.CanCollide = true
+	w.CastShadow = false
+	return w
+end
+
+local function _getWedge(): WedgePart
+	local w: WedgePart
+	if #wedgePool > 0 then
+		w = table.remove(wedgePool, #wedgePool) :: WedgePart
+	else
+		w = _createWedge()
+	end
+	activePartsCount += 1
+	return w
+end
+
+local function _returnWedge(w: WedgePart)
+	w.Parent = nil
+	w.CanCollide = true
+	w.Transparency = 0
+	activePartsCount -= 1
+	if #wedgePool < WEDGE_POOL_MAX then
+		table.insert(wedgePool, w)
+	else
+		w:Destroy()
+	end
+end
+
+local function _returnInstance(inst: Instance)
+	if inst:IsA("WedgePart") then
+		_returnWedge(inst :: WedgePart)
+	elseif inst:IsA("BasePart") then
+		_returnPart(inst :: BasePart)
+	end
+end
+
+local function _initPool()
+	for _ = 1, PART_POOL_INITIAL do
+		table.insert(partPool, _createPart())
+	end
+	for _ = 1, WEDGE_POOL_INITIAL do
+		table.insert(wedgePool, _createWedge())
 	end
 end
 
@@ -111,19 +159,18 @@ local function _makeSpecialPart(
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
-	local centerX = baseX + lx * BLOCK_SIZE + halfBlock
-	local centerY = baseY + ly * BLOCK_SIZE + halfBlock
-	local centerZ = baseZ + lz * BLOCK_SIZE + halfBlock
-
 	local part = _getPart()
 	part.Color = BlockRegistry.getColor(blockTypeId)
 	part.Material = BlockRegistry.getMaterial(blockTypeId)
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
 	part.Transparency = 0
-	part.Position = Vector3.new(centerX, centerY, centerZ)
+	part.Position = Vector3.new(
+		baseX + lx * BLOCK_SIZE + halfBlock,
+		baseY + ly * BLOCK_SIZE + halfBlock,
+		baseZ + lz * BLOCK_SIZE + halfBlock
+	)
 
-	-- Egg nodes get a subtle glow
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
 		light.Color = Color3.fromRGB(255, 230, 180)
@@ -137,30 +184,7 @@ local function _makeSpecialPart(
 end
 
 -------------------------------------------------
--- Terrain fill helpers
--------------------------------------------------
-
-local function _getBlockWorldCenter(cx: number, cy: number, cz: number, lx: number, ly: number, lz: number): Vector3
-	local halfBlock = BLOCK_SIZE / 2
-	return Vector3.new(
-		cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock,
-		cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock,
-		cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
-	)
-end
-
-local blockFillSize = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-
-local function _fillTerrainBlock(worldCenter: Vector3, material: Enum.Material)
-	terrain:FillBlock(CFrame.new(worldCenter), blockFillSize, material)
-end
-
-local function _clearTerrainBlock(worldCenter: Vector3)
-	terrain:FillBlock(CFrame.new(worldCenter), blockFillSize, Enum.Material.Air)
-end
-
--------------------------------------------------
--- Visibility checks for collision Parts
+-- Visibility checks
 -------------------------------------------------
 
 local function _isTransparent(blockId: number): boolean
@@ -194,16 +218,103 @@ local function _isExposed(blocks: buffer, lx: number, ly: number, lz: number): b
 end
 
 -------------------------------------------------
+-- Wedge meshing: merge along X, 2 WedgeParts per strip
+-- Creates diagonal fold seams for origami aesthetic
+-------------------------------------------------
+
+-- CFrame to flip a wedge 180° around Z, filling the complementary
+-- half of the block volume (upper triangle of Y-Z cross-section)
+local FLIP_CF = CFrame.Angles(0, 0, math.pi)
+-- CFrame to rotate 180° around Y for alternating fold direction
+local ROTATE_Y = CFrame.Angles(0, math.pi, 0)
+
+local function _wedgeMeshLayer(
+	blocks: buffer,
+	ly: number,
+	cx: number,
+	cy: number,
+	cz: number
+): { Instance }
+	local result: { Instance } = {}
+
+	local baseX = cx * CHUNK_STUDS
+	local baseY = cy * CHUNK_STUDS
+	local baseZ = cz * CHUNK_STUDS
+	local halfBlock = BLOCK_SIZE / 2
+
+	for lz = 0, CHUNK_SIZE - 1 do
+		local lx = 0
+		while lx < CHUNK_SIZE do
+			local idx = ChunkUtil.flatIndex(lx, ly, lz)
+			local blockTypeId = buffer.readu8(blocks, idx)
+
+			if blockTypeId == BlockType.Air or _isSpecialBlock(blockTypeId) then
+				lx += 1
+				continue
+			end
+
+			-- Merge same-type blocks along X
+			local width = 1
+			while lx + width < CHUNK_SIZE do
+				local nIdx = ChunkUtil.flatIndex(lx + width, ly, lz)
+				if buffer.readu8(blocks, nIdx) ~= blockTypeId then
+					break
+				end
+				width += 1
+			end
+
+			local color = BlockRegistry.getColor(blockTypeId)
+			local material = BlockRegistry.getMaterial(blockTypeId)
+			local sizeW = width * BLOCK_SIZE
+
+			local px = baseX + lx * BLOCK_SIZE + sizeW / 2
+			local py = baseY + ly * BLOCK_SIZE + halfBlock
+			local pz = baseZ + lz * BLOCK_SIZE + halfBlock
+
+			-- Alternate fold direction by Z row for tessellated pattern
+			local baseCF: CFrame
+			if lz % 2 == 0 then
+				baseCF = CFrame.new(px, py, pz)
+			else
+				baseCF = CFrame.new(px, py, pz) * ROTATE_Y
+			end
+
+			-- Primary wedge (lower triangle of Y-Z cross-section)
+			local w1 = _getWedge()
+			w1.Size = Vector3.new(sizeW, BLOCK_SIZE, BLOCK_SIZE)
+			w1.Color = color
+			w1.Material = material
+			w1.CFrame = baseCF
+			w1.Parent = chunkContainer
+			table.insert(result, w1)
+
+			-- Complement wedge (upper triangle, slightly smaller to prevent Z-fight)
+			local w2 = _getWedge()
+			w2.Size = Vector3.new(sizeW - 0.02, BLOCK_SIZE - 0.02, BLOCK_SIZE - 0.02)
+			w2.Color = color
+			w2.Material = material
+			w2.CFrame = baseCF * FLIP_CF
+			w2.Parent = chunkContainer
+			table.insert(result, w2)
+
+			lx += width
+		end
+	end
+
+	return result
+end
+
+-------------------------------------------------
 -- Chunk rendering
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	if renderedChunks[chunkKey] then
-		local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-		local chunkOrigin = Vector3.new(cx * CHUNK_STUDS, cy * CHUNK_STUDS, cz * CHUNK_STUDS)
-		local chunkEnd = chunkOrigin + Vector3.new(CHUNK_STUDS, CHUNK_STUDS, CHUNK_STUDS)
-		local region = Region3.new(chunkOrigin, chunkEnd):ExpandToGrid(4)
-		terrain:FillRegion(region, 4, Enum.Material.Air)
+	-- Clear existing wedges
+	local existingWedges = renderedWedges[chunkKey]
+	if existingWedges then
+		for _, inst in existingWedges do
+			_returnInstance(inst)
+		end
 	end
 
 	local existingParts = renderedSpecialParts[chunkKey]
@@ -225,49 +336,37 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	renderedChunks[chunkKey] = true
 
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local parts: { [number]: BasePart } = {}
-	renderedSpecialParts[chunkKey] = parts
+	local specialParts: { [number]: BasePart } = {}
+	renderedSpecialParts[chunkKey] = specialParts
 
-	-- Pass 1: Batch terrain fills by material (one FillRegion per Y-layer per material)
-	-- and collect special blocks
-	local terrainBatch: { [Enum.Material]: { Vector3 } } = {}
-
+	-- Collect special blocks
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
 				local idx = ChunkUtil.flatIndex(lx, ly, lz)
 				local blockTypeId = buffer.readu8(blocks, idx)
-
-				if blockTypeId == BlockType.Air then
-					continue
-				end
-
 				if _isSpecialBlock(blockTypeId) then
-					parts[idx] = _makeSpecialPart(blockTypeId, cx, cy, cz, lx, ly, lz)
-				else
-					local terrainMat = TerrainMaterialMap.getMaterial(blockTypeId)
-					if terrainMat then
-						local center = _getBlockWorldCenter(cx, cy, cz, lx, ly, lz)
-						if not terrainBatch[terrainMat] then
-							terrainBatch[terrainMat] = {}
-						end
-						table.insert(terrainBatch[terrainMat], center)
-					end
+					specialParts[idx] = _makeSpecialPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				end
 			end
 		end
 	end
 
-	-- Fill terrain in batches — yield once per material type instead of every 512 blocks
-	for mat, positions in pairs(terrainBatch) do
-		for _, center in ipairs(positions) do
-			_fillTerrainBlock(center, mat)
+	-- Wedge mesh per Y-layer
+	local allWedges: { Instance } = {}
+	renderedWedges[chunkKey] = allWedges
+
+	for ly = 0, CHUNK_SIZE - 1 do
+		local layerParts = _wedgeMeshLayer(blocks, ly, cx, cy, cz)
+		for _, inst in layerParts do
+			table.insert(allWedges, inst)
 		end
-		task.wait()
+		if ly % 4 == 3 then
+			task.wait()
+		end
 	end
 
-	-- Pass 2: Create invisible collision Parts only for exposed blocks
-	-- (blocks with at least one air neighbor visible from surface)
+	-- Collision parts for raycast targeting (invisible, per exposed block)
 	local baseX = cx * CHUNK_STUDS
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
@@ -287,10 +386,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					part.CastShadow = false
 
 					local halfBlock = BLOCK_SIZE / 2
-					local px = baseX + lx * BLOCK_SIZE + halfBlock
-					local py = baseY + ly * BLOCK_SIZE + halfBlock
-					local pz = baseZ + lz * BLOCK_SIZE + halfBlock
-					part.Position = Vector3.new(px, py, pz)
+					part.Position = Vector3.new(
+						baseX + lx * BLOCK_SIZE + halfBlock,
+						baseY + ly * BLOCK_SIZE + halfBlock,
+						baseZ + lz * BLOCK_SIZE + halfBlock
+					)
 					part.Parent = chunkContainer
 
 					cParts[idx] = part
@@ -298,7 +398,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				end
 			end
 		end
-		-- Yield once per Y-layer for collision parts instead of never
 		if collisionCount > 200 then
 			task.wait()
 			collisionCount = 0
@@ -307,13 +406,14 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 end
 
 local function _unrenderChunk(chunkKey: string)
-	if renderedChunks[chunkKey] then
-		local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-		local chunkOrigin = Vector3.new(cx * CHUNK_STUDS, cy * CHUNK_STUDS, cz * CHUNK_STUDS)
-		local chunkEnd = chunkOrigin + Vector3.new(CHUNK_STUDS, CHUNK_STUDS, CHUNK_STUDS)
-		local region = Region3.new(chunkOrigin, chunkEnd):ExpandToGrid(4)
-		terrain:FillRegion(region, 4, Enum.Material.Air)
-		renderedChunks[chunkKey] = nil
+	renderedChunks[chunkKey] = nil
+
+	local wedges = renderedWedges[chunkKey]
+	if wedges then
+		for _, inst in wedges do
+			_returnInstance(inst)
+		end
+		renderedWedges[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -336,7 +436,7 @@ local function _unrenderChunk(chunkKey: string)
 end
 
 -------------------------------------------------
--- Block update handling
+-- Block update handling (re-render affected chunk)
 -------------------------------------------------
 
 local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockTypeId: number)
@@ -345,186 +445,12 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		return
 	end
 
-	local oldBlockTypeId = buffer.readu8(blocks, flatIndex)
 	buffer.writeu8(blocks, flatIndex, blockTypeId)
 
-	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
-	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-
-	-- Clear and re-fill 3x3x3 neighborhood
-	for dy = -1, 1 do
-		for dz = -1, 1 do
-			for dx = -1, 1 do
-				local nx, ny, nz = lx + dx, ly + dy, lz + dz
-				local ncx, ncy, ncz = cx, cy, cz
-				local nlx, nly, nlz = nx, ny, nz
-
-				if nx < 0 then
-					ncx -= 1
-					nlx = CHUNK_SIZE - 1
-				elseif nx >= CHUNK_SIZE then
-					ncx += 1
-					nlx = 0
-				end
-				if ny < 0 then
-					ncy -= 1
-					nly = CHUNK_SIZE - 1
-				elseif ny >= CHUNK_SIZE then
-					ncy += 1
-					nly = 0
-				end
-				if nz < 0 then
-					ncz -= 1
-					nlz = CHUNK_SIZE - 1
-				elseif nz >= CHUNK_SIZE then
-					ncz += 1
-					nlz = 0
-				end
-
-				local nCenter = _getBlockWorldCenter(ncx, ncy, ncz, nlx, nly, nlz)
-				_clearTerrainBlock(nCenter)
-			end
-		end
-	end
-
-	-- Re-fill solid blocks in neighborhood
-	for dy = -1, 1 do
-		for dz = -1, 1 do
-			for dx = -1, 1 do
-				local nx, ny, nz = lx + dx, ly + dy, lz + dz
-				local ncx, ncy, ncz = cx, cy, cz
-				local nlx, nly, nlz = nx, ny, nz
-
-				if nx < 0 then
-					ncx -= 1
-					nlx = CHUNK_SIZE - 1
-				elseif nx >= CHUNK_SIZE then
-					ncx += 1
-					nlx = 0
-				end
-				if ny < 0 then
-					ncy -= 1
-					nly = CHUNK_SIZE - 1
-				elseif ny >= CHUNK_SIZE then
-					ncy += 1
-					nly = 0
-				end
-				if nz < 0 then
-					ncz -= 1
-					nlz = CHUNK_SIZE - 1
-				elseif nz >= CHUNK_SIZE then
-					ncz += 1
-					nlz = 0
-				end
-
-				local neighborKey = ChunkUtil.chunkKey(ncx, ncy, ncz)
-				local neighborBlocks = chunkBlocks[neighborKey]
-				if neighborBlocks then
-					local nIdx = ChunkUtil.flatIndex(nlx, nly, nlz)
-					local nBlockType = buffer.readu8(neighborBlocks, nIdx)
-					if nBlockType ~= BlockType.Air and not _isSpecialBlock(nBlockType) then
-						local nMat = TerrainMaterialMap.getMaterial(nBlockType)
-						if nMat then
-							local nCenter = _getBlockWorldCenter(ncx, ncy, ncz, nlx, nly, nlz)
-							_fillTerrainBlock(nCenter, nMat)
-						end
-					end
-				end
-			end
-		end
-	end
-
-	-- Handle special block Parts
-	local parts = renderedSpecialParts[chunkKey]
-	if not parts then
-		parts = {}
-		renderedSpecialParts[chunkKey] = parts
-	end
-
-	if _isSpecialBlock(oldBlockTypeId) and parts[flatIndex] then
-		_returnPart(parts[flatIndex])
-		parts[flatIndex] = nil
-	end
-
-	if _isSpecialBlock(blockTypeId) then
-		parts[flatIndex] = _makeSpecialPart(blockTypeId, cx, cy, cz, lx, ly, lz)
-	end
-
-	-- Update collision Parts
-	local cParts = collisionParts[chunkKey]
-	if not cParts then
-		cParts = {}
-		collisionParts[chunkKey] = cParts
-	end
-
-	local existingCollisionPart = cParts[flatIndex]
-	if existingCollisionPart then
-		_returnPart(existingCollisionPart)
-		cParts[flatIndex] = nil
-	end
-
-	if blockTypeId ~= BlockType.Air and not _isSpecialBlock(blockTypeId) and _isExposed(blocks, lx, ly, lz) then
-		local part = _getPart()
-		part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-		part.Transparency = 1
-		part.CanCollide = false
-		part.CastShadow = false
-		local halfBlock = BLOCK_SIZE / 2
-		part.Position = Vector3.new(
-			cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock,
-			cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock,
-			cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
-		)
-		part.Parent = chunkContainer
-		cParts[flatIndex] = part
-	end
-
-	-- Update neighbors' collision Parts
-	for dy = -1, 1 do
-		for dz = -1, 1 do
-			for dx = -1, 1 do
-				if dx == 0 and dy == 0 and dz == 0 then
-					continue
-				end
-				local manhattan = math.abs(dx) + math.abs(dy) + math.abs(dz)
-				if manhattan ~= 1 then
-					continue
-				end
-
-				local nx, ny, nz = lx + dx, ly + dy, lz + dz
-				if nx < 0 or nx >= CHUNK_SIZE or ny < 0 or ny >= CHUNK_SIZE or nz < 0 or nz >= CHUNK_SIZE then
-					continue
-				end
-
-				local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
-				local nBlockType = buffer.readu8(blocks, nIdx)
-
-				local existingNPart = cParts[nIdx]
-				local shouldBeVisible = nBlockType ~= BlockType.Air
-					and not _isSpecialBlock(nBlockType)
-					and _isExposed(blocks, nx, ny, nz)
-
-				if shouldBeVisible and not existingNPart then
-					local part = _getPart()
-					part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-					part.Transparency = 1
-					part.CanCollide = false
-					part.CastShadow = false
-					local halfBlock = BLOCK_SIZE / 2
-					part.Position = Vector3.new(
-						cx * CHUNK_STUDS + nx * BLOCK_SIZE + halfBlock,
-						cy * CHUNK_STUDS + ny * BLOCK_SIZE + halfBlock,
-						cz * CHUNK_STUDS + nz * BLOCK_SIZE + halfBlock
-					)
-					part.Parent = chunkContainer
-					cParts[nIdx] = part
-				elseif not shouldBeVisible and existingNPart then
-					_returnPart(existingNPart)
-					cParts[nIdx] = nil
-				end
-			end
-		end
-	end
+	-- Re-render entire chunk (wedge strips need full pass)
+	local savedBlocks = blocks
+	_unrenderChunk(chunkKey)
+	_renderChunk(chunkKey, savedBlocks)
 end
 
 -------------------------------------------------
@@ -551,7 +477,7 @@ function ChunkRenderController:GetActivePartCount(): number
 end
 
 function ChunkRenderController:GetPoolSize(): number
-	return #partPool
+	return #partPool + #wedgePool
 end
 
 -------------------------------------------------
@@ -562,8 +488,6 @@ function ChunkRenderController:KnitInit()
 	chunkContainer = Instance.new("Folder")
 	chunkContainer.Name = "ChunkRender"
 	chunkContainer.Parent = workspace
-
-	terrain = workspace.Terrain
 
 	_initPool()
 end

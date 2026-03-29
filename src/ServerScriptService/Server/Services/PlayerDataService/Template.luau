@@ -41,6 +41,12 @@ export type PlayerData = {
 	-- Prosocial: Co-op TD
 	CoopTDWins: number,
 	CoopTDHighestWave: number,
+
+	-- Mining / Expedition
+	MiningInventory: { [string]: number },
+	EquippedTool: string,
+	BlocksMined: number,
+	DepthReached: number,
 }
 
 local playerDataTemplate: PlayerData = {
@@ -71,6 +77,11 @@ local playerDataTemplate: PlayerData = {
 
 	CoopTDWins = 0,
 	CoopTDHighestWave = 0,
+
+	MiningInventory = {},
+	EquippedTool = "paper_hands",
+	BlocksMined = 0,
+	DepthReached = 0,
 }
 
 return playerDataTemplate

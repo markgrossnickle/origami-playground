@@ -1,0 +1,465 @@
+--!strict
+
+local BlockType = require(script.Parent.Enums.BlockType)
+
+type BlockConfig = {
+	id: number,
+	name: string,
+	hardness: number,
+	color: Color3,
+	material: Enum.Material,
+	mineable: boolean,
+	minTier: number,
+	drops: { { itemId: string, count: number, chance: number } }?,
+	xp: number,
+}
+
+local BlockRegistry = {}
+
+local blocks: { [number]: BlockConfig } = {
+	[BlockType.Air] = {
+		id = BlockType.Air,
+		name = "Air",
+		hardness = 0,
+		color = Color3.new(0, 0, 0),
+		material = Enum.Material.Air,
+		mineable = false,
+		minTier = 0,
+		xp = 0,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Layer 1: Paper Fields (0 to -80 depth)
+	-- Warm paper tones, soft materials
+	-- ═══════════════════════════════════════════
+
+	[BlockType.PaperGrass] = {
+		id = BlockType.PaperGrass,
+		name = "Paper Grass",
+		hardness = 1,
+		color = Color3.fromRGB(180, 210, 140), -- soft green paper
+		material = Enum.Material.Grass,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "paper_scrap", count = 1, chance = 1 } },
+		xp = 1,
+	},
+	[BlockType.Paper] = {
+		id = BlockType.Paper,
+		name = "Paper",
+		hardness = 1,
+		color = Color3.fromRGB(245, 235, 220), -- warm cream paper
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "paper_scrap", count = 1, chance = 1 } },
+		xp = 1,
+	},
+	[BlockType.Cardboard] = {
+		id = BlockType.Cardboard,
+		name = "Cardboard",
+		hardness = 2,
+		color = Color3.fromRGB(190, 160, 120), -- kraft brown
+		material = Enum.Material.WoodPlanks,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "cardboard", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.DriedPulp] = {
+		id = BlockType.DriedPulp,
+		name = "Dried Pulp",
+		hardness = 2,
+		color = Color3.fromRGB(200, 180, 150), -- tan
+		material = Enum.Material.Ground,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "dried_pulp", count = 1, chance = 1 } },
+		xp = 2,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Layer 2: Pulp Caverns (-80 to -240 depth)
+	-- Compressed, denser materials
+	-- ═══════════════════════════════════════════
+
+	[BlockType.CompressedPulp] = {
+		id = BlockType.CompressedPulp,
+		name = "Compressed Pulp",
+		hardness = 4,
+		color = Color3.fromRGB(160, 140, 110), -- dark tan
+		material = Enum.Material.Ground,
+		mineable = true,
+		minTier = 1,
+		drops = { { itemId = "compressed_pulp", count = 1, chance = 1 } },
+		xp = 3,
+	},
+	[BlockType.Clay] = {
+		id = BlockType.Clay,
+		name = "Clay",
+		hardness = 3,
+		color = Color3.fromRGB(170, 140, 120), -- clay brown
+		material = Enum.Material.Mud,
+		mineable = true,
+		minTier = 1,
+		drops = { { itemId = "clay_chunk", count = 1, chance = 1 } },
+		xp = 3,
+	},
+	[BlockType.RecycledFiber] = {
+		id = BlockType.RecycledFiber,
+		name = "Recycled Fiber",
+		hardness = 3,
+		color = Color3.fromRGB(150, 160, 140), -- gray-green
+		material = Enum.Material.Fabric,
+		mineable = true,
+		minTier = 1,
+		drops = { { itemId = "recycled_fiber", count = 1, chance = 1 } },
+		xp = 4,
+	},
+	[BlockType.PulpOre] = {
+		id = BlockType.PulpOre,
+		name = "Pulp Ore",
+		hardness = 5,
+		color = Color3.fromRGB(200, 170, 80), -- golden pulp
+		material = Enum.Material.Ground,
+		mineable = true,
+		minTier = 1,
+		drops = { { itemId = "pulp_ore", count = 1, chance = 1 }, { itemId = "cardboard", count = 1, chance = 0.3 } },
+		xp = 6,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Layer 3: Fold Tunnels (-240 to -480 depth)
+	-- Geometric, crystalline paper
+	-- ═══════════════════════════════════════════
+
+	[BlockType.FoldedStone] = {
+		id = BlockType.FoldedStone,
+		name = "Folded Stone",
+		hardness = 8,
+		color = Color3.fromRGB(140, 145, 155), -- blue-gray stone
+		material = Enum.Material.Slate,
+		mineable = true,
+		minTier = 2,
+		drops = { { itemId = "folded_stone", count = 1, chance = 1 } },
+		xp = 5,
+	},
+	[BlockType.PaperQuartz] = {
+		id = BlockType.PaperQuartz,
+		name = "Paper Quartz",
+		hardness = 6,
+		color = Color3.fromRGB(230, 225, 240), -- pale quartz
+		material = Enum.Material.Glass,
+		mineable = true,
+		minTier = 2,
+		drops = { { itemId = "quartz_shard", count = 1, chance = 1 } },
+		xp = 7,
+	},
+	[BlockType.PaperCrystal] = {
+		id = BlockType.PaperCrystal,
+		name = "Paper Crystal",
+		hardness = 10,
+		color = Color3.fromRGB(200, 220, 255), -- ice blue
+		material = Enum.Material.Glass,
+		mineable = true,
+		minTier = 2,
+		drops = { { itemId = "paper_crystal", count = 1, chance = 1 } },
+		xp = 10,
+	},
+	[BlockType.InkStone] = {
+		id = BlockType.InkStone,
+		name = "Ink Stone",
+		hardness = 7,
+		color = Color3.fromRGB(50, 50, 70), -- dark ink blue
+		material = Enum.Material.Slate,
+		mineable = true,
+		minTier = 2,
+		drops = { { itemId = "ink_stone", count = 1, chance = 1 } },
+		xp = 8,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Layer 4: Origami Depths (-480 to -800 depth)
+	-- Rich, gem-like materials
+	-- ═══════════════════════════════════════════
+
+	[BlockType.OrigamiRock] = {
+		id = BlockType.OrigamiRock,
+		name = "Origami Rock",
+		hardness = 12,
+		color = Color3.fromRGB(120, 100, 130), -- purple-gray
+		material = Enum.Material.Granite,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "origami_rock", count = 1, chance = 1 } },
+		xp = 10,
+	},
+	[BlockType.GemFragment] = {
+		id = BlockType.GemFragment,
+		name = "Gem Fragment",
+		hardness = 15,
+		color = Color3.fromRGB(220, 100, 180), -- pink gem
+		material = Enum.Material.Glass,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "gem_fragment", count = 1, chance = 1 } },
+		xp = 15,
+	},
+	[BlockType.FoilOre] = {
+		id = BlockType.FoilOre,
+		name = "Foil Ore",
+		hardness = 14,
+		color = Color3.fromRGB(255, 200, 50), -- gold foil
+		material = Enum.Material.Foil,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "foil_ore", count = 1, chance = 1 } },
+		xp = 12,
+	},
+	[BlockType.RubyPaper] = {
+		id = BlockType.RubyPaper,
+		name = "Ruby Paper",
+		hardness = 18,
+		color = Color3.fromRGB(220, 30, 60), -- ruby red
+		material = Enum.Material.Glass,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "ruby_paper", count = 1, chance = 1 } },
+		xp = 20,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Layer 5: Crystal Lattice (-800 to -1200 depth)
+	-- Metallic, crystalline
+	-- ═══════════════════════════════════════════
+
+	[BlockType.CrystalBlock] = {
+		id = BlockType.CrystalBlock,
+		name = "Crystal Block",
+		hardness = 20,
+		color = Color3.fromRGB(150, 200, 255), -- bright crystal blue
+		material = Enum.Material.Glass,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "crystal_shard", count = 1, chance = 1 } },
+		xp = 18,
+	},
+	[BlockType.FoilSheet] = {
+		id = BlockType.FoilSheet,
+		name = "Foil Sheet",
+		hardness = 18,
+		color = Color3.fromRGB(220, 220, 230), -- silver foil
+		material = Enum.Material.Foil,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "foil_sheet", count = 1, chance = 1 } },
+		xp = 15,
+	},
+	[BlockType.MetalOrigami] = {
+		id = BlockType.MetalOrigami,
+		name = "Metal Origami",
+		hardness = 25,
+		color = Color3.fromRGB(180, 180, 200), -- steel
+		material = Enum.Material.Metal,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "metal_origami", count = 1, chance = 1 } },
+		xp = 20,
+	},
+	[BlockType.SapphireCrystal] = {
+		id = BlockType.SapphireCrystal,
+		name = "Sapphire Crystal",
+		hardness = 22,
+		color = Color3.fromRGB(20, 80, 200), -- deep sapphire
+		material = Enum.Material.Glass,
+		mineable = true,
+		minTier = 3,
+		drops = { { itemId = "sapphire_crystal", count = 1, chance = 1 } },
+		xp = 25,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Layer 6: Void Seams (-1200 to -1600 depth)
+	-- Dark, mysterious materials
+	-- ═══════════════════════════════════════════
+
+	[BlockType.VoidStone] = {
+		id = BlockType.VoidStone,
+		name = "Void Stone",
+		hardness = 30,
+		color = Color3.fromRGB(25, 15, 40), -- deep purple-black
+		material = Enum.Material.Basalt,
+		mineable = true,
+		minTier = 4,
+		drops = { { itemId = "void_stone", count = 1, chance = 1 } },
+		xp = 25,
+	},
+	[BlockType.DarkPaper] = {
+		id = BlockType.DarkPaper,
+		name = "Dark Paper",
+		hardness = 28,
+		color = Color3.fromRGB(40, 30, 50), -- dark violet
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 4,
+		drops = { { itemId = "dark_paper", count = 1, chance = 1 } },
+		xp = 22,
+	},
+	[BlockType.ShadowFold] = {
+		id = BlockType.ShadowFold,
+		name = "Shadow Fold",
+		hardness = 35,
+		color = Color3.fromRGB(60, 20, 80), -- deep magenta
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 4,
+		drops = { { itemId = "shadow_fold", count = 1, chance = 1 } },
+		xp = 30,
+	},
+	[BlockType.VoidCrystal] = {
+		id = BlockType.VoidCrystal,
+		name = "Void Crystal",
+		hardness = 40,
+		color = Color3.fromRGB(150, 0, 255), -- neon purple
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 4,
+		drops = { { itemId = "void_crystal", count = 1, chance = 1 } },
+		xp = 40,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Layer 7: The Core (-1600 to -2000 depth)
+	-- Prismatic, rainbow materials
+	-- ═══════════════════════════════════════════
+
+	[BlockType.PrismaticBlock] = {
+		id = BlockType.PrismaticBlock,
+		name = "Prismatic Block",
+		hardness = 50,
+		color = Color3.fromRGB(255, 200, 255), -- pink-white prismatic
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 5,
+		drops = { { itemId = "prismatic_shard", count = 1, chance = 1 } },
+		xp = 50,
+	},
+	[BlockType.CoreFragment] = {
+		id = BlockType.CoreFragment,
+		name = "Core Fragment",
+		hardness = 60,
+		color = Color3.fromRGB(255, 255, 200), -- golden glow
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 5,
+		drops = { { itemId = "core_fragment", count = 1, chance = 1 } },
+		xp = 60,
+	},
+	[BlockType.RainbowPaper] = {
+		id = BlockType.RainbowPaper,
+		name = "Rainbow Paper",
+		hardness = 45,
+		color = Color3.fromRGB(255, 150, 100), -- warm rainbow
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 5,
+		drops = { { itemId = "rainbow_paper", count = 1, chance = 1 } },
+		xp = 55,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Nature (surface)
+	-- ═══════════════════════════════════════════
+
+	[BlockType.Wood] = {
+		id = BlockType.Wood,
+		name = "Wood",
+		hardness = 2,
+		color = Color3.fromRGB(190, 160, 120), -- kraft paper trunk
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "wood", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.Leaves] = {
+		id = BlockType.Leaves,
+		name = "Leaves",
+		hardness = 0.5,
+		color = Color3.fromRGB(150, 200, 140), -- soft green origami
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "paper_scrap", count = 1, chance = 0.5 } },
+		xp = 1,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Special
+	-- ═══════════════════════════════════════════
+
+	[BlockType.EggNode] = {
+		id = BlockType.EggNode,
+		name = "Egg Node",
+		hardness = 10,
+		color = Color3.fromRGB(255, 230, 180), -- warm egg glow
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 1,
+		drops = { { itemId = "egg_fragment", count = 1, chance = 1 }, { itemId = "egg_fragment", count = 1, chance = 0.5 } },
+		xp = 20,
+	},
+
+	[BlockType.Bedrock] = {
+		id = BlockType.Bedrock,
+		name = "Bedrock",
+		hardness = math.huge,
+		color = Color3.fromRGB(30, 30, 30),
+		material = Enum.Material.Basalt,
+		mineable = false,
+		minTier = 999,
+		xp = 0,
+	},
+}
+
+function BlockRegistry.get(blockTypeId: number): BlockConfig?
+	return blocks[blockTypeId]
+end
+
+function BlockRegistry.getHardness(blockTypeId: number): number
+	local config = blocks[blockTypeId]
+	if config then
+		return config.hardness
+	end
+	return math.huge
+end
+
+function BlockRegistry.getColor(blockTypeId: number): Color3
+	local config = blocks[blockTypeId]
+	if config then
+		return config.color
+	end
+	return Color3.fromRGB(255, 0, 255) -- magenta = missing
+end
+
+function BlockRegistry.getMaterial(blockTypeId: number): Enum.Material
+	local config = blocks[blockTypeId]
+	if config then
+		return config.material
+	end
+	return Enum.Material.Plastic
+end
+
+function BlockRegistry.isMineable(blockTypeId: number): boolean
+	local config = blocks[blockTypeId]
+	if config then
+		return config.mineable
+	end
+	return false
+end
+
+function BlockRegistry.isAir(blockTypeId: number): boolean
+	return blockTypeId == BlockType.Air
+end
+
+return BlockRegistry

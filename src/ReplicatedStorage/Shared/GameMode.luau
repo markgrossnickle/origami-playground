@@ -7,8 +7,8 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 local GameMode = {}
 
 GameMode.MODES = {
+	{ key = "expedition", display = "Expedition" },
 	{ key = "sandbox", display = "Sandbox" },
-	{ key = "tower_defense", display = "Tower Defense" },
 	{ key = "auto_battler", display = "Auto Battler" },
 	{ key = "card_battler", display = "Card Battler" },
 	{ key = "play", display = "Play" },

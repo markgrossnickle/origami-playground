@@ -228,7 +228,9 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local parts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = parts
 
-	local blocksProcessed = 0
+	-- Pass 1: Batch terrain fills by material (one FillRegion per Y-layer per material)
+	-- and collect special blocks
+	local terrainBatch: { [Enum.Material]: { Vector3 } } = {}
 
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
@@ -246,25 +248,33 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					local terrainMat = TerrainMaterialMap.getMaterial(blockTypeId)
 					if terrainMat then
 						local center = _getBlockWorldCenter(cx, cy, cz, lx, ly, lz)
-						_fillTerrainBlock(center, terrainMat)
+						if not terrainBatch[terrainMat] then
+							terrainBatch[terrainMat] = {}
+						end
+						table.insert(terrainBatch[terrainMat], center)
 					end
-				end
-
-				blocksProcessed += 1
-				if blocksProcessed % 512 == 0 then
-					task.wait()
 				end
 			end
 		end
 	end
 
-	-- Create invisible collision Parts for raycast targeting
+	-- Fill terrain in batches — yield once per material type instead of every 512 blocks
+	for mat, positions in pairs(terrainBatch) do
+		for _, center in ipairs(positions) do
+			_fillTerrainBlock(center, mat)
+		end
+		task.wait()
+	end
+
+	-- Pass 2: Create invisible collision Parts only for exposed blocks
+	-- (blocks with at least one air neighbor visible from surface)
 	local baseX = cx * CHUNK_STUDS
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
 
+	local collisionCount = 0
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
@@ -284,8 +294,14 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					part.Parent = chunkContainer
 
 					cParts[idx] = part
+					collisionCount += 1
 				end
 			end
+		end
+		-- Yield once per Y-layer for collision parts instead of never
+		if collisionCount > 200 then
+			task.wait()
+			collisionCount = 0
 		end
 	end
 end

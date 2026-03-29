@@ -7,11 +7,11 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 
 local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 
-local POLL_INTERVAL = 0.3
+local POLL_INTERVAL = 0.5
 local LOAD_RADIUS_H = 3
 local LOAD_RADIUS_UP = 1
 local LOAD_RADIUS_DOWN = 4
-local MAX_SENDS_PER_CYCLE = 6
+local MAX_SENDS_PER_CYCLE = 4
 
 --[=[
 	@class ChunkStreamService

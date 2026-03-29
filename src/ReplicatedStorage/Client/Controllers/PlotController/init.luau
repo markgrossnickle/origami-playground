@@ -317,6 +317,64 @@ local function buildUI()
 	hudLabel.Font = Enum.Font.GothamBold
 	hudLabel.Parent = _hudFrame
 
+	-- Build mode toggle button (mobile-friendly, also works on desktop)
+	local buildToggleBtn = Instance.new("TextButton")
+	buildToggleBtn.Name = "BuildToggle"
+	buildToggleBtn.Size = UDim2.fromOffset(80, 36)
+	buildToggleBtn.Position = UDim2.new(0.5, -40, 0, 80)
+	buildToggleBtn.BackgroundColor3 = COLORS.panel
+	buildToggleBtn.Text = "Build"
+	buildToggleBtn.TextColor3 = COLORS.text
+	buildToggleBtn.TextSize = 14
+	buildToggleBtn.Font = Enum.Font.GothamBold
+	buildToggleBtn.Visible = false
+	buildToggleBtn.Parent = _screenGui
+	createCorner(buildToggleBtn, 8)
+
+	buildToggleBtn.MouseButton1Click:Connect(function()
+		toggleBuildMode()
+		buildToggleBtn.Text = if _buildMode then "Stop Build" else "Build"
+		buildToggleBtn.BackgroundColor3 = if _buildMode then COLORS.buildMode else COLORS.panel
+	end)
+
+	-- Show build button when plot is loaded
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			buildToggleBtn.Visible = _plotOrigin ~= nil
+		end
+	end)
+
+	-- Remove block button (mobile — since no right-click)
+	local removeToggleBtn = Instance.new("TextButton")
+	removeToggleBtn.Name = "RemoveToggle"
+	removeToggleBtn.Size = UDim2.fromOffset(70, 36)
+	removeToggleBtn.Position = UDim2.new(0.5, 50, 0, 80)
+	removeToggleBtn.BackgroundColor3 = COLORS.error
+	removeToggleBtn.Text = "Remove"
+	removeToggleBtn.TextColor3 = COLORS.text
+	removeToggleBtn.TextSize = 12
+	removeToggleBtn.Font = Enum.Font.GothamBold
+	removeToggleBtn.Visible = false
+	removeToggleBtn.Parent = _screenGui
+	createCorner(removeToggleBtn, 8)
+
+	removeToggleBtn:SetAttribute("RemoveMode", false)
+	removeToggleBtn.MouseButton1Click:Connect(function()
+		local rm = not removeToggleBtn:GetAttribute("RemoveMode")
+		removeToggleBtn:SetAttribute("RemoveMode", rm)
+		removeToggleBtn.BackgroundColor3 = if rm then COLORS.buildMode else COLORS.error
+		removeToggleBtn.Text = if rm then "Removing" else "Remove"
+	end)
+
+	-- Show remove button only in build mode
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			removeToggleBtn.Visible = _buildMode
+		end
+	end)
+
 	-- Material palette (horizontal bar, bottom of screen)
 	_paletteFrame = Instance.new("Frame")
 	_paletteFrame.Name = "MaterialPalette"
@@ -696,8 +754,9 @@ local function onInputBegan(input: InputObject, processed: boolean)
 		return
 	end
 
-	-- Left click: place block
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	-- Left click / tap: place or remove block (remove mode on mobile)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
 		local mouse = Player:GetMouse()
 		local ray = Camera:ScreenPointToRay(mouse.X, mouse.Y)
 		local rayParams = RaycastParams.new()
@@ -709,26 +768,50 @@ local function onInputBegan(input: InputObject, processed: boolean)
 			return
 		end
 
-		local hitPos = result.Position + result.Normal * 0.1
-		local lx, ly, lz = PlotConfig.worldToLocal(_plotOrigin, hitPos)
+		-- Check if we're in remove mode (mobile) or hit a plot block
+		local removeBtn = _screenGui and _screenGui:FindFirstChild("RemoveToggle")
+		local isRemoveMode = removeBtn and removeBtn:GetAttribute("RemoveMode")
 
-		if PlotConfig.isInBounds(lx, ly, lz) then
-			task.spawn(function()
-				local PlotService = Knit.GetService("PlotService")
-				local res = PlotService:PlaceBlock(lx, ly, lz, _selectedMaterial):await()
-				if res and res.success then
-					renderBlock(res.key, res.materialId)
-					if _plotData then
-						_plotData.blockCount = (_plotData.blockCount or 0) + 1
+		if isRemoveMode and result.Instance and result.Instance.Name:match("^PlotBlock_") then
+			-- Remove the hit block
+			local key = result.Instance.Name:sub(11)
+			local rlx, rly, rlz = key:match("^(-?%d+),(-?%d+),(-?%d+)$")
+			if rlx then
+				task.spawn(function()
+					local PlotService = Knit.GetService("PlotService")
+					local res = PlotService:RemoveBlock(tonumber(rlx), tonumber(rly), tonumber(rlz)):await()
+					if res and res.success then
+						unrenderBlock(key)
+						if _plotData then
+							_plotData.blockCount = math.max(0, (_plotData.blockCount or 1) - 1)
+						end
+						updateHUD()
 					end
-					updateHUD()
-				end
-			end)
+				end)
+			end
+		else
+			-- Place block
+			local hitPos = result.Position + result.Normal * 0.1
+			local lx, ly, lz = PlotConfig.worldToLocal(_plotOrigin, hitPos)
+
+			if PlotConfig.isInBounds(lx, ly, lz) then
+				task.spawn(function()
+					local PlotService = Knit.GetService("PlotService")
+					local res = PlotService:PlaceBlock(lx, ly, lz, _selectedMaterial):await()
+					if res and res.success then
+						renderBlock(res.key, res.materialId)
+						if _plotData then
+							_plotData.blockCount = (_plotData.blockCount or 0) + 1
+						end
+						updateHUD()
+					end
+				end)
+			end
 		end
 		return
 	end
 
-	-- Right click: remove block
+	-- Right click: remove block (desktop)
 	if input.UserInputType == Enum.UserInputType.MouseButton2 then
 		local mouse = Player:GetMouse()
 		local ray = Camera:ScreenPointToRay(mouse.X, mouse.Y)

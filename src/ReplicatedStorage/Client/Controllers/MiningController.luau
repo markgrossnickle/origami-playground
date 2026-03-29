@@ -507,13 +507,15 @@ function MiningController:KnitStart()
 		if gameProcessed then
 			return
 		end
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
 			_startMining()
 		end
 	end)
 
 	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
 			_stopMining()
 		end
 	end)

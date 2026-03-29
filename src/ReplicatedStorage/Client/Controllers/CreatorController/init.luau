@@ -713,26 +713,9 @@ local function createUI()
 
 	local modesBtn = makeSidebarButton("ModesBtn", "Mode", COLORS.accentDim, 1)
 	local editBtn = makeSidebarButton("EditBtn", "Edit", Color3.fromRGB(220, 160, 60), 2)
-	local animBtn = makeSidebarButton("AnimBtn", "Anim", Color3.fromRGB(60, 140, 120), 3)
-
-	-- "Demo" sidebar button — toggles demo mode (pre-built models, no API calls)
-	local demoBtn = makeSidebarButton("DemoBtn", "Demo", Color3.fromRGB(60, 200, 140), 4)
-	demoBtn.Activated:Connect(function()
-		_demoMode = not _demoMode
-		if _demoMode then
-			demoBtn.BackgroundColor3 = COLORS.success
-			-- Show only the input row in a simplified demo UI
-			container.Visible = true
-			_uiMinimized = false
-			setStatus("Demo mode ON — type a prompt to spawn pre-built models", COLORS.success)
-		else
-			demoBtn.BackgroundColor3 = Color3.fromRGB(60, 200, 140)
-			setStatus("Demo mode OFF", COLORS.textDim)
-		end
-	end)
 
 	-- "Create" sidebar button — always visible, toggles creator panel
-	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 5)
+	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 3)
 	_sidebarCreateBtn.Activated:Connect(function()
 		toggleMinimize()
 	end)
@@ -749,13 +732,6 @@ local function createUI()
 		local EditController = Knit.GetController("EditController")
 		if EditController then
 			EditController:Toggle()
-		end
-	end)
-
-	animBtn.Activated:Connect(function()
-		local AnimatorController = Knit.GetController("AnimatorController")
-		if AnimatorController then
-			AnimatorController:Toggle()
 		end
 	end)
 

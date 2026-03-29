@@ -125,9 +125,22 @@ local function createUI()
 	_gui.Enabled = false
 	_gui.Parent = Player.PlayerGui
 
-	-- Listen for mode changes to update highlights
-	GameMode.Changed:Connect(function()
+	-- Listen for mode changes to update highlights and trigger mode-specific actions
+	GameMode.Changed:Connect(function(newMode, oldMode)
 		updateHighlights()
+
+		-- Toggle AnimatorController for animate mode
+		local AnimatorController = Knit.GetController("AnimatorController")
+		if AnimatorController then
+			if newMode == "animate" then
+				AnimatorController:Toggle()
+			elseif oldMode == "animate" then
+				-- Hide animator when leaving animate mode
+				if AnimatorController.Hide then
+					AnimatorController:Hide()
+				end
+			end
+		end
 	end)
 
 	updateHighlights()

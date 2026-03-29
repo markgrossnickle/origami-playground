@@ -10,8 +10,8 @@ GameMode.MODES = {
 	{ key = "expedition", display = "Expedition" },
 	{ key = "sandbox", display = "Sandbox" },
 	{ key = "auto_battler", display = "Auto Battler" },
-	{ key = "card_battler", display = "Card Battler" },
-	{ key = "play", display = "Play" },
+	{ key = "animate", display = "Animate" },
+	{ key = "demo", display = "Demo" },
 }
 
 GameMode.Current = "sandbox"

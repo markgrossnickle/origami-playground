@@ -14,8 +14,10 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
-local POOL_INITIAL = 3000
-local POOL_MAX = 12000
+local PART_POOL_INITIAL = 2000
+local PART_POOL_MAX = 8000
+local WEDGE_POOL_INITIAL = 4000
+local WEDGE_POOL_MAX = 16000
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -25,26 +27,28 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Greedy-mesh renderer: merges adjacent same-type blocks into larger Parts.
-	Much fewer instances than per-block, crisp blocky aesthetic with custom colors.
+	Wedge/triangle renderer: blocks rendered as pairs of WedgeParts creating
+	diagonal fold seams for a low-poly origami paper-fold aesthetic.
+	Merges along X axis for performance while preserving fold detail per row.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
 })
 
 local partPool: { BasePart } = {}
+local wedgePool: { WedgePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local renderedMeshParts: { [string]: { BasePart } } = {}
+local renderedWedges: { [string]: { Instance } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
 local chunkContainer: Folder
 
 -------------------------------------------------
--- Part pool
+-- Part pool (for special blocks + collision)
 -------------------------------------------------
 
 local function _createPart(): BasePart
@@ -56,12 +60,6 @@ local function _createPart(): BasePart
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	return part
-end
-
-local function _initPool()
-	for _ = 1, POOL_INITIAL do
-		table.insert(partPool, _createPart())
-	end
 end
 
 local function _getPart(): BasePart
@@ -80,17 +78,66 @@ local function _returnPart(part: BasePart)
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
 	part.Transparency = 0
-	-- Clear any children (lights on egg nodes)
-	for _, child in ipairs(part:GetChildren()) do
-		if not child:IsA("UICorner") then
-			child:Destroy()
-		end
+	for _, child in part:GetChildren() do
+		child:Destroy()
 	end
 	activePartsCount -= 1
-	if #partPool < POOL_MAX then
+	if #partPool < PART_POOL_MAX then
 		table.insert(partPool, part)
 	else
 		part:Destroy()
+	end
+end
+
+-------------------------------------------------
+-- Wedge pool
+-------------------------------------------------
+
+local function _createWedge(): WedgePart
+	local w = Instance.new("WedgePart")
+	w.Anchored = true
+	w.CanCollide = true
+	w.CastShadow = false
+	return w
+end
+
+local function _getWedge(): WedgePart
+	local w: WedgePart
+	if #wedgePool > 0 then
+		w = table.remove(wedgePool, #wedgePool) :: WedgePart
+	else
+		w = _createWedge()
+	end
+	activePartsCount += 1
+	return w
+end
+
+local function _returnWedge(w: WedgePart)
+	w.Parent = nil
+	w.CanCollide = true
+	w.Transparency = 0
+	activePartsCount -= 1
+	if #wedgePool < WEDGE_POOL_MAX then
+		table.insert(wedgePool, w)
+	else
+		w:Destroy()
+	end
+end
+
+local function _returnInstance(inst: Instance)
+	if inst:IsA("WedgePart") then
+		_returnWedge(inst :: WedgePart)
+	elseif inst:IsA("BasePart") then
+		_returnPart(inst :: BasePart)
+	end
+end
+
+local function _initPool()
+	for _ = 1, PART_POOL_INITIAL do
+		table.insert(partPool, _createPart())
+	end
+	for _ = 1, WEDGE_POOL_INITIAL do
+		table.insert(wedgePool, _createWedge())
 	end
 end
 
@@ -171,18 +218,24 @@ local function _isExposed(blocks: buffer, lx: number, ly: number, lz: number): b
 end
 
 -------------------------------------------------
--- Greedy meshing: merge same-type blocks per Y layer
+-- Wedge meshing: merge along X, 2 WedgeParts per strip
+-- Creates diagonal fold seams for origami aesthetic
 -------------------------------------------------
 
-local function _greedyMeshLayer(
+-- CFrame to flip a wedge 180° around Z, filling the complementary
+-- half of the block volume (upper triangle of Y-Z cross-section)
+local FLIP_CF = CFrame.Angles(0, 0, math.pi)
+-- CFrame to rotate 180° around Y for alternating fold direction
+local ROTATE_Y = CFrame.Angles(0, math.pi, 0)
+
+local function _wedgeMeshLayer(
 	blocks: buffer,
 	ly: number,
 	cx: number,
 	cy: number,
 	cz: number
-): { BasePart }
-	local visited = {} :: { [number]: boolean }
-	local meshParts: { BasePart } = {}
+): { Instance }
+	local result: { Instance } = {}
 
 	local baseX = cx * CHUNK_STUDS
 	local baseY = cy * CHUNK_STUDS
@@ -190,85 +243,65 @@ local function _greedyMeshLayer(
 	local halfBlock = BLOCK_SIZE / 2
 
 	for lz = 0, CHUNK_SIZE - 1 do
-		for lx = 0, CHUNK_SIZE - 1 do
-			local key = lz * CHUNK_SIZE + lx
-			if visited[key] then
-				continue
-			end
-
+		local lx = 0
+		while lx < CHUNK_SIZE do
 			local idx = ChunkUtil.flatIndex(lx, ly, lz)
 			local blockTypeId = buffer.readu8(blocks, idx)
 
 			if blockTypeId == BlockType.Air or _isSpecialBlock(blockTypeId) then
+				lx += 1
 				continue
 			end
 
-			-- Expand width (along X)
+			-- Merge same-type blocks along X
 			local width = 1
 			while lx + width < CHUNK_SIZE do
-				local nKey = lz * CHUNK_SIZE + (lx + width)
-				if visited[nKey] then
-					break
-				end
 				local nIdx = ChunkUtil.flatIndex(lx + width, ly, lz)
-				local nType = buffer.readu8(blocks, nIdx)
-				if nType ~= blockTypeId then
+				if buffer.readu8(blocks, nIdx) ~= blockTypeId then
 					break
 				end
 				width += 1
 			end
 
-			-- Expand depth (along Z)
-			local depth = 1
-			while lz + depth < CHUNK_SIZE do
-				local rowMatch = true
-				for dx = 0, width - 1 do
-					local nKey = (lz + depth) * CHUNK_SIZE + (lx + dx)
-					if visited[nKey] then
-						rowMatch = false
-						break
-					end
-					local nIdx = ChunkUtil.flatIndex(lx + dx, ly, lz + depth)
-					local nType = buffer.readu8(blocks, nIdx)
-					if nType ~= blockTypeId then
-						rowMatch = false
-						break
-					end
-				end
-				if not rowMatch then
-					break
-				end
-				depth += 1
-			end
+			local color = BlockRegistry.getColor(blockTypeId)
+			local material = BlockRegistry.getMaterial(blockTypeId)
+			local sizeW = width * BLOCK_SIZE
 
-			-- Mark visited
-			for dz = 0, depth - 1 do
-				for dx = 0, width - 1 do
-					visited[(lz + dz) * CHUNK_SIZE + (lx + dx)] = true
-				end
-			end
-
-			-- Create merged Part
-			local part = _getPart()
-			part.Size = Vector3.new(width * BLOCK_SIZE, BLOCK_SIZE, depth * BLOCK_SIZE)
-			part.Color = BlockRegistry.getColor(blockTypeId)
-			part.Material = BlockRegistry.getMaterial(blockTypeId)
-			part.CanCollide = true
-			part.Transparency = 0
-			part.CastShadow = false
-
-			-- Position at center of merged rectangle
-			local px = baseX + lx * BLOCK_SIZE + (width * BLOCK_SIZE) / 2
+			local px = baseX + lx * BLOCK_SIZE + sizeW / 2
 			local py = baseY + ly * BLOCK_SIZE + halfBlock
-			local pz = baseZ + lz * BLOCK_SIZE + (depth * BLOCK_SIZE) / 2
-			part.Position = Vector3.new(px, py, pz)
-			part.Parent = chunkContainer
+			local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
-			table.insert(meshParts, part)
+			-- Alternate fold direction by Z row for tessellated pattern
+			local baseCF: CFrame
+			if lz % 2 == 0 then
+				baseCF = CFrame.new(px, py, pz)
+			else
+				baseCF = CFrame.new(px, py, pz) * ROTATE_Y
+			end
+
+			-- Primary wedge (lower triangle of Y-Z cross-section)
+			local w1 = _getWedge()
+			w1.Size = Vector3.new(sizeW, BLOCK_SIZE, BLOCK_SIZE)
+			w1.Color = color
+			w1.Material = material
+			w1.CFrame = baseCF
+			w1.Parent = chunkContainer
+			table.insert(result, w1)
+
+			-- Complement wedge (upper triangle, slightly smaller to prevent Z-fight)
+			local w2 = _getWedge()
+			w2.Size = Vector3.new(sizeW - 0.02, BLOCK_SIZE - 0.02, BLOCK_SIZE - 0.02)
+			w2.Color = color
+			w2.Material = material
+			w2.CFrame = baseCF * FLIP_CF
+			w2.Parent = chunkContainer
+			table.insert(result, w2)
+
+			lx += width
 		end
 	end
 
-	return meshParts
+	return result
 end
 
 -------------------------------------------------
@@ -276,11 +309,11 @@ end
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	-- Clear existing mesh parts
-	local existingMesh = renderedMeshParts[chunkKey]
-	if existingMesh then
-		for _, part in existingMesh do
-			_returnPart(part)
+	-- Clear existing wedges
+	local existingWedges = renderedWedges[chunkKey]
+	if existingWedges then
+		for _, inst in existingWedges do
+			_returnInstance(inst)
 		end
 	end
 
@@ -306,10 +339,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local allMeshParts: { BasePart } = {}
-	renderedMeshParts[chunkKey] = allMeshParts
-
-	-- Collect special blocks first
+	-- Collect special blocks
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
@@ -322,11 +352,14 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 		end
 	end
 
-	-- Greedy mesh per Y layer
+	-- Wedge mesh per Y-layer
+	local allWedges: { Instance } = {}
+	renderedWedges[chunkKey] = allWedges
+
 	for ly = 0, CHUNK_SIZE - 1 do
-		local layerParts = _greedyMeshLayer(blocks, ly, cx, cy, cz)
-		for _, part in ipairs(layerParts) do
-			table.insert(allMeshParts, part)
+		local layerParts = _wedgeMeshLayer(blocks, ly, cx, cy, cz)
+		for _, inst in layerParts do
+			table.insert(allWedges, inst)
 		end
 		if ly % 4 == 3 then
 			task.wait()
@@ -375,12 +408,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local meshParts = renderedMeshParts[chunkKey]
-	if meshParts then
-		for _, part in meshParts do
-			_returnPart(part)
+	local wedges = renderedWedges[chunkKey]
+	if wedges then
+		for _, inst in wedges do
+			_returnInstance(inst)
 		end
-		renderedMeshParts[chunkKey] = nil
+		renderedWedges[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -414,8 +447,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 
 	buffer.writeu8(blocks, flatIndex, blockTypeId)
 
-	-- Re-render the entire chunk (greedy mesh needs full pass)
-	-- Save blocks reference since _unrenderChunk clears it
+	-- Re-render entire chunk (wedge strips need full pass)
 	local savedBlocks = blocks
 	_unrenderChunk(chunkKey)
 	_renderChunk(chunkKey, savedBlocks)
@@ -445,7 +477,7 @@ function ChunkRenderController:GetActivePartCount(): number
 end
 
 function ChunkRenderController:GetPoolSize(): number
-	return #partPool
+	return #partPool + #wedgePool
 end
 
 -------------------------------------------------

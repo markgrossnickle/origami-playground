@@ -34,8 +34,6 @@ local camera: Camera
 local isMining = false
 local targetChunkKey: string? = nil
 local targetFlatIndex: number? = nil
-local targetNormal: Vector3? = nil
-local halfMineApplied = false
 local miningProgress = 0
 local lastSendTime = 0
 
@@ -360,15 +358,9 @@ local function _startMining()
 end
 
 local function _stopMining()
-	-- Restore half-mined block to full
-	if halfMineApplied and targetChunkKey and targetFlatIndex then
-		ChunkRenderController:ClearHalfMine(targetChunkKey, targetFlatIndex)
-	end
 	isMining = false
 	targetChunkKey = nil
 	targetFlatIndex = nil
-	targetNormal = nil
-	halfMineApplied = false
 	miningProgress = 0
 	_hideHighlight()
 end
@@ -398,17 +390,12 @@ local function _updateMining(dt: number)
 		return
 	end
 
-	local chunkKey, flatIndex, _, hitNormal = _raycastToBlock()
+	local chunkKey, flatIndex, _ = _raycastToBlock()
 
 	if not chunkKey or not flatIndex then
 		_hideHighlight()
-		if halfMineApplied and targetChunkKey and targetFlatIndex then
-			ChunkRenderController:ClearHalfMine(targetChunkKey, targetFlatIndex)
-		end
 		targetChunkKey = nil
 		targetFlatIndex = nil
-		targetNormal = nil
-		halfMineApplied = false
 		miningProgress = 0
 		return
 	end
@@ -432,15 +419,10 @@ local function _updateMining(dt: number)
 		return
 	end
 
-	-- If target changed, reset progress and restore old half-mine
+	-- If target changed, reset progress
 	if chunkKey ~= targetChunkKey or flatIndex ~= targetFlatIndex then
-		if halfMineApplied and targetChunkKey and targetFlatIndex then
-			ChunkRenderController:ClearHalfMine(targetChunkKey, targetFlatIndex)
-		end
 		targetChunkKey = chunkKey
 		targetFlatIndex = flatIndex
-		targetNormal = hitNormal
-		halfMineApplied = false
 		miningProgress = 0
 	end
 
@@ -488,12 +470,6 @@ local function _updateMining(dt: number)
 		if miningProgressGui then
 			miningProgressGui.Enabled = false
 		end
-	end
-
-	-- Wedge-cut: at 50% progress, visually slice the block in half
-	if miningProgress >= 0.5 and not halfMineApplied and targetNormal then
-		ChunkRenderController:HalfMineBlock(chunkKey, flatIndex, targetNormal.X, targetNormal.Y, targetNormal.Z)
-		halfMineApplied = true
 	end
 
 	-- Send mine request to server at throttled rate

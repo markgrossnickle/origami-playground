@@ -14,10 +14,15 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
-local PART_POOL_INITIAL = 2000
-local PART_POOL_MAX = 8000
-local WEDGE_POOL_INITIAL = 4000
-local WEDGE_POOL_MAX = 16000
+local POOL_INITIAL = 3000
+local POOL_MAX = 15000
+
+-- Diamond size: scaled so the rotated diagonal fits the block grid
+-- side * sqrt(2) = BLOCK_SIZE → side = BLOCK_SIZE / sqrt(2) ≈ 0.707 * BLOCK_SIZE
+local DIAMOND_XZ = BLOCK_SIZE * 0.707
+
+-- 45° rotation around Y for diamond orientation
+local DIAMOND_ROTATION = CFrame.Angles(0, math.pi / 4, 0)
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -27,28 +32,27 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Wedge/triangle renderer: blocks rendered as pairs of WedgeParts creating
-	diagonal fold seams for a low-poly origami paper-fold aesthetic.
-	Merges along X axis for performance while preserving fold detail per row.
+	Diamond renderer: each exposed block is a Part rotated 45° around Y,
+	creating a crystalline diamond lattice aesthetic. Invisible axis-aligned
+	collision parts handle raycasting and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
 })
 
 local partPool: { BasePart } = {}
-local wedgePool: { WedgePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local renderedWedges: { [string]: { Instance } } = {}
+local diamondParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
 local chunkContainer: Folder
 
 -------------------------------------------------
--- Part pool (for special blocks + collision)
+-- Part pool
 -------------------------------------------------
 
 local function _createPart(): BasePart
@@ -60,6 +64,12 @@ local function _createPart(): BasePart
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	return part
+end
+
+local function _initPool()
+	for _ = 1, POOL_INITIAL do
+		table.insert(partPool, _createPart())
+	end
 end
 
 local function _getPart(): BasePart
@@ -82,7 +92,7 @@ local function _returnPart(part: BasePart)
 		child:Destroy()
 	end
 	activePartsCount -= 1
-	if #partPool < PART_POOL_MAX then
+	if #partPool < POOL_MAX then
 		table.insert(partPool, part)
 	else
 		part:Destroy()
@@ -90,62 +100,10 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Wedge pool
+-- Diamond block creation
 -------------------------------------------------
 
-local function _createWedge(): WedgePart
-	local w = Instance.new("WedgePart")
-	w.Anchored = true
-	w.CanCollide = true
-	w.CastShadow = false
-	return w
-end
-
-local function _getWedge(): WedgePart
-	local w: WedgePart
-	if #wedgePool > 0 then
-		w = table.remove(wedgePool, #wedgePool) :: WedgePart
-	else
-		w = _createWedge()
-	end
-	activePartsCount += 1
-	return w
-end
-
-local function _returnWedge(w: WedgePart)
-	w.Parent = nil
-	w.CanCollide = true
-	w.Transparency = 0
-	activePartsCount -= 1
-	if #wedgePool < WEDGE_POOL_MAX then
-		table.insert(wedgePool, w)
-	else
-		w:Destroy()
-	end
-end
-
-local function _returnInstance(inst: Instance)
-	if inst:IsA("WedgePart") then
-		_returnWedge(inst :: WedgePart)
-	elseif inst:IsA("BasePart") then
-		_returnPart(inst :: BasePart)
-	end
-end
-
-local function _initPool()
-	for _ = 1, PART_POOL_INITIAL do
-		table.insert(partPool, _createPart())
-	end
-	for _ = 1, WEDGE_POOL_INITIAL do
-		table.insert(wedgePool, _createWedge())
-	end
-end
-
--------------------------------------------------
--- Special block Part creation
--------------------------------------------------
-
-local function _makeSpecialPart(
+local function _makeDiamondPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -159,17 +117,17 @@ local function _makeSpecialPart(
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
+	local px = baseX + lx * BLOCK_SIZE + halfBlock
+	local py = baseY + ly * BLOCK_SIZE + halfBlock
+	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
+
 	local part = _getPart()
 	part.Color = BlockRegistry.getColor(blockTypeId)
 	part.Material = BlockRegistry.getMaterial(blockTypeId)
-	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-	part.CanCollide = true
+	part.Size = Vector3.new(DIAMOND_XZ, BLOCK_SIZE, DIAMOND_XZ)
+	part.CanCollide = false -- collision handled by separate invisible parts
 	part.Transparency = 0
-	part.Position = Vector3.new(
-		baseX + lx * BLOCK_SIZE + halfBlock,
-		baseY + ly * BLOCK_SIZE + halfBlock,
-		baseZ + lz * BLOCK_SIZE + halfBlock
-	)
+	part.CFrame = CFrame.new(px, py, pz) * DIAMOND_ROTATION
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
@@ -218,108 +176,20 @@ local function _isExposed(blocks: buffer, lx: number, ly: number, lz: number): b
 end
 
 -------------------------------------------------
--- Wedge meshing: merge along X, 2 WedgeParts per strip
--- Creates diagonal fold seams for origami aesthetic
--------------------------------------------------
-
--- CFrame to flip a wedge 180° around Z, filling the complementary
--- half of the block volume (upper triangle of Y-Z cross-section)
-local FLIP_CF = CFrame.Angles(0, 0, math.pi)
--- CFrame to rotate 180° around Y for alternating fold direction
-local ROTATE_Y = CFrame.Angles(0, math.pi, 0)
-
-local function _wedgeMeshLayer(
-	blocks: buffer,
-	ly: number,
-	cx: number,
-	cy: number,
-	cz: number
-): { Instance }
-	local result: { Instance } = {}
-
-	local baseX = cx * CHUNK_STUDS
-	local baseY = cy * CHUNK_STUDS
-	local baseZ = cz * CHUNK_STUDS
-	local halfBlock = BLOCK_SIZE / 2
-
-	for lz = 0, CHUNK_SIZE - 1 do
-		local lx = 0
-		while lx < CHUNK_SIZE do
-			local idx = ChunkUtil.flatIndex(lx, ly, lz)
-			local blockTypeId = buffer.readu8(blocks, idx)
-
-			if blockTypeId == BlockType.Air or _isSpecialBlock(blockTypeId) then
-				lx += 1
-				continue
-			end
-
-			-- Merge same-type blocks along X
-			local width = 1
-			while lx + width < CHUNK_SIZE do
-				local nIdx = ChunkUtil.flatIndex(lx + width, ly, lz)
-				if buffer.readu8(blocks, nIdx) ~= blockTypeId then
-					break
-				end
-				width += 1
-			end
-
-			local color = BlockRegistry.getColor(blockTypeId)
-			local material = BlockRegistry.getMaterial(blockTypeId)
-			local sizeW = width * BLOCK_SIZE
-
-			local px = baseX + lx * BLOCK_SIZE + sizeW / 2
-			local py = baseY + ly * BLOCK_SIZE + halfBlock
-			local pz = baseZ + lz * BLOCK_SIZE + halfBlock
-
-			-- Alternate fold direction by Z row for tessellated pattern
-			local baseCF: CFrame
-			if lz % 2 == 0 then
-				baseCF = CFrame.new(px, py, pz)
-			else
-				baseCF = CFrame.new(px, py, pz) * ROTATE_Y
-			end
-
-			-- Primary wedge (lower triangle of Y-Z cross-section)
-			local w1 = _getWedge()
-			w1.Size = Vector3.new(sizeW, BLOCK_SIZE, BLOCK_SIZE)
-			w1.Color = color
-			w1.Material = material
-			w1.CFrame = baseCF
-			w1.Parent = chunkContainer
-			table.insert(result, w1)
-
-			-- Complement wedge (upper triangle, slightly smaller to prevent Z-fight)
-			local w2 = _getWedge()
-			w2.Size = Vector3.new(sizeW - 0.02, BLOCK_SIZE - 0.02, BLOCK_SIZE - 0.02)
-			w2.Color = color
-			w2.Material = material
-			w2.CFrame = baseCF * FLIP_CF
-			w2.Parent = chunkContainer
-			table.insert(result, w2)
-
-			lx += width
-		end
-	end
-
-	return result
-end
-
--------------------------------------------------
 -- Chunk rendering
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	-- Clear existing wedges
-	local existingWedges = renderedWedges[chunkKey]
-	if existingWedges then
-		for _, inst in existingWedges do
-			_returnInstance(inst)
+	local existingDiamonds = diamondParts[chunkKey]
+	if existingDiamonds then
+		for _, part in existingDiamonds do
+			_returnPart(part)
 		end
 	end
 
-	local existingParts = renderedSpecialParts[chunkKey]
-	if existingParts then
-		for _, part in existingParts do
+	local existingSpecial = renderedSpecialParts[chunkKey]
+	if existingSpecial then
+		for _, part in existingSpecial do
 			_returnPart(part)
 		end
 	end
@@ -339,68 +209,59 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	-- Collect special blocks
+	local dParts: { [number]: BasePart } = {}
+	diamondParts[chunkKey] = dParts
+
+	local cParts: { [number]: BasePart } = {}
+	collisionParts[chunkKey] = cParts
+
+	local baseX = cx * CHUNK_STUDS
+	local baseY = cy * CHUNK_STUDS
+	local baseZ = cz * CHUNK_STUDS
+
+	local partCount = 0
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
 				local idx = ChunkUtil.flatIndex(lx, ly, lz)
 				local blockTypeId = buffer.readu8(blocks, idx)
-				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = _makeSpecialPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+
+				if blockTypeId == BlockType.Air then
+					continue
 				end
+
+				if not _isExposed(blocks, lx, ly, lz) then
+					continue
+				end
+
+				-- Special blocks rendered as normal Parts (no rotation)
+				if _isSpecialBlock(blockTypeId) then
+					specialParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+				else
+					dParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+				end
+
+				-- Invisible collision Part (axis-aligned, for raycasting + walking)
+				local collisionPart = _getPart()
+				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+				collisionPart.Transparency = 1
+				collisionPart.CanCollide = true
+				collisionPart.CastShadow = false
+
+				local halfBlock = BLOCK_SIZE / 2
+				collisionPart.Position = Vector3.new(
+					baseX + lx * BLOCK_SIZE + halfBlock,
+					baseY + ly * BLOCK_SIZE + halfBlock,
+					baseZ + lz * BLOCK_SIZE + halfBlock
+				)
+				collisionPart.Parent = chunkContainer
+				cParts[idx] = collisionPart
+
+				partCount += 1
 			end
-		end
-	end
-
-	-- Wedge mesh per Y-layer
-	local allWedges: { Instance } = {}
-	renderedWedges[chunkKey] = allWedges
-
-	for ly = 0, CHUNK_SIZE - 1 do
-		local layerParts = _wedgeMeshLayer(blocks, ly, cx, cy, cz)
-		for _, inst in layerParts do
-			table.insert(allWedges, inst)
 		end
 		if ly % 4 == 3 then
 			task.wait()
-		end
-	end
-
-	-- Collision parts for raycast targeting (invisible, per exposed block)
-	local baseX = cx * CHUNK_STUDS
-	local baseY = cy * CHUNK_STUDS
-	local baseZ = cz * CHUNK_STUDS
-	local cParts: { [number]: BasePart } = {}
-	collisionParts[chunkKey] = cParts
-
-	local collisionCount = 0
-	for ly = 0, CHUNK_SIZE - 1 do
-		for lz = 0, CHUNK_SIZE - 1 do
-			for lx = 0, CHUNK_SIZE - 1 do
-				if _isExposed(blocks, lx, ly, lz) then
-					local idx = ChunkUtil.flatIndex(lx, ly, lz)
-					local part = _getPart()
-					part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-					part.Transparency = 1
-					part.CanCollide = false
-					part.CastShadow = false
-
-					local halfBlock = BLOCK_SIZE / 2
-					part.Position = Vector3.new(
-						baseX + lx * BLOCK_SIZE + halfBlock,
-						baseY + ly * BLOCK_SIZE + halfBlock,
-						baseZ + lz * BLOCK_SIZE + halfBlock
-					)
-					part.Parent = chunkContainer
-
-					cParts[idx] = part
-					collisionCount += 1
-				end
-			end
-		end
-		if collisionCount > 200 then
-			task.wait()
-			collisionCount = 0
 		end
 	end
 end
@@ -408,12 +269,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local wedges = renderedWedges[chunkKey]
-	if wedges then
-		for _, inst in wedges do
-			_returnInstance(inst)
+	local dParts = diamondParts[chunkKey]
+	if dParts then
+		for _, part in dParts do
+			_returnPart(part)
 		end
-		renderedWedges[chunkKey] = nil
+		diamondParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -436,7 +297,7 @@ local function _unrenderChunk(chunkKey: string)
 end
 
 -------------------------------------------------
--- Block update handling (re-render affected chunk)
+-- Block update handling (surgical per-block)
 -------------------------------------------------
 
 local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockTypeId: number)
@@ -447,10 +308,108 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 
 	buffer.writeu8(blocks, flatIndex, blockTypeId)
 
-	-- Re-render entire chunk (wedge strips need full pass)
-	local savedBlocks = blocks
-	_unrenderChunk(chunkKey)
-	_renderChunk(chunkKey, savedBlocks)
+	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
+	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+
+	local dParts = diamondParts[chunkKey]
+	if not dParts then
+		dParts = {}
+		diamondParts[chunkKey] = dParts
+	end
+
+	local sParts = renderedSpecialParts[chunkKey]
+	if not sParts then
+		sParts = {}
+		renderedSpecialParts[chunkKey] = sParts
+	end
+
+	local cParts = collisionParts[chunkKey]
+	if not cParts then
+		cParts = {}
+		collisionParts[chunkKey] = cParts
+	end
+
+	-- Remove old parts
+	if dParts[flatIndex] then
+		_returnPart(dParts[flatIndex])
+		dParts[flatIndex] = nil
+	end
+	if sParts[flatIndex] then
+		_returnPart(sParts[flatIndex])
+		sParts[flatIndex] = nil
+	end
+	if cParts[flatIndex] then
+		_returnPart(cParts[flatIndex])
+		cParts[flatIndex] = nil
+	end
+
+	-- Add new parts if non-air and exposed
+	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
+		if _isSpecialBlock(blockTypeId) then
+			sParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+		else
+			dParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+		end
+
+		-- Add collision part
+		local halfBlock = BLOCK_SIZE / 2
+		local collisionPart = _getPart()
+		collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+		collisionPart.Transparency = 1
+		collisionPart.CanCollide = true
+		collisionPart.CastShadow = false
+		collisionPart.Position = Vector3.new(
+			cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock,
+			cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock,
+			cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
+		)
+		collisionPart.Parent = chunkContainer
+		cParts[flatIndex] = collisionPart
+	end
+
+	-- Update 6 direct neighbors
+	local dirs = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
+	for _, dir in dirs do
+		local nx, ny, nz = lx + dir[1], ly + dir[2], lz + dir[3]
+		if nx < 0 or nx >= CHUNK_SIZE or ny < 0 or ny >= CHUNK_SIZE or nz < 0 or nz >= CHUNK_SIZE then
+			continue
+		end
+
+		local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
+		local nBlockType = buffer.readu8(blocks, nIdx)
+
+		if nBlockType == BlockType.Air or _isSpecialBlock(nBlockType) then
+			continue
+		end
+
+		local hasDiamond = dParts[nIdx] ~= nil
+		local shouldRender = _isExposed(blocks, nx, ny, nz)
+
+		if shouldRender and not hasDiamond then
+			dParts[nIdx] = _makeDiamondPart(nBlockType, cx, cy, cz, nx, ny, nz)
+			-- Add collision part
+			local halfBlock = BLOCK_SIZE / 2
+			local cp = _getPart()
+			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+			cp.Transparency = 1
+			cp.CanCollide = true
+			cp.CastShadow = false
+			cp.Position = Vector3.new(
+				cx * CHUNK_STUDS + nx * BLOCK_SIZE + halfBlock,
+				cy * CHUNK_STUDS + ny * BLOCK_SIZE + halfBlock,
+				cz * CHUNK_STUDS + nz * BLOCK_SIZE + halfBlock
+			)
+			cp.Parent = chunkContainer
+			cParts[nIdx] = cp
+		elseif not shouldRender and hasDiamond then
+			_returnPart(dParts[nIdx])
+			dParts[nIdx] = nil
+			if cParts[nIdx] then
+				_returnPart(cParts[nIdx])
+				cParts[nIdx] = nil
+			end
+		end
+	end
 end
 
 -------------------------------------------------
@@ -477,7 +436,7 @@ function ChunkRenderController:GetActivePartCount(): number
 end
 
 function ChunkRenderController:GetPoolSize(): number
-	return #partPool + #wedgePool
+	return #partPool
 end
 
 -------------------------------------------------

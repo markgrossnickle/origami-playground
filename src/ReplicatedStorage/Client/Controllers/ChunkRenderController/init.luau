@@ -17,12 +17,7 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 3000
 local POOL_MAX = 15000
 
--- Diamond size: scaled so the rotated diagonal fits the block grid
--- side * sqrt(2) = BLOCK_SIZE → side = BLOCK_SIZE / sqrt(2) ≈ 0.707 * BLOCK_SIZE
-local DIAMOND_XZ = BLOCK_SIZE * 0.707
-
--- 45° rotation around Y for diamond orientation
-local DIAMOND_ROTATION = CFrame.Angles(0, math.pi / 4, 0)
+local MAX_TILT = math.rad(15)
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -32,9 +27,9 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Diamond renderer: each exposed block is a Part rotated 45° around Y,
-	creating a crystalline diamond lattice aesthetic. Invisible axis-aligned
-	collision parts handle raycasting and walking.
+	Crystal-shards renderer: each exposed block is an elongated Part with
+	deterministic random rotation, creating a jagged crystal cave aesthetic.
+	Invisible axis-aligned collision parts handle raycasting and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -45,7 +40,7 @@ local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local diamondParts: { [string]: { [number]: BasePart } } = {}
+local crystalParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -100,10 +95,57 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Diamond block creation
+-- Deterministic crystal geometry
 -------------------------------------------------
 
-local function _makeDiamondPart(
+local function _hash(a: number, b: number, c: number, d: number): number
+	local h = a * 7919 + b * 6271 + c * 4153 + d * 1009
+	return (h % 65521) / 65521 -- 0..1
+end
+
+local function _getCrystalGeometry(
+	cx: number,
+	cy: number,
+	cz: number,
+	lx: number,
+	ly: number,
+	lz: number
+): (Vector3, CFrame)
+	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
+
+	-- Pick elongation axis (0=X, 1=Y, 2=Z)
+	local axisChoice = seed % 3
+	local stretch = 1.3
+	local shrink = 0.75
+
+	local sx, sy, sz
+	if axisChoice == 0 then
+		sx = BLOCK_SIZE * stretch
+		sy = BLOCK_SIZE * shrink
+		sz = BLOCK_SIZE * shrink
+	elseif axisChoice == 1 then
+		sx = BLOCK_SIZE * shrink
+		sy = BLOCK_SIZE * stretch
+		sz = BLOCK_SIZE * shrink
+	else
+		sx = BLOCK_SIZE * shrink
+		sy = BLOCK_SIZE * shrink
+		sz = BLOCK_SIZE * stretch
+	end
+
+	-- Random rotation
+	local tiltX = (_hash(seed, 1, 0, 0) - 0.5) * 2 * MAX_TILT
+	local rotY = _hash(seed, 2, 0, 0) * math.pi * 2
+	local tiltZ = (_hash(seed, 3, 0, 0) - 0.5) * 2 * MAX_TILT
+
+	return Vector3.new(sx, sy, sz), CFrame.Angles(tiltX, rotY, tiltZ)
+end
+
+-------------------------------------------------
+-- Crystal shard block creation
+-------------------------------------------------
+
+local function _makeCrystalPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -121,13 +163,15 @@ local function _makeDiamondPart(
 	local py = baseY + ly * BLOCK_SIZE + halfBlock
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
+	local size, rotation = _getCrystalGeometry(cx, cy, cz, lx, ly, lz)
+
 	local part = _getPart()
 	part.Color = BlockRegistry.getColor(blockTypeId)
 	part.Material = BlockRegistry.getMaterial(blockTypeId)
-	part.Size = Vector3.new(DIAMOND_XZ, BLOCK_SIZE, DIAMOND_XZ)
-	part.CanCollide = false -- collision handled by separate invisible parts
+	part.Size = size
+	part.CanCollide = false
 	part.Transparency = 0
-	part.CFrame = CFrame.new(px, py, pz) * DIAMOND_ROTATION
+	part.CFrame = CFrame.new(px, py, pz) * rotation
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
@@ -180,9 +224,9 @@ end
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingDiamonds = diamondParts[chunkKey]
-	if existingDiamonds then
-		for _, part in existingDiamonds do
+	local existingCrystals = crystalParts[chunkKey]
+	if existingCrystals then
+		for _, part in existingCrystals do
 			_returnPart(part)
 		end
 	end
@@ -209,8 +253,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local dParts: { [number]: BasePart } = {}
-	diamondParts[chunkKey] = dParts
+	local crParts: { [number]: BasePart } = {}
+	crystalParts[chunkKey] = crParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -219,7 +263,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
-	local partCount = 0
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
@@ -234,14 +277,13 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				-- Special blocks rendered as normal Parts (no rotation)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					specialParts[idx] = _makeCrystalPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				else
-					dParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					crParts[idx] = _makeCrystalPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				end
 
-				-- Invisible collision Part (axis-aligned, for raycasting + walking)
+				-- Invisible collision Part
 				local collisionPart = _getPart()
 				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 				collisionPart.Transparency = 1
@@ -256,8 +298,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				)
 				collisionPart.Parent = chunkContainer
 				cParts[idx] = collisionPart
-
-				partCount += 1
 			end
 		end
 		if ly % 4 == 3 then
@@ -269,12 +309,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local dParts = diamondParts[chunkKey]
-	if dParts then
-		for _, part in dParts do
+	local crParts = crystalParts[chunkKey]
+	if crParts then
+		for _, part in crParts do
 			_returnPart(part)
 		end
-		diamondParts[chunkKey] = nil
+		crystalParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -311,10 +351,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local dParts = diamondParts[chunkKey]
-	if not dParts then
-		dParts = {}
-		diamondParts[chunkKey] = dParts
+	local crParts = crystalParts[chunkKey]
+	if not crParts then
+		crParts = {}
+		crystalParts[chunkKey] = crParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -330,9 +370,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	-- Remove old parts
-	if dParts[flatIndex] then
-		_returnPart(dParts[flatIndex])
-		dParts[flatIndex] = nil
+	if crParts[flatIndex] then
+		_returnPart(crParts[flatIndex])
+		crParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
 		_returnPart(sParts[flatIndex])
@@ -346,12 +386,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	-- Add new parts if non-air and exposed
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
 		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			sParts[flatIndex] = _makeCrystalPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		else
-			dParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			crParts[flatIndex] = _makeCrystalPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		end
 
-		-- Add collision part
 		local halfBlock = BLOCK_SIZE / 2
 		local collisionPart = _getPart()
 		collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -382,12 +421,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasDiamond = dParts[nIdx] ~= nil
+		local hasCrystal = crParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasDiamond then
-			dParts[nIdx] = _makeDiamondPart(nBlockType, cx, cy, cz, nx, ny, nz)
-			-- Add collision part
+		if shouldRender and not hasCrystal then
+			crParts[nIdx] = _makeCrystalPart(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -401,9 +439,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasDiamond then
-			_returnPart(dParts[nIdx])
-			dParts[nIdx] = nil
+		elseif not shouldRender and hasCrystal then
+			_returnPart(crParts[nIdx])
+			crParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil

@@ -17,12 +17,9 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 3000
 local POOL_MAX = 15000
 
--- Diamond size: scaled so the rotated diagonal fits the block grid
--- side * sqrt(2) = BLOCK_SIZE → side = BLOCK_SIZE / sqrt(2) ≈ 0.707 * BLOCK_SIZE
-local DIAMOND_XZ = BLOCK_SIZE * 0.707
-
--- 45° rotation around Y for diamond orientation
-local DIAMOND_ROTATION = CFrame.Angles(0, math.pi / 4, 0)
+-- Cylinder rotation: Roblox cylinders extend along X by default.
+-- Rotate 90° around Z to make them vertical columns.
+local HEX_ROTATION = CFrame.Angles(0, 0, math.pi / 2)
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -32,9 +29,9 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Diamond renderer: each exposed block is a Part rotated 45° around Y,
-	creating a crystalline diamond lattice aesthetic. Invisible axis-aligned
-	collision parts handle raycasting and walking.
+	Hex-columns renderer: each exposed block is a vertical cylinder,
+	creating a basalt-column / honeycomb cross-section look. Invisible
+	axis-aligned collision parts handle raycasting and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -45,7 +42,7 @@ local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local diamondParts: { [string]: { [number]: BasePart } } = {}
+local hexParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -85,6 +82,7 @@ end
 
 local function _returnPart(part: BasePart)
 	part.Parent = nil
+	part.Shape = Enum.PartType.Block
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
 	part.Transparency = 0
@@ -100,10 +98,10 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Diamond block creation
+-- Hex column block creation
 -------------------------------------------------
 
-local function _makeDiamondPart(
+local function _makeHexPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -122,12 +120,14 @@ local function _makeDiamondPart(
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
 	local part = _getPart()
+	part.Shape = Enum.PartType.Cylinder
 	part.Color = BlockRegistry.getColor(blockTypeId)
 	part.Material = BlockRegistry.getMaterial(blockTypeId)
-	part.Size = Vector3.new(DIAMOND_XZ, BLOCK_SIZE, DIAMOND_XZ)
-	part.CanCollide = false -- collision handled by separate invisible parts
+	-- For Cylinder: X = length (becomes height after rotation), Y = diameter, Z = diameter
+	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	part.CanCollide = false
 	part.Transparency = 0
-	part.CFrame = CFrame.new(px, py, pz) * DIAMOND_ROTATION
+	part.CFrame = CFrame.new(px, py, pz) * HEX_ROTATION
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
@@ -180,9 +180,9 @@ end
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingDiamonds = diamondParts[chunkKey]
-	if existingDiamonds then
-		for _, part in existingDiamonds do
+	local existingHex = hexParts[chunkKey]
+	if existingHex then
+		for _, part in existingHex do
 			_returnPart(part)
 		end
 	end
@@ -209,8 +209,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local dParts: { [number]: BasePart } = {}
-	diamondParts[chunkKey] = dParts
+	local hParts: { [number]: BasePart } = {}
+	hexParts[chunkKey] = hParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -219,7 +219,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
-	local partCount = 0
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
@@ -234,14 +233,13 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				-- Special blocks rendered as normal Parts (no rotation)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					specialParts[idx] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				else
-					dParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					hParts[idx] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				end
 
-				-- Invisible collision Part (axis-aligned, for raycasting + walking)
+				-- Invisible collision Part
 				local collisionPart = _getPart()
 				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 				collisionPart.Transparency = 1
@@ -256,8 +254,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				)
 				collisionPart.Parent = chunkContainer
 				cParts[idx] = collisionPart
-
-				partCount += 1
 			end
 		end
 		if ly % 4 == 3 then
@@ -269,12 +265,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local dParts = diamondParts[chunkKey]
-	if dParts then
-		for _, part in dParts do
+	local hParts = hexParts[chunkKey]
+	if hParts then
+		for _, part in hParts do
 			_returnPart(part)
 		end
-		diamondParts[chunkKey] = nil
+		hexParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -311,10 +307,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local dParts = diamondParts[chunkKey]
-	if not dParts then
-		dParts = {}
-		diamondParts[chunkKey] = dParts
+	local hParts = hexParts[chunkKey]
+	if not hParts then
+		hParts = {}
+		hexParts[chunkKey] = hParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -330,9 +326,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	-- Remove old parts
-	if dParts[flatIndex] then
-		_returnPart(dParts[flatIndex])
-		dParts[flatIndex] = nil
+	if hParts[flatIndex] then
+		_returnPart(hParts[flatIndex])
+		hParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
 		_returnPart(sParts[flatIndex])
@@ -346,12 +342,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	-- Add new parts if non-air and exposed
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
 		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			sParts[flatIndex] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		else
-			dParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			hParts[flatIndex] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		end
 
-		-- Add collision part
 		local halfBlock = BLOCK_SIZE / 2
 		local collisionPart = _getPart()
 		collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -382,12 +377,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasDiamond = dParts[nIdx] ~= nil
+		local hasHex = hParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasDiamond then
-			dParts[nIdx] = _makeDiamondPart(nBlockType, cx, cy, cz, nx, ny, nz)
-			-- Add collision part
+		if shouldRender and not hasHex then
+			hParts[nIdx] = _makeHexPart(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -401,9 +395,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasDiamond then
-			_returnPart(dParts[nIdx])
-			dParts[nIdx] = nil
+		elseif not shouldRender and hasHex then
+			_returnPart(hParts[nIdx])
+			hParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil

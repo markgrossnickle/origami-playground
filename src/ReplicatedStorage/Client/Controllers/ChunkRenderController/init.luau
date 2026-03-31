@@ -17,12 +17,8 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 3000
 local POOL_MAX = 15000
 
--- Diamond size: scaled so the rotated diagonal fits the block grid
--- side * sqrt(2) = BLOCK_SIZE → side = BLOCK_SIZE / sqrt(2) ≈ 0.707 * BLOCK_SIZE
-local DIAMOND_XZ = BLOCK_SIZE * 0.707
-
--- 45° rotation around Y for diamond orientation
-local DIAMOND_ROTATION = CFrame.Angles(0, math.pi / 4, 0)
+-- 80% size creates visible gaps between blocks
+local INNER_SIZE = BLOCK_SIZE * 0.8
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -32,9 +28,10 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Diamond renderer: each exposed block is a Part rotated 45° around Y,
-	creating a crystalline diamond lattice aesthetic. Invisible axis-aligned
-	collision parts handle raycasting and walking.
+	Gapped renderer: each exposed block is an undersized Part (80%) with
+	visible gaps between blocks, creating a floating lattice / suspended
+	grid aesthetic. Invisible full-size collision parts handle raycasting
+	and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -45,7 +42,7 @@ local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local diamondParts: { [string]: { [number]: BasePart } } = {}
+local gappedParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -100,10 +97,10 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Diamond block creation
+-- Gapped block creation
 -------------------------------------------------
 
-local function _makeDiamondPart(
+local function _makeGappedPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -124,10 +121,10 @@ local function _makeDiamondPart(
 	local part = _getPart()
 	part.Color = BlockRegistry.getColor(blockTypeId)
 	part.Material = BlockRegistry.getMaterial(blockTypeId)
-	part.Size = Vector3.new(DIAMOND_XZ, BLOCK_SIZE, DIAMOND_XZ)
-	part.CanCollide = false -- collision handled by separate invisible parts
+	part.Size = Vector3.new(INNER_SIZE, INNER_SIZE, INNER_SIZE)
+	part.CanCollide = false
 	part.Transparency = 0
-	part.CFrame = CFrame.new(px, py, pz) * DIAMOND_ROTATION
+	part.Position = Vector3.new(px, py, pz)
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
@@ -180,9 +177,9 @@ end
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingDiamonds = diamondParts[chunkKey]
-	if existingDiamonds then
-		for _, part in existingDiamonds do
+	local existingGapped = gappedParts[chunkKey]
+	if existingGapped then
+		for _, part in existingGapped do
 			_returnPart(part)
 		end
 	end
@@ -209,8 +206,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local dParts: { [number]: BasePart } = {}
-	diamondParts[chunkKey] = dParts
+	local gParts: { [number]: BasePart } = {}
+	gappedParts[chunkKey] = gParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -219,7 +216,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
-	local partCount = 0
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
@@ -234,14 +230,13 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				-- Special blocks rendered as normal Parts (no rotation)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					specialParts[idx] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				else
-					dParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					gParts[idx] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				end
 
-				-- Invisible collision Part (axis-aligned, for raycasting + walking)
+				-- Invisible collision Part
 				local collisionPart = _getPart()
 				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 				collisionPart.Transparency = 1
@@ -256,8 +251,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				)
 				collisionPart.Parent = chunkContainer
 				cParts[idx] = collisionPart
-
-				partCount += 1
 			end
 		end
 		if ly % 4 == 3 then
@@ -269,12 +262,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local dParts = diamondParts[chunkKey]
-	if dParts then
-		for _, part in dParts do
+	local gParts = gappedParts[chunkKey]
+	if gParts then
+		for _, part in gParts do
 			_returnPart(part)
 		end
-		diamondParts[chunkKey] = nil
+		gappedParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -311,10 +304,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local dParts = diamondParts[chunkKey]
-	if not dParts then
-		dParts = {}
-		diamondParts[chunkKey] = dParts
+	local gParts = gappedParts[chunkKey]
+	if not gParts then
+		gParts = {}
+		gappedParts[chunkKey] = gParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -330,9 +323,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	-- Remove old parts
-	if dParts[flatIndex] then
-		_returnPart(dParts[flatIndex])
-		dParts[flatIndex] = nil
+	if gParts[flatIndex] then
+		_returnPart(gParts[flatIndex])
+		gParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
 		_returnPart(sParts[flatIndex])
@@ -346,12 +339,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	-- Add new parts if non-air and exposed
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
 		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			sParts[flatIndex] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		else
-			dParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			gParts[flatIndex] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		end
 
-		-- Add collision part
 		local halfBlock = BLOCK_SIZE / 2
 		local collisionPart = _getPart()
 		collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -382,12 +374,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasDiamond = dParts[nIdx] ~= nil
+		local hasGapped = gParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasDiamond then
-			dParts[nIdx] = _makeDiamondPart(nBlockType, cx, cy, cz, nx, ny, nz)
-			-- Add collision part
+		if shouldRender and not hasGapped then
+			gParts[nIdx] = _makeGappedPart(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -401,9 +392,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasDiamond then
-			_returnPart(dParts[nIdx])
-			dParts[nIdx] = nil
+		elseif not shouldRender and hasGapped then
+			_returnPart(gParts[nIdx])
+			gParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil

@@ -17,12 +17,9 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 3000
 local POOL_MAX = 15000
 
--- Diamond size: scaled so the rotated diagonal fits the block grid
--- side * sqrt(2) = BLOCK_SIZE → side = BLOCK_SIZE / sqrt(2) ≈ 0.707 * BLOCK_SIZE
-local DIAMOND_XZ = BLOCK_SIZE * 0.707
-
--- 45° rotation around Y for diamond orientation
-local DIAMOND_ROTATION = CFrame.Angles(0, math.pi / 4, 0)
+-- XZ scale per depth (how many solid blocks are below)
+local TERRACE_SCALES = { 1.0, 0.92, 0.84, 0.76 }
+local MAX_DEPTH_CHECK = #TERRACE_SCALES - 1
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -32,9 +29,10 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Diamond renderer: each exposed block is a Part rotated 45° around Y,
-	creating a crystalline diamond lattice aesthetic. Invisible axis-aligned
-	collision parts handle raycasting and walking.
+	Terraced renderer: each exposed block's XZ size depends on how many
+	solid blocks are below it, creating natural stepped/terraced formations
+	like a paper-cut diorama. Invisible full-size collision parts handle
+	raycasting and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -45,7 +43,7 @@ local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local diamondParts: { [string]: { [number]: BasePart } } = {}
+local terraceParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -100,11 +98,38 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Diamond block creation
+-- Depth calculation for terrace sizing
 -------------------------------------------------
 
-local function _makeDiamondPart(
+local function _isTransparent(blockId: number): boolean
+	return blockId == BlockType.Air
+end
+
+local function _getDepthBelow(blocks: buffer, lx: number, ly: number, lz: number): number
+	local depth = 0
+	for dy = 1, MAX_DEPTH_CHECK do
+		local checkY = ly - dy
+		if checkY < 0 then
+			-- Treat below-chunk as solid (ground continues)
+			depth += 1
+		else
+			local belowId = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, checkY, lz))
+			if belowId == BlockType.Air then
+				break
+			end
+			depth += 1
+		end
+	end
+	return math.min(depth, MAX_DEPTH_CHECK)
+end
+
+-------------------------------------------------
+-- Terraced block creation
+-------------------------------------------------
+
+local function _makeTerracePart(
 	blockTypeId: number,
+	blocks: buffer,
 	cx: number,
 	cy: number,
 	cz: number,
@@ -121,13 +146,17 @@ local function _makeDiamondPart(
 	local py = baseY + ly * BLOCK_SIZE + halfBlock
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
+	local depth = _getDepthBelow(blocks, lx, ly, lz)
+	local scale = TERRACE_SCALES[depth + 1]
+	local xzSize = BLOCK_SIZE * scale
+
 	local part = _getPart()
 	part.Color = BlockRegistry.getColor(blockTypeId)
 	part.Material = BlockRegistry.getMaterial(blockTypeId)
-	part.Size = Vector3.new(DIAMOND_XZ, BLOCK_SIZE, DIAMOND_XZ)
-	part.CanCollide = false -- collision handled by separate invisible parts
+	part.Size = Vector3.new(xzSize, BLOCK_SIZE, xzSize)
+	part.CanCollide = false
 	part.Transparency = 0
-	part.CFrame = CFrame.new(px, py, pz) * DIAMOND_ROTATION
+	part.Position = Vector3.new(px, py, pz)
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
@@ -144,10 +173,6 @@ end
 -------------------------------------------------
 -- Visibility checks
 -------------------------------------------------
-
-local function _isTransparent(blockId: number): boolean
-	return blockId == BlockType.Air
-end
 
 local function _isExposed(blocks: buffer, lx: number, ly: number, lz: number): boolean
 	local blockId = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly, lz))
@@ -180,9 +205,9 @@ end
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingDiamonds = diamondParts[chunkKey]
-	if existingDiamonds then
-		for _, part in existingDiamonds do
+	local existingTerrace = terraceParts[chunkKey]
+	if existingTerrace then
+		for _, part in existingTerrace do
 			_returnPart(part)
 		end
 	end
@@ -209,8 +234,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local dParts: { [number]: BasePart } = {}
-	diamondParts[chunkKey] = dParts
+	local tParts: { [number]: BasePart } = {}
+	terraceParts[chunkKey] = tParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -219,7 +244,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
-	local partCount = 0
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
@@ -234,14 +258,13 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				-- Special blocks rendered as normal Parts (no rotation)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					specialParts[idx] = _makeTerracePart(blockTypeId, blocks, cx, cy, cz, lx, ly, lz)
 				else
-					dParts[idx] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					tParts[idx] = _makeTerracePart(blockTypeId, blocks, cx, cy, cz, lx, ly, lz)
 				end
 
-				-- Invisible collision Part (axis-aligned, for raycasting + walking)
+				-- Invisible collision Part
 				local collisionPart = _getPart()
 				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 				collisionPart.Transparency = 1
@@ -256,8 +279,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				)
 				collisionPart.Parent = chunkContainer
 				cParts[idx] = collisionPart
-
-				partCount += 1
 			end
 		end
 		if ly % 4 == 3 then
@@ -269,12 +290,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local dParts = diamondParts[chunkKey]
-	if dParts then
-		for _, part in dParts do
+	local tParts = terraceParts[chunkKey]
+	if tParts then
+		for _, part in tParts do
 			_returnPart(part)
 		end
-		diamondParts[chunkKey] = nil
+		terraceParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -298,7 +319,60 @@ end
 
 -------------------------------------------------
 -- Block update handling (surgical per-block)
+-- Also re-checks up to 4 blocks above (their depth changed)
 -------------------------------------------------
+
+local function _refreshBlock(
+	blocks: buffer,
+	cx: number,
+	cy: number,
+	cz: number,
+	nx: number,
+	ny: number,
+	nz: number,
+	tParts: { [number]: BasePart },
+	sParts: { [number]: BasePart },
+	cParts: { [number]: BasePart }
+)
+	local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
+	local nBlockType = buffer.readu8(blocks, nIdx)
+
+	-- Remove existing visual + collision
+	if tParts[nIdx] then
+		_returnPart(tParts[nIdx])
+		tParts[nIdx] = nil
+	end
+	if sParts[nIdx] then
+		_returnPart(sParts[nIdx])
+		sParts[nIdx] = nil
+	end
+	if cParts[nIdx] then
+		_returnPart(cParts[nIdx])
+		cParts[nIdx] = nil
+	end
+
+	if nBlockType ~= BlockType.Air and _isExposed(blocks, nx, ny, nz) then
+		if _isSpecialBlock(nBlockType) then
+			sParts[nIdx] = _makeTerracePart(nBlockType, blocks, cx, cy, cz, nx, ny, nz)
+		else
+			tParts[nIdx] = _makeTerracePart(nBlockType, blocks, cx, cy, cz, nx, ny, nz)
+		end
+
+		local halfBlock = BLOCK_SIZE / 2
+		local cp = _getPart()
+		cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+		cp.Transparency = 1
+		cp.CanCollide = true
+		cp.CastShadow = false
+		cp.Position = Vector3.new(
+			cx * CHUNK_STUDS + nx * BLOCK_SIZE + halfBlock,
+			cy * CHUNK_STUDS + ny * BLOCK_SIZE + halfBlock,
+			cz * CHUNK_STUDS + nz * BLOCK_SIZE + halfBlock
+		)
+		cp.Parent = chunkContainer
+		cParts[nIdx] = cp
+	end
+end
 
 local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockTypeId: number)
 	local blocks = chunkBlocks[chunkKey]
@@ -311,10 +385,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local dParts = diamondParts[chunkKey]
-	if not dParts then
-		dParts = {}
-		diamondParts[chunkKey] = dParts
+	local tParts = terraceParts[chunkKey]
+	if not tParts then
+		tParts = {}
+		terraceParts[chunkKey] = tParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -329,43 +403,8 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		collisionParts[chunkKey] = cParts
 	end
 
-	-- Remove old parts
-	if dParts[flatIndex] then
-		_returnPart(dParts[flatIndex])
-		dParts[flatIndex] = nil
-	end
-	if sParts[flatIndex] then
-		_returnPart(sParts[flatIndex])
-		sParts[flatIndex] = nil
-	end
-	if cParts[flatIndex] then
-		_returnPart(cParts[flatIndex])
-		cParts[flatIndex] = nil
-	end
-
-	-- Add new parts if non-air and exposed
-	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
-		else
-			dParts[flatIndex] = _makeDiamondPart(blockTypeId, cx, cy, cz, lx, ly, lz)
-		end
-
-		-- Add collision part
-		local halfBlock = BLOCK_SIZE / 2
-		local collisionPart = _getPart()
-		collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-		collisionPart.Transparency = 1
-		collisionPart.CanCollide = true
-		collisionPart.CastShadow = false
-		collisionPart.Position = Vector3.new(
-			cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock,
-			cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock,
-			cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
-		)
-		collisionPart.Parent = chunkContainer
-		cParts[flatIndex] = collisionPart
-	end
+	-- Refresh the changed block itself
+	_refreshBlock(blocks, cx, cy, cz, lx, ly, lz, tParts, sParts, cParts)
 
 	-- Update 6 direct neighbors
 	local dirs = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
@@ -374,41 +413,20 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		if nx < 0 or nx >= CHUNK_SIZE or ny < 0 or ny >= CHUNK_SIZE or nz < 0 or nz >= CHUNK_SIZE then
 			continue
 		end
+		_refreshBlock(blocks, cx, cy, cz, nx, ny, nz, tParts, sParts, cParts)
+	end
 
-		local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
-		local nBlockType = buffer.readu8(blocks, nIdx)
-
-		if nBlockType == BlockType.Air or _isSpecialBlock(nBlockType) then
-			continue
+	-- Also refresh up to 4 blocks above (their terrace depth changed)
+	for dy = 1, MAX_DEPTH_CHECK do
+		local aboveY = ly + dy
+		if aboveY >= CHUNK_SIZE then
+			break
 		end
-
-		local hasDiamond = dParts[nIdx] ~= nil
-		local shouldRender = _isExposed(blocks, nx, ny, nz)
-
-		if shouldRender and not hasDiamond then
-			dParts[nIdx] = _makeDiamondPart(nBlockType, cx, cy, cz, nx, ny, nz)
-			-- Add collision part
-			local halfBlock = BLOCK_SIZE / 2
-			local cp = _getPart()
-			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-			cp.Transparency = 1
-			cp.CanCollide = true
-			cp.CastShadow = false
-			cp.Position = Vector3.new(
-				cx * CHUNK_STUDS + nx * BLOCK_SIZE + halfBlock,
-				cy * CHUNK_STUDS + ny * BLOCK_SIZE + halfBlock,
-				cz * CHUNK_STUDS + nz * BLOCK_SIZE + halfBlock
-			)
-			cp.Parent = chunkContainer
-			cParts[nIdx] = cp
-		elseif not shouldRender and hasDiamond then
-			_returnPart(dParts[nIdx])
-			dParts[nIdx] = nil
-			if cParts[nIdx] then
-				_returnPart(cParts[nIdx])
-				cParts[nIdx] = nil
-			end
+		local aboveId = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, aboveY, lz))
+		if aboveId == BlockType.Air then
+			break
 		end
+		_refreshBlock(blocks, cx, cy, cz, lx, aboveY, lz, tParts, sParts, cParts)
 	end
 end
 

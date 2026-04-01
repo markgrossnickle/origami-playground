@@ -14,12 +14,20 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
-local POOL_INITIAL = 3000
-local POOL_MAX = 15000
+local POOL_INITIAL = 6000
+local POOL_MAX = 25000
 
--- XZ scale per depth (how many solid blocks are below)
-local TERRACE_SCALES = { 1.0, 0.92, 0.84, 0.76 }
-local MAX_DEPTH_CHECK = #TERRACE_SCALES - 1
+local LAYERS_PER_BLOCK = 3
+local LAYER_HEIGHT = BLOCK_SIZE / LAYERS_PER_BLOCK * 0.9
+local LAYER_GAP = BLOCK_SIZE / LAYERS_PER_BLOCK
+local MAX_OFFSET = 0.15
+local MAX_TILT = math.rad(8)
+
+local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
+
+-- Override: PaperGrass renders as cream Paper visually
+local GRASS_COLOR = Color3.fromRGB(245, 235, 220)
+local GRASS_MATERIAL = Enum.Material.SmoothPlastic
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -27,12 +35,25 @@ local function _isSpecialBlock(blockTypeId: number): boolean
 		or blockTypeId == BlockType.EggNode
 end
 
+local function _getColor(blockTypeId: number): Color3
+	if blockTypeId == BlockType.PaperGrass then
+		return GRASS_COLOR
+	end
+	return BlockRegistry.getColor(blockTypeId)
+end
+
+local function _getMaterial(blockTypeId: number): Enum.Material
+	if blockTypeId == BlockType.PaperGrass then
+		return GRASS_MATERIAL
+	end
+	return BlockRegistry.getMaterial(blockTypeId)
+end
+
 --[=[
 	@class ChunkRenderController
-	Terraced renderer: each exposed block's XZ size depends on how many
-	solid blocks are below it, creating natural stepped/terraced formations
-	like a paper-cut diorama. Invisible full-size collision parts handle
-	raycasting and walking.
+	Paper-crystal renderer: each exposed block is 3 thin slabs with
+	crystal-like random tilt and slight elongation, merging paper-layers
+	and crystal-shards aesthetics. No grass — surface starts cream/white.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -42,8 +63,8 @@ local partPool: { BasePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
-local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local terraceParts: { [string]: { [number]: BasePart } } = {}
+local renderedSpecialParts: { [string]: { [number]: { BasePart } } } = {}
+local layerParts: { [string]: { [number]: { BasePart } } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -98,81 +119,99 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Depth calculation for terrace sizing
+-- Deterministic hash
 -------------------------------------------------
 
-local function _isTransparent(blockId: number): boolean
-	return blockId == BlockType.Air
+local function _hash(a: number, b: number, c: number, d: number): number
+	local h = a * 7919 + b * 6271 + c * 4153 + d * 1009
+	return (h % 65521) / 65521
 end
 
-local function _getDepthBelow(blocks: buffer, lx: number, ly: number, lz: number): number
-	local depth = 0
-	for dy = 1, MAX_DEPTH_CHECK do
-		local checkY = ly - dy
-		if checkY < 0 then
-			-- Treat below-chunk as solid (ground continues)
-			depth += 1
-		else
-			local belowId = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, checkY, lz))
-			if belowId == BlockType.Air then
-				break
-			end
-			depth += 1
-		end
-	end
-	return math.min(depth, MAX_DEPTH_CHECK)
+local function _tintColor(color: Color3, brightness: number): Color3
+	local r = math.clamp(color.R * brightness, 0, 1)
+	local g = math.clamp(color.G * brightness, 0, 1)
+	local b = math.clamp(color.B * brightness, 0, 1)
+	return Color3.new(r, g, b)
 end
 
 -------------------------------------------------
--- Terraced block creation
+-- Paper-crystal slab creation
 -------------------------------------------------
 
-local function _makeTerracePart(
+local function _makeLayerParts(
 	blockTypeId: number,
-	blocks: buffer,
 	cx: number,
 	cy: number,
 	cz: number,
 	lx: number,
 	ly: number,
 	lz: number
-): BasePart
+): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
 	local baseX = cx * CHUNK_STUDS
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
 	local px = baseX + lx * BLOCK_SIZE + halfBlock
-	local py = baseY + ly * BLOCK_SIZE + halfBlock
+	local blockBottom = baseY + ly * BLOCK_SIZE
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
-	local depth = _getDepthBelow(blocks, lx, ly, lz)
-	local scale = TERRACE_SCALES[depth + 1]
-	local xzSize = BLOCK_SIZE * scale
+	local baseColor = _getColor(blockTypeId)
+	local mat = _getMaterial(blockTypeId)
 
-	local part = _getPart()
-	part.Color = BlockRegistry.getColor(blockTypeId)
-	part.Material = BlockRegistry.getMaterial(blockTypeId)
-	part.Size = Vector3.new(xzSize, BLOCK_SIZE, xzSize)
-	part.CanCollide = false
-	part.Transparency = 0
-	part.Position = Vector3.new(px, py, pz)
+	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
 
-	if blockTypeId == BlockType.EggNode then
-		local light = Instance.new("PointLight")
-		light.Color = Color3.fromRGB(255, 230, 180)
-		light.Brightness = 1
-		light.Range = 15
-		light.Parent = part
+	local parts: { BasePart } = {}
+	for i = 1, LAYERS_PER_BLOCK do
+		local layerSeed = seed + i * 1009
+
+		local ox = (_hash(layerSeed, 1, 0, 0) - 0.5) * 2 * MAX_OFFSET
+		local oz = (_hash(layerSeed, 2, 0, 0) - 0.5) * 2 * MAX_OFFSET
+		local layerY = blockBottom + (i - 0.5) * LAYER_GAP
+
+		local tiltX = (_hash(layerSeed, 3, 0, 0) - 0.5) * 2 * MAX_TILT
+		local tiltZ = (_hash(layerSeed, 4, 0, 0) - 0.5) * 2 * MAX_TILT
+
+		local stretchAxis = layerSeed % 2
+		local sx, sz
+		if stretchAxis == 0 then
+			sx = BLOCK_SIZE * 1.08
+			sz = BLOCK_SIZE * 0.92
+		else
+			sx = BLOCK_SIZE * 0.92
+			sz = BLOCK_SIZE * 1.08
+		end
+
+		local part = _getPart()
+		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])
+		part.Material = mat
+		part.Size = Vector3.new(sx, LAYER_HEIGHT, sz)
+		part.CanCollide = false
+		part.Transparency = 0
+		part.CFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
+
+		if blockTypeId == BlockType.EggNode and i == 2 then
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(255, 230, 180)
+			light.Brightness = 1
+			light.Range = 15
+			light.Parent = part
+		end
+
+		part.Parent = chunkContainer
+		table.insert(parts, part)
 	end
 
-	part.Parent = chunkContainer
-	return part
+	return parts
 end
 
 -------------------------------------------------
 -- Visibility checks
 -------------------------------------------------
+
+local function _isTransparent(blockId: number): boolean
+	return blockId == BlockType.Air
+end
 
 local function _isExposed(blocks: buffer, lx: number, ly: number, lz: number): boolean
 	local blockId = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly, lz))
@@ -204,18 +243,24 @@ end
 -- Chunk rendering
 -------------------------------------------------
 
+local function _returnLayerGroup(group: { BasePart })
+	for _, part in group do
+		_returnPart(part)
+	end
+end
+
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingTerrace = terraceParts[chunkKey]
-	if existingTerrace then
-		for _, part in existingTerrace do
-			_returnPart(part)
+	local existingLayers = layerParts[chunkKey]
+	if existingLayers then
+		for _, group in existingLayers do
+			_returnLayerGroup(group)
 		end
 	end
 
 	local existingSpecial = renderedSpecialParts[chunkKey]
 	if existingSpecial then
-		for _, part in existingSpecial do
-			_returnPart(part)
+		for _, group in existingSpecial do
+			_returnLayerGroup(group)
 		end
 	end
 
@@ -231,11 +276,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	renderedChunks[chunkKey] = true
 
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local specialParts: { [number]: BasePart } = {}
+	local specialParts: { [number]: { BasePart } } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local tParts: { [number]: BasePart } = {}
-	terraceParts[chunkKey] = tParts
+	local lParts: { [number]: { BasePart } } = {}
+	layerParts[chunkKey] = lParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -258,13 +303,13 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
+				local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = _makeTerracePart(blockTypeId, blocks, cx, cy, cz, lx, ly, lz)
+					specialParts[idx] = group
 				else
-					tParts[idx] = _makeTerracePart(blockTypeId, blocks, cx, cy, cz, lx, ly, lz)
+					lParts[idx] = group
 				end
 
-				-- Invisible collision Part
 				local collisionPart = _getPart()
 				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 				collisionPart.Transparency = 1
@@ -290,12 +335,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local tParts = terraceParts[chunkKey]
-	if tParts then
-		for _, part in tParts do
-			_returnPart(part)
+	local lParts = layerParts[chunkKey]
+	if lParts then
+		for _, group in lParts do
+			_returnLayerGroup(group)
 		end
-		terraceParts[chunkKey] = nil
+		layerParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -308,8 +353,8 @@ local function _unrenderChunk(chunkKey: string)
 
 	local specialParts = renderedSpecialParts[chunkKey]
 	if specialParts then
-		for _, part in specialParts do
-			_returnPart(part)
+		for _, group in specialParts do
+			_returnLayerGroup(group)
 		end
 		renderedSpecialParts[chunkKey] = nil
 	end
@@ -319,60 +364,7 @@ end
 
 -------------------------------------------------
 -- Block update handling (surgical per-block)
--- Also re-checks up to 4 blocks above (their depth changed)
 -------------------------------------------------
-
-local function _refreshBlock(
-	blocks: buffer,
-	cx: number,
-	cy: number,
-	cz: number,
-	nx: number,
-	ny: number,
-	nz: number,
-	tParts: { [number]: BasePart },
-	sParts: { [number]: BasePart },
-	cParts: { [number]: BasePart }
-)
-	local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
-	local nBlockType = buffer.readu8(blocks, nIdx)
-
-	-- Remove existing visual + collision
-	if tParts[nIdx] then
-		_returnPart(tParts[nIdx])
-		tParts[nIdx] = nil
-	end
-	if sParts[nIdx] then
-		_returnPart(sParts[nIdx])
-		sParts[nIdx] = nil
-	end
-	if cParts[nIdx] then
-		_returnPart(cParts[nIdx])
-		cParts[nIdx] = nil
-	end
-
-	if nBlockType ~= BlockType.Air and _isExposed(blocks, nx, ny, nz) then
-		if _isSpecialBlock(nBlockType) then
-			sParts[nIdx] = _makeTerracePart(nBlockType, blocks, cx, cy, cz, nx, ny, nz)
-		else
-			tParts[nIdx] = _makeTerracePart(nBlockType, blocks, cx, cy, cz, nx, ny, nz)
-		end
-
-		local halfBlock = BLOCK_SIZE / 2
-		local cp = _getPart()
-		cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-		cp.Transparency = 1
-		cp.CanCollide = true
-		cp.CastShadow = false
-		cp.Position = Vector3.new(
-			cx * CHUNK_STUDS + nx * BLOCK_SIZE + halfBlock,
-			cy * CHUNK_STUDS + ny * BLOCK_SIZE + halfBlock,
-			cz * CHUNK_STUDS + nz * BLOCK_SIZE + halfBlock
-		)
-		cp.Parent = chunkContainer
-		cParts[nIdx] = cp
-	end
-end
 
 local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockTypeId: number)
 	local blocks = chunkBlocks[chunkKey]
@@ -385,10 +377,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local tParts = terraceParts[chunkKey]
-	if not tParts then
-		tParts = {}
-		terraceParts[chunkKey] = tParts
+	local lParts = layerParts[chunkKey]
+	if not lParts then
+		lParts = {}
+		layerParts[chunkKey] = lParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -403,30 +395,82 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		collisionParts[chunkKey] = cParts
 	end
 
-	-- Refresh the changed block itself
-	_refreshBlock(blocks, cx, cy, cz, lx, ly, lz, tParts, sParts, cParts)
+	if lParts[flatIndex] then
+		_returnLayerGroup(lParts[flatIndex])
+		lParts[flatIndex] = nil
+	end
+	if sParts[flatIndex] then
+		_returnLayerGroup(sParts[flatIndex])
+		sParts[flatIndex] = nil
+	end
+	if cParts[flatIndex] then
+		_returnPart(cParts[flatIndex])
+		cParts[flatIndex] = nil
+	end
 
-	-- Update 6 direct neighbors
+	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
+		local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
+		if _isSpecialBlock(blockTypeId) then
+			sParts[flatIndex] = group
+		else
+			lParts[flatIndex] = group
+		end
+
+		local halfBlock = BLOCK_SIZE / 2
+		local collisionPart = _getPart()
+		collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+		collisionPart.Transparency = 1
+		collisionPart.CanCollide = true
+		collisionPart.CastShadow = false
+		collisionPart.Position = Vector3.new(
+			cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock,
+			cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock,
+			cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
+		)
+		collisionPart.Parent = chunkContainer
+		cParts[flatIndex] = collisionPart
+	end
+
 	local dirs = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
 	for _, dir in dirs do
 		local nx, ny, nz = lx + dir[1], ly + dir[2], lz + dir[3]
 		if nx < 0 or nx >= CHUNK_SIZE or ny < 0 or ny >= CHUNK_SIZE or nz < 0 or nz >= CHUNK_SIZE then
 			continue
 		end
-		_refreshBlock(blocks, cx, cy, cz, nx, ny, nz, tParts, sParts, cParts)
-	end
 
-	-- Also refresh up to 4 blocks above (their terrace depth changed)
-	for dy = 1, MAX_DEPTH_CHECK do
-		local aboveY = ly + dy
-		if aboveY >= CHUNK_SIZE then
-			break
+		local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
+		local nBlockType = buffer.readu8(blocks, nIdx)
+
+		if nBlockType == BlockType.Air or _isSpecialBlock(nBlockType) then
+			continue
 		end
-		local aboveId = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, aboveY, lz))
-		if aboveId == BlockType.Air then
-			break
+
+		local hasLayer = lParts[nIdx] ~= nil
+		local shouldRender = _isExposed(blocks, nx, ny, nz)
+
+		if shouldRender and not hasLayer then
+			lParts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz)
+			local halfBlock = BLOCK_SIZE / 2
+			local cp = _getPart()
+			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+			cp.Transparency = 1
+			cp.CanCollide = true
+			cp.CastShadow = false
+			cp.Position = Vector3.new(
+				cx * CHUNK_STUDS + nx * BLOCK_SIZE + halfBlock,
+				cy * CHUNK_STUDS + ny * BLOCK_SIZE + halfBlock,
+				cz * CHUNK_STUDS + nz * BLOCK_SIZE + halfBlock
+			)
+			cp.Parent = chunkContainer
+			cParts[nIdx] = cp
+		elseif not shouldRender and hasLayer then
+			_returnLayerGroup(lParts[nIdx])
+			lParts[nIdx] = nil
+			if cParts[nIdx] then
+				_returnPart(cParts[nIdx])
+				cParts[nIdx] = nil
+			end
 		end
-		_refreshBlock(blocks, cx, cy, cz, lx, aboveY, lz, tParts, sParts, cParts)
 	end
 end
 

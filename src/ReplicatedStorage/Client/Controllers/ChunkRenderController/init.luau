@@ -17,9 +17,8 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 3000
 local POOL_MAX = 15000
 
--- Cylinder rotation: Roblox cylinders extend along X by default.
--- Rotate 90° around Z to make them vertical columns.
-local HEX_ROTATION = CFrame.Angles(0, 0, math.pi / 2)
+-- 80% size creates visible gaps between blocks
+local INNER_SIZE = BLOCK_SIZE * 0.8
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -29,9 +28,10 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Hex-columns renderer: each exposed block is a vertical cylinder,
-	creating a basalt-column / honeycomb cross-section look. Invisible
-	axis-aligned collision parts handle raycasting and walking.
+	Gapped renderer: each exposed block is an undersized Part (80%) with
+	visible gaps between blocks, creating a floating lattice / suspended
+	grid aesthetic. Invisible full-size collision parts handle raycasting
+	and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -42,7 +42,7 @@ local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local hexParts: { [string]: { [number]: BasePart } } = {}
+local gappedParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -82,7 +82,6 @@ end
 
 local function _returnPart(part: BasePart)
 	part.Parent = nil
-	part.Shape = Enum.PartType.Block
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
 	part.Transparency = 0
@@ -98,10 +97,10 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Hex column block creation
+-- Gapped block creation
 -------------------------------------------------
 
-local function _makeHexPart(
+local function _makeGappedPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -120,14 +119,12 @@ local function _makeHexPart(
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
 	local part = _getPart()
-	part.Shape = Enum.PartType.Cylinder
 	part.Color = BlockRegistry.getColor(blockTypeId)
 	part.Material = BlockRegistry.getMaterial(blockTypeId)
-	-- For Cylinder: X = length (becomes height after rotation), Y = diameter, Z = diameter
-	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	part.Size = Vector3.new(INNER_SIZE, INNER_SIZE, INNER_SIZE)
 	part.CanCollide = false
 	part.Transparency = 0
-	part.CFrame = CFrame.new(px, py, pz) * HEX_ROTATION
+	part.Position = Vector3.new(px, py, pz)
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
@@ -180,9 +177,9 @@ end
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingHex = hexParts[chunkKey]
-	if existingHex then
-		for _, part in existingHex do
+	local existingGapped = gappedParts[chunkKey]
+	if existingGapped then
+		for _, part in existingGapped do
 			_returnPart(part)
 		end
 	end
@@ -209,8 +206,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local hParts: { [number]: BasePart } = {}
-	hexParts[chunkKey] = hParts
+	local gParts: { [number]: BasePart } = {}
+	gappedParts[chunkKey] = gParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -234,9 +231,9 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				end
 
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					specialParts[idx] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				else
-					hParts[idx] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+					gParts[idx] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				end
 
 				-- Invisible collision Part
@@ -265,12 +262,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local hParts = hexParts[chunkKey]
-	if hParts then
-		for _, part in hParts do
+	local gParts = gappedParts[chunkKey]
+	if gParts then
+		for _, part in gParts do
 			_returnPart(part)
 		end
-		hexParts[chunkKey] = nil
+		gappedParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -307,10 +304,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local hParts = hexParts[chunkKey]
-	if not hParts then
-		hParts = {}
-		hexParts[chunkKey] = hParts
+	local gParts = gappedParts[chunkKey]
+	if not gParts then
+		gParts = {}
+		gappedParts[chunkKey] = gParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -326,9 +323,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	-- Remove old parts
-	if hParts[flatIndex] then
-		_returnPart(hParts[flatIndex])
-		hParts[flatIndex] = nil
+	if gParts[flatIndex] then
+		_returnPart(gParts[flatIndex])
+		gParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
 		_returnPart(sParts[flatIndex])
@@ -342,9 +339,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	-- Add new parts if non-air and exposed
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
 		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			sParts[flatIndex] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		else
-			hParts[flatIndex] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+			gParts[flatIndex] = _makeGappedPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		end
 
 		local halfBlock = BLOCK_SIZE / 2
@@ -377,11 +374,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasHex = hParts[nIdx] ~= nil
+		local hasGapped = gParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasHex then
-			hParts[nIdx] = _makeHexPart(nBlockType, cx, cy, cz, nx, ny, nz)
+		if shouldRender and not hasGapped then
+			gParts[nIdx] = _makeGappedPart(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -395,9 +392,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasHex then
-			_returnPart(hParts[nIdx])
-			hParts[nIdx] = nil
+		elseif not shouldRender and hasGapped then
+			_returnPart(gParts[nIdx])
+			gParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil

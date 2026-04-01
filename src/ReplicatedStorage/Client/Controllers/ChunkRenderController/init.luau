@@ -14,16 +14,12 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
-local POOL_INITIAL = 6000
-local POOL_MAX = 25000
+local POOL_INITIAL = 3000
+local POOL_MAX = 15000
 
-local LAYERS_PER_BLOCK = 3
-local LAYER_HEIGHT = BLOCK_SIZE / LAYERS_PER_BLOCK * 0.9
-local LAYER_GAP = BLOCK_SIZE / LAYERS_PER_BLOCK
-local MAX_OFFSET = 0.15
-
--- Brightness multipliers for bottom / middle / top layers
-local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
+-- Cylinder rotation: Roblox cylinders extend along X by default.
+-- Rotate 90° around Z to make them vertical columns.
+local HEX_ROTATION = CFrame.Angles(0, 0, math.pi / 2)
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -33,9 +29,9 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Paper-layers renderer: each exposed block is 3 thin horizontal slabs
-	with slight random XZ offsets, creating a stacked paper / origami look.
-	Invisible axis-aligned collision parts handle raycasting and walking.
+	Hex-columns renderer: each exposed block is a vertical cylinder,
+	creating a basalt-column / honeycomb cross-section look. Invisible
+	axis-aligned collision parts handle raycasting and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -45,8 +41,8 @@ local partPool: { BasePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
-local renderedSpecialParts: { [string]: { [number]: { BasePart } } } = {}
-local layerParts: { [string]: { [number]: { BasePart } } } = {}
+local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
+local hexParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -86,6 +82,7 @@ end
 
 local function _returnPart(part: BasePart)
 	part.Parent = nil
+	part.Shape = Enum.PartType.Block
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
 	part.Transparency = 0
@@ -101,28 +98,10 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Deterministic offset per block + layer
+-- Hex column block creation
 -------------------------------------------------
 
-local function _layerOffset(lx: number, ly: number, lz: number, layerIdx: number): (number, number)
-	local seed = lx * 7919 + ly * 6271 + lz * 4153 + layerIdx * 1009
-	local ox = ((seed % 997) / 997 - 0.5) * 2 * MAX_OFFSET
-	local oz = (((seed * 31) % 991) / 991 - 0.5) * 2 * MAX_OFFSET
-	return ox, oz
-end
-
-local function _tintColor(color: Color3, brightness: number): Color3
-	local r = math.clamp(color.R * brightness, 0, 1)
-	local g = math.clamp(color.G * brightness, 0, 1)
-	local b = math.clamp(color.B * brightness, 0, 1)
-	return Color3.new(r, g, b)
-end
-
--------------------------------------------------
--- Paper layer block creation
--------------------------------------------------
-
-local function _makeLayerParts(
+local function _makeHexPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -130,45 +109,36 @@ local function _makeLayerParts(
 	lx: number,
 	ly: number,
 	lz: number
-): { BasePart }
+): BasePart
 	local halfBlock = BLOCK_SIZE / 2
 	local baseX = cx * CHUNK_STUDS
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
 	local px = baseX + lx * BLOCK_SIZE + halfBlock
-	local blockBottom = baseY + ly * BLOCK_SIZE
+	local py = baseY + ly * BLOCK_SIZE + halfBlock
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
-	local baseColor = BlockRegistry.getColor(blockTypeId)
-	local mat = BlockRegistry.getMaterial(blockTypeId)
+	local part = _getPart()
+	part.Shape = Enum.PartType.Cylinder
+	part.Color = BlockRegistry.getColor(blockTypeId)
+	part.Material = BlockRegistry.getMaterial(blockTypeId)
+	-- For Cylinder: X = length (becomes height after rotation), Y = diameter, Z = diameter
+	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	part.CanCollide = false
+	part.Transparency = 0
+	part.CFrame = CFrame.new(px, py, pz) * HEX_ROTATION
 
-	local parts: { BasePart } = {}
-	for i = 1, LAYERS_PER_BLOCK do
-		local ox, oz = _layerOffset(lx, ly, lz, i)
-		local layerY = blockBottom + (i - 0.5) * LAYER_GAP
-
-		local part = _getPart()
-		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])
-		part.Material = mat
-		part.Size = Vector3.new(BLOCK_SIZE, LAYER_HEIGHT, BLOCK_SIZE)
-		part.CanCollide = false
-		part.Transparency = 0
-		part.Position = Vector3.new(px + ox, layerY, pz + oz)
-
-		if blockTypeId == BlockType.EggNode and i == 2 then
-			local light = Instance.new("PointLight")
-			light.Color = Color3.fromRGB(255, 230, 180)
-			light.Brightness = 1
-			light.Range = 15
-			light.Parent = part
-		end
-
-		part.Parent = chunkContainer
-		table.insert(parts, part)
+	if blockTypeId == BlockType.EggNode then
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 230, 180)
+		light.Brightness = 1
+		light.Range = 15
+		light.Parent = part
 	end
 
-	return parts
+	part.Parent = chunkContainer
+	return part
 end
 
 -------------------------------------------------
@@ -209,24 +179,18 @@ end
 -- Chunk rendering
 -------------------------------------------------
 
-local function _returnLayerGroup(group: { BasePart })
-	for _, part in group do
-		_returnPart(part)
-	end
-end
-
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingLayers = layerParts[chunkKey]
-	if existingLayers then
-		for _, group in existingLayers do
-			_returnLayerGroup(group)
+	local existingHex = hexParts[chunkKey]
+	if existingHex then
+		for _, part in existingHex do
+			_returnPart(part)
 		end
 	end
 
 	local existingSpecial = renderedSpecialParts[chunkKey]
 	if existingSpecial then
-		for _, group in existingSpecial do
-			_returnLayerGroup(group)
+		for _, part in existingSpecial do
+			_returnPart(part)
 		end
 	end
 
@@ -242,11 +206,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	renderedChunks[chunkKey] = true
 
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local specialParts: { [number]: { BasePart } } = {}
+	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local lParts: { [number]: { BasePart } } = {}
-	layerParts[chunkKey] = lParts
+	local hParts: { [number]: BasePart } = {}
+	hexParts[chunkKey] = hParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -269,11 +233,10 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = group
+					specialParts[idx] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				else
-					lParts[idx] = group
+					hParts[idx] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				end
 
 				-- Invisible collision Part
@@ -302,12 +265,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local lParts = layerParts[chunkKey]
-	if lParts then
-		for _, group in lParts do
-			_returnLayerGroup(group)
+	local hParts = hexParts[chunkKey]
+	if hParts then
+		for _, part in hParts do
+			_returnPart(part)
 		end
-		layerParts[chunkKey] = nil
+		hexParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -320,8 +283,8 @@ local function _unrenderChunk(chunkKey: string)
 
 	local specialParts = renderedSpecialParts[chunkKey]
 	if specialParts then
-		for _, group in specialParts do
-			_returnLayerGroup(group)
+		for _, part in specialParts do
+			_returnPart(part)
 		end
 		renderedSpecialParts[chunkKey] = nil
 	end
@@ -344,10 +307,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local lParts = layerParts[chunkKey]
-	if not lParts then
-		lParts = {}
-		layerParts[chunkKey] = lParts
+	local hParts = hexParts[chunkKey]
+	if not hParts then
+		hParts = {}
+		hexParts[chunkKey] = hParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -363,12 +326,12 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	-- Remove old parts
-	if lParts[flatIndex] then
-		_returnLayerGroup(lParts[flatIndex])
-		lParts[flatIndex] = nil
+	if hParts[flatIndex] then
+		_returnPart(hParts[flatIndex])
+		hParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
-		_returnLayerGroup(sParts[flatIndex])
+		_returnPart(sParts[flatIndex])
 		sParts[flatIndex] = nil
 	end
 	if cParts[flatIndex] then
@@ -378,11 +341,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 
 	-- Add new parts if non-air and exposed
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
 		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = group
+			sParts[flatIndex] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		else
-			lParts[flatIndex] = group
+			hParts[flatIndex] = _makeHexPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		end
 
 		local halfBlock = BLOCK_SIZE / 2
@@ -415,11 +377,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasLayer = lParts[nIdx] ~= nil
+		local hasHex = hParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasLayer then
-			lParts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz)
+		if shouldRender and not hasHex then
+			hParts[nIdx] = _makeHexPart(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -433,9 +395,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasLayer then
-			_returnLayerGroup(lParts[nIdx])
-			lParts[nIdx] = nil
+		elseif not shouldRender and hasHex then
+			_returnPart(hParts[nIdx])
+			hParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil

@@ -17,7 +17,7 @@ local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
 -- Pool
-local POOL_MAX = 20000
+local POOL_MAX = 30000
 
 -- Frame budget
 local FRAME_BUDGET = 0.004

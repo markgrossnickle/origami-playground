@@ -17,8 +17,8 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 12000
 local POOL_MAX = 30000
 
--- Portrait cubes: 8:11 width:height ratio
-local BLOCK_XZ = BLOCK_SIZE * (8 / 11)
+-- Portrait cubes: full width, no gaps
+local BLOCK_XZ = BLOCK_SIZE
 local BLOCK_Y = BLOCK_SIZE
 
 -- Override: PaperGrass renders as cream Paper visually

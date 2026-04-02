@@ -17,16 +17,9 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 12000
 local POOL_MAX = 30000
 
--- Portrait paper: 8:11 width:height ratio
+-- Portrait cubes: 8:11 width:height ratio
 local BLOCK_XZ = BLOCK_SIZE * (8 / 11)
 local BLOCK_Y = BLOCK_SIZE
-
-local LAYERS_PER_BLOCK = 3
-local LAYER_HEIGHT = BLOCK_Y / LAYERS_PER_BLOCK * 0.9
-local LAYER_GAP = BLOCK_Y / LAYERS_PER_BLOCK
-local MAX_OFFSET = 0.12
-
-local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
 
 -- Override: PaperGrass renders as cream Paper visually
 local GRASS_COLOR = Color3.fromRGB(245, 235, 220)
@@ -54,8 +47,8 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Paper-portrait renderer: each exposed block is 3 thin paper slabs
-	with 8:11 width:height (portrait letter) proportions.
+	Cubes-portrait renderer: simple single-part cubes with 8:11 width:height
+	(portrait letter) proportions. Narrower than standard cubes but same height.
 	No grass — surface starts cream/white.
 ]=]
 local ChunkRenderController = Knit.CreateController({
@@ -66,8 +59,8 @@ local partPool: { BasePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
-local renderedSpecialParts: { [string]: { [number]: { BasePart } } } = {}
-local layerParts: { [string]: { [number]: { BasePart } } } = {}
+local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
+local renderedParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -122,26 +115,10 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Deterministic hash
+-- Portrait cube creation
 -------------------------------------------------
 
-local function _hash(a: number, b: number, c: number, d: number): number
-	local h = a * 7919 + b * 6271 + c * 4153 + d * 1009
-	return (h % 65521) / 65521
-end
-
-local function _tintColor(color: Color3, brightness: number): Color3
-	local r = math.clamp(color.R * brightness, 0, 1)
-	local g = math.clamp(color.G * brightness, 0, 1)
-	local b = math.clamp(color.B * brightness, 0, 1)
-	return Color3.new(r, g, b)
-end
-
--------------------------------------------------
--- Paper-portrait slab creation
--------------------------------------------------
-
-local function _makeLayerParts(
+local function _makeBlockPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -149,50 +126,34 @@ local function _makeLayerParts(
 	lx: number,
 	ly: number,
 	lz: number
-): { BasePart }
+): BasePart
 	local halfBlock = BLOCK_SIZE / 2
 	local baseX = cx * CHUNK_STUDS
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
 	local px = baseX + lx * BLOCK_SIZE + halfBlock
-	local blockBottom = baseY + ly * BLOCK_SIZE
+	local py = baseY + ly * BLOCK_SIZE + halfBlock
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
-	local baseColor = _getColor(blockTypeId)
-	local mat = _getMaterial(blockTypeId)
+	local part = _getPart()
+	part.Color = _getColor(blockTypeId)
+	part.Material = _getMaterial(blockTypeId)
+	part.Size = Vector3.new(BLOCK_XZ, BLOCK_Y, BLOCK_XZ)
+	part.CanCollide = false
+	part.Transparency = 0
+	part.Position = Vector3.new(px, py, pz)
 
-	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
-
-	local parts: { BasePart } = {}
-	for i = 1, LAYERS_PER_BLOCK do
-		local layerSeed = seed + i * 1009
-
-		local ox = (_hash(layerSeed, 1, 0, 0) - 0.5) * 2 * MAX_OFFSET
-		local oz = (_hash(layerSeed, 2, 0, 0) - 0.5) * 2 * MAX_OFFSET
-		local layerY = blockBottom + (i - 0.5) * LAYER_GAP
-
-		local part = _getPart()
-		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])
-		part.Material = mat
-		part.Size = Vector3.new(BLOCK_XZ, LAYER_HEIGHT, BLOCK_XZ)
-		part.CanCollide = false
-		part.Transparency = 0
-		part.CFrame = CFrame.new(px + ox, layerY, pz + oz)
-
-		if blockTypeId == BlockType.EggNode and i == 2 then
-			local light = Instance.new("PointLight")
-			light.Color = Color3.fromRGB(255, 230, 180)
-			light.Brightness = 1
-			light.Range = 15
-			light.Parent = part
-		end
-
-		part.Parent = chunkContainer
-		table.insert(parts, part)
+	if blockTypeId == BlockType.EggNode then
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 230, 180)
+		light.Brightness = 1
+		light.Range = 15
+		light.Parent = part
 	end
 
-	return parts
+	part.Parent = chunkContainer
+	return part
 end
 
 -------------------------------------------------
@@ -233,24 +194,18 @@ end
 -- Chunk rendering
 -------------------------------------------------
 
-local function _returnLayerGroup(group: { BasePart })
-	for _, part in group do
-		_returnPart(part)
-	end
-end
-
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingLayers = layerParts[chunkKey]
-	if existingLayers then
-		for _, group in existingLayers do
-			_returnLayerGroup(group)
+	local existingParts = renderedParts[chunkKey]
+	if existingParts then
+		for _, part in existingParts do
+			_returnPart(part)
 		end
 	end
 
 	local existingSpecial = renderedSpecialParts[chunkKey]
 	if existingSpecial then
-		for _, group in existingSpecial do
-			_returnLayerGroup(group)
+		for _, part in existingSpecial do
+			_returnPart(part)
 		end
 	end
 
@@ -266,11 +221,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	renderedChunks[chunkKey] = true
 
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local specialParts: { [number]: { BasePart } } = {}
+	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local lParts: { [number]: { BasePart } } = {}
-	layerParts[chunkKey] = lParts
+	local rParts: { [number]: BasePart } = {}
+	renderedParts[chunkKey] = rParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -293,11 +248,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
+				local blockPart = _makeBlockPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = group
+					specialParts[idx] = blockPart
 				else
-					lParts[idx] = group
+					rParts[idx] = blockPart
 				end
 
 				local collisionPart = _getPart()
@@ -325,12 +280,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local lParts = layerParts[chunkKey]
-	if lParts then
-		for _, group in lParts do
-			_returnLayerGroup(group)
+	local rParts = renderedParts[chunkKey]
+	if rParts then
+		for _, part in rParts do
+			_returnPart(part)
 		end
-		layerParts[chunkKey] = nil
+		renderedParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -343,8 +298,8 @@ local function _unrenderChunk(chunkKey: string)
 
 	local specialParts = renderedSpecialParts[chunkKey]
 	if specialParts then
-		for _, group in specialParts do
-			_returnLayerGroup(group)
+		for _, part in specialParts do
+			_returnPart(part)
 		end
 		renderedSpecialParts[chunkKey] = nil
 	end
@@ -367,10 +322,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local lParts = layerParts[chunkKey]
-	if not lParts then
-		lParts = {}
-		layerParts[chunkKey] = lParts
+	local rParts = renderedParts[chunkKey]
+	if not rParts then
+		rParts = {}
+		renderedParts[chunkKey] = rParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -385,12 +340,12 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		collisionParts[chunkKey] = cParts
 	end
 
-	if lParts[flatIndex] then
-		_returnLayerGroup(lParts[flatIndex])
-		lParts[flatIndex] = nil
+	if rParts[flatIndex] then
+		_returnPart(rParts[flatIndex])
+		rParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
-		_returnLayerGroup(sParts[flatIndex])
+		_returnPart(sParts[flatIndex])
 		sParts[flatIndex] = nil
 	end
 	if cParts[flatIndex] then
@@ -399,11 +354,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
+		local blockPart = _makeBlockPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = group
+			sParts[flatIndex] = blockPart
 		else
-			lParts[flatIndex] = group
+			rParts[flatIndex] = blockPart
 		end
 
 		local halfBlock = BLOCK_SIZE / 2
@@ -435,11 +390,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasLayer = lParts[nIdx] ~= nil
+		local hasRender = rParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasLayer then
-			lParts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz)
+		if shouldRender and not hasRender then
+			rParts[nIdx] = _makeBlockPart(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -453,9 +408,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasLayer then
-			_returnLayerGroup(lParts[nIdx])
-			lParts[nIdx] = nil
+		elseif not shouldRender and hasRender then
+			_returnPart(rParts[nIdx])
+			rParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil

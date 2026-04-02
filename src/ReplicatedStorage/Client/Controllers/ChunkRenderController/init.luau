@@ -14,32 +14,19 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
-local WEDGE_POOL_INITIAL = 12000
-local WEDGE_POOL_MAX = 30000
-local PART_POOL_INITIAL = 4000
-local PART_POOL_MAX = 15000
+local POOL_INITIAL = 12000
+local POOL_MAX = 30000
 
-local HALF = BLOCK_SIZE / 2
-local QUARTER = BLOCK_SIZE / 4
-local WEDGE_SIZE = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, HALF)
+-- Portrait paper: 8:11 width:height ratio
+local BLOCK_XZ = BLOCK_SIZE * (8 / 11)
+local BLOCK_Y = BLOCK_SIZE
 
--- Precompute CFrame offsets for pyramid wedge faces
-local PI = math.pi
+local LAYERS_PER_BLOCK = 3
+local LAYER_HEIGHT = BLOCK_Y / LAYERS_PER_BLOCK * 0.9
+local LAYER_GAP = BLOCK_Y / LAYERS_PER_BLOCK
+local MAX_OFFSET = 0.12
 
-local UP_CFRAMES = {
-	CFrame.new(0, 0, QUARTER), -- front
-	CFrame.new(0, 0, -QUARTER) * CFrame.Angles(0, PI, 0), -- back
-	CFrame.new(QUARTER, 0, 0) * CFrame.Angles(0, -PI / 2, 0), -- right
-	CFrame.new(-QUARTER, 0, 0) * CFrame.Angles(0, PI / 2, 0), -- left
-}
-
-local FLIP_Z = CFrame.Angles(0, 0, PI)
-local DOWN_CFRAMES = {
-	CFrame.new(0, 0, QUARTER) * FLIP_Z,
-	CFrame.new(0, 0, -QUARTER) * CFrame.Angles(0, PI, 0) * FLIP_Z,
-	CFrame.new(QUARTER, 0, 0) * CFrame.Angles(0, -PI / 2, 0) * FLIP_Z,
-	CFrame.new(-QUARTER, 0, 0) * CFrame.Angles(0, PI / 2, 0) * FLIP_Z,
-}
+local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
 
 -- Override: PaperGrass renders as cream Paper visually
 local GRASS_COLOR = Color3.fromRGB(245, 235, 220)
@@ -67,76 +54,27 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Pyramid renderer: each exposed block is a 4-sided pyramid built from
-	4 WedgeParts. Checkerboard pattern alternates up/down pyramids.
+	Paper-portrait renderer: each exposed block is 3 thin paper slabs
+	with 8:11 width:height (portrait letter) proportions.
 	No grass — surface starts cream/white.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
 })
 
-local wedgePool: { WedgePart } = {}
 local partPool: { BasePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
-local renderedSpecialParts: { [string]: { [number]: { WedgePart } } } = {}
-local pyramidParts: { [string]: { [number]: { WedgePart } } } = {}
+local renderedSpecialParts: { [string]: { [number]: { BasePart } } } = {}
+local layerParts: { [string]: { [number]: { BasePart } } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
 local chunkContainer: Folder
 
 -------------------------------------------------
--- Wedge pool (visual pyramid faces)
--------------------------------------------------
-
-local function _createWedge(): WedgePart
-	local wedge = Instance.new("WedgePart")
-	wedge.Anchored = true
-	wedge.CanCollide = false
-	wedge.CastShadow = false
-	wedge.TopSurface = Enum.SurfaceType.Smooth
-	wedge.BottomSurface = Enum.SurfaceType.Smooth
-	wedge.Size = WEDGE_SIZE
-	return wedge
-end
-
-local function _initWedgePool()
-	for _ = 1, WEDGE_POOL_INITIAL do
-		table.insert(wedgePool, _createWedge())
-	end
-end
-
-local function _getWedge(): WedgePart
-	local wedge: WedgePart
-	if #wedgePool > 0 then
-		wedge = table.remove(wedgePool, #wedgePool) :: WedgePart
-	else
-		wedge = _createWedge()
-	end
-	activePartsCount += 1
-	return wedge
-end
-
-local function _returnWedge(wedge: WedgePart)
-	wedge.Parent = nil
-	wedge.Size = WEDGE_SIZE
-	wedge.CanCollide = false
-	wedge.Transparency = 0
-	for _, child in wedge:GetChildren() do
-		child:Destroy()
-	end
-	activePartsCount -= 1
-	if #wedgePool < WEDGE_POOL_MAX then
-		table.insert(wedgePool, wedge)
-	else
-		wedge:Destroy()
-	end
-end
-
--------------------------------------------------
--- Part pool (collision boxes)
+-- Part pool
 -------------------------------------------------
 
 local function _createPart(): BasePart
@@ -150,8 +88,8 @@ local function _createPart(): BasePart
 	return part
 end
 
-local function _initPartPool()
-	for _ = 1, PART_POOL_INITIAL do
+local function _initPool()
+	for _ = 1, POOL_INITIAL do
 		table.insert(partPool, _createPart())
 	end
 end
@@ -172,8 +110,11 @@ local function _returnPart(part: BasePart)
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
 	part.Transparency = 0
+	for _, child in part:GetChildren() do
+		child:Destroy()
+	end
 	activePartsCount -= 1
-	if #partPool < PART_POOL_MAX then
+	if #partPool < POOL_MAX then
 		table.insert(partPool, part)
 	else
 		part:Destroy()
@@ -181,10 +122,26 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Pyramid creation (4 wedges per block)
+-- Deterministic hash
 -------------------------------------------------
 
-local function _makePyramidParts(
+local function _hash(a: number, b: number, c: number, d: number): number
+	local h = a * 7919 + b * 6271 + c * 4153 + d * 1009
+	return (h % 65521) / 65521
+end
+
+local function _tintColor(color: Color3, brightness: number): Color3
+	local r = math.clamp(color.R * brightness, 0, 1)
+	local g = math.clamp(color.G * brightness, 0, 1)
+	local b = math.clamp(color.B * brightness, 0, 1)
+	return Color3.new(r, g, b)
+end
+
+-------------------------------------------------
+-- Paper-portrait slab creation
+-------------------------------------------------
+
+local function _makeLayerParts(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -192,44 +149,47 @@ local function _makePyramidParts(
 	lx: number,
 	ly: number,
 	lz: number
-): { WedgePart }
+): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
 	local baseX = cx * CHUNK_STUDS
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
 	local px = baseX + lx * BLOCK_SIZE + halfBlock
-	local py = baseY + ly * BLOCK_SIZE + halfBlock
+	local blockBottom = baseY + ly * BLOCK_SIZE
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
-	local color = _getColor(blockTypeId)
+	local baseColor = _getColor(blockTypeId)
 	local mat = _getMaterial(blockTypeId)
 
-	-- Checkerboard: alternate up/down pyramids
-	local isUp = (lx + lz) % 2 == 0
-	local cframes = if isUp then UP_CFRAMES else DOWN_CFRAMES
-	local blockCF = CFrame.new(px, py, pz)
+	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
 
-	local parts: { WedgePart } = {}
-	for i = 1, 4 do
-		local wedge = _getWedge()
-		wedge.Color = color
-		wedge.Material = mat
-		wedge.Size = WEDGE_SIZE
-		wedge.CanCollide = false
-		wedge.Transparency = 0
-		wedge.CFrame = blockCF * cframes[i]
+	local parts: { BasePart } = {}
+	for i = 1, LAYERS_PER_BLOCK do
+		local layerSeed = seed + i * 1009
 
-		if blockTypeId == BlockType.EggNode and i == 1 then
+		local ox = (_hash(layerSeed, 1, 0, 0) - 0.5) * 2 * MAX_OFFSET
+		local oz = (_hash(layerSeed, 2, 0, 0) - 0.5) * 2 * MAX_OFFSET
+		local layerY = blockBottom + (i - 0.5) * LAYER_GAP
+
+		local part = _getPart()
+		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])
+		part.Material = mat
+		part.Size = Vector3.new(BLOCK_XZ, LAYER_HEIGHT, BLOCK_XZ)
+		part.CanCollide = false
+		part.Transparency = 0
+		part.CFrame = CFrame.new(px + ox, layerY, pz + oz)
+
+		if blockTypeId == BlockType.EggNode and i == 2 then
 			local light = Instance.new("PointLight")
 			light.Color = Color3.fromRGB(255, 230, 180)
 			light.Brightness = 1
 			light.Range = 15
-			light.Parent = wedge
+			light.Parent = part
 		end
 
-		wedge.Parent = chunkContainer
-		table.insert(parts, wedge)
+		part.Parent = chunkContainer
+		table.insert(parts, part)
 	end
 
 	return parts
@@ -273,24 +233,24 @@ end
 -- Chunk rendering
 -------------------------------------------------
 
-local function _returnWedgeGroup(group: { WedgePart })
-	for _, wedge in group do
-		_returnWedge(wedge)
+local function _returnLayerGroup(group: { BasePart })
+	for _, part in group do
+		_returnPart(part)
 	end
 end
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingPyramids = pyramidParts[chunkKey]
-	if existingPyramids then
-		for _, group in existingPyramids do
-			_returnWedgeGroup(group)
+	local existingLayers = layerParts[chunkKey]
+	if existingLayers then
+		for _, group in existingLayers do
+			_returnLayerGroup(group)
 		end
 	end
 
 	local existingSpecial = renderedSpecialParts[chunkKey]
 	if existingSpecial then
 		for _, group in existingSpecial do
-			_returnWedgeGroup(group)
+			_returnLayerGroup(group)
 		end
 	end
 
@@ -306,11 +266,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	renderedChunks[chunkKey] = true
 
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local specialParts: { [number]: { WedgePart } } = {}
+	local specialParts: { [number]: { BasePart } } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local pParts: { [number]: { WedgePart } } = {}
-	pyramidParts[chunkKey] = pParts
+	local lParts: { [number]: { BasePart } } = {}
+	layerParts[chunkKey] = lParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -333,11 +293,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				local group = _makePyramidParts(blockTypeId, cx, cy, cz, lx, ly, lz)
+				local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
 				if _isSpecialBlock(blockTypeId) then
 					specialParts[idx] = group
 				else
-					pParts[idx] = group
+					lParts[idx] = group
 				end
 
 				local collisionPart = _getPart()
@@ -365,12 +325,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local pParts = pyramidParts[chunkKey]
-	if pParts then
-		for _, group in pParts do
-			_returnWedgeGroup(group)
+	local lParts = layerParts[chunkKey]
+	if lParts then
+		for _, group in lParts do
+			_returnLayerGroup(group)
 		end
-		pyramidParts[chunkKey] = nil
+		layerParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -384,7 +344,7 @@ local function _unrenderChunk(chunkKey: string)
 	local specialParts = renderedSpecialParts[chunkKey]
 	if specialParts then
 		for _, group in specialParts do
-			_returnWedgeGroup(group)
+			_returnLayerGroup(group)
 		end
 		renderedSpecialParts[chunkKey] = nil
 	end
@@ -407,10 +367,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local pParts = pyramidParts[chunkKey]
-	if not pParts then
-		pParts = {}
-		pyramidParts[chunkKey] = pParts
+	local lParts = layerParts[chunkKey]
+	if not lParts then
+		lParts = {}
+		layerParts[chunkKey] = lParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -425,12 +385,12 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		collisionParts[chunkKey] = cParts
 	end
 
-	if pParts[flatIndex] then
-		_returnWedgeGroup(pParts[flatIndex])
-		pParts[flatIndex] = nil
+	if lParts[flatIndex] then
+		_returnLayerGroup(lParts[flatIndex])
+		lParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
-		_returnWedgeGroup(sParts[flatIndex])
+		_returnLayerGroup(sParts[flatIndex])
 		sParts[flatIndex] = nil
 	end
 	if cParts[flatIndex] then
@@ -439,11 +399,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		local group = _makePyramidParts(blockTypeId, cx, cy, cz, lx, ly, lz)
+		local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
 		if _isSpecialBlock(blockTypeId) then
 			sParts[flatIndex] = group
 		else
-			pParts[flatIndex] = group
+			lParts[flatIndex] = group
 		end
 
 		local halfBlock = BLOCK_SIZE / 2
@@ -475,11 +435,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasPyramid = pParts[nIdx] ~= nil
+		local hasLayer = lParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasPyramid then
-			pParts[nIdx] = _makePyramidParts(nBlockType, cx, cy, cz, nx, ny, nz)
+		if shouldRender and not hasLayer then
+			lParts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -493,9 +453,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasPyramid then
-			_returnWedgeGroup(pParts[nIdx])
-			pParts[nIdx] = nil
+		elseif not shouldRender and hasLayer then
+			_returnLayerGroup(lParts[nIdx])
+			lParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil
@@ -528,7 +488,7 @@ function ChunkRenderController:GetActivePartCount(): number
 end
 
 function ChunkRenderController:GetPoolSize(): number
-	return #wedgePool + #partPool
+	return #partPool
 end
 
 -------------------------------------------------
@@ -540,8 +500,7 @@ function ChunkRenderController:KnitInit()
 	chunkContainer.Name = "ChunkRender"
 	chunkContainer.Parent = workspace
 
-	_initWedgePool()
-	_initPartPool()
+	_initPool()
 end
 
 function ChunkRenderController:KnitStart()

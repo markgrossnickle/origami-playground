@@ -17,13 +17,8 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 12000
 local POOL_MAX = 30000
 
--- Portrait cubes: full width, no gaps
-local BLOCK_XZ = BLOCK_SIZE
-local BLOCK_Y = BLOCK_SIZE
-
--- Override: PaperGrass renders as cream Paper visually
-local GRASS_COLOR = Color3.fromRGB(245, 235, 220)
-local GRASS_MATERIAL = Enum.Material.SmoothPlastic
+-- 45° rotation around Y axis — blocks overlap at edges for seamless diamond look
+local ROTATION_Y45 = CFrame.Angles(0, math.pi / 4, 0)
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -31,25 +26,12 @@ local function _isSpecialBlock(blockTypeId: number): boolean
 		or blockTypeId == BlockType.EggNode
 end
 
-local function _getColor(blockTypeId: number): Color3
-	if blockTypeId == BlockType.PaperGrass then
-		return GRASS_COLOR
-	end
-	return BlockRegistry.getColor(blockTypeId)
-end
-
-local function _getMaterial(blockTypeId: number): Enum.Material
-	if blockTypeId == BlockType.PaperGrass then
-		return GRASS_MATERIAL
-	end
-	return BlockRegistry.getMaterial(blockTypeId)
-end
-
 --[=[
 	@class ChunkRenderController
-	Cubes-portrait renderer: simple single-part cubes with 8:11 width:height
-	(portrait letter) proportions. Narrower than standard cubes but same height.
-	No grass — surface starts cream/white.
+	Rotated-cubes renderer: each exposed block is a full-size Part rotated 45°
+	around Y. Adjacent blocks overlap at their corners, creating a seamless
+	diamond-lattice pattern with zero gaps. Invisible axis-aligned collision
+	parts handle raycasting and walking.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -60,7 +42,7 @@ local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
 local renderedSpecialParts: { [string]: { [number]: BasePart } } = {}
-local renderedParts: { [string]: { [number]: BasePart } } = {}
+local visualParts: { [string]: { [number]: BasePart } } = {}
 local collisionParts: { [string]: { [number]: BasePart } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
@@ -115,10 +97,10 @@ local function _returnPart(part: BasePart)
 end
 
 -------------------------------------------------
--- Portrait cube creation
+-- Visual block creation
 -------------------------------------------------
 
-local function _makeBlockPart(
+local function _makeVisualPart(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -128,21 +110,27 @@ local function _makeBlockPart(
 	lz: number
 ): BasePart
 	local halfBlock = BLOCK_SIZE / 2
-	local baseX = cx * CHUNK_STUDS
-	local baseY = cy * CHUNK_STUDS
-	local baseZ = cz * CHUNK_STUDS
-
-	local px = baseX + lx * BLOCK_SIZE + halfBlock
-	local py = baseY + ly * BLOCK_SIZE + halfBlock
-	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
+	local px = cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock
+	local py = cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock
+	local pz = cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
 
 	local part = _getPart()
-	part.Color = _getColor(blockTypeId)
-	part.Material = _getMaterial(blockTypeId)
-	part.Size = Vector3.new(BLOCK_XZ, BLOCK_Y, BLOCK_XZ)
+
+	-- PaperGrass override: cream color, SmoothPlastic
+	if blockTypeId == BlockType.PaperGrass then
+		part.Color = Color3.fromRGB(245, 235, 220)
+		part.Material = Enum.Material.SmoothPlastic
+	else
+		part.Color = BlockRegistry.getColor(blockTypeId)
+		part.Material = BlockRegistry.getMaterial(blockTypeId)
+	end
+
+	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = false
 	part.Transparency = 0
-	part.Position = Vector3.new(px, py, pz)
+
+	-- Position + 45° Y rotation
+	part.CFrame = CFrame.new(px, py, pz) * ROTATION_Y45
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")
@@ -195,9 +183,9 @@ end
 -------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	local existingParts = renderedParts[chunkKey]
-	if existingParts then
-		for _, part in existingParts do
+	local existingVisual = visualParts[chunkKey]
+	if existingVisual then
+		for _, part in existingVisual do
 			_returnPart(part)
 		end
 	end
@@ -224,8 +212,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local specialParts: { [number]: BasePart } = {}
 	renderedSpecialParts[chunkKey] = specialParts
 
-	local rParts: { [number]: BasePart } = {}
-	renderedParts[chunkKey] = rParts
+	local vParts: { [number]: BasePart } = {}
+	visualParts[chunkKey] = vParts
 
 	local cParts: { [number]: BasePart } = {}
 	collisionParts[chunkKey] = cParts
@@ -248,20 +236,20 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				local blockPart = _makeBlockPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+				local part = _makeVisualPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 				if _isSpecialBlock(blockTypeId) then
-					specialParts[idx] = blockPart
+					specialParts[idx] = part
 				else
-					rParts[idx] = blockPart
+					vParts[idx] = part
 				end
 
+				-- Invisible collision Part (axis-aligned)
+				local halfBlock = BLOCK_SIZE / 2
 				local collisionPart = _getPart()
 				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 				collisionPart.Transparency = 1
 				collisionPart.CanCollide = true
 				collisionPart.CastShadow = false
-
-				local halfBlock = BLOCK_SIZE / 2
 				collisionPart.Position = Vector3.new(
 					baseX + lx * BLOCK_SIZE + halfBlock,
 					baseY + ly * BLOCK_SIZE + halfBlock,
@@ -280,12 +268,12 @@ end
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
 
-	local rParts = renderedParts[chunkKey]
-	if rParts then
-		for _, part in rParts do
+	local vParts = visualParts[chunkKey]
+	if vParts then
+		for _, part in vParts do
 			_returnPart(part)
 		end
-		renderedParts[chunkKey] = nil
+		visualParts[chunkKey] = nil
 	end
 
 	local cParts = collisionParts[chunkKey]
@@ -322,10 +310,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 
-	local rParts = renderedParts[chunkKey]
-	if not rParts then
-		rParts = {}
-		renderedParts[chunkKey] = rParts
+	local vParts = visualParts[chunkKey]
+	if not vParts then
+		vParts = {}
+		visualParts[chunkKey] = vParts
 	end
 
 	local sParts = renderedSpecialParts[chunkKey]
@@ -340,9 +328,10 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		collisionParts[chunkKey] = cParts
 	end
 
-	if rParts[flatIndex] then
-		_returnPart(rParts[flatIndex])
-		rParts[flatIndex] = nil
+	-- Remove old parts
+	if vParts[flatIndex] then
+		_returnPart(vParts[flatIndex])
+		vParts[flatIndex] = nil
 	end
 	if sParts[flatIndex] then
 		_returnPart(sParts[flatIndex])
@@ -353,12 +342,13 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		cParts[flatIndex] = nil
 	end
 
+	-- Add new parts if non-air and exposed
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		local blockPart = _makeBlockPart(blockTypeId, cx, cy, cz, lx, ly, lz)
+		local part = _makeVisualPart(blockTypeId, cx, cy, cz, lx, ly, lz)
 		if _isSpecialBlock(blockTypeId) then
-			sParts[flatIndex] = blockPart
+			sParts[flatIndex] = part
 		else
-			rParts[flatIndex] = blockPart
+			vParts[flatIndex] = part
 		end
 
 		local halfBlock = BLOCK_SIZE / 2
@@ -376,6 +366,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		cParts[flatIndex] = collisionPart
 	end
 
+	-- Update 6 direct neighbors
 	local dirs = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
 	for _, dir in dirs do
 		local nx, ny, nz = lx + dir[1], ly + dir[2], lz + dir[3]
@@ -390,11 +381,11 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			continue
 		end
 
-		local hasRender = rParts[nIdx] ~= nil
+		local hasVisual = vParts[nIdx] ~= nil
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasRender then
-			rParts[nIdx] = _makeBlockPart(nBlockType, cx, cy, cz, nx, ny, nz)
+		if shouldRender and not hasVisual then
+			vParts[nIdx] = _makeVisualPart(nBlockType, cx, cy, cz, nx, ny, nz)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -408,9 +399,9 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 			)
 			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
-		elseif not shouldRender and hasRender then
-			_returnPart(rParts[nIdx])
-			rParts[nIdx] = nil
+		elseif not shouldRender and hasVisual then
+			_returnPart(vParts[nIdx])
+			vParts[nIdx] = nil
 			if cParts[nIdx] then
 				_returnPart(cParts[nIdx])
 				cParts[nIdx] = nil

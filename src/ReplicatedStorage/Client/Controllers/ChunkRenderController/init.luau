@@ -14,8 +14,8 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
-local POOL_INITIAL = 12000
-local POOL_MAX = 30000
+local POOL_INITIAL = 6000
+local POOL_MAX = 25000
 
 local LAYERS_PER_BLOCK = 3
 local LAYER_HEIGHT = BLOCK_SIZE / LAYERS_PER_BLOCK * 0.9
@@ -326,7 +326,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				cParts[idx] = collisionPart
 			end
 		end
-		if ly % 2 == 1 then
+		if ly % 4 == 3 then
 			task.wait()
 		end
 	end

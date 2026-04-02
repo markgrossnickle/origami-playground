@@ -17,8 +17,8 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_INITIAL = 12000
 local POOL_MAX = 30000
 
--- 45° rotation around Y axis — blocks overlap at edges for seamless diamond look
-local ROTATION_Y45 = CFrame.Angles(0, math.pi / 4, 0)
+-- 45° rotation around Z axis — blocks tilt into diamond shapes from side view
+local BLOCK_ROTATION = CFrame.Angles(0, 0, math.pi / 4)
 
 local function _isSpecialBlock(blockTypeId: number): boolean
 	return blockTypeId == BlockType.Wood
@@ -130,7 +130,7 @@ local function _makeVisualPart(
 	part.Transparency = 0
 
 	-- Position + 45° Y rotation
-	part.CFrame = CFrame.new(px, py, pz) * ROTATION_Y45
+	part.CFrame = CFrame.new(px, py, pz) * BLOCK_ROTATION
 
 	if blockTypeId == BlockType.EggNode then
 		local light = Instance.new("PointLight")

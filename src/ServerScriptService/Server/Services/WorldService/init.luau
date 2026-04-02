@@ -341,12 +341,17 @@ function WorldService:_saveAllDirtyRegions()
 	end
 	dirtyRegions = {}
 
+	local mergeCount = 0
 	for chunkKey, chunkDelta in deltas do
 		if not savedDeltas[chunkKey] then
 			savedDeltas[chunkKey] = {}
 		end
 		for flatIndex, blockTypeId in chunkDelta do
 			savedDeltas[chunkKey][flatIndex] = blockTypeId
+		end
+		mergeCount += 1
+		if mergeCount % 10 == 0 then
+			task.wait()
 		end
 	end
 	deltas = {}
@@ -376,6 +381,7 @@ function WorldService:_saveRegion(regionKey: string)
 		end
 	end
 
+	local savedCount = 0
 	for chunkKey, saved in savedDeltas do
 		if not regionData[chunkKey] then
 			local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
@@ -383,6 +389,10 @@ function WorldService:_saveRegion(regionKey: string)
 			if chunkRegionKey == regionKey and next(saved) then
 				regionData[chunkKey] = ChunkSerializer.serializeDelta(saved)
 			end
+		end
+		savedCount += 1
+		if savedCount % 20 == 0 then
+			task.wait()
 		end
 	end
 

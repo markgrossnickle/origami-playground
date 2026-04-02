@@ -35,6 +35,42 @@ export type Profile = ProfileStore.Profile<PlayerData>
 local PlayerStore: ProfileStore.ProfileStore<PlayerData>
 local Profiles: { [Player]: Profile } = {}
 
+-- Debounce saves: ProfileStore auto-saves periodically, so we only need
+-- to trigger explicit Save() at most once every SAVE_DEBOUNCE seconds
+local SAVE_DEBOUNCE = 6
+local _pendingSaves: { [Player]: boolean } = {}
+local _lastSaveTime: { [Player]: number } = {}
+
+local function _debouncedSave(player: Player, profile: Profile)
+	local now = os.clock()
+	local lastSave = _lastSaveTime[player] or 0
+
+	if now - lastSave >= SAVE_DEBOUNCE then
+		_lastSaveTime[player] = now
+		if profile:IsActive() then
+			profile:Save()
+		end
+		return
+	end
+
+	if _pendingSaves[player] then
+		return
+	end
+
+	_pendingSaves[player] = true
+	task.delay(SAVE_DEBOUNCE - (now - lastSave), function()
+		_pendingSaves[player] = nil
+		if not player.Parent then
+			return
+		end
+		local p = Profiles[player]
+		if p and p:IsActive() then
+			_lastSaveTime[player] = os.clock()
+			p:Save()
+		end
+	end)
+end
+
 local CmdrService
 
 --[=[
@@ -170,6 +206,8 @@ function PlayerDataService:KnitInit()
 
 	Players.PlayerRemoving:Connect(function(player: Player)
 		self.RegisteredServices[player] = nil
+		_pendingSaves[player] = nil
+		_lastSaveTime[player] = nil
 		local profile = Profiles[player]
 		if profile ~= nil then
 			task.wait(10)
@@ -241,7 +279,7 @@ function PlayerDataService:Write(player: Player, path: TableKeys, value: any, _o
 		print(`Wrote to profile for {player.Name} ({player.UserId}): {table.concat(path, ".")} = {value}`)
 	end
 	if profile:IsActive() then
-		profile:Save()
+		_debouncedSave(player, profile)
 	else
 		warn(
 			`Profile for player {player.Name} ({player.UserId}) is inactive.`,

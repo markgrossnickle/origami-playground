@@ -113,9 +113,17 @@ function CreatureAI.Start(
 		stopped = true
 	end)
 
+	local _cachedGroundY = spawnPos.Y
+	local _groundRaycastCounter = 0
+	local RAYCAST_INTERVAL = 5 -- only raycast every Nth call
+
 	local function raycastGround(x: number, z: number): number
-		local result = workspace:Raycast(Vector3.new(x, spawnPos.Y + 50, z), Vector3.new(0, -200, 0), rayParams)
-		return if result then result.Position.Y else spawnPos.Y
+		_groundRaycastCounter += 1
+		if _groundRaycastCounter % RAYCAST_INTERVAL == 0 then
+			local result = workspace:Raycast(Vector3.new(x, spawnPos.Y + 50, z), Vector3.new(0, -200, 0), rayParams)
+			_cachedGroundY = if result then result.Position.Y else spawnPos.Y
+		end
+		return _cachedGroundY
 	end
 
 	local function isAlive(): boolean

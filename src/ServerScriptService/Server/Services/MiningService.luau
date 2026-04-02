@@ -162,10 +162,12 @@ local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: num
 	local visited: { [string]: boolean } = {}
 
 	local queue: { { x: number, y: number, z: number } } = {}
+	local queueHead = 1
 	table.insert(queue, { x = blockPos.X, y = blockPos.Y + blockSize, z = blockPos.Z })
 
-	while #queue > 0 do
-		local pos = table.remove(queue, 1) :: { x: number, y: number, z: number }
+	while queueHead <= #queue do
+		local pos = queue[queueHead]
+		queueHead += 1
 		local key = pos.x .. "," .. pos.y .. "," .. pos.z
 		if visited[key] then
 			continue

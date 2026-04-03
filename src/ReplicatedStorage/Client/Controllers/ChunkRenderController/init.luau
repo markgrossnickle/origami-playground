@@ -17,7 +17,7 @@ local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
 -- Pool
-local POOL_INITIAL = 6000
+local POOL_INITIAL = 2000
 local POOL_MAX = 25000
 
 -- Frame budget
@@ -305,7 +305,7 @@ local function _initPool()
 	_debugLogWait("initPool " .. POOL_INITIAL)
 	for i = 1, POOL_INITIAL do
 		table.insert(partPool, _createPart())
-		if i % 200 == 0 then
+		if i % 50 == 0 then
 			_debugLogWait("initPool " .. i .. "/" .. POOL_INITIAL)
 		end
 	end

@@ -81,10 +81,7 @@ local isProcessingQueue = false
 -------------------------------------------------
 -- Debug HUD (visible on mobile)
 -------------------------------------------------
-local debugLabel: TextLabel? = nil
 local topLabel: TextLabel? = nil
-local DEBUG_MAX_LINES = 16
-local debugLines: { string } = {}
 local debugFrozen = false
 local MIN_DURATION_MS = 1
 
@@ -117,15 +114,7 @@ local function _refreshTopLabel()
 end
 
 local function _refreshDebugLabel()
-	if debugFrozen or not debugLabel then
-		return
-	end
-	local count = 0
-	for _ in renderedChunks do
-		count += 1
-	end
-	local header = string.format("P:%d A:%d Q:%d C:%d", #partPool, activePartsCount, #renderQueue, count)
-	debugLabel.Text = header .. "\n" .. table.concat(debugLines, "\n")
+	-- Left panel removed; only top 5 remains
 end
 
 local function _initDebugHUD()
@@ -140,22 +129,6 @@ local function _initDebugHUD()
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
-
-	-- Recent log: top-left
-	debugLabel = Instance.new("TextLabel")
-	debugLabel.Size = UDim2.new(0.5, 0, 0, DEBUG_MAX_LINES * 16 + 4)
-	debugLabel.Position = UDim2.new(0, 4, 0, 40)
-	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	debugLabel.BackgroundTransparency = 0.6
-	debugLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-	debugLabel.Font = Enum.Font.RobotoMono
-	debugLabel.TextSize = 14
-	debugLabel.TextXAlignment = Enum.TextXAlignment.Left
-	debugLabel.TextYAlignment = Enum.TextYAlignment.Top
-	debugLabel.Text = ""
-	debugLabel.TextWrapped = true
-	debugLabel.Active = false
-	debugLabel.Parent = gui
 
 	-- Top 5 slowest: top-right corner
 	topLabel = Instance.new("TextLabel")
@@ -174,20 +147,7 @@ local function _initDebugHUD()
 	topLabel.Active = false
 	topLabel.Parent = gui
 
-	-- Freeze button: top-left above log
-	local freezeBtn = Instance.new("TextButton")
-	freezeBtn.Size = UDim2.new(0, 50, 0, 22)
-	freezeBtn.Position = UDim2.new(0, 4, 0, 16)
-	freezeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	freezeBtn.BackgroundTransparency = 0.3
-	freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
-	freezeBtn.Font = Enum.Font.RobotoMono
-	freezeBtn.TextSize = 12
-	freezeBtn.Text = "FREEZE"
-	freezeBtn.ZIndex = 10
-	freezeBtn.Parent = gui
-
-	-- Clear button: next to top 5, clears the leaderboard
+	-- Clear button: above top 5
 	local clearBtn = Instance.new("TextButton")
 	clearBtn.Size = UDim2.new(0, 50, 0, 22)
 	clearBtn.Position = UDim2.new(1, -4, 0, 16)
@@ -200,19 +160,6 @@ local function _initDebugHUD()
 	clearBtn.Text = "CLEAR"
 	clearBtn.ZIndex = 10
 	clearBtn.Parent = gui
-
-	freezeBtn.Activated:Connect(function()
-		debugFrozen = not debugFrozen
-		if debugFrozen then
-			freezeBtn.Text = "GO"
-			freezeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-		else
-			freezeBtn.Text = "FREEZE"
-			freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
-			_refreshDebugLabel()
-			_refreshTopLabel()
-		end
-	end)
 
 	clearBtn.Activated:Connect(function()
 		table.clear(topOps)
@@ -231,11 +178,6 @@ local function _finishCurrentOp()
 	_lastOpStart = 0
 
 	if duration >= MIN_DURATION_MS then
-		local line = string.format("%.0fms %s", duration, _currentOp)
-		table.insert(debugLines, line)
-		while #debugLines > DEBUG_MAX_LINES do
-			table.remove(debugLines, 1)
-		end
 		_updateTopOps(duration, _currentOp)
 	end
 end

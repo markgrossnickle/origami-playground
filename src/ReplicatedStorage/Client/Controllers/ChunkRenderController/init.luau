@@ -82,6 +82,8 @@ local isProcessingQueue = false
 -- Debug HUD (visible on mobile)
 -------------------------------------------------
 local debugLabel: TextLabel? = nil
+local DEBUG_MAX_LINES = 15
+local debugLines: { string } = {}
 
 local function _initDebugHUD()
 	local player = Players.LocalPlayer
@@ -97,21 +99,20 @@ local function _initDebugHUD()
 	gui.Parent = player.PlayerGui
 
 	debugLabel = Instance.new("TextLabel")
-	debugLabel.Size = UDim2.new(1, 0, 0, 80)
-	debugLabel.Position = UDim2.new(0, 0, 0, 100)
+	debugLabel.Size = UDim2.new(0.45, 0, 0, DEBUG_MAX_LINES * 16 + 8)
+	debugLabel.Position = UDim2.new(0, 4, 0, 100)
 	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	debugLabel.BackgroundTransparency = 0.5
 	debugLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 	debugLabel.Font = Enum.Font.RobotoMono
-	debugLabel.TextSize = 14
+	debugLabel.TextSize = 13
 	debugLabel.TextXAlignment = Enum.TextXAlignment.Left
 	debugLabel.TextYAlignment = Enum.TextYAlignment.Top
-	debugLabel.Text = "Debug HUD loading..."
+	debugLabel.Text = ""
 	debugLabel.TextWrapped = true
 	debugLabel.Parent = gui
 end
 
-local _lastOp = "idle"
 local _lastOpStart = 0
 local _lastDuration = 0
 
@@ -119,23 +120,28 @@ local function _debugLog(op: string)
 	if _lastOpStart > 0 then
 		_lastDuration = (os.clock() - _lastOpStart) * 1000
 	end
-	_lastOp = op
 	_lastOpStart = os.clock()
+
+	-- Build log line with timestamp and duration
+	local line: string
+	if _lastDuration > 0 then
+		line = string.format("%.1fs %s (%.0fms)", os.clock() % 1000, op, _lastDuration)
+	else
+		line = string.format("%.1fs %s", os.clock() % 1000, op)
+	end
+
+	table.insert(debugLines, line)
+	while #debugLines > DEBUG_MAX_LINES do
+		table.remove(debugLines, 1)
+	end
 
 	if debugLabel then
 		local count = 0
 		for _ in renderedChunks do
 			count += 1
 		end
-		debugLabel.Text = string.format(
-			"OP: %s | Last: %.0fms\nPool: %d | Active: %d | Queue: %d | Chunks: %d",
-			op,
-			_lastDuration,
-			#partPool,
-			activePartsCount,
-			#renderQueue,
-			count
-		)
+		local header = string.format("P:%d A:%d Q:%d C:%d", #partPool, activePartsCount, #renderQueue, count)
+		debugLabel.Text = header .. "\n" .. table.concat(debugLines, "\n")
 	end
 end
 

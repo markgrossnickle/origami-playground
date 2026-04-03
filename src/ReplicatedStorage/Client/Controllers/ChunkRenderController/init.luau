@@ -1,6 +1,7 @@
 --!strict
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -15,18 +16,21 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
--- Part pool: no pre-allocation, parts created on demand and recycled
-local POOL_MAX = 20000
+-- Pool: pre-allocate to avoid Instance.new during rendering
+local POOL_INITIAL = 6000
+local POOL_MAX = 25000
 
 -- Frame budget: 4ms per yield slice (conservative for mobile)
 local FRAME_BUDGET = 0.004
--- Yield check frequency: every N blocks processed
 local YIELD_CHECK_INTERVAL = 32
 
--- Single-part visual parameters (paper-crystal feel with minimal tilt)
-local MAX_OFFSET = 0.08
-local MAX_TILT = math.rad(3)
-local TINT_RANGE = 0.08
+-- Paper-crystal layer parameters
+local LAYERS_PER_BLOCK = 3
+local LAYER_HEIGHT = BLOCK_SIZE / LAYERS_PER_BLOCK * 0.9
+local LAYER_GAP = BLOCK_SIZE / LAYERS_PER_BLOCK
+local MAX_OFFSET = 0.15
+local MAX_TILT = math.rad(8)
+local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
 
 -- CFrame-to-infinity: move parts far away instead of reparenting
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
@@ -55,11 +59,17 @@ local function _getMaterial(blockTypeId: number): Enum.Material
 	return BlockRegistry.getMaterial(blockTypeId)
 end
 
+local function _tintColor(color: Color3, brightness: number): Color3
+	local r = math.clamp(color.R * brightness, 0, 1)
+	local g = math.clamp(color.G * brightness, 0, 1)
+	local b = math.clamp(color.B * brightness, 0, 1)
+	return Color3.new(r, g, b)
+end
+
 --[=[
 	@class ChunkRenderController
-	Single-part-per-block renderer with paper-crystal aesthetic.
-	Each exposed block is one slightly tilted, color-varied part.
-	75% fewer parts than the 3-layer system.
+	Paper-crystal renderer: each exposed block is 3 thin slabs with
+	crystal-like random tilt and slight elongation. Middle layer handles collision.
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -69,27 +79,24 @@ local partPool: { BasePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [string]: boolean } = {}
-local chunkParts: { [string]: { [number]: BasePart } } = {}
+local chunkParts: { [string]: { [number]: { BasePart } } } = {}
 local chunkBlocks: { [string]: buffer } = {}
 
 local chunkContainer: Folder
 
--- Render queue: process one chunk at a time with yields between
+-- Render queue
 local renderQueue: { { key: string, blocks: buffer } } = {}
 local isProcessingQueue = false
 
 -------------------------------------------------
--- Debug HUD (visible on mobile)
+-- Debug HUD
 -------------------------------------------------
 local opsLabel: TextLabel? = nil
 local framesLabel: TextLabel? = nil
 local MIN_DURATION_MS = 1
 
--- Top 5 longest operations (our instrumented code)
 local TOP_COUNT = 5
 local topOps: { { ms: number, name: string } } = {}
-
--- Top 5 longest frames (catches ALL freezes from any source)
 local topFrames: { { ms: number, context: string } } = {}
 
 local function _insertTop(list: { { ms: number, name: string } }, ms: number, name: string)
@@ -126,6 +133,9 @@ local function _refreshFramesLabel()
 	framesLabel.Text = table.concat(lines, "\n")
 end
 
+local _currentOp = "idle"
+local _lastOpStart = 0
+
 local function _initDebugHUD()
 	local player = Players.LocalPlayer
 	if not player then
@@ -139,7 +149,6 @@ local function _initDebugHUD()
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
 
-	-- Top 5 longest frames: top-right (red — catches ALL freezes)
 	framesLabel = Instance.new("TextLabel")
 	framesLabel.Size = UDim2.new(0.55, 0, 0, 6 * 16 + 4)
 	framesLabel.Position = UDim2.new(1, -4, 0, 40)
@@ -156,7 +165,6 @@ local function _initDebugHUD()
 	framesLabel.Active = false
 	framesLabel.Parent = gui
 
-	-- Top 5 slowest ops: below frames panel (yellow — our code only)
 	opsLabel = Instance.new("TextLabel")
 	opsLabel.Size = UDim2.new(0.55, 0, 0, 6 * 16 + 4)
 	opsLabel.Position = UDim2.new(1, -4, 0, 40 + 6 * 16 + 8)
@@ -173,7 +181,6 @@ local function _initDebugHUD()
 	opsLabel.Active = false
 	opsLabel.Parent = gui
 
-	-- Clear button
 	local clearBtn = Instance.new("TextButton")
 	clearBtn.Size = UDim2.new(0, 50, 0, 22)
 	clearBtn.Position = UDim2.new(1, -4, 0, 16)
@@ -194,20 +201,15 @@ local function _initDebugHUD()
 		_refreshFramesLabel()
 	end)
 
-	-- Frame time monitor: catches ALL freezes regardless of source
-	local RunService = game:GetService("RunService")
-	local FRAME_FREEZE_MS = 50 -- log any frame over 50ms
+	-- Frame time monitor: log any frame over 30ms
 	RunService.Heartbeat:Connect(function(dt: number)
 		local frameMs = dt * 1000
-		if frameMs >= FRAME_FREEZE_MS then
+		if frameMs >= 30 then
 			_insertTop(topFrames :: any, frameMs, _currentOp)
 			_refreshFramesLabel()
 		end
 	end)
 end
-
-local _currentOp = "idle"
-local _lastOpStart = 0
 
 local function _finishCurrentOp()
 	if _lastOpStart <= 0 then
@@ -215,7 +217,6 @@ local function _finishCurrentOp()
 	end
 	local duration = (os.clock() - _lastOpStart) * 1000
 	_lastOpStart = 0
-
 	if duration >= MIN_DURATION_MS then
 		_insertTop(topOps, duration, _currentOp)
 	end
@@ -241,13 +242,13 @@ local function _debugEnd()
 end
 
 -------------------------------------------------
--- Part pool (CFrame-to-infinity, on-demand creation)
+-- Part pool (CFrame-to-infinity, pre-allocated)
 -------------------------------------------------
 
 local function _createPart(): BasePart
 	local part = Instance.new("Part")
 	part.Anchored = true
-	part.CanCollide = true
+	part.CanCollide = false
 	part.CanTouch = false
 	part.CastShadow = false
 	part.TopSurface = Enum.SurfaceType.Smooth
@@ -258,6 +259,17 @@ local function _createPart(): BasePart
 		part.Parent = chunkContainer
 	end
 	return part
+end
+
+local function _initPool()
+	_debugLogWait("initPool " .. POOL_INITIAL)
+	for i = 1, POOL_INITIAL do
+		table.insert(partPool, _createPart())
+		if i % 200 == 0 then
+			_debugLogWait("initPool " .. i .. "/" .. POOL_INITIAL)
+		end
+	end
+	_debugEnd()
 end
 
 local function _getPart(): BasePart
@@ -274,8 +286,8 @@ end
 local function _returnPart(part: BasePart)
 	part.CFrame = FAR_AWAY
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-	part.CanCollide = true
-	part.CanQuery = true
+	part.CanCollide = false
+	part.CanQuery = false
 	part.Transparency = 0
 	for _, child in part:GetChildren() do
 		child:Destroy()
@@ -313,10 +325,10 @@ local function _hash(a: number, b: number, c: number, d: number): number
 end
 
 -------------------------------------------------
--- Single block part creation
+-- Paper-crystal layer creation (3 slabs per block)
 -------------------------------------------------
 
-local function _makeBlockPart(
+local function _makeLayerParts(
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -325,59 +337,81 @@ local function _makeBlockPart(
 	ly: number,
 	lz: number,
 	batched: boolean?
-): BasePart
+): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
-	local px = cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock
-	local py = cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock
-	local pz = cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
+	local baseX = cx * CHUNK_STUDS
+	local baseY = cy * CHUNK_STUDS
+	local baseZ = cz * CHUNK_STUDS
+
+	local px = baseX + lx * BLOCK_SIZE + halfBlock
+	local blockBottom = baseY + ly * BLOCK_SIZE
+	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
+
+	local baseColor = _getColor(blockTypeId)
+	local mat = _getMaterial(blockTypeId)
 
 	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
 
-	-- Slight position offset for organic feel
-	local ox = (_hash(seed, 1, 0, 0) - 0.5) * 2 * MAX_OFFSET
-	local oz = (_hash(seed, 2, 0, 0) - 0.5) * 2 * MAX_OFFSET
+	local parts: { BasePart } = {}
+	for i = 1, LAYERS_PER_BLOCK do
+		local layerSeed = seed + i * 1009
 
-	-- Slight tilt for crystal feel
-	local tiltX = (_hash(seed, 3, 0, 0) - 0.5) * 2 * MAX_TILT
-	local tiltZ = (_hash(seed, 4, 0, 0) - 0.5) * 2 * MAX_TILT
+		local ox = (_hash(layerSeed, 1, 0, 0) - 0.5) * 2 * MAX_OFFSET
+		local oz = (_hash(layerSeed, 2, 0, 0) - 0.5) * 2 * MAX_OFFSET
+		local layerY = blockBottom + (i - 0.5) * LAYER_GAP
 
-	-- Color tint variation
-	local tint = 1.0 + (_hash(seed, 5, 0, 0) - 0.5) * 2 * TINT_RANGE
-	local baseColor = _getColor(blockTypeId)
-	local r = math.clamp(baseColor.R * tint, 0, 1)
-	local g = math.clamp(baseColor.G * tint, 0, 1)
-	local b = math.clamp(baseColor.B * tint, 0, 1)
+		local tiltX = (_hash(layerSeed, 3, 0, 0) - 0.5) * 2 * MAX_TILT
+		local tiltZ = (_hash(layerSeed, 4, 0, 0) - 0.5) * 2 * MAX_TILT
 
-	local part = _getPart()
-	part.Color = Color3.new(r, g, b)
-	part.Material = _getMaterial(blockTypeId)
-	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-	part.CanCollide = true
-	part.CanQuery = true
-	part.Transparency = 0
-
-	local targetCFrame = CFrame.new(px + ox, py, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
-
-	if batched then
-		table.insert(_batchParts, part)
-		table.insert(_batchCFrames, targetCFrame)
-		if #_batchParts >= BATCH_FLUSH_SIZE then
-			_flushBatch()
+		local stretchAxis = layerSeed % 2
+		local sx, sz
+		if stretchAxis == 0 then
+			sx = BLOCK_SIZE * 1.08
+			sz = BLOCK_SIZE * 0.92
+		else
+			sx = BLOCK_SIZE * 0.92
+			sz = BLOCK_SIZE * 1.08
 		end
-	else
-		part.CFrame = targetCFrame
+
+		local part = _getPart()
+		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])
+		part.Material = mat
+		part.Size = Vector3.new(sx, LAYER_HEIGHT, sz)
+		part.Transparency = 0
+
+		-- Middle layer handles collision and raycasts
+		if i == 2 then
+			part.CanCollide = true
+			part.CanQuery = true
+		else
+			part.CanCollide = false
+			part.CanQuery = false
+		end
+
+		local targetCFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
+
+		if batched then
+			table.insert(_batchParts, part)
+			table.insert(_batchCFrames, targetCFrame)
+			if #_batchParts >= BATCH_FLUSH_SIZE then
+				_flushBatch()
+			end
+		else
+			part.CFrame = targetCFrame
+		end
+
+		if blockTypeId == BlockType.EggNode and i == 2 then
+			local light = Instance.new("PointLight")
+			light.Color = Color3.fromRGB(255, 230, 180)
+			light.Brightness = 1
+			light.Range = 15
+			light.Parent = part
+		end
+
+		table.insert(parts, part)
 	end
 
-	-- EggNode glow
-	if blockTypeId == BlockType.EggNode then
-		local light = Instance.new("PointLight")
-		light.Color = Color3.fromRGB(255, 230, 180)
-		light.Brightness = 1
-		light.Range = 15
-		light.Parent = part
-	end
-
-	return part
+	return parts
 end
 
 -------------------------------------------------
@@ -418,14 +452,19 @@ end
 -- Chunk rendering
 -------------------------------------------------
 
+local function _returnGroup(group: { BasePart })
+	for _, part in group do
+		_returnPart(part)
+	end
+end
+
 local function _renderChunk(chunkKey: string, blocks: buffer)
 	_debugLogWait("render " .. chunkKey)
 
-	-- Clean up existing parts for this chunk
 	local existing = chunkParts[chunkKey]
 	if existing then
-		for _, part in existing do
-			_returnPart(part)
+		for _, group in existing do
+			_returnGroup(group)
 		end
 	end
 
@@ -433,7 +472,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	renderedChunks[chunkKey] = true
 
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local parts: { [number]: BasePart } = {}
+	local parts: { [number]: { BasePart } } = {}
 	chunkParts[chunkKey] = parts
 
 	local renderStart = os.clock()
@@ -446,10 +485,9 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				local blockTypeId = buffer.readu8(blocks, idx)
 
 				if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-					parts[idx] = _makeBlockPart(blockTypeId, cx, cy, cz, lx, ly, lz, true)
+					parts[idx] = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, true)
 				end
 
-				-- Per-block frame budget check (every YIELD_CHECK_INTERVAL blocks)
 				blocksProcessed += 1
 				if blocksProcessed % YIELD_CHECK_INTERVAL == 0 and os.clock() - renderStart > FRAME_BUDGET then
 					_flushBatch()
@@ -469,8 +507,8 @@ local function _unrenderChunk(chunkKey: string)
 
 	local parts = chunkParts[chunkKey]
 	if parts then
-		for _, part in parts do
-			_returnPart(part)
+		for _, group in parts do
+			_returnGroup(group)
 		end
 		chunkParts[chunkKey] = nil
 	end
@@ -499,18 +537,15 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		chunkParts[chunkKey] = parts
 	end
 
-	-- Remove old part
 	if parts[flatIndex] then
-		_returnPart(parts[flatIndex])
+		_returnGroup(parts[flatIndex])
 		parts[flatIndex] = nil
 	end
 
-	-- Add new part if exposed
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		parts[flatIndex] = _makeBlockPart(blockTypeId, cx, cy, cz, lx, ly, lz, false)
+		parts[flatIndex] = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, false)
 	end
 
-	-- Update 6 neighbors
 	for _, dir in NEIGHBOR_DIRS do
 		local nx, ny, nz = lx + dir[1], ly + dir[2], lz + dir[3]
 		if nx < 0 or nx >= CHUNK_SIZE or ny < 0 or ny >= CHUNK_SIZE or nz < 0 or nz >= CHUNK_SIZE then
@@ -520,13 +555,13 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
 		local nBlockType = buffer.readu8(blocks, nIdx)
 
-		local hasPart = parts[nIdx] ~= nil
+		local hasGroup = parts[nIdx] ~= nil
 		local shouldRender = nBlockType ~= BlockType.Air and _isExposed(blocks, nx, ny, nz)
 
-		if shouldRender and not hasPart then
-			parts[nIdx] = _makeBlockPart(nBlockType, cx, cy, cz, nx, ny, nz, false)
-		elseif not shouldRender and hasPart then
-			_returnPart(parts[nIdx])
+		if shouldRender and not hasGroup then
+			parts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz, false)
+		elseif not shouldRender and hasGroup then
+			_returnGroup(parts[nIdx])
 			parts[nIdx] = nil
 		end
 	end
@@ -569,7 +604,7 @@ function ChunkRenderController:KnitInit()
 	chunkContainer.Parent = workspace
 
 	_initDebugHUD()
-	-- No pool pre-allocation: parts created on demand, recycled via pool
+	_initPool()
 end
 
 local function _processRenderQueue()
@@ -578,13 +613,11 @@ local function _processRenderQueue()
 	end
 	isProcessingQueue = true
 
-	-- Process chunks using index (avoids O(n^2) from table.remove(t, 1))
 	local idx = 1
 	while idx <= #renderQueue do
 		local item = renderQueue[idx]
 		_renderChunk(item.key, item.blocks)
 		idx += 1
-		-- Mandatory yield between chunks so other systems can breathe
 		task.wait()
 	end
 	table.clear(renderQueue)
@@ -599,7 +632,7 @@ function ChunkRenderController:KnitStart()
 		_debugLogWait("decompress " .. chunkKey)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
 		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
-		_debugEnd() -- Close decompress timer; don't time idle wait between server sends
+		_debugEnd()
 		_processRenderQueue()
 	end)
 

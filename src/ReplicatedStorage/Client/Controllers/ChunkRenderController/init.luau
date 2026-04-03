@@ -22,7 +22,7 @@ local POOL_MAX = 25000
 
 -- Frame budget
 local FRAME_BUDGET = 0.004
-local YIELD_CHECK_INTERVAL = 32
+local YIELD_PART_INTERVAL = 32 -- yield check every N parts created (not blocks)
 
 -- Paper-crystal layer parameters (LOD 0 only)
 local LAYERS_PER_BLOCK = 3
@@ -38,7 +38,8 @@ local SIMPLE_MAX_TILT = math.rad(3)
 local SIMPLE_TINT_RANGE = 0.08
 
 -- LOD: squared chunk distance threshold
-local LOD_NEAR_DIST2 = 2 -- dist <= ~1.4 chunks = paper layers
+local LOD_NEAR_DIST2 = 1 -- dist <= 1 chunk = paper layers (~7 chunks)
+local RENDER_MAX_DIST2 = 12 -- skip rendering chunks beyond ~3.5 chunk distance
 
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
@@ -271,6 +272,9 @@ local function _getChunkLOD(cx: number, cy: number, cz: number): number
 	local dy = cy - pcy
 	local dz = cz - pcz
 	local dist2 = dx * dx + dy * dy + dz * dz
+	if dist2 > RENDER_MAX_DIST2 then
+		return -1 -- too far, skip rendering
+	end
 	if dist2 <= LOD_NEAR_DIST2 then
 		return 0
 	end
@@ -582,6 +586,16 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 	local lod = _getChunkLOD(cx, cy, cz)
 
+	-- Store block data even for unrendered chunks (needed for mining/block updates)
+	chunkBlocks[chunkKey] = blocks
+
+	if lod == -1 then
+		-- Too far to render, just keep data
+		renderedChunks[chunkKey] = false
+		chunkLOD[chunkKey] = lod
+		return
+	end
+
 	_debugLogWait("render " .. chunkKey .. " L" .. lod)
 
 	local existing = chunkParts[chunkKey]
@@ -591,7 +605,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 		end
 	end
 
-	chunkBlocks[chunkKey] = blocks
 	renderedChunks[chunkKey] = true
 	chunkLOD[chunkKey] = lod
 
@@ -599,7 +612,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	chunkParts[chunkKey] = parts
 
 	local renderStart = os.clock()
-	local blocksProcessed = 0
+	local partsCreated = 0
 
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
@@ -608,14 +621,16 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				local blockTypeId = buffer.readu8(blocks, idx)
 
 				if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-					parts[idx] = _makeBlockParts(blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
+					local group = _makeBlockParts(blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
+					parts[idx] = group
+					partsCreated += #group
 				end
 
-				blocksProcessed += 1
-				if blocksProcessed % YIELD_CHECK_INTERVAL == 0 and os.clock() - renderStart > FRAME_BUDGET then
+				if partsCreated >= YIELD_PART_INTERVAL and os.clock() - renderStart > FRAME_BUDGET then
 					_flushBatch()
 					task.wait()
 					renderStart = os.clock()
+					partsCreated = 0
 				end
 			end
 		end

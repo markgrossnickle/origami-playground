@@ -84,6 +84,7 @@ local isProcessingQueue = false
 local debugLabel: TextBox? = nil
 local DEBUG_MAX_LINES = 15
 local debugLines: { string } = {}
+local debugFrozen = false
 
 local function _initDebugHUD()
 	local player = Players.LocalPlayer
@@ -98,10 +99,10 @@ local function _initDebugHUD()
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
 
-	-- TextBox so user can tap → long-press → select all → copy on mobile
+	-- TextBox so user can long-press → select all → copy on mobile
 	debugLabel = Instance.new("TextBox")
 	debugLabel.Size = UDim2.new(0.45, 0, 0, DEBUG_MAX_LINES * 16 + 8)
-	debugLabel.Position = UDim2.new(0, 4, 0, 100)
+	debugLabel.Position = UDim2.new(0, 4, 0, 130)
 	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	debugLabel.BackgroundTransparency = 0.5
 	debugLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -114,6 +115,29 @@ local function _initDebugHUD()
 	debugLabel.ClearTextOnFocus = false
 	debugLabel.TextEditable = false
 	debugLabel.Parent = gui
+
+	-- Freeze button: pauses log so user can select/copy text
+	local freezeBtn = Instance.new("TextButton")
+	freezeBtn.Size = UDim2.new(0, 70, 0, 26)
+	freezeBtn.Position = UDim2.new(0, 4, 0, 100)
+	freezeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	freezeBtn.BackgroundTransparency = 0.3
+	freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
+	freezeBtn.Font = Enum.Font.RobotoMono
+	freezeBtn.TextSize = 14
+	freezeBtn.Text = "FREEZE"
+	freezeBtn.Parent = gui
+
+	freezeBtn.MouseButton1Click:Connect(function()
+		debugFrozen = not debugFrozen
+		if debugFrozen then
+			freezeBtn.Text = "RESUME"
+			freezeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+		else
+			freezeBtn.Text = "FREEZE"
+			freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
+		end
+	end)
 end
 
 local _lastOpStart = 0
@@ -136,6 +160,11 @@ local function _debugLog(op: string)
 	table.insert(debugLines, line)
 	while #debugLines > DEBUG_MAX_LINES do
 		table.remove(debugLines, 1)
+	end
+
+	-- Don't update display when frozen (so user can copy)
+	if debugFrozen then
+		return
 	end
 
 	if debugLabel then

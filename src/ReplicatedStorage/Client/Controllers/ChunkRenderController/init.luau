@@ -81,40 +81,49 @@ local isProcessingQueue = false
 -------------------------------------------------
 -- Debug HUD (visible on mobile)
 -------------------------------------------------
-local topLabel: TextLabel? = nil
-local debugFrozen = false
+local opsLabel: TextLabel? = nil
+local framesLabel: TextLabel? = nil
 local MIN_DURATION_MS = 1
 
--- Top 5 longest operations ever seen
+-- Top 5 longest operations (our instrumented code)
 local TOP_COUNT = 5
 local topOps: { { ms: number, name: string } } = {}
 
-local function _updateTopOps(ms: number, name: string)
-	-- Insert if qualifies for top 5
-	if #topOps < TOP_COUNT or ms > topOps[#topOps].ms then
-		table.insert(topOps, { ms = ms, name = name })
-		table.sort(topOps, function(a, b)
+-- Top 5 longest frames (catches ALL freezes from any source)
+local topFrames: { { ms: number, context: string } } = {}
+
+local function _insertTop(list: { { ms: number, name: string } }, ms: number, name: string)
+	if #list < TOP_COUNT or ms > list[#list].ms then
+		table.insert(list, { ms = ms, name = name })
+		table.sort(list, function(a, b)
 			return a.ms > b.ms
 		end)
-		if #topOps > TOP_COUNT then
-			table.remove(topOps, #topOps + 1)
+		if #list > TOP_COUNT then
+			table.remove(list, #list + 1)
 		end
 	end
 end
 
-local function _refreshTopLabel()
-	if debugFrozen or not topLabel then
+local function _refreshOpsLabel()
+	if not opsLabel then
 		return
 	end
-	local lines = { "TOP 5 SLOWEST:" }
+	local lines = { "TOP 5 OPS:" }
 	for i, entry in topOps do
 		table.insert(lines, string.format("%d. %.0fms %s", i, entry.ms, entry.name))
 	end
-	topLabel.Text = table.concat(lines, "\n")
+	opsLabel.Text = table.concat(lines, "\n")
 end
 
-local function _refreshDebugLabel()
-	-- Left panel removed; only top 5 remains
+local function _refreshFramesLabel()
+	if not framesLabel then
+		return
+	end
+	local lines = { "TOP 5 FRAMES (any cause):" }
+	for i, entry in topFrames do
+		table.insert(lines, string.format("%d. %.0fms [%s]", i, entry.ms, entry.name))
+	end
+	framesLabel.Text = table.concat(lines, "\n")
 end
 
 local function _initDebugHUD()
@@ -130,24 +139,41 @@ local function _initDebugHUD()
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
 
-	-- Top 5 slowest: top-right corner
-	topLabel = Instance.new("TextLabel")
-	topLabel.Size = UDim2.new(0.4, 0, 0, 6 * 16 + 4)
-	topLabel.Position = UDim2.new(1, -4, 0, 40)
-	topLabel.AnchorPoint = Vector2.new(1, 0)
-	topLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	topLabel.BackgroundTransparency = 0.5
-	topLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-	topLabel.Font = Enum.Font.RobotoMono
-	topLabel.TextSize = 14
-	topLabel.TextXAlignment = Enum.TextXAlignment.Left
-	topLabel.TextYAlignment = Enum.TextYAlignment.Top
-	topLabel.Text = "TOP 5 SLOWEST:"
-	topLabel.TextWrapped = true
-	topLabel.Active = false
-	topLabel.Parent = gui
+	-- Top 5 longest frames: top-right (red — catches ALL freezes)
+	framesLabel = Instance.new("TextLabel")
+	framesLabel.Size = UDim2.new(0.55, 0, 0, 6 * 16 + 4)
+	framesLabel.Position = UDim2.new(1, -4, 0, 40)
+	framesLabel.AnchorPoint = Vector2.new(1, 0)
+	framesLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	framesLabel.BackgroundTransparency = 0.5
+	framesLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+	framesLabel.Font = Enum.Font.RobotoMono
+	framesLabel.TextSize = 14
+	framesLabel.TextXAlignment = Enum.TextXAlignment.Left
+	framesLabel.TextYAlignment = Enum.TextYAlignment.Top
+	framesLabel.Text = "TOP 5 FRAMES (any cause):"
+	framesLabel.TextWrapped = true
+	framesLabel.Active = false
+	framesLabel.Parent = gui
 
-	-- Clear button: above top 5
+	-- Top 5 slowest ops: below frames panel (yellow — our code only)
+	opsLabel = Instance.new("TextLabel")
+	opsLabel.Size = UDim2.new(0.55, 0, 0, 6 * 16 + 4)
+	opsLabel.Position = UDim2.new(1, -4, 0, 40 + 6 * 16 + 8)
+	opsLabel.AnchorPoint = Vector2.new(1, 0)
+	opsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	opsLabel.BackgroundTransparency = 0.5
+	opsLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+	opsLabel.Font = Enum.Font.RobotoMono
+	opsLabel.TextSize = 14
+	opsLabel.TextXAlignment = Enum.TextXAlignment.Left
+	opsLabel.TextYAlignment = Enum.TextYAlignment.Top
+	opsLabel.Text = "TOP 5 OPS:"
+	opsLabel.TextWrapped = true
+	opsLabel.Active = false
+	opsLabel.Parent = gui
+
+	-- Clear button
 	local clearBtn = Instance.new("TextButton")
 	clearBtn.Size = UDim2.new(0, 50, 0, 22)
 	clearBtn.Position = UDim2.new(1, -4, 0, 16)
@@ -163,7 +189,20 @@ local function _initDebugHUD()
 
 	clearBtn.Activated:Connect(function()
 		table.clear(topOps)
-		_refreshTopLabel()
+		table.clear(topFrames)
+		_refreshOpsLabel()
+		_refreshFramesLabel()
+	end)
+
+	-- Frame time monitor: catches ALL freezes regardless of source
+	local RunService = game:GetService("RunService")
+	local FRAME_FREEZE_MS = 50 -- log any frame over 50ms
+	RunService.Heartbeat:Connect(function(dt: number)
+		local frameMs = dt * 1000
+		if frameMs >= FRAME_FREEZE_MS then
+			_insertTop(topFrames :: any, frameMs, _currentOp)
+			_refreshFramesLabel()
+		end
 	end)
 end
 
@@ -178,35 +217,27 @@ local function _finishCurrentOp()
 	_lastOpStart = 0
 
 	if duration >= MIN_DURATION_MS then
-		_updateTopOps(duration, _currentOp)
+		_insertTop(topOps, duration, _currentOp)
 	end
 end
 
 local function _debugLog(op: string)
-	-- Close and log the previous operation with its correct name
 	_finishCurrentOp()
-
-	-- Start timing the new operation
 	_currentOp = op
 	_lastOpStart = os.clock()
-
-	_refreshDebugLabel()
-	_refreshTopLabel()
+	_refreshOpsLabel()
 end
 
--- Yielding version: updates HUD then waits one frame so text is visible before heavy work
 local function _debugLogWait(op: string)
 	_debugLog(op)
 	task.wait()
-	-- Reset timer after yield so we only measure actual work
 	_lastOpStart = os.clock()
 end
 
 local function _debugEnd()
 	_finishCurrentOp()
 	_currentOp = "idle"
-	_refreshDebugLabel()
-	_refreshTopLabel()
+	_refreshOpsLabel()
 end
 
 -------------------------------------------------

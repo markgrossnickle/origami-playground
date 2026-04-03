@@ -25,6 +25,15 @@ local MAX_TILT = math.rad(8)
 
 local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
 
+-- CFrame-to-infinity: move parts far away instead of reparenting
+local FAR_AWAY = CFrame.new(0, -1e6, 0)
+
+-- Frame budget for chunk rendering (seconds per yield slice)
+local FRAME_BUDGET = 0.008
+
+-- Hoisted neighbor directions for block update checks
+local NEIGHBOR_DIRS = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
+
 -- Override: PaperGrass renders as cream Paper visually
 local GRASS_COLOR = Color3.fromRGB(245, 235, 220)
 local GRASS_MATERIAL = Enum.Material.SmoothPlastic
@@ -71,17 +80,23 @@ local chunkBlocks: { [string]: buffer } = {}
 local chunkContainer: Folder
 
 -------------------------------------------------
--- Part pool
+-- Part pool (CFrame-to-infinity pattern)
 -------------------------------------------------
 
 local function _createPart(): BasePart
 	local part = Instance.new("Part")
 	part.Anchored = true
 	part.CanCollide = true
+	part.CanTouch = false
 	part.CastShadow = false
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	part.CFrame = FAR_AWAY
+	-- Parent once at creation, never change (avoids expensive replication)
+	if chunkContainer then
+		part.Parent = chunkContainer
+	end
 	return part
 end
 
@@ -103,9 +118,11 @@ local function _getPart(): BasePart
 end
 
 local function _returnPart(part: BasePart)
-	part.Parent = nil
+	-- Move far away instead of reparenting (CFrame-to-infinity)
+	part.CFrame = FAR_AWAY
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = true
+	part.CanQuery = true
 	part.Transparency = 0
 	for _, child in part:GetChildren() do
 		child:Destroy()
@@ -115,6 +132,21 @@ local function _returnPart(part: BasePart)
 		table.insert(partPool, part)
 	else
 		part:Destroy()
+	end
+end
+
+-------------------------------------------------
+-- BulkMoveTo batch arrays
+-------------------------------------------------
+
+local _batchParts: { BasePart } = {}
+local _batchCFrames: { CFrame } = {}
+
+local function _flushBatch()
+	if #_batchParts > 0 then
+		workspace:BulkMoveTo(_batchParts, _batchCFrames, Enum.BulkMoveMode.FireCFrameChanged)
+		table.clear(_batchParts)
+		table.clear(_batchCFrames)
 	end
 end
 
@@ -138,6 +170,7 @@ end
 -- Paper-crystal slab creation
 -------------------------------------------------
 
+-- Creates visual layer parts. If batched=true, defers CFrame via BulkMoveTo arrays.
 local function _makeLayerParts(
 	blockTypeId: number,
 	cx: number,
@@ -145,7 +178,8 @@ local function _makeLayerParts(
 	cz: number,
 	lx: number,
 	ly: number,
-	lz: number
+	lz: number,
+	batched: boolean?
 ): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
 	local baseX = cx * CHUNK_STUDS
@@ -187,8 +221,17 @@ local function _makeLayerParts(
 		part.Material = mat
 		part.Size = Vector3.new(sx, LAYER_HEIGHT, sz)
 		part.CanCollide = false
+		part.CanQuery = false
 		part.Transparency = 0
-		part.CFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
+
+		local targetCFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
+
+		if batched then
+			table.insert(_batchParts, part)
+			table.insert(_batchCFrames, targetCFrame)
+		else
+			part.CFrame = targetCFrame
+		end
 
 		if blockTypeId == BlockType.EggNode and i == 2 then
 			local light = Instance.new("PointLight")
@@ -198,7 +241,6 @@ local function _makeLayerParts(
 			light.Parent = part
 		end
 
-		part.Parent = chunkContainer
 		table.insert(parts, part)
 	end
 
@@ -289,6 +331,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	local baseY = cy * CHUNK_STUDS
 	local baseZ = cz * CHUNK_STUDS
 
+	local renderStart = os.clock()
+
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
 			for lx = 0, CHUNK_SIZE - 1 do
@@ -303,13 +347,15 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 					continue
 				end
 
-				local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
+				-- Visual layers (batched CFrame via BulkMoveTo)
+				local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, true)
 				if _isSpecialBlock(blockTypeId) then
 					specialParts[idx] = group
 				else
 					lParts[idx] = group
 				end
 
+				-- Collision part (also batched)
 				local collisionPart = _getPart()
 				collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 				collisionPart.Transparency = 1
@@ -317,19 +363,26 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				collisionPart.CastShadow = false
 
 				local halfBlock = BLOCK_SIZE / 2
-				collisionPart.Position = Vector3.new(
+				local collisionCFrame = CFrame.new(
 					baseX + lx * BLOCK_SIZE + halfBlock,
 					baseY + ly * BLOCK_SIZE + halfBlock,
 					baseZ + lz * BLOCK_SIZE + halfBlock
 				)
-				collisionPart.Parent = chunkContainer
+				table.insert(_batchParts, collisionPart)
+				table.insert(_batchCFrames, collisionCFrame)
 				cParts[idx] = collisionPart
 			end
 		end
-		if ly % 4 == 3 then
+		-- Frame budget: yield when we've used our time slice
+		if os.clock() - renderStart > FRAME_BUDGET then
+			_flushBatch()
 			task.wait()
+			renderStart = os.clock()
 		end
 	end
+
+	-- Flush any remaining batched parts
+	_flushBatch()
 end
 
 local function _unrenderChunk(chunkKey: string)
@@ -409,7 +462,8 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz)
+		-- Surgical update: set CFrame directly (not batched)
+		local group = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, false)
 		if _isSpecialBlock(blockTypeId) then
 			sParts[flatIndex] = group
 		else
@@ -422,17 +476,16 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		collisionPart.Transparency = 1
 		collisionPart.CanCollide = true
 		collisionPart.CastShadow = false
-		collisionPart.Position = Vector3.new(
+		collisionPart.CFrame = CFrame.new(
 			cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock,
 			cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock,
 			cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
 		)
-		collisionPart.Parent = chunkContainer
 		cParts[flatIndex] = collisionPart
 	end
 
-	local dirs = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
-	for _, dir in dirs do
+	-- Update 6 direct neighbors (using hoisted NEIGHBOR_DIRS)
+	for _, dir in NEIGHBOR_DIRS do
 		local nx, ny, nz = lx + dir[1], ly + dir[2], lz + dir[3]
 		if nx < 0 or nx >= CHUNK_SIZE or ny < 0 or ny >= CHUNK_SIZE or nz < 0 or nz >= CHUNK_SIZE then
 			continue
@@ -449,19 +502,18 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		local shouldRender = _isExposed(blocks, nx, ny, nz)
 
 		if shouldRender and not hasLayer then
-			lParts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz)
+			lParts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz, false)
 			local halfBlock = BLOCK_SIZE / 2
 			local cp = _getPart()
 			cp.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 			cp.Transparency = 1
 			cp.CanCollide = true
 			cp.CastShadow = false
-			cp.Position = Vector3.new(
+			cp.CFrame = CFrame.new(
 				cx * CHUNK_STUDS + nx * BLOCK_SIZE + halfBlock,
 				cy * CHUNK_STUDS + ny * BLOCK_SIZE + halfBlock,
 				cz * CHUNK_STUDS + nz * BLOCK_SIZE + halfBlock
 			)
-			cp.Parent = chunkContainer
 			cParts[nIdx] = cp
 		elseif not shouldRender and hasLayer then
 			_returnLayerGroup(lParts[nIdx])

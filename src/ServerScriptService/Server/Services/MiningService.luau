@@ -130,6 +130,16 @@ end
 
 local TREE_COLLAPSE_DELAY = 0.08
 local TREE_MAX_LATERAL = 3
+local TREE_MAX_BFS_ITERATIONS = 200
+
+-- Hoisted neighbor offsets for tree BFS (no downward — trees grow up/sideways)
+local TREE_BFS_OFFSETS = {
+	{ 1, 0, 0 },
+	{ -1, 0, 0 },
+	{ 0, 1, 0 },
+	{ 0, 0, 1 },
+	{ 0, 0, -1 },
+}
 
 local function _getBlockAtWorld(worldX: number, worldY: number, worldZ: number): number
 	local tcx, tcy, tcz = ChunkUtil.worldToChunk(worldX, worldY, worldZ)
@@ -163,12 +173,14 @@ local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: num
 
 	local queue: { { x: number, y: number, z: number } } = {}
 	local queueHead = 1
+	local iterations = 0
 	table.insert(queue, { x = blockPos.X, y = blockPos.Y + blockSize, z = blockPos.Z })
 
-	while queueHead <= #queue do
+	while queueHead <= #queue and iterations < TREE_MAX_BFS_ITERATIONS do
+		iterations += 1
 		local pos = queue[queueHead]
 		queueHead += 1
-		local key = pos.x .. "," .. pos.y .. "," .. pos.z
+		local key = string.format("%d,%d,%d", pos.x, pos.y, pos.z)
 		if visited[key] then
 			continue
 		end
@@ -187,17 +199,13 @@ local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: num
 
 		table.insert(treeBlocks, pos)
 
-		local neighbors = {
-			{ x = pos.x + blockSize, y = pos.y, z = pos.z },
-			{ x = pos.x - blockSize, y = pos.y, z = pos.z },
-			{ x = pos.x, y = pos.y + blockSize, z = pos.z },
-			{ x = pos.x, y = pos.y, z = pos.z + blockSize },
-			{ x = pos.x, y = pos.y, z = pos.z - blockSize },
-		}
-		for _, n in neighbors do
-			local nKey = n.x .. "," .. n.y .. "," .. n.z
+		for _, offset in TREE_BFS_OFFSETS do
+			local nx = pos.x + offset[1] * blockSize
+			local ny = pos.y + offset[2] * blockSize
+			local nz = pos.z + offset[3] * blockSize
+			local nKey = string.format("%d,%d,%d", nx, ny, nz)
 			if not visited[nKey] then
-				table.insert(queue, n)
+				table.insert(queue, { x = nx, y = ny, z = nz })
 			end
 		end
 	end

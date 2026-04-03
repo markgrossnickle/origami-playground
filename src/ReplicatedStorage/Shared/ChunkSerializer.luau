@@ -1,4 +1,5 @@
 --!strict
+--!native
 
 local ChunkUtil = require(script.Parent.ChunkUtil)
 
@@ -8,8 +9,12 @@ local ChunkSerializer = {}
 
 -- RLE compress a chunk buffer into a smaller buffer
 -- Format: [blockType: u8][runLength: u16] repeated
+-- Single-pass: writes directly to buffer, no temp table allocations
 function ChunkSerializer.compress(blocks: buffer): buffer
-	local runs: { { type: number, count: number } } = {}
+	local maxSize = BLOCKS_PER_CHUNK * 3
+	local temp = buffer.create(maxSize)
+	local offset = 0
+
 	local currentType = buffer.readu8(blocks, 0)
 	local currentCount = 1
 
@@ -18,25 +23,24 @@ function ChunkSerializer.compress(blocks: buffer): buffer
 		if blockType == currentType and currentCount < 65535 then
 			currentCount += 1
 		else
-			table.insert(runs, { type = currentType, count = currentCount })
+			buffer.writeu8(temp, offset, currentType)
+			buffer.writeu16(temp, offset + 1, currentCount)
+			offset += 3
 			currentType = blockType
 			currentCount = 1
 		end
 	end
-	table.insert(runs, { type = currentType, count = currentCount })
+	buffer.writeu8(temp, offset, currentType)
+	buffer.writeu16(temp, offset + 1, currentCount)
+	offset += 3
 
-	local compressed = buffer.create(#runs * 3)
-	local offset = 0
-	for _, run in runs do
-		buffer.writeu8(compressed, offset, run.type)
-		buffer.writeu16(compressed, offset + 1, run.count)
-		offset += 3
-	end
-
+	local compressed = buffer.create(offset)
+	buffer.copy(compressed, 0, temp, 0, offset)
 	return compressed
 end
 
 -- Decompress RLE buffer back to full chunk buffer
+-- Uses buffer.fill for bulk writes instead of byte-by-byte
 function ChunkSerializer.decompress(compressed: buffer): buffer
 	local blocks = buffer.create(BLOCKS_PER_CHUNK)
 	local readOffset = 0
@@ -48,32 +52,29 @@ function ChunkSerializer.decompress(compressed: buffer): buffer
 		local runLength = buffer.readu16(compressed, readOffset + 1)
 		readOffset += 3
 
-		for _ = 1, runLength do
-			if writeOffset >= BLOCKS_PER_CHUNK then
-				break
-			end
-			buffer.writeu8(blocks, writeOffset, blockType)
-			writeOffset += 1
-		end
+		local count = math.min(runLength, BLOCKS_PER_CHUNK - writeOffset)
+		buffer.fill(blocks, writeOffset, blockType, count)
+		writeOffset += count
 	end
 
 	return blocks
 end
 
 -- Encode a chunk delta (sparse changes) into a compact buffer
+-- Avoids temp table allocation by counting first, then writing directly
 function ChunkSerializer.encodeDelta(delta: { [number]: number }): buffer
-	local entries: { { index: number, blockType: number } } = {}
-	for flatIndex, blockType in delta do
-		table.insert(entries, { index = flatIndex, blockType = blockType })
+	local count = 0
+	for _ in delta do
+		count += 1
 	end
 
-	local buf = buffer.create(2 + #entries * 3)
-	buffer.writeu16(buf, 0, #entries)
+	local buf = buffer.create(2 + count * 3)
+	buffer.writeu16(buf, 0, count)
 
 	local offset = 2
-	for _, entry in entries do
-		buffer.writeu16(buf, offset, entry.index)
-		buffer.writeu8(buf, offset + 2, entry.blockType)
+	for flatIndex, blockType in delta do
+		buffer.writeu16(buf, offset, flatIndex)
+		buffer.writeu8(buf, offset + 2, blockType)
 		offset += 3
 	end
 

@@ -26,6 +26,8 @@ function Server:_setupWorld()
 	end
 
 	-- Lighting — warm afternoon light for paper aesthetic
+	local GLOBAL_SHADOWS = true
+	Lighting.GlobalShadows = GLOBAL_SHADOWS
 	Lighting.ClockTime = 14
 	Lighting.Brightness = 2
 	Lighting.Ambient = Color3.fromRGB(160, 155, 145)

@@ -520,9 +520,14 @@ function MiningController:KnitStart()
 		end
 	end)
 
-	-- Update mining every frame
+	-- Update mining every frame (hover highlight throttled to ~20Hz)
+	local hoverFrameCounter = 0
 	RunService.RenderStepped:Connect(function(dt)
-		_updateHoverHighlight()
+		hoverFrameCounter += 1
+		if hoverFrameCounter >= 3 then
+			hoverFrameCounter = 0
+			_updateHoverHighlight()
+		end
 		_updateMining(dt)
 		_updateTierBlockedUI()
 	end)

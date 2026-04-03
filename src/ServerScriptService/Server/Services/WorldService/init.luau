@@ -56,6 +56,7 @@ local chunkSubscribers: { [string]: { [Player]: boolean } } = {}
 
 local WorldStore: DataStore?
 local SeedStore: DataStore?
+local pendingChunks: { [string]: boolean } = {}
 
 -------------------------------------------------
 -- Internal helpers
@@ -163,6 +164,20 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 		return existing
 	end
 
+	-- Guard against duplicate generation when generateChunk yields
+	if pendingChunks[chunkKey] then
+		while pendingChunks[chunkKey] do
+			task.wait()
+		end
+		local result = chunks[chunkKey]
+		if result then
+			result.lastAccess = os.clock()
+			return result
+		end
+	end
+
+	pendingChunks[chunkKey] = true
+
 	local blockBuffer = WorldGenModule.generateChunk(seed, cx, cy, cz)
 
 	self:_loadDeltasForChunk(chunkKey, cx, cy, cz)
@@ -192,6 +207,7 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 	}
 
 	chunks[chunkKey] = chunkData
+	pendingChunks[chunkKey] = nil
 	return chunkData
 end
 
@@ -335,8 +351,19 @@ end
 -------------------------------------------------
 
 function WorldService:_saveAllDirtyRegions()
+	-- Pre-group deltas by region to avoid O(n*m) scanning in _saveRegion
+	local deltasByRegion: { [string]: { [string]: ChunkDelta } } = {}
+	for chunkKey, chunkDelta in deltas do
+		local cx2, cy2, cz2 = ChunkUtil.parseChunkKey(chunkKey)
+		local rk = ChunkUtil.regionKey(cx2, cy2, cz2)
+		if not deltasByRegion[rk] then
+			deltasByRegion[rk] = {}
+		end
+		deltasByRegion[rk][chunkKey] = chunkDelta
+	end
+
 	for regionKey in dirtyRegions do
-		self:_saveRegion(regionKey)
+		self:_saveRegion(regionKey, deltasByRegion[regionKey])
 		task.wait()
 	end
 	dirtyRegions = {}
@@ -357,13 +384,12 @@ function WorldService:_saveAllDirtyRegions()
 	deltas = {}
 end
 
-function WorldService:_saveRegion(regionKey: string)
+function WorldService:_saveRegion(regionKey: string, regionDeltas: { [string]: ChunkDelta }?)
 	local regionData: { [string]: { [string]: number } } = {}
 
-	for chunkKey, chunkDelta in deltas do
-		local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-		local chunkRegionKey = ChunkUtil.regionKey(cx, cy, cz)
-		if chunkRegionKey == regionKey then
+	-- Process pre-grouped deltas for this region (O(k) instead of O(n))
+	if regionDeltas then
+		for chunkKey, chunkDelta in regionDeltas do
 			local merged = {}
 			local saved = savedDeltas[chunkKey]
 			if saved then
@@ -381,6 +407,7 @@ function WorldService:_saveRegion(regionKey: string)
 		end
 	end
 
+	-- Include savedDeltas for this region that have no new in-memory deltas
 	local savedCount = 0
 	for chunkKey, saved in savedDeltas do
 		if not regionData[chunkKey] then

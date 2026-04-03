@@ -367,6 +367,23 @@ See template documentation for: **MonetizationService**, **AnalyticsService**, *
 - **Push immediately after committing** — don't batch commits locally.
 - **Small, frequent commits** — one commit per logical change, push each one right away.
 
+## Lessons Learned
+
+Things we got wrong and must not repeat:
+
+- **Part pooling must use CFrame-to-infinity, never reparent.** Setting `Parent = nil` then `Parent = container` is the most expensive property change in Roblox. Move pooled parts to `CFrame.new(0, 1e8, 0)` instead and set Parent only once at creation.
+- **Always set CanTouch=false, CanQuery=false on bulk parts.** Defaults are true and cause massive physics broadphase overhead with thousands of parts.
+- **Use os.clock() frame budgeting, not task.wait() every N iterations.** `task.wait()` wastes remaining frame budget. Measure elapsed time and yield only when budget exceeded (e.g., 5ms).
+- **Never do synchronous chunk generation.** World gen (noise + caves + ores) must yield or be queued across frames. Blocking the server thread for even one chunk causes stalls.
+- **String key concatenation (cx..","..cy..","..cz) is expensive at scale.** Thousands of string allocs per second. Use numeric keys or string.format at minimum.
+- **Hoist constant tables out of hot loops.** Creating `{ {1,0,0}, {-1,0,0}, ... }` inside per-block-update functions wastes GC. Define once at module level.
+- **Use @native on compute-heavy functions.** Buffer loops, noise generation, serialization — 2-5x speedup available for free.
+- **Use buffer.fill() instead of byte-by-byte write loops.** Single native call replaces thousands of buffer.writeu8 calls.
+- **Greedy meshing is essential for voxel games.** 1 Part per block = 10K-50K parts. Merging same-type adjacent blocks reduces part count by 90%+.
+- **Disable GlobalShadows for stylized games.** 10-20% FPS improvement. Paper/origami aesthetic doesn't need per-part shadows.
+- **Throttle per-frame raycasts.** Mining highlight only needs ~20Hz, not 60Hz. Cache results and skip frames.
+- **Pre-classify creature animation parts at spawn, not per-frame.** string:match per part per tick creates GC pressure. Classify once into a lookup table.
+
 ## Conventions
 
 - Services in `Services/` (folder with `init.luau` or single `.luau` file)

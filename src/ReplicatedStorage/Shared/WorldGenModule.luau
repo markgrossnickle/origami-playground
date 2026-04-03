@@ -1,4 +1,5 @@
 --!strict
+--!native
 
 local ChunkUtil = require(script.Parent.ChunkUtil)
 local BlockType = require(script.Parent.Enums.BlockType)
@@ -745,7 +746,7 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 
 	local surface = BiomeConfig.Surface
 
-	-- Fill terrain column by column
+	-- Fill terrain column by column (yield periodically to prevent freezes)
 	for lz = 0, CHUNK_SIZE - 1 do
 		for lx = 0, CHUNK_SIZE - 1 do
 			local colIdx = lz * 16 + lx
@@ -787,9 +788,12 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 				end
 			end
 		end
+		if lz % 4 == 3 then
+			task.wait()
+		end
 	end
 
-	-- Cave carving for underground chunks
+	-- Cave carving for underground chunks (yield periodically)
 	if chunkBlockYTop < minSurface then
 		for ly = 0, CHUNK_SIZE - 1 do
 			for lz = 0, CHUNK_SIZE - 1 do
@@ -816,6 +820,9 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 						end
 					end
 				end
+			end
+			if ly % 4 == 3 then
+				task.wait()
 			end
 		end
 	end

@@ -8,53 +8,80 @@ local function foldCurve(raw: number): number
 	return math.sign(raw) * math.abs(raw) ^ 0.6
 end
 
--- Apply per-part creature animation based on name prefix
-local function applyCreatureAnimation(model: Model, animParts: { [BasePart]: CFrame }, t: number)
+-- Animation type enum (pre-classified at startup, avoids per-tick string:match)
+local ANIM_WING_L = 1
+local ANIM_WING_R = 2
+local ANIM_TAIL = 3
+local ANIM_JAW = 4
+local ANIM_LEG = 5
+local ANIM_SEG = 6
+local ANIM_NONE = 0
+
+-- Cached identity CFrame (avoid allocating CFrame.new() every tick)
+local IDENTITY_CFRAME = CFrame.new()
+
+-- Pre-classify a part name into animation type + parameters
+local function classifyPart(name: string): (number, number, number)
+	-- Returns: animType, idx/phase param 1, param 2
+	if name:match("^wing_L") then
+		return ANIM_WING_L, tonumber(name:match("%d+")) or 1, 0
+	elseif name:match("^wing_R") then
+		return ANIM_WING_R, tonumber(name:match("%d+")) or 1, 0
+	elseif name:match("^tail_") then
+		return ANIM_TAIL, tonumber(name:match("%d+")) or 1, 0
+	elseif name:match("^jaw_") then
+		return ANIM_JAW, 0, 0
+	elseif name:match("^leg_") then
+		local isLeft = name:match("_[FB]L_")
+		local isFront = name:match("_F[LR]_")
+		local phase = (if isLeft then 0 else math.pi) + (if isFront then 0 else math.pi / 2)
+		return ANIM_LEG, phase, 0
+	elseif name:match("^seg_") then
+		return ANIM_SEG, tonumber(name:match("%d+")) or 1, 0
+	end
+	return ANIM_NONE, 0, 0
+end
+
+type AnimPartData = {
+	part: BasePart,
+	baseOffset: CFrame,
+	animType: number,
+	param1: number,
+	param2: number,
+}
+
+-- Apply per-part creature animation using pre-classified types
+local function applyCreatureAnimation(model: Model, animList: { AnimPartData }, t: number)
 	local pivot = model:GetPivot()
 
-	for part, baseOffset in pairs(animParts) do
-		if not part.Parent then
+	for _, data in animList do
+		if not data.part.Parent then
 			continue
 		end
 
-		local name = part.Name
-		local animOffset = CFrame.new()
+		local animOffset = IDENTITY_CFRAME
 
-		if name:match("^wing_L") then
-			-- Left wing: flap up/down via Z rotation
-			local idx = tonumber(name:match("%d+")) or 1
-			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
+		if data.animType == ANIM_WING_L then
+			local flapAngle = foldCurve(math.sin(t * 4.0 + data.param1 * 0.3)) * math.rad(35)
 			animOffset = CFrame.Angles(0, 0, flapAngle)
-		elseif name:match("^wing_R") then
-			-- Right wing: flap opposite
-			local idx = tonumber(name:match("%d+")) or 1
-			local flapAngle = foldCurve(math.sin(t * 4.0 + idx * 0.3)) * math.rad(35)
+		elseif data.animType == ANIM_WING_R then
+			local flapAngle = foldCurve(math.sin(t * 4.0 + data.param1 * 0.3)) * math.rad(35)
 			animOffset = CFrame.Angles(0, 0, -flapAngle)
-		elseif name:match("^tail_") then
-			-- Tail: side-to-side sway
-			local idx = tonumber(name:match("%d+")) or 1
-			local swayAngle = math.sin(t * 3.0 + idx * 0.6) * math.rad(20)
+		elseif data.animType == ANIM_TAIL then
+			local swayAngle = math.sin(t * 3.0 + data.param1 * 0.6) * math.rad(20)
 			animOffset = CFrame.Angles(0, swayAngle, 0)
-		elseif name:match("^jaw_") then
-			-- Jaw: open/close
-			local openAngle = (math.sin(t * 2.0) * 0.5 + 0.5) * math.rad(15) -- 0 to 15 degrees
+		elseif data.animType == ANIM_JAW then
+			local openAngle = (math.sin(t * 2.0) * 0.5 + 0.5) * math.rad(15)
 			animOffset = CFrame.Angles(openAngle, 0, 0)
-		elseif name:match("^leg_") then
-			-- Legs: walking cycle. FL/BL move opposite to FR/BR
-			local isLeft = name:match("_[FB]L_")
-			local isFront = name:match("_F[LR]_")
-			local phase = (if isLeft then 0 else math.pi) + (if isFront then 0 else math.pi / 2)
-			local walkAngle = math.sin(t * 5.0 + phase) * math.rad(25)
+		elseif data.animType == ANIM_LEG then
+			local walkAngle = math.sin(t * 5.0 + data.param1) * math.rad(25)
 			animOffset = CFrame.Angles(walkAngle, 0, 0)
-		elseif name:match("^seg_") then
-			-- Body segments: gentle undulation — vertical wave ripples down the body
-			local idx = tonumber(name:match("%d+")) or 1
-			local yOffset = math.sin(t * 2.5 + idx * 1.0) * 0.25
+		elseif data.animType == ANIM_SEG then
+			local yOffset = math.sin(t * 2.5 + data.param1 * 1.0) * 0.25
 			animOffset = CFrame.new(0, yOffset, 0)
 		end
-		-- else: detail parts (eyes, horns) — no animation, animOffset stays identity
 
-		part.CFrame = pivot * baseOffset * animOffset
+		data.part.CFrame = pivot * data.baseOffset * animOffset
 	end
 end
 
@@ -88,12 +115,19 @@ function CreatureAI.Start(
 	local pivot = model:GetPivot()
 	local pivotAboveBottom = pivot.Position.Y - (cf.Position.Y - size.Y / 2)
 
-	-- Collect ALL parts and their offsets from the model pivot for animation
-	local animParts: { [BasePart]: CFrame } = {}
+	-- Pre-classify ALL parts by animation type at startup (avoids per-tick string:match)
+	local animList: { AnimPartData } = {}
 	local currentPivot = model:GetPivot()
 	for _, child in ipairs(model:GetChildren()) do
 		if child:IsA("BasePart") then
-			animParts[child] = currentPivot:ToObjectSpace(child.CFrame)
+			local animType, param1, param2 = classifyPart(child.Name)
+			table.insert(animList, {
+				part = child,
+				baseOffset = currentPivot:ToObjectSpace(child.CFrame),
+				animType = animType,
+				param1 = param1,
+				param2 = param2,
+			})
 		end
 	end
 
@@ -134,7 +168,7 @@ function CreatureAI.Start(
 	if locomotion == "stationary" then
 		task.spawn(function()
 			while isAlive() do
-				applyCreatureAnimation(model, animParts, tick())
+				applyCreatureAnimation(model, animList, tick())
 				task.wait(dt)
 			end
 		end)
@@ -228,7 +262,7 @@ function CreatureAI.Start(
 					end
 
 					model:PivotTo(CFrame.new(baseX, finalY, baseZ) * finalRot)
-					applyCreatureAnimation(model, animParts, tick())
+					applyCreatureAnimation(model, animList, tick())
 					task.wait(dt)
 				end
 			end
@@ -246,13 +280,13 @@ function CreatureAI.Start(
 					local targetY = curGroundY + pivotAboveBottom + locoConfig.hoverHeight + bobY
 					local currentRot = model:GetPivot() - model:GetPivot().Position
 					model:PivotTo(CFrame.new(currentPos.X, targetY, currentPos.Z) * currentRot)
-					applyCreatureAnimation(model, animParts, tick())
+					applyCreatureAnimation(model, animList, tick())
 					task.wait(dt)
 				end
 			else
 				local pauseStart = tick()
 				while isAlive() and (tick() - pauseStart) < pauseTime do
-					applyCreatureAnimation(model, animParts, tick())
+					applyCreatureAnimation(model, animList, tick())
 					task.wait(dt)
 				end
 			end

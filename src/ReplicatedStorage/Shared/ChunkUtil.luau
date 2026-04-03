@@ -1,4 +1,5 @@
 --!strict
+--!native
 
 local ChunkUtil = {}
 
@@ -50,7 +51,7 @@ function ChunkUtil.fromFlatIndex(index: number): (number, number, number)
 end
 
 function ChunkUtil.chunkKey(cx: number, cy: number, cz: number): string
-	return cx .. "," .. cy .. "," .. cz
+	return string.format("%d,%d,%d", cx, cy, cz)
 end
 
 function ChunkUtil.parseChunkKey(key: string): (number, number, number)
@@ -89,7 +90,7 @@ function ChunkUtil.regionKey(cx: number, cy: number, cz: number): string
 	local rx = math.floor(cx / 8)
 	local ry = math.floor(cy / 8)
 	local rz = math.floor(cz / 8)
-	return "WorldDeltas_region_" .. rx .. "," .. ry .. "," .. rz
+	return string.format("WorldDeltas_region_%d,%d,%d", rx, ry, rz)
 end
 
 return ChunkUtil

@@ -17,20 +17,19 @@ local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
 -- Pool
-local POOL_INITIAL = 2000
-local POOL_MAX = 25000
+local POOL_MAX = 20000
 
 -- Frame budget
 local FRAME_BUDGET = 0.004
-local YIELD_PART_INTERVAL = 32 -- yield check every N parts created (not blocks)
+local YIELD_PART_INTERVAL = 64 -- yield check every N blocks iterated
 
 -- Paper-crystal layer parameters (LOD 0 only)
-local LAYERS_PER_BLOCK = 3
-local LAYER_HEIGHT = BLOCK_SIZE / LAYERS_PER_BLOCK * 0.9
-local LAYER_GAP = BLOCK_SIZE / LAYERS_PER_BLOCK
+local LAYERS_PER_BLOCK = 2
+local LAYER_HEIGHT = BLOCK_SIZE / 2 * 0.9
+local LAYER_GAP = BLOCK_SIZE / 2
 local MAX_OFFSET = 0.15
 local MAX_TILT = math.rad(8)
-local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
+local LAYER_BRIGHTNESS = { 0.93, 1.07 }
 
 -- Simple block parameters (LOD 1)
 local SIMPLE_MAX_OFFSET = 0.08
@@ -38,13 +37,21 @@ local SIMPLE_MAX_TILT = math.rad(3)
 local SIMPLE_TINT_RANGE = 0.08
 
 -- LOD: squared chunk distance threshold
-local LOD_NEAR_DIST2 = 1 -- dist <= 1 chunk = paper layers (~7 chunks)
-local RENDER_MAX_DIST2 = 12 -- skip rendering chunks beyond ~3.5 chunk distance
+local LOD_NEAR_DIST2 = 2 -- dist <= 2 chunk = paper layers (~19 chunks)
+local RENDER_MAX_DIST2 = 18 -- skip rendering chunks beyond this
 
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
-local BATCH_FLUSH_SIZE = 64
+local BATCH_FLUSH_SIZE = 256
+
+-- Hard part cap & trickle fill
+local HARD_PART_CAP = 12000
+local TRICKLE_FILL_PER_FRAME = 4
+local TRICKLE_FILL_TARGET = 500
+
+-- LOD re-evaluation interval
+local LOD_CHECK_INTERVAL = 2.0
 
 local NEIGHBOR_DIRS = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
 
@@ -75,7 +82,7 @@ end
 --[=[
 	@class ChunkRenderController
 	LOD renderer:
-	  LOD 0 (near): 3 paper-crystal layers + invisible collision part
+	  LOD 0 (near): 2 paper-crystal layers + invisible collision part
 	  LOD 1 (far):  1 full-size block with tilt/tint (visual + collision)
 ]=]
 local ChunkRenderController = Knit.CreateController({
@@ -94,6 +101,13 @@ local chunkContainer: Folder
 
 local renderQueue: { { key: string, blocks: buffer } } = {}
 local isProcessingQueue = false
+
+-- Character-ready gate
+local characterReady = false
+local pendingChunkData: { { key: string, blocks: buffer } } = {}
+
+-- LOD re-evaluation timer
+local lastLODCheck = 0
 
 -------------------------------------------------
 -- Debug HUD
@@ -266,7 +280,7 @@ end
 local function _getChunkLOD(cx: number, cy: number, cz: number): number
 	local pcx, pcy, pcz = _getPlayerChunkPos()
 	if not pcx or not pcy or not pcz then
-		return 1
+		return -1
 	end
 	local dx = cx - pcx
 	local dy = cy - pcy
@@ -301,15 +315,19 @@ local function _createPart(): BasePart
 	return part
 end
 
-local function _initPool()
-	_debugLogWait("initPool " .. POOL_INITIAL)
-	for i = 1, POOL_INITIAL do
-		table.insert(partPool, _createPart())
-		if i % 50 == 0 then
-			_debugLogWait("initPool " .. i .. "/" .. POOL_INITIAL)
-		end
+local function _trickleFillPool()
+	if isProcessingQueue then
+		return
 	end
-	_debugEnd()
+	if #partPool >= TRICKLE_FILL_TARGET then
+		return
+	end
+	for _ = 1, TRICKLE_FILL_PER_FRAME do
+		if #partPool >= TRICKLE_FILL_TARGET then
+			break
+		end
+		table.insert(partPool, _createPart())
+	end
 end
 
 local function _getPart(): BasePart
@@ -396,7 +414,7 @@ local function _makeLayerParts(
 
 	local parts: { BasePart } = {}
 
-	-- 3 visual layers (no collision)
+	-- 2 visual layers (no collision)
 	for i = 1, LAYERS_PER_BLOCK do
 		local layerSeed = seed + i * 1009
 
@@ -596,6 +614,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 		return
 	end
 
+	-- Hard cap: force LOD 1 if over part limit
+	if lod == 0 and activePartsCount > HARD_PART_CAP then
+		lod = 1
+	end
+
 	_debugLogWait("render " .. chunkKey .. " L" .. lod)
 
 	local existing = chunkParts[chunkKey]
@@ -612,7 +635,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	chunkParts[chunkKey] = parts
 
 	local renderStart = os.clock()
-	local partsCreated = 0
+	local blockCount = 0
 
 	for ly = 0, CHUNK_SIZE - 1 do
 		for lz = 0, CHUNK_SIZE - 1 do
@@ -623,14 +646,16 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
 					local group = _makeBlockParts(blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
 					parts[idx] = group
-					partsCreated += #group
 				end
 
-				if partsCreated >= YIELD_PART_INTERVAL and os.clock() - renderStart > FRAME_BUDGET then
-					_flushBatch()
-					task.wait()
-					renderStart = os.clock()
-					partsCreated = 0
+				blockCount += 1
+				if blockCount >= YIELD_PART_INTERVAL then
+					blockCount = 0
+					if os.clock() - renderStart > FRAME_BUDGET then
+						_flushBatch()
+						task.wait()
+						renderStart = os.clock()
+					end
 				end
 			end
 		end
@@ -735,6 +760,106 @@ function ChunkRenderController:GetPoolSize(): number
 end
 
 -------------------------------------------------
+-- Render queue processing
+-------------------------------------------------
+
+local function _processRenderQueue()
+	if isProcessingQueue then
+		return
+	end
+	isProcessingQueue = true
+
+	-- Sort: closest chunks first
+	local pcx, pcy, pcz = _getPlayerChunkPos()
+	if pcx and pcy and pcz then
+		table.sort(renderQueue, function(a, b)
+			local acx, acy, acz = ChunkUtil.parseChunkKey(a.key)
+			local bcx, bcy, bcz = ChunkUtil.parseChunkKey(b.key)
+			local aDist = (acx - pcx) ^ 2 + (acy - pcy) ^ 2 + (acz - pcz) ^ 2
+			local bDist = (bcx - pcx) ^ 2 + (bcy - pcy) ^ 2 + (bcz - pcz) ^ 2
+			return aDist < bDist
+		end)
+	end
+
+	-- Deduplicate: keep last occurrence of each chunkKey
+	local seen: { [string]: boolean } = {}
+	local deduped = {}
+	for i = #renderQueue, 1, -1 do
+		local key = renderQueue[i].key
+		if not seen[key] then
+			seen[key] = true
+			table.insert(deduped, 1, renderQueue[i])
+		end
+	end
+
+	for _, item in deduped do
+		_renderChunk(item.key, item.blocks)
+		task.wait()
+	end
+	table.clear(renderQueue)
+	isProcessingQueue = false
+end
+
+-------------------------------------------------
+-- LOD re-evaluation
+-------------------------------------------------
+
+local function _reevaluateLODs()
+	if not characterReady then
+		return
+	end
+	local now = os.clock()
+	if now - lastLODCheck < LOD_CHECK_INTERVAL then
+		return
+	end
+	lastLODCheck = now
+
+	-- Check all rendered chunks for LOD changes
+	for chunkKey, currentLod in chunkLOD do
+		local blocks = chunkBlocks[chunkKey]
+		if not blocks then
+			continue
+		end
+		local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+		local newLod = _getChunkLOD(cx, cy, cz)
+		if newLod ~= currentLod then
+			table.insert(renderQueue, { key = chunkKey, blocks = blocks })
+		end
+	end
+
+	-- If over part cap, downgrade farthest LOD 0 chunks
+	if activePartsCount > HARD_PART_CAP then
+		local pcx, pcy, pcz = _getPlayerChunkPos()
+		if pcx and pcy and pcz then
+			local lod0Chunks: { { key: string, dist2: number } } = {}
+			for chunkKey, lod in chunkLOD do
+				if lod == 0 then
+					local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+					local dx, dy, dz = cx - pcx, cy - pcy, cz - pcz
+					table.insert(lod0Chunks, { key = chunkKey, dist2 = dx * dx + dy * dy + dz * dz })
+				end
+			end
+			table.sort(lod0Chunks, function(a, b)
+				return a.dist2 > b.dist2
+			end)
+			for _, entry in lod0Chunks do
+				if activePartsCount <= HARD_PART_CAP then
+					break
+				end
+				local blocks = chunkBlocks[entry.key]
+				if blocks then
+					table.insert(renderQueue, { key = entry.key, blocks = blocks })
+				end
+			end
+		end
+	end
+
+	if #renderQueue > 0 then
+		_processRenderQueue()
+	end
+end
+
+-------------------------------------------------
 -- Knit lifecycle
 -------------------------------------------------
 
@@ -744,35 +869,57 @@ function ChunkRenderController:KnitInit()
 	chunkContainer.Parent = workspace
 
 	_initDebugHUD()
-	_initPool()
-end
-
-local function _processRenderQueue()
-	if isProcessingQueue then
-		return
-	end
-	isProcessingQueue = true
-
-	local idx = 1
-	while idx <= #renderQueue do
-		local item = renderQueue[idx]
-		_renderChunk(item.key, item.blocks)
-		idx += 1
-		task.wait()
-	end
-	table.clear(renderQueue)
-
-	isProcessingQueue = false
 end
 
 function ChunkRenderController:KnitStart()
 	local WorldService = Knit.GetService("WorldService")
+	local player = Players.LocalPlayer
+
+	-- Character-ready detection
+	local function _onCharacterReady()
+		if characterReady then
+			return
+		end
+		characterReady = true
+
+		-- Flush pending chunk data into render queue
+		for _, item in pendingChunkData do
+			table.insert(renderQueue, item)
+		end
+		table.clear(pendingChunkData)
+
+		if #renderQueue > 0 then
+			_processRenderQueue()
+		end
+	end
+
+	if player then
+		local character = player.Character
+		if character and character:FindFirstChild("HumanoidRootPart") then
+			_onCharacterReady()
+		end
+
+		if not characterReady then
+			player.CharacterAdded:Connect(function(char: Model)
+				local hrp = char:WaitForChild("HumanoidRootPart", 10)
+				if hrp then
+					_onCharacterReady()
+				end
+			end)
+		end
+	end
 
 	WorldService.ChunkData:Connect(function(chunkKey: string, compressedBuffer: buffer)
 		_debugLogWait("decompress " .. chunkKey)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
-		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
 		_debugEnd()
+
+		if not characterReady then
+			table.insert(pendingChunkData, { key = chunkKey, blocks = blocks })
+			return
+		end
+
+		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
 		_processRenderQueue()
 	end)
 
@@ -782,6 +929,12 @@ function ChunkRenderController:KnitStart()
 
 	WorldService.BlockUpdate:Connect(function(chunkKey: string, flatIndex: number, blockTypeId: number)
 		_handleBlockUpdate(chunkKey, flatIndex, blockTypeId)
+	end)
+
+	-- Heartbeat: trickle-fill pool and periodic LOD re-evaluation
+	RunService.Heartbeat:Connect(function(_dt: number)
+		_trickleFillPool()
+		_reevaluateLODs()
 	end)
 end
 

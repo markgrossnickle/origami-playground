@@ -81,7 +81,7 @@ local isProcessingQueue = false
 -------------------------------------------------
 -- Debug HUD (visible on mobile)
 -------------------------------------------------
-local debugLabel: TextLabel? = nil
+local debugLabel: TextBox? = nil
 local DEBUG_MAX_LINES = 15
 local debugLines: { string } = {}
 
@@ -98,7 +98,8 @@ local function _initDebugHUD()
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
 
-	debugLabel = Instance.new("TextLabel")
+	-- TextBox so user can tap → long-press → select all → copy on mobile
+	debugLabel = Instance.new("TextBox")
 	debugLabel.Size = UDim2.new(0.45, 0, 0, DEBUG_MAX_LINES * 16 + 8)
 	debugLabel.Position = UDim2.new(0, 4, 0, 100)
 	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -110,6 +111,8 @@ local function _initDebugHUD()
 	debugLabel.TextYAlignment = Enum.TextYAlignment.Top
 	debugLabel.Text = ""
 	debugLabel.TextWrapped = true
+	debugLabel.ClearTextOnFocus = false
+	debugLabel.TextEditable = false
 	debugLabel.Parent = gui
 end
 

@@ -141,11 +141,10 @@ local function _initDebugHUD()
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
 
-	-- Recent log: right side, below top panel
+	-- Recent log: top-left
 	debugLabel = Instance.new("TextLabel")
 	debugLabel.Size = UDim2.new(0.5, 0, 0, DEBUG_MAX_LINES * 16 + 4)
-	debugLabel.Position = UDim2.new(1, -4, 0, 150)
-	debugLabel.AnchorPoint = Vector2.new(1, 0)
+	debugLabel.Position = UDim2.new(0, 4, 0, 40)
 	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	debugLabel.BackgroundTransparency = 0.6
 	debugLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
@@ -175,11 +174,10 @@ local function _initDebugHUD()
 	topLabel.Active = false
 	topLabel.Parent = gui
 
-	-- Freeze button
+	-- Freeze button: top-left above log
 	local freezeBtn = Instance.new("TextButton")
 	freezeBtn.Size = UDim2.new(0, 50, 0, 22)
-	freezeBtn.Position = UDim2.new(1, -4, 0, 16)
-	freezeBtn.AnchorPoint = Vector2.new(1, 0)
+	freezeBtn.Position = UDim2.new(0, 4, 0, 16)
 	freezeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	freezeBtn.BackgroundTransparency = 0.3
 	freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
@@ -189,6 +187,20 @@ local function _initDebugHUD()
 	freezeBtn.ZIndex = 10
 	freezeBtn.Parent = gui
 
+	-- Clear button: next to top 5, clears the leaderboard
+	local clearBtn = Instance.new("TextButton")
+	clearBtn.Size = UDim2.new(0, 50, 0, 22)
+	clearBtn.Position = UDim2.new(1, -4, 0, 16)
+	clearBtn.AnchorPoint = Vector2.new(1, 0)
+	clearBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	clearBtn.BackgroundTransparency = 0.3
+	clearBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+	clearBtn.Font = Enum.Font.RobotoMono
+	clearBtn.TextSize = 12
+	clearBtn.Text = "CLEAR"
+	clearBtn.ZIndex = 10
+	clearBtn.Parent = gui
+
 	freezeBtn.Activated:Connect(function()
 		debugFrozen = not debugFrozen
 		if debugFrozen then
@@ -197,10 +209,14 @@ local function _initDebugHUD()
 		else
 			freezeBtn.Text = "FREEZE"
 			freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
-			-- Refresh both panels on unfreeze
 			_refreshDebugLabel()
 			_refreshTopLabel()
 		end
+	end)
+
+	clearBtn.Activated:Connect(function()
+		table.clear(topOps)
+		_refreshTopLabel()
 	end)
 end
 

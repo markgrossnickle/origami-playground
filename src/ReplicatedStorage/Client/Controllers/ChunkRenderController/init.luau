@@ -626,7 +626,7 @@ function ChunkRenderController:KnitStart()
 		_debugLogWait("decompress " .. chunkKey)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
 		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
-		_debugLog("queued " .. chunkKey .. " (q=" .. #renderQueue .. ")")
+		_debugEnd() -- Close decompress timer; don't time idle wait between server sends
 		_processRenderQueue()
 	end)
 

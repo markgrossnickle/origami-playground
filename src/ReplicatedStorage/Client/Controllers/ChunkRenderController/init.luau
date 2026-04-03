@@ -45,10 +45,13 @@ local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
 local BATCH_FLUSH_SIZE = 256
 
--- Hard part cap & trickle fill
-local HARD_PART_CAP = 12000
+-- Trickle fill
 local TRICKLE_FILL_PER_FRAME = 4
 local TRICKLE_FILL_TARGET = 500
+
+-- Small startup pool to reduce initial Instance.new calls
+local POOL_STARTUP = 1000
+local POOL_STARTUP_BATCH = 100
 
 -- LOD re-evaluation interval
 local LOD_CHECK_INTERVAL = 2.0
@@ -614,11 +617,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 		return
 	end
 
-	-- Hard cap: force LOD 1 if over part limit
-	if lod == 0 and activePartsCount > HARD_PART_CAP then
-		lod = 1
-	end
-
 	_debugLogWait("render " .. chunkKey .. " L" .. lod)
 
 	local existing = chunkParts[chunkKey]
@@ -769,34 +767,40 @@ local function _processRenderQueue()
 	end
 	isProcessingQueue = true
 
-	-- Sort: closest chunks first
-	local pcx, pcy, pcz = _getPlayerChunkPos()
-	if pcx and pcy and pcz then
-		table.sort(renderQueue, function(a, b)
-			local acx, acy, acz = ChunkUtil.parseChunkKey(a.key)
-			local bcx, bcy, bcz = ChunkUtil.parseChunkKey(b.key)
-			local aDist = (acx - pcx) ^ 2 + (acy - pcy) ^ 2 + (acz - pcz) ^ 2
-			local bDist = (bcx - pcx) ^ 2 + (bcy - pcy) ^ 2 + (bcz - pcz) ^ 2
-			return aDist < bDist
-		end)
-	end
+	-- Process in batches: swap out the queue so new arrivals go to a fresh table
+	while #renderQueue > 0 do
+		local batch = renderQueue
+		renderQueue = {} -- new chunks arriving during rendering go here
 
-	-- Deduplicate: keep last occurrence of each chunkKey
-	local seen: { [string]: boolean } = {}
-	local deduped = {}
-	for i = #renderQueue, 1, -1 do
-		local key = renderQueue[i].key
-		if not seen[key] then
-			seen[key] = true
-			table.insert(deduped, 1, renderQueue[i])
+		-- Sort: closest chunks first
+		local pcx, pcy, pcz = _getPlayerChunkPos()
+		if pcx and pcy and pcz then
+			table.sort(batch, function(a, b)
+				local acx, acy, acz = ChunkUtil.parseChunkKey(a.key)
+				local bcx, bcy, bcz = ChunkUtil.parseChunkKey(b.key)
+				local aDist = (acx - pcx) ^ 2 + (acy - pcy) ^ 2 + (acz - pcz) ^ 2
+				local bDist = (bcx - pcx) ^ 2 + (bcy - pcy) ^ 2 + (bcz - pcz) ^ 2
+				return aDist < bDist
+			end)
+		end
+
+		-- Deduplicate: keep last occurrence of each chunkKey
+		local seen: { [string]: boolean } = {}
+		local deduped = {}
+		for i = #batch, 1, -1 do
+			local key = batch[i].key
+			if not seen[key] then
+				seen[key] = true
+				table.insert(deduped, 1, batch[i])
+			end
+		end
+
+		for _, item in deduped do
+			_renderChunk(item.key, item.blocks)
+			task.wait()
 		end
 	end
 
-	for _, item in deduped do
-		_renderChunk(item.key, item.blocks)
-		task.wait()
-	end
-	table.clear(renderQueue)
 	isProcessingQueue = false
 end
 
@@ -814,7 +818,7 @@ local function _reevaluateLODs()
 	end
 	lastLODCheck = now
 
-	-- Check all rendered chunks for LOD changes
+	-- Check all rendered chunks for LOD changes (player moved)
 	for chunkKey, currentLod in chunkLOD do
 		local blocks = chunkBlocks[chunkKey]
 		if not blocks then
@@ -824,33 +828,6 @@ local function _reevaluateLODs()
 		local newLod = _getChunkLOD(cx, cy, cz)
 		if newLod ~= currentLod then
 			table.insert(renderQueue, { key = chunkKey, blocks = blocks })
-		end
-	end
-
-	-- If over part cap, downgrade farthest LOD 0 chunks
-	if activePartsCount > HARD_PART_CAP then
-		local pcx, pcy, pcz = _getPlayerChunkPos()
-		if pcx and pcy and pcz then
-			local lod0Chunks: { { key: string, dist2: number } } = {}
-			for chunkKey, lod in chunkLOD do
-				if lod == 0 then
-					local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-					local dx, dy, dz = cx - pcx, cy - pcy, cz - pcz
-					table.insert(lod0Chunks, { key = chunkKey, dist2 = dx * dx + dy * dy + dz * dz })
-				end
-			end
-			table.sort(lod0Chunks, function(a, b)
-				return a.dist2 > b.dist2
-			end)
-			for _, entry in lod0Chunks do
-				if activePartsCount <= HARD_PART_CAP then
-					break
-				end
-				local blocks = chunkBlocks[entry.key]
-				if blocks then
-					table.insert(renderQueue, { key = entry.key, blocks = blocks })
-				end
-			end
 		end
 	end
 
@@ -869,6 +846,14 @@ function ChunkRenderController:KnitInit()
 	chunkContainer.Parent = workspace
 
 	_initDebugHUD()
+
+	-- Small startup pool, spread across frames
+	for i = 1, POOL_STARTUP do
+		table.insert(partPool, _createPart())
+		if i % POOL_STARTUP_BATCH == 0 then
+			task.wait()
+		end
+	end
 end
 
 function ChunkRenderController:KnitStart()

@@ -16,15 +16,15 @@ local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
--- Pool: pre-allocate to avoid Instance.new during rendering
+-- Pool
 local POOL_INITIAL = 6000
 local POOL_MAX = 25000
 
--- Frame budget: 4ms per yield slice (conservative for mobile)
+-- Frame budget
 local FRAME_BUDGET = 0.004
 local YIELD_CHECK_INTERVAL = 32
 
--- Paper-crystal layer parameters
+-- Paper-crystal layer parameters (LOD 0 only)
 local LAYERS_PER_BLOCK = 3
 local LAYER_HEIGHT = BLOCK_SIZE / LAYERS_PER_BLOCK * 0.9
 local LAYER_GAP = BLOCK_SIZE / LAYERS_PER_BLOCK
@@ -32,16 +32,21 @@ local MAX_OFFSET = 0.15
 local MAX_TILT = math.rad(8)
 local LAYER_BRIGHTNESS = { 0.92, 1.0, 1.08 }
 
--- CFrame-to-infinity: move parts far away instead of reparenting
+-- Simple block parameters (LOD 1)
+local SIMPLE_MAX_OFFSET = 0.08
+local SIMPLE_MAX_TILT = math.rad(3)
+local SIMPLE_TINT_RANGE = 0.08
+
+-- LOD: squared chunk distance threshold
+local LOD_NEAR_DIST2 = 2 -- dist <= ~1.4 chunks = paper layers
+
+-- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
--- BulkMoveTo batch size
 local BATCH_FLUSH_SIZE = 64
 
--- Hoisted neighbor directions
 local NEIGHBOR_DIRS = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
 
--- Override: PaperGrass renders as cream Paper visually
 local GRASS_COLOR = Color3.fromRGB(245, 235, 220)
 local GRASS_MATERIAL = Enum.Material.SmoothPlastic
 
@@ -68,8 +73,9 @@ end
 
 --[=[
 	@class ChunkRenderController
-	Paper-crystal renderer: each exposed block is 3 thin slabs with
-	crystal-like random tilt and slight elongation. Middle layer handles collision.
+	LOD renderer:
+	  LOD 0 (near): 3 paper-crystal layers + invisible collision part
+	  LOD 1 (far):  1 full-size block with tilt/tint (visual + collision)
 ]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
@@ -81,10 +87,10 @@ local activePartsCount = 0
 local renderedChunks: { [string]: boolean } = {}
 local chunkParts: { [string]: { [number]: { BasePart } } } = {}
 local chunkBlocks: { [string]: buffer } = {}
+local chunkLOD: { [string]: number } = {}
 
 local chunkContainer: Folder
 
--- Render queue
 local renderQueue: { { key: string, blocks: buffer } } = {}
 local isProcessingQueue = false
 
@@ -94,7 +100,6 @@ local isProcessingQueue = false
 local opsLabel: TextLabel? = nil
 local framesLabel: TextLabel? = nil
 local MIN_DURATION_MS = 1
-
 local TOP_COUNT = 5
 local topOps: { { ms: number, name: string } } = {}
 local topFrames: { { ms: number, context: string } } = {}
@@ -201,7 +206,6 @@ local function _initDebugHUD()
 		_refreshFramesLabel()
 	end)
 
-	-- Frame time monitor: log any frame over 30ms
 	RunService.Heartbeat:Connect(function(dt: number)
 		local frameMs = dt * 1000
 		if frameMs >= 30 then
@@ -242,7 +246,39 @@ local function _debugEnd()
 end
 
 -------------------------------------------------
--- Part pool (CFrame-to-infinity, pre-allocated)
+-- LOD helper
+-------------------------------------------------
+
+local function _getPlayerChunkPos(): (number?, number?, number?)
+	local player = Players.LocalPlayer
+	if not player or not player.Character then
+		return nil, nil, nil
+	end
+	local hrp = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp then
+		return nil, nil, nil
+	end
+	local pos = hrp.Position
+	return ChunkUtil.worldToChunk(pos.X, pos.Y, pos.Z)
+end
+
+local function _getChunkLOD(cx: number, cy: number, cz: number): number
+	local pcx, pcy, pcz = _getPlayerChunkPos()
+	if not pcx or not pcy or not pcz then
+		return 1
+	end
+	local dx = cx - pcx
+	local dy = cy - pcy
+	local dz = cz - pcz
+	local dist2 = dx * dx + dy * dy + dz * dz
+	if dist2 <= LOD_NEAR_DIST2 then
+		return 0
+	end
+	return 1
+end
+
+-------------------------------------------------
+-- Part pool
 -------------------------------------------------
 
 local function _createPart(): BasePart
@@ -300,6 +336,12 @@ local function _returnPart(part: BasePart)
 	end
 end
 
+local function _returnGroup(group: { BasePart })
+	for _, part in group do
+		_returnPart(part)
+	end
+end
+
 -------------------------------------------------
 -- BulkMoveTo batch
 -------------------------------------------------
@@ -325,17 +367,13 @@ local function _hash(a: number, b: number, c: number, d: number): number
 end
 
 -------------------------------------------------
--- Paper-crystal layer creation (3 slabs per block)
+-- LOD 0: Paper-crystal layers + collision part
 -------------------------------------------------
 
 local function _makeLayerParts(
 	blockTypeId: number,
-	cx: number,
-	cy: number,
-	cz: number,
-	lx: number,
-	ly: number,
-	lz: number,
+	cx: number, cy: number, cz: number,
+	lx: number, ly: number, lz: number,
 	batched: boolean?
 ): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
@@ -353,6 +391,8 @@ local function _makeLayerParts(
 	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
 
 	local parts: { BasePart } = {}
+
+	-- 3 visual layers (no collision)
 	for i = 1, LAYERS_PER_BLOCK do
 		local layerSeed = seed + i * 1009
 
@@ -377,16 +417,9 @@ local function _makeLayerParts(
 		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])
 		part.Material = mat
 		part.Size = Vector3.new(sx, LAYER_HEIGHT, sz)
+		part.CanCollide = false
+		part.CanQuery = false
 		part.Transparency = 0
-
-		-- Middle layer handles collision and raycasts
-		if i == 2 then
-			part.CanCollide = true
-			part.CanQuery = true
-		else
-			part.CanCollide = false
-			part.CanQuery = false
-		end
 
 		local targetCFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
 
@@ -411,7 +444,100 @@ local function _makeLayerParts(
 		table.insert(parts, part)
 	end
 
+	-- Invisible collision part (full block size)
+	local collisionPart = _getPart()
+	collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	collisionPart.Transparency = 1
+	collisionPart.CanCollide = true
+	collisionPart.CanQuery = true
+
+	local collisionCFrame = CFrame.new(px, baseY + ly * BLOCK_SIZE + halfBlock, pz)
+	if batched then
+		table.insert(_batchParts, collisionPart)
+		table.insert(_batchCFrames, collisionCFrame)
+		if #_batchParts >= BATCH_FLUSH_SIZE then
+			_flushBatch()
+		end
+	else
+		collisionPart.CFrame = collisionCFrame
+	end
+	table.insert(parts, collisionPart)
+
 	return parts
+end
+
+-------------------------------------------------
+-- LOD 1: Single full-size block (visual + collision)
+-------------------------------------------------
+
+local function _makeSimplePart(
+	blockTypeId: number,
+	cx: number, cy: number, cz: number,
+	lx: number, ly: number, lz: number,
+	batched: boolean?
+): { BasePart }
+	local halfBlock = BLOCK_SIZE / 2
+	local px = cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock
+	local py = cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock
+	local pz = cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
+
+	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
+
+	local ox = (_hash(seed, 1, 0, 0) - 0.5) * 2 * SIMPLE_MAX_OFFSET
+	local oz = (_hash(seed, 2, 0, 0) - 0.5) * 2 * SIMPLE_MAX_OFFSET
+	local tiltX = (_hash(seed, 3, 0, 0) - 0.5) * 2 * SIMPLE_MAX_TILT
+	local tiltZ = (_hash(seed, 4, 0, 0) - 0.5) * 2 * SIMPLE_MAX_TILT
+
+	local tint = 1.0 + (_hash(seed, 5, 0, 0) - 0.5) * 2 * SIMPLE_TINT_RANGE
+	local baseColor = _getColor(blockTypeId)
+
+	local part = _getPart()
+	part.Color = _tintColor(baseColor, tint)
+	part.Material = _getMaterial(blockTypeId)
+	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	part.CanCollide = true
+	part.CanQuery = true
+	part.Transparency = 0
+
+	local targetCFrame = CFrame.new(px + ox, py, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
+
+	if batched then
+		table.insert(_batchParts, part)
+		table.insert(_batchCFrames, targetCFrame)
+		if #_batchParts >= BATCH_FLUSH_SIZE then
+			_flushBatch()
+		end
+	else
+		part.CFrame = targetCFrame
+	end
+
+	if blockTypeId == BlockType.EggNode then
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 230, 180)
+		light.Brightness = 1
+		light.Range = 15
+		light.Parent = part
+	end
+
+	return { part }
+end
+
+-------------------------------------------------
+-- Block creation dispatcher
+-------------------------------------------------
+
+local function _makeBlockParts(
+	blockTypeId: number,
+	cx: number, cy: number, cz: number,
+	lx: number, ly: number, lz: number,
+	lod: number,
+	batched: boolean?
+): { BasePart }
+	if lod == 0 then
+		return _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+	else
+		return _makeSimplePart(blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+	end
 end
 
 -------------------------------------------------
@@ -452,14 +578,11 @@ end
 -- Chunk rendering
 -------------------------------------------------
 
-local function _returnGroup(group: { BasePart })
-	for _, part in group do
-		_returnPart(part)
-	end
-end
-
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	_debugLogWait("render " .. chunkKey)
+	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+	local lod = _getChunkLOD(cx, cy, cz)
+
+	_debugLogWait("render " .. chunkKey .. " L" .. lod)
 
 	local existing = chunkParts[chunkKey]
 	if existing then
@@ -470,8 +593,8 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 
 	chunkBlocks[chunkKey] = blocks
 	renderedChunks[chunkKey] = true
+	chunkLOD[chunkKey] = lod
 
-	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 	local parts: { [number]: { BasePart } } = {}
 	chunkParts[chunkKey] = parts
 
@@ -485,7 +608,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				local blockTypeId = buffer.readu8(blocks, idx)
 
 				if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-					parts[idx] = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, true)
+					parts[idx] = _makeBlockParts(blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
 				end
 
 				blocksProcessed += 1
@@ -504,6 +627,7 @@ end
 
 local function _unrenderChunk(chunkKey: string)
 	renderedChunks[chunkKey] = nil
+	chunkLOD[chunkKey] = nil
 
 	local parts = chunkParts[chunkKey]
 	if parts then
@@ -530,6 +654,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+	local lod = chunkLOD[chunkKey] or 1
 
 	local parts = chunkParts[chunkKey]
 	if not parts then
@@ -543,7 +668,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		parts[flatIndex] = _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, false)
+		parts[flatIndex] = _makeBlockParts(blockTypeId, cx, cy, cz, lx, ly, lz, lod, false)
 	end
 
 	for _, dir in NEIGHBOR_DIRS do
@@ -559,7 +684,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		local shouldRender = nBlockType ~= BlockType.Air and _isExposed(blocks, nx, ny, nz)
 
 		if shouldRender and not hasGroup then
-			parts[nIdx] = _makeLayerParts(nBlockType, cx, cy, cz, nx, ny, nz, false)
+			parts[nIdx] = _makeBlockParts(nBlockType, cx, cy, cz, nx, ny, nz, lod, false)
 		elseif not shouldRender and hasGroup then
 			_returnGroup(parts[nIdx])
 			parts[nIdx] = nil

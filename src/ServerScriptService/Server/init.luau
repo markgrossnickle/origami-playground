@@ -25,13 +25,13 @@ function Server:_setupWorld()
 		baseplate:Destroy()
 	end
 
-	-- Lighting — warm afternoon light for paper aesthetic
+	-- Lighting — warm afternoon light for paper aesthetic (reduced brightness to avoid washout)
 	local GLOBAL_SHADOWS = true
 	Lighting.GlobalShadows = GLOBAL_SHADOWS
 	Lighting.ClockTime = 14
-	Lighting.Brightness = 2
-	Lighting.Ambient = Color3.fromRGB(160, 155, 145)
-	Lighting.OutdoorAmbient = Color3.fromRGB(160, 155, 145)
+	Lighting.Brightness = 1.2
+	Lighting.Ambient = Color3.fromRGB(100, 95, 90)
+	Lighting.OutdoorAmbient = Color3.fromRGB(120, 115, 110)
 end
 
 function Server:_loadComponentsIn(container: Instance)

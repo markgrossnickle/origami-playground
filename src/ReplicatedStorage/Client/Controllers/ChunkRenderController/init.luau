@@ -84,6 +84,86 @@ local renderQueue: { { key: string, blocks: buffer } } = {}
 local isProcessingQueue = false
 
 -------------------------------------------------
+-- Debug HUD (visible on mobile)
+-------------------------------------------------
+local debugLabel: TextLabel? = nil
+
+local function _initDebugHUD()
+	local Players = game:GetService("Players")
+	local player = Players.LocalPlayer
+	if not player then
+		return
+	end
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "ChunkDebugHUD"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 999
+	gui.Parent = player.PlayerGui
+
+	debugLabel = Instance.new("TextLabel")
+	debugLabel.Size = UDim2.new(1, 0, 0, 80)
+	debugLabel.Position = UDim2.new(0, 0, 0, 40)
+	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	debugLabel.BackgroundTransparency = 0.5
+	debugLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+	debugLabel.Font = Enum.Font.RobotoMono
+	debugLabel.TextSize = 14
+	debugLabel.TextXAlignment = Enum.TextXAlignment.Left
+	debugLabel.TextYAlignment = Enum.TextYAlignment.Top
+	debugLabel.Text = "Debug HUD loading..."
+	debugLabel.TextWrapped = true
+	debugLabel.Parent = gui
+end
+
+local _lastOp = "idle"
+local _lastOpStart = 0
+local _lastDuration = 0
+
+local function _debugLog(op: string)
+	-- Close previous op
+	if _lastOpStart > 0 then
+		_lastDuration = (os.clock() - _lastOpStart) * 1000
+	end
+	_lastOp = op
+	_lastOpStart = os.clock()
+
+	if debugLabel then
+		debugLabel.Text = string.format(
+			"OP: %s | Last: %.0fms\nPool: %d | Active: %d | Queue: %d\nChunks rendered: %d",
+			op,
+			_lastDuration,
+			#partPool,
+			activePartsCount,
+			#renderQueue,
+			0 -- placeholder, counted below
+		)
+		local count = 0
+		for _ in renderedChunks do
+			count += 1
+		end
+		debugLabel.Text = string.format(
+			"OP: %s | Last: %.0fms\nPool: %d | Active: %d | Queue: %d\nChunks: %d",
+			op,
+			_lastDuration,
+			#partPool,
+			activePartsCount,
+			#renderQueue,
+			count
+		)
+	end
+end
+
+local function _debugEnd()
+	if _lastOpStart > 0 then
+		_lastDuration = (os.clock() - _lastOpStart) * 1000
+		_lastOpStart = 0
+	end
+	_debugLog("idle")
+end
+
+-------------------------------------------------
 -- Part pool (CFrame-to-infinity pattern)
 -------------------------------------------------
 
@@ -105,9 +185,16 @@ local function _createPart(): BasePart
 end
 
 local function _initPool()
-	for _ = 1, POOL_INITIAL do
+	_debugLog("initPool " .. POOL_INITIAL)
+	for i = 1, POOL_INITIAL do
 		table.insert(partPool, _createPart())
+		-- Yield every 500 parts to prevent stall
+		if i % 500 == 0 then
+			_debugLog("initPool " .. i .. "/" .. POOL_INITIAL)
+			task.wait()
+		end
 	end
+	_debugEnd()
 end
 
 local function _getPart(): BasePart
@@ -296,6 +383,7 @@ local function _returnLayerGroup(group: { BasePart })
 end
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
+	_debugLog("render " .. chunkKey)
 	local existingLayers = layerParts[chunkKey]
 	if existingLayers then
 		for _, group in existingLayers do
@@ -387,6 +475,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 
 	-- Flush any remaining batched parts
 	_flushBatch()
+	_debugEnd()
 end
 
 local function _unrenderChunk(chunkKey: string)
@@ -566,6 +655,7 @@ function ChunkRenderController:KnitInit()
 	chunkContainer.Name = "ChunkRender"
 	chunkContainer.Parent = workspace
 
+	_initDebugHUD()
 	_initPool()
 end
 
@@ -585,8 +675,10 @@ function ChunkRenderController:KnitStart()
 	local WorldService = Knit.GetService("WorldService")
 
 	WorldService.ChunkData:Connect(function(chunkKey: string, compressedBuffer: buffer)
+		_debugLog("decompress " .. chunkKey)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
 		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
+		_debugLog("queued " .. chunkKey .. " (q=" .. #renderQueue .. ")")
 		_processRenderQueue()
 	end)
 

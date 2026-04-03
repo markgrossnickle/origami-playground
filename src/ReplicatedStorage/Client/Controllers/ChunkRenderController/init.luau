@@ -82,10 +82,51 @@ local isProcessingQueue = false
 -- Debug HUD (visible on mobile)
 -------------------------------------------------
 local debugLabel: TextLabel? = nil
+local topLabel: TextLabel? = nil
 local DEBUG_MAX_LINES = 16
 local debugLines: { string } = {}
 local debugFrozen = false
-local MIN_DURATION_MS = 1 -- Filter out lines below this threshold
+local MIN_DURATION_MS = 1
+
+-- Top 5 longest operations ever seen
+local TOP_COUNT = 5
+local topOps: { { ms: number, name: string } } = {}
+
+local function _updateTopOps(ms: number, name: string)
+	-- Insert if qualifies for top 5
+	if #topOps < TOP_COUNT or ms > topOps[#topOps].ms then
+		table.insert(topOps, { ms = ms, name = name })
+		table.sort(topOps, function(a, b)
+			return a.ms > b.ms
+		end)
+		if #topOps > TOP_COUNT then
+			table.remove(topOps, #topOps + 1)
+		end
+	end
+end
+
+local function _refreshTopLabel()
+	if debugFrozen or not topLabel then
+		return
+	end
+	local lines = { "TOP 5 SLOWEST:" }
+	for i, entry in topOps do
+		table.insert(lines, string.format("%d. %.0fms %s", i, entry.ms, entry.name))
+	end
+	topLabel.Text = table.concat(lines, "\n")
+end
+
+local function _refreshDebugLabel()
+	if debugFrozen or not debugLabel then
+		return
+	end
+	local count = 0
+	for _ in renderedChunks do
+		count += 1
+	end
+	local header = string.format("P:%d A:%d Q:%d C:%d", #partPool, activePartsCount, #renderQueue, count)
+	debugLabel.Text = header .. "\n" .. table.concat(debugLines, "\n")
+end
 
 local function _initDebugHUD()
 	local player = Players.LocalPlayer
@@ -100,10 +141,10 @@ local function _initDebugHUD()
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
 
-	-- Non-interactive TextLabel at top-right so it doesn't block joystick
+	-- Recent log: right side, below top panel
 	debugLabel = Instance.new("TextLabel")
 	debugLabel.Size = UDim2.new(0.5, 0, 0, DEBUG_MAX_LINES * 16 + 4)
-	debugLabel.Position = UDim2.new(0.5, -4, 0, 40)
+	debugLabel.Position = UDim2.new(1, -4, 0, 150)
 	debugLabel.AnchorPoint = Vector2.new(1, 0)
 	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	debugLabel.BackgroundTransparency = 0.6
@@ -117,10 +158,27 @@ local function _initDebugHUD()
 	debugLabel.Active = false
 	debugLabel.Parent = gui
 
-	-- Freeze button: small, top-right corner, doesn't block controls
+	-- Top 5 slowest: top-right corner
+	topLabel = Instance.new("TextLabel")
+	topLabel.Size = UDim2.new(0.4, 0, 0, 6 * 16 + 4)
+	topLabel.Position = UDim2.new(1, -4, 0, 40)
+	topLabel.AnchorPoint = Vector2.new(1, 0)
+	topLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	topLabel.BackgroundTransparency = 0.5
+	topLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+	topLabel.Font = Enum.Font.RobotoMono
+	topLabel.TextSize = 14
+	topLabel.TextXAlignment = Enum.TextXAlignment.Left
+	topLabel.TextYAlignment = Enum.TextYAlignment.Top
+	topLabel.Text = "TOP 5 SLOWEST:"
+	topLabel.TextWrapped = true
+	topLabel.Active = false
+	topLabel.Parent = gui
+
+	-- Freeze button
 	local freezeBtn = Instance.new("TextButton")
 	freezeBtn.Size = UDim2.new(0, 50, 0, 22)
-	freezeBtn.Position = UDim2.new(0.5, -4, 0, 16)
+	freezeBtn.Position = UDim2.new(1, -4, 0, 16)
 	freezeBtn.AnchorPoint = Vector2.new(1, 0)
 	freezeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	freezeBtn.BackgroundTransparency = 0.3
@@ -139,46 +197,43 @@ local function _initDebugHUD()
 		else
 			freezeBtn.Text = "FREEZE"
 			freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
+			-- Refresh both panels on unfreeze
+			_refreshDebugLabel()
+			_refreshTopLabel()
 		end
 	end)
 end
 
+local _currentOp = "idle"
 local _lastOpStart = 0
-local _lastDuration = 0
 
-local function _debugLog(op: string)
-	-- Calculate duration of previous op
-	local duration = 0
-	if _lastOpStart > 0 then
-		duration = (os.clock() - _lastOpStart) * 1000
+local function _finishCurrentOp()
+	if _lastOpStart <= 0 then
+		return
 	end
+	local duration = (os.clock() - _lastOpStart) * 1000
+	_lastOpStart = 0
 
-	-- Always track timing (even when frozen so clock stays accurate)
-	_lastDuration = duration
-	_lastOpStart = os.clock()
-
-	-- Only log lines with meaningful duration (potential blockers)
 	if duration >= MIN_DURATION_MS then
-		local line = string.format("%.0fms %s", duration, op)
+		local line = string.format("%.0fms %s", duration, _currentOp)
 		table.insert(debugLines, line)
 		while #debugLines > DEBUG_MAX_LINES do
 			table.remove(debugLines, 1)
 		end
+		_updateTopOps(duration, _currentOp)
 	end
+end
 
-	-- Don't update display when frozen
-	if debugFrozen then
-		return
-	end
+local function _debugLog(op: string)
+	-- Close and log the previous operation with its correct name
+	_finishCurrentOp()
 
-	if debugLabel then
-		local count = 0
-		for _ in renderedChunks do
-			count += 1
-		end
-		local header = string.format("P:%d A:%d Q:%d C:%d", #partPool, activePartsCount, #renderQueue, count)
-		debugLabel.Text = header .. "\n" .. table.concat(debugLines, "\n")
-	end
+	-- Start timing the new operation
+	_currentOp = op
+	_lastOpStart = os.clock()
+
+	_refreshDebugLabel()
+	_refreshTopLabel()
 end
 
 -- Yielding version: updates HUD then waits one frame so text is visible before heavy work
@@ -190,30 +245,10 @@ local function _debugLogWait(op: string)
 end
 
 local function _debugEnd()
-	local duration = 0
-	if _lastOpStart > 0 then
-		duration = (os.clock() - _lastOpStart) * 1000
-	end
-	_lastDuration = duration
-	_lastOpStart = 0
-
-	-- Log the final duration if meaningful
-	if duration >= MIN_DURATION_MS then
-		table.insert(debugLines, string.format("%.0fms done", duration))
-		while #debugLines > DEBUG_MAX_LINES do
-			table.remove(debugLines, 1)
-		end
-	end
-
-	-- Update display unless frozen
-	if not debugFrozen and debugLabel then
-		local count = 0
-		for _ in renderedChunks do
-			count += 1
-		end
-		local header = string.format("P:%d A:%d Q:%d C:%d", #partPool, activePartsCount, #renderQueue, count)
-		debugLabel.Text = header .. "\n" .. table.concat(debugLines, "\n")
-	end
+	_finishCurrentOp()
+	_currentOp = "idle"
+	_refreshDebugLabel()
+	_refreshTopLabel()
 end
 
 -------------------------------------------------

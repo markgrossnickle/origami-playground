@@ -104,7 +104,7 @@ local function _initDebugHUD()
 
 	debugLabel = Instance.new("TextLabel")
 	debugLabel.Size = UDim2.new(1, 0, 0, 80)
-	debugLabel.Position = UDim2.new(0, 0, 0, 40)
+	debugLabel.Position = UDim2.new(0, 0, 0, 100)
 	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	debugLabel.BackgroundTransparency = 0.5
 	debugLabel.TextColor3 = Color3.fromRGB(0, 255, 0)

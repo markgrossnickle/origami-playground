@@ -178,7 +178,12 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 
 	pendingChunks[chunkKey] = true
 
-	local blockBuffer = WorldGenModule.generateChunk(seed, cx, cy, cz)
+	local ok, blockBuffer = pcall(WorldGenModule.generateChunk, seed, cx, cy, cz)
+	if not ok then
+		pendingChunks[chunkKey] = nil
+		warn("[WorldService] generateChunk failed:", blockBuffer)
+		blockBuffer = buffer.create(BLOCKS_PER_CHUNK)
+	end
 
 	self:_loadDeltasForChunk(chunkKey, cx, cy, cz)
 

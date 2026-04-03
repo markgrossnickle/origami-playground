@@ -25,6 +25,7 @@ local ChunkStreamService = Knit.CreateService({
 local WorldService
 
 local playerRequiredChunks: { [Player]: { [string]: boolean } } = {}
+local playerUpdateInFlight: { [Player]: boolean } = {}
 
 local function _getRequiredChunks(player: Player): { { cx: number, cy: number, cz: number, dist: number } }
 	local character = player.Character
@@ -68,6 +69,12 @@ local function _updatePlayerChunks(player: Player)
 		return
 	end
 
+	-- Prevent overlapping updates (Subscribe now yields, so previous update may still be in flight)
+	if playerUpdateInFlight[player] then
+		return
+	end
+	playerUpdateInFlight[player] = true
+
 	local required = _getRequiredChunks(player)
 
 	local requiredSet: { [string]: boolean } = {}
@@ -98,11 +105,13 @@ local function _updatePlayerChunks(player: Player)
 	end
 
 	playerRequiredChunks[player] = requiredSet
+	playerUpdateInFlight[player] = nil
 end
 
 function ChunkStreamService:KnitInit()
 	Players.PlayerRemoving:Connect(function(player)
 		playerRequiredChunks[player] = nil
+		playerUpdateInFlight[player] = nil
 	end)
 end
 

@@ -1,5 +1,4 @@
 --!strict
---!native
 
 local ChunkUtil = require(script.Parent.ChunkUtil)
 local BlockType = require(script.Parent.Enums.BlockType)
@@ -462,11 +461,22 @@ local function _initializeGlobalHeightmap(seed: number)
 	heightmapSeed = seed
 end
 
+local heightmapInitializing = false
+
 local function _ensureHeightmap(seed: number)
 	if globalHeightmap and heightmapSeed == seed then
 		return
 	end
+	-- Guard: only one initialization at a time, others wait
+	if heightmapInitializing then
+		while heightmapInitializing do
+			task.wait()
+		end
+		return
+	end
+	heightmapInitializing = true
 	_initializeGlobalHeightmap(seed)
+	heightmapInitializing = false
 end
 
 local function getSurfaceHeight(seed: number, wx: number, wz: number): number

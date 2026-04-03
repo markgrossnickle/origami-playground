@@ -79,6 +79,10 @@ local chunkBlocks: { [string]: buffer } = {}
 
 local chunkContainer: Folder
 
+-- Render queue: process one chunk at a time to prevent burst freezes
+local renderQueue: { { key: string, blocks: buffer } } = {}
+local isProcessingQueue = false
+
 -------------------------------------------------
 -- Part pool (CFrame-to-infinity pattern)
 -------------------------------------------------
@@ -565,12 +569,25 @@ function ChunkRenderController:KnitInit()
 	_initPool()
 end
 
+local function _processRenderQueue()
+	if isProcessingQueue then
+		return
+	end
+	isProcessingQueue = true
+	while #renderQueue > 0 do
+		local item = table.remove(renderQueue, 1)
+		_renderChunk(item.key, item.blocks)
+	end
+	isProcessingQueue = false
+end
+
 function ChunkRenderController:KnitStart()
 	local WorldService = Knit.GetService("WorldService")
 
 	WorldService.ChunkData:Connect(function(chunkKey: string, compressedBuffer: buffer)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
-		_renderChunk(chunkKey, blocks)
+		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
+		_processRenderQueue()
 	end)
 
 	WorldService.ChunkUnload:Connect(function(chunkKey: string)

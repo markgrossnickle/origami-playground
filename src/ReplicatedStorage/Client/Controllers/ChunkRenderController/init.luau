@@ -130,15 +130,6 @@ local function _debugLog(op: string)
 	_lastOpStart = os.clock()
 
 	if debugLabel then
-		debugLabel.Text = string.format(
-			"OP: %s | Last: %.0fms\nPool: %d | Active: %d | Queue: %d\nChunks rendered: %d",
-			op,
-			_lastDuration,
-			#partPool,
-			activePartsCount,
-			#renderQueue,
-			0 -- placeholder, counted below
-		)
 		local count = 0
 		for _ in renderedChunks do
 			count += 1
@@ -153,6 +144,14 @@ local function _debugLog(op: string)
 			count
 		)
 	end
+end
+
+-- Yielding version: updates HUD then waits one frame so text is visible before heavy work
+local function _debugLogWait(op: string)
+	_debugLog(op)
+	task.wait()
+	-- Reset timer after the yield so we measure only the actual work
+	_lastOpStart = os.clock()
 end
 
 local function _debugEnd()
@@ -185,13 +184,12 @@ local function _createPart(): BasePart
 end
 
 local function _initPool()
-	_debugLog("initPool " .. POOL_INITIAL)
+	_debugLogWait("initPool " .. POOL_INITIAL)
 	for i = 1, POOL_INITIAL do
 		table.insert(partPool, _createPart())
 		-- Yield every 500 parts to prevent stall
 		if i % 500 == 0 then
-			_debugLog("initPool " .. i .. "/" .. POOL_INITIAL)
-			task.wait()
+			_debugLogWait("initPool " .. i .. "/" .. POOL_INITIAL)
 		end
 	end
 	_debugEnd()
@@ -383,7 +381,7 @@ local function _returnLayerGroup(group: { BasePart })
 end
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
-	_debugLog("render " .. chunkKey)
+	_debugLogWait("render " .. chunkKey)
 	local existingLayers = layerParts[chunkKey]
 	if existingLayers then
 		for _, group in existingLayers do
@@ -675,7 +673,7 @@ function ChunkRenderController:KnitStart()
 	local WorldService = Knit.GetService("WorldService")
 
 	WorldService.ChunkData:Connect(function(chunkKey: string, compressedBuffer: buffer)
-		_debugLog("decompress " .. chunkKey)
+		_debugLogWait("decompress " .. chunkKey)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
 		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
 		_debugLog("queued " .. chunkKey .. " (q=" .. #renderQueue .. ")")

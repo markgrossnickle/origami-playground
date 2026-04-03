@@ -81,8 +81,8 @@ local isProcessingQueue = false
 -------------------------------------------------
 -- Debug HUD (visible on mobile)
 -------------------------------------------------
-local debugLabel: TextBox? = nil
-local DEBUG_MAX_LINES = 15
+local debugLabel: TextLabel? = nil
+local DEBUG_MAX_LINES = 10
 local debugLines: { string } = {}
 local debugFrozen = false
 
@@ -99,39 +99,41 @@ local function _initDebugHUD()
 	gui.DisplayOrder = 999
 	gui.Parent = player.PlayerGui
 
-	-- TextBox so user can long-press → select all → copy on mobile
-	debugLabel = Instance.new("TextBox")
-	debugLabel.Size = UDim2.new(0.45, 0, 0, DEBUG_MAX_LINES * 16 + 8)
-	debugLabel.Position = UDim2.new(0, 4, 0, 130)
+	-- Non-interactive TextLabel at top-right so it doesn't block joystick
+	debugLabel = Instance.new("TextLabel")
+	debugLabel.Size = UDim2.new(0.5, 0, 0, DEBUG_MAX_LINES * 14 + 4)
+	debugLabel.Position = UDim2.new(0.5, -4, 0, 40)
+	debugLabel.AnchorPoint = Vector2.new(1, 0)
 	debugLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	debugLabel.BackgroundTransparency = 0.5
+	debugLabel.BackgroundTransparency = 0.6
 	debugLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
 	debugLabel.Font = Enum.Font.RobotoMono
-	debugLabel.TextSize = 13
+	debugLabel.TextSize = 12
 	debugLabel.TextXAlignment = Enum.TextXAlignment.Left
 	debugLabel.TextYAlignment = Enum.TextYAlignment.Top
 	debugLabel.Text = ""
 	debugLabel.TextWrapped = true
-	debugLabel.ClearTextOnFocus = false
-	debugLabel.TextEditable = false
+	debugLabel.Active = false
 	debugLabel.Parent = gui
 
-	-- Freeze button: pauses log so user can select/copy text
+	-- Freeze button: small, top-right corner, doesn't block controls
 	local freezeBtn = Instance.new("TextButton")
-	freezeBtn.Size = UDim2.new(0, 70, 0, 26)
-	freezeBtn.Position = UDim2.new(0, 4, 0, 100)
+	freezeBtn.Size = UDim2.new(0, 50, 0, 22)
+	freezeBtn.Position = UDim2.new(0.5, -4, 0, 16)
+	freezeBtn.AnchorPoint = Vector2.new(1, 0)
 	freezeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	freezeBtn.BackgroundTransparency = 0.3
 	freezeBtn.TextColor3 = Color3.fromRGB(255, 255, 0)
 	freezeBtn.Font = Enum.Font.RobotoMono
-	freezeBtn.TextSize = 14
+	freezeBtn.TextSize = 12
 	freezeBtn.Text = "FREEZE"
+	freezeBtn.ZIndex = 10
 	freezeBtn.Parent = gui
 
-	freezeBtn.MouseButton1Click:Connect(function()
+	freezeBtn.Activated:Connect(function()
 		debugFrozen = not debugFrozen
 		if debugFrozen then
-			freezeBtn.Text = "RESUME"
+			freezeBtn.Text = "GO"
 			freezeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
 		else
 			freezeBtn.Text = "FREEZE"

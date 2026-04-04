@@ -214,9 +214,11 @@ BiomeConfig.Biomes = {
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
 BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
--- Sector assignments
+-- Sector assignments: 3 sectors of 120° each
 local SECTOR_BIOMES = {
-	"sunset_mesa",
+	"balloon_chambers", -- 0°-120°
+	"ember_wastes",     -- 120°-240°
+	"ink_river",        -- 240°-360°
 }
 local SECTOR_COUNT = #SECTOR_BIOMES
 

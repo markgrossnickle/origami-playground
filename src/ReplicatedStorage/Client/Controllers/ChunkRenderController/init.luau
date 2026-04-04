@@ -113,157 +113,6 @@ local pendingChunkData: { { key: string, blocks: buffer } } = {}
 local lastLODCheck = 0
 
 -------------------------------------------------
--- Debug HUD
--------------------------------------------------
-local opsLabel: TextLabel? = nil
-local framesLabel: TextLabel? = nil
-local MIN_DURATION_MS = 1
-local TOP_COUNT = 5
-local topOps: { { ms: number, name: string } } = {}
-local topFrames: { { ms: number, context: string } } = {}
-
-local function _insertTop(list: { { ms: number, name: string } }, ms: number, name: string)
-	if #list < TOP_COUNT or ms > list[#list].ms then
-		table.insert(list, { ms = ms, name = name })
-		table.sort(list, function(a, b)
-			return a.ms > b.ms
-		end)
-		if #list > TOP_COUNT then
-			table.remove(list, #list + 1)
-		end
-	end
-end
-
-local function _refreshOpsLabel()
-	if not opsLabel then
-		return
-	end
-	local lines = { "TOP 5 OPS:" }
-	for i, entry in topOps do
-		table.insert(lines, string.format("%d. %.0fms %s", i, entry.ms, entry.name))
-	end
-	opsLabel.Text = table.concat(lines, "\n")
-end
-
-local function _refreshFramesLabel()
-	if not framesLabel then
-		return
-	end
-	local lines = { "TOP 5 FRAMES (any cause):" }
-	for i, entry in topFrames do
-		table.insert(lines, string.format("%d. %.0fms [%s]", i, entry.ms, entry.name))
-	end
-	framesLabel.Text = table.concat(lines, "\n")
-end
-
-local _currentOp = "idle"
-local _lastOpStart = 0
-
-local function _initDebugHUD()
-	local player = Players.LocalPlayer
-	if not player then
-		return
-	end
-
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "ChunkDebugHUD"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 999
-	gui.Parent = player.PlayerGui
-
-	framesLabel = Instance.new("TextLabel")
-	framesLabel.Size = UDim2.new(0.55, 0, 0, 6 * 16 + 4)
-	framesLabel.Position = UDim2.new(1, -4, 0, 40)
-	framesLabel.AnchorPoint = Vector2.new(1, 0)
-	framesLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	framesLabel.BackgroundTransparency = 0.5
-	framesLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-	framesLabel.Font = Enum.Font.RobotoMono
-	framesLabel.TextSize = 14
-	framesLabel.TextXAlignment = Enum.TextXAlignment.Left
-	framesLabel.TextYAlignment = Enum.TextYAlignment.Top
-	framesLabel.Text = "TOP 5 FRAMES (any cause):"
-	framesLabel.TextWrapped = true
-	framesLabel.Active = false
-	framesLabel.Parent = gui
-
-	opsLabel = Instance.new("TextLabel")
-	opsLabel.Size = UDim2.new(0.55, 0, 0, 6 * 16 + 4)
-	opsLabel.Position = UDim2.new(1, -4, 0, 40 + 6 * 16 + 8)
-	opsLabel.AnchorPoint = Vector2.new(1, 0)
-	opsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	opsLabel.BackgroundTransparency = 0.5
-	opsLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
-	opsLabel.Font = Enum.Font.RobotoMono
-	opsLabel.TextSize = 14
-	opsLabel.TextXAlignment = Enum.TextXAlignment.Left
-	opsLabel.TextYAlignment = Enum.TextYAlignment.Top
-	opsLabel.Text = "TOP 5 OPS:"
-	opsLabel.TextWrapped = true
-	opsLabel.Active = false
-	opsLabel.Parent = gui
-
-	local clearBtn = Instance.new("TextButton")
-	clearBtn.Size = UDim2.new(0, 50, 0, 22)
-	clearBtn.Position = UDim2.new(1, -4, 0, 16)
-	clearBtn.AnchorPoint = Vector2.new(1, 0)
-	clearBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-	clearBtn.BackgroundTransparency = 0.3
-	clearBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-	clearBtn.Font = Enum.Font.RobotoMono
-	clearBtn.TextSize = 12
-	clearBtn.Text = "CLEAR"
-	clearBtn.ZIndex = 10
-	clearBtn.Parent = gui
-
-	clearBtn.Activated:Connect(function()
-		table.clear(topOps)
-		table.clear(topFrames)
-		_refreshOpsLabel()
-		_refreshFramesLabel()
-	end)
-
-	RunService.Heartbeat:Connect(function(dt: number)
-		local frameMs = dt * 1000
-		if frameMs >= 30 then
-			_insertTop(topFrames :: any, frameMs, _currentOp)
-			_refreshFramesLabel()
-		end
-	end)
-end
-
-local function _finishCurrentOp()
-	if _lastOpStart <= 0 then
-		return
-	end
-	local duration = (os.clock() - _lastOpStart) * 1000
-	_lastOpStart = 0
-	if duration >= MIN_DURATION_MS then
-		_insertTop(topOps, duration, _currentOp)
-	end
-end
-
-local function _debugLog(op: string)
-	_finishCurrentOp()
-	_currentOp = op
-	_lastOpStart = os.clock()
-	_refreshOpsLabel()
-end
-
-local function _debugLogWait(op: string)
-	_debugLog(op)
-	task.wait()
-	_lastOpStart = os.clock()
-end
-
-local function _debugEnd()
-	_finishCurrentOp()
-	_currentOp = "idle"
-	_refreshOpsLabel()
-end
-
--------------------------------------------------
 -- LOD helper
 -------------------------------------------------
 
@@ -617,8 +466,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 		return
 	end
 
-	_debugLogWait("render " .. chunkKey .. " L" .. lod)
-
 	local existing = chunkParts[chunkKey]
 	if existing then
 		for _, group in existing do
@@ -660,7 +507,6 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	end
 
 	_flushBatch()
-	_debugEnd()
 end
 
 local function _unrenderChunk(chunkKey: string)
@@ -845,8 +691,6 @@ function ChunkRenderController:KnitInit()
 	chunkContainer.Name = "ChunkRender"
 	chunkContainer.Parent = workspace
 
-	_initDebugHUD()
-
 	-- Small startup pool, spread across frames
 	for i = 1, POOL_STARTUP do
 		table.insert(partPool, _createPart())
@@ -895,9 +739,7 @@ function ChunkRenderController:KnitStart()
 	end
 
 	WorldService.ChunkData:Connect(function(chunkKey: string, compressedBuffer: buffer)
-		_debugLogWait("decompress " .. chunkKey)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
-		_debugEnd()
 
 		if not characterReady then
 			table.insert(pendingChunkData, { key = chunkKey, blocks = blocks })

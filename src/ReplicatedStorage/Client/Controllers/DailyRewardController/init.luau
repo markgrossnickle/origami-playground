@@ -266,21 +266,7 @@ end
 function DailyRewardController:KnitInit() end
 
 function DailyRewardController:KnitStart()
-	local MonetizationService = Knit.GetService("MonetizationService")
-
-	-- Listen for login reward signal from server
-	MonetizationService.LoginRewardReady:Connect(function(day: number, reward: any)
-		self:_showRewardPopup(day, reward, false)
-	end)
-
-	-- Also check on start in case signal was missed
-	task.spawn(function()
-		task.wait(2) -- Give server time to process
-		local ok, result = MonetizationService:GetLoginReward():await()
-		if ok and result and not result.claimed then
-			self:_showRewardPopup(result.day, result.reward, false)
-		end
-	end)
+	-- Daily rewards disabled for now
 end
 
 return DailyRewardController

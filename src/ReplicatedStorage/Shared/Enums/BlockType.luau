@@ -52,6 +52,27 @@ return {
 	Wood = 100,
 	Leaves = 101,
 
+	-- Clockwork biome (surface)
+	CorrugatedCardboard = 110,
+	DarkCardboard = 111,
+	CopperGear = 112,
+	BrassLeaf = 113,
+
+	-- Neon Reef biome (surface)
+	CoralPlate = 150,
+	ReefRock = 151,
+	CoralFiller = 152,
+	CoralTrunk = 153,
+	CoralCanopy = 154,
+	OrangeAccent = 155,
+
+	-- Crystal Bloom biome (surface)
+	CrystalGround = 170,
+	RoseQuartz = 171,
+	CitrineTrunk = 172,
+	AquamarineCanopy = 173,
+	DiamondAccent = 174,
+
 	-- Sunset Mesa biome (surface)
 	Sandstone = 180, -- burnt orange sandstone
 	RedClay = 181, -- dusty red clay subsurface
@@ -59,6 +80,20 @@ return {
 	WarmPinkTop = 183, -- warm pink cactus top
 	DeepPurpleAccent = 184, -- deep purple accent
 
+	-- Frozen Auroras biome (surface)
+	GlacierIce = 190,
+	MintFrost = 191,
+	IceWhiteTrunk = 192,
+	AuroraVioletCanopy = 193,
+	DeepIndigo = 194,
+
 	-- Egg nodes (rare, found underground)
 	EggNode = 200,
+
+	-- Confetti Carnival biome (surface)
+	PartyPaper = 201,
+	GoldPaper = 202,
+	PinataWood = 203,
+	PinataLeaves = 204,
+	ConfettiFiller = 205,
 }

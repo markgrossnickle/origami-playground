@@ -25,13 +25,13 @@ function Server:_setupWorld()
 		baseplate:Destroy()
 	end
 
-	-- Lighting — golden hour for Sunset Mesa biome
+	-- Lighting — neutral daytime for multi-biome world
 	local GLOBAL_SHADOWS = true
 	Lighting.GlobalShadows = GLOBAL_SHADOWS
-	Lighting.ClockTime = 17
-	Lighting.Brightness = 1.5
-	Lighting.Ambient = Color3.fromRGB(140, 100, 60)
-	Lighting.OutdoorAmbient = Color3.fromRGB(180, 130, 80)
+	Lighting.ClockTime = 14
+	Lighting.Brightness = 1.2
+	Lighting.Ambient = Color3.fromRGB(120, 110, 100)
+	Lighting.OutdoorAmbient = Color3.fromRGB(150, 140, 130)
 end
 
 function Server:_loadComponentsIn(container: Instance)

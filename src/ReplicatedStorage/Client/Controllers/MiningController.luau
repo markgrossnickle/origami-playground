@@ -13,7 +13,7 @@ local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
-local MAX_RAYCAST_DISTANCE = 60
+local MAX_RAYCAST_DISTANCE = 30
 
 --[=[
 	@class MiningController
@@ -39,6 +39,12 @@ local lastSendTime = 0
 
 -- Equipped tool
 local equippedToolId = "paper_hands"
+
+-- Touch pan detection
+local touchStartPos: Vector2? = nil
+local touchStartTime: number = 0
+local PAN_THRESHOLD = 20
+local TAP_DELAY = 0.15
 
 -- Tier blocked feedback
 local tierBlockedGui: ScreenGui? = nil
@@ -502,20 +508,37 @@ function MiningController:KnitStart()
 	MiningService = Knit.GetService("MiningService")
 	ChunkRenderController = Knit.GetController("ChunkRenderController")
 
-	-- Input: left click to mine
+	-- Input: left click to mine (immediate)
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then
 			return
 		end
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			_startMining()
+		elseif input.UserInputType == Enum.UserInputType.Touch then
+			touchStartPos = Vector2.new(input.Position.X, input.Position.Y)
+			touchStartTime = os.clock()
+		end
+	end)
+
+	-- Touch movement: cancel mining if finger moves too far (panning)
+	UserInputService.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch and touchStartPos then
+			local delta = (Vector2.new(input.Position.X, input.Position.Y) - touchStartPos).Magnitude
+			if delta > PAN_THRESHOLD then
+				touchStartPos = nil
+				if isMining then
+					_stopMining()
+				end
+			end
 		end
 	end)
 
 	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			_stopMining()
+		elseif input.UserInputType == Enum.UserInputType.Touch then
+			touchStartPos = nil
 			_stopMining()
 		end
 	end)
@@ -523,6 +546,11 @@ function MiningController:KnitStart()
 	-- Update mining every frame (hover highlight throttled to ~20Hz)
 	local hoverFrameCounter = 0
 	RunService.RenderStepped:Connect(function(dt)
+		-- Delayed touch mining: start only after TAP_DELAY if finger hasn't moved
+		if touchStartPos and not isMining and (os.clock() - touchStartTime) >= TAP_DELAY then
+			_startMining()
+		end
+
 		hoverFrameCounter += 1
 		if hoverFrameCounter >= 3 then
 			hoverFrameCounter = 0

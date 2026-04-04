@@ -58,20 +58,11 @@ local LOD_CHECK_INTERVAL = 2.0
 
 local NEIGHBOR_DIRS = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
 
-local GRASS_COLOR = Color3.fromRGB(210, 130, 60) -- burnt orange sandstone
-local GRASS_MATERIAL = Enum.Material.Sandstone
-
 local function _getColor(blockTypeId: number): Color3
-	if blockTypeId == BlockType.PaperGrass then
-		return GRASS_COLOR
-	end
 	return BlockRegistry.getColor(blockTypeId)
 end
 
 local function _getMaterial(blockTypeId: number): Enum.Material
-	if blockTypeId == BlockType.PaperGrass then
-		return GRASS_MATERIAL
-	end
 	return BlockRegistry.getMaterial(blockTypeId)
 end
 

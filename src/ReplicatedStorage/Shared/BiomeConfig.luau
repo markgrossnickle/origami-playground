@@ -23,18 +23,162 @@ export type DepthLayer = {
 
 local BiomeConfig = {}
 
--- Surface biome: Sunset Mesa — desert canyon at golden hour
-BiomeConfig.Surface = {
-	surfaceBlock = BlockType.Sandstone,
-	subsurfaceBlock = BlockType.RedClay,
-	fillerBlock = BlockType.Cardboard,
-	treeDensity = 0.04,
-	trunkHeightMin = 3,
-	trunkHeightMax = 5,
-	canopyRadius = 1,
-	trunkBlock = BlockType.SandstoneTan,
-	canopyBlock = BlockType.WarmPinkTop,
+-- Define all biome surfaces
+BiomeConfig.Biomes = {
+	sunset_mesa = {
+		name = "Sunset Mesa",
+		surfaceBlock = BlockType.Sandstone,
+		subsurfaceBlock = BlockType.RedClay,
+		fillerBlock = BlockType.Cardboard,
+		treeDensity = 0.04,
+		trunkHeightMin = 3,
+		trunkHeightMax = 5,
+		canopyRadius = 1,
+		trunkBlock = BlockType.SandstoneTan,
+		canopyBlock = BlockType.WarmPinkTop,
+		-- Terrain params (override WorldGenModule defaults)
+		terrainFrequency = 0.004,
+		maxElevationBlocks = 15,
+		terrainOctaves = 2,
+		terrainSmoothingRadius = 1,
+		caveThreshold = 0.65,
+		treeDensityMultiplier = 0.3,
+	},
+	frozen_auroras = {
+		name = "Frozen Auroras",
+		surfaceBlock = BlockType.GlacierIce,
+		subsurfaceBlock = BlockType.MintFrost,
+		fillerBlock = BlockType.Cardboard,
+		treeDensity = 0.04,
+		trunkHeightMin = 3,
+		trunkHeightMax = 5,
+		canopyRadius = 2,
+		trunkBlock = BlockType.IceWhiteTrunk,
+		canopyBlock = BlockType.AuroraVioletCanopy,
+		terrainFrequency = 0.003,
+		maxElevationBlocks = 10,
+		terrainOctaves = 1,
+		terrainSmoothingRadius = 3,
+		caveThreshold = 0.55,
+		treeDensityMultiplier = 0.15,
+	},
+	crystal_bloom = {
+		name = "Crystal Bloom",
+		surfaceBlock = BlockType.CrystalGround,
+		subsurfaceBlock = BlockType.RoseQuartz,
+		fillerBlock = BlockType.Cardboard,
+		treeDensity = 0.04,
+		trunkHeightMin = 3,
+		trunkHeightMax = 5,
+		canopyRadius = 2,
+		trunkBlock = BlockType.CitrineTrunk,
+		canopyBlock = BlockType.AquamarineCanopy,
+		terrainFrequency = 0.009,
+		maxElevationBlocks = 25,
+		terrainOctaves = 3,
+		terrainSmoothingRadius = 2,
+		caveThreshold = 0.55,
+		treeDensityMultiplier = 1.0,
+	},
+	neon_reef = {
+		name = "Neon Reef",
+		surfaceBlock = BlockType.CoralPlate,
+		subsurfaceBlock = BlockType.ReefRock,
+		fillerBlock = BlockType.CoralFiller,
+		treeDensity = 0.04,
+		trunkHeightMin = 3,
+		trunkHeightMax = 5,
+		canopyRadius = 2,
+		trunkBlock = BlockType.CoralTrunk,
+		canopyBlock = BlockType.CoralCanopy,
+		terrainFrequency = 0.005,
+		maxElevationBlocks = 25,
+		terrainOctaves = 2,
+		terrainSmoothingRadius = 2,
+		caveThreshold = 0.48,
+		treeDensityMultiplier = 1.0,
+	},
+	confetti_carnival = {
+		name = "Confetti Carnival",
+		surfaceBlock = BlockType.PartyPaper,
+		subsurfaceBlock = BlockType.GoldPaper,
+		fillerBlock = BlockType.ConfettiFiller,
+		treeDensity = 0.04,
+		trunkHeightMin = 3,
+		trunkHeightMax = 5,
+		canopyRadius = 2,
+		trunkBlock = BlockType.PinataWood,
+		canopyBlock = BlockType.PinataLeaves,
+		terrainFrequency = 0.005,
+		maxElevationBlocks = 12,
+		terrainOctaves = 2,
+		terrainSmoothingRadius = 2,
+		caveThreshold = 0.55,
+		treeDensityMultiplier = 1.5,
+	},
+	clockwork = {
+		name = "Clockwork",
+		surfaceBlock = BlockType.CorrugatedCardboard,
+		subsurfaceBlock = BlockType.DarkCardboard,
+		fillerBlock = BlockType.Cardboard,
+		treeDensity = 0.04,
+		trunkHeightMin = 4,
+		trunkHeightMax = 7,
+		canopyRadius = 2,
+		trunkBlock = BlockType.CopperGear,
+		canopyBlock = BlockType.BrassLeaf,
+		terrainFrequency = 0.005,
+		maxElevationBlocks = 20,
+		terrainOctaves = 2,
+		terrainSmoothingRadius = 2,
+		caveThreshold = 0.55,
+		treeDensityMultiplier = 1.0,
+	},
 }
+
+-- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
+BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
+
+-- Sector assignments: 6 sectors of 60° each
+local SECTOR_BIOMES = {
+	"frozen_auroras",    -- 0°-60° (NE)
+	"crystal_bloom",     -- 60°-120° (E)
+	"neon_reef",         -- 120°-180° (SE)
+	"confetti_carnival", -- 180°-240° (SW)
+	"clockwork",         -- 240°-300° (W)
+	"sunset_mesa",       -- 300°-360° (NW)
+}
+
+local CENTER_RADIUS_CHUNKS = 3
+
+-- Returns the biome config for a given world position (in studs)
+function BiomeConfig.getBiome(wx: number, wz: number)
+	-- Center zone = Sunset Mesa
+	local CHUNK_STUDS = 80 -- ChunkUtil.CHUNK_STUDS (avoid circular require)
+	local centerDist = math.sqrt(wx * wx + wz * wz)
+	if centerDist < CENTER_RADIUS_CHUNKS * CHUNK_STUDS then
+		return BiomeConfig.Biomes.sunset_mesa
+	end
+
+	-- Angle-based sector
+	local angle = math.atan2(wx, wz) -- radians from +Z axis
+	if angle < 0 then
+		angle = angle + math.pi * 2
+	end
+	local sectorIndex = math.floor(angle / (math.pi * 2 / 6)) + 1
+	sectorIndex = math.clamp(sectorIndex, 1, 6)
+
+	local biomeKey = SECTOR_BIOMES[sectorIndex]
+	return BiomeConfig.Biomes[biomeKey]
+end
+
+-- Helper: get biome for a chunk coordinate
+function BiomeConfig.getBiomeForChunk(cx: number, cz: number)
+	local CHUNK_STUDS = 80
+	local wx = cx * CHUNK_STUDS + CHUNK_STUDS / 2
+	local wz = cz * CHUNK_STUDS + CHUNK_STUDS / 2
+	return BiomeConfig.getBiome(wx, wz)
+end
 
 -- 7 depth layers (depth measured in studs below surface, positive = deeper)
 BiomeConfig.DepthLayers = {

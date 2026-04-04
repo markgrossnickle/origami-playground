@@ -135,17 +135,19 @@ local function noise3D(seed: number, x: number, y: number, z: number, scale: num
 	return (n1 + n2 + n3) / 3
 end
 
-local function fbmNoise(seed: number, x: number, z: number, baseScale: number, octaves: number): number
+local function fbmNoise(seed: number, x: number, z: number, baseScale: number, octaves: number, persistence: number?, lacunarity: number?): number
 	local value = 0
 	local amplitude = 1
 	local frequency = 1
 	local maxAmplitude = 0
+	local pers = persistence or Config.terrainPersistence
+	local lac = lacunarity or Config.terrainLacunarity
 
 	for i = 0, octaves - 1 do
 		value += noise2D(seed + i * 31, x, z, baseScale / frequency) * amplitude
 		maxAmplitude += amplitude
-		amplitude *= Config.terrainPersistence
-		frequency *= Config.terrainLacunarity
+		amplitude *= pers
+		frequency *= lac
 	end
 
 	return value / maxAmplitude
@@ -175,14 +177,20 @@ end
 -- Surface Height
 ------------------------------------------------------------
 
-local function getSurfaceHeightRaw(seed: number, wx: number, wz: number): number
+local function getSurfaceHeightRaw(seed: number, wx: number, wz: number, biome: any?): number
 	local islandMask = getIslandMask(wx, wz)
 	if islandMask <= 0 then
 		return Config.seaLevelBlock - 3
 	end
 
-	local rawHeight = fbmNoise(seed, wx, wz, 1 / Config.terrainFrequency, Config.terrainOctaves)
-	local surfaceBlock = Config.seaLevelBlock + math.floor(rawHeight * Config.maxElevationBlocks * islandMask)
+	local freq = if biome then (biome.terrainFrequency or Config.terrainFrequency) else Config.terrainFrequency
+	local octaves = if biome then (biome.terrainOctaves or Config.terrainOctaves) else Config.terrainOctaves
+	local maxElev = if biome then (biome.maxElevationBlocks or Config.maxElevationBlocks) else Config.maxElevationBlocks
+	local persistence = Config.terrainPersistence
+	local lacunarity = Config.terrainLacunarity
+
+	local rawHeight = fbmNoise(seed, wx, wz, 1 / freq, octaves, persistence, lacunarity)
+	local surfaceBlock = Config.seaLevelBlock + math.floor(rawHeight * maxElev * islandMask)
 	return surfaceBlock
 end
 
@@ -196,13 +204,14 @@ local function _initializeGlobalHeightmap(seed: number)
 	local hm = buffer.create(total)
 	local seaLevel = Config.seaLevelBlock
 
-	-- Pass 1a: Raw noise heights
+	-- Pass 1a: Raw noise heights (biome-aware)
 	local rawHm = buffer.create(total)
 	for bz = 0, size - 1 do
 		for bx = 0, size - 1 do
 			local wx = (HEIGHTMAP_ORIGIN + bx) * BLOCK_SIZE
 			local wz = (HEIGHTMAP_ORIGIN + bz) * BLOCK_SIZE
-			local h = getSurfaceHeightRaw(seed, wx, wz)
+			local biome = BiomeConfig.getBiome(wx, wz)
+			local h = getSurfaceHeightRaw(seed, wx, wz, biome)
 			buffer.writeu8(rawHm, bz * size + bx, math.clamp(h + HEIGHTMAP_OFFSET, 0, 255))
 		end
 		if bz % 8 == 0 then
@@ -564,8 +573,10 @@ local function isTreeDensityPass(seed: number, bx: number, bz: number, density: 
 end
 
 local function isTreeRoot(seed: number, bx: number, bz: number): boolean
-	local surface = BiomeConfig.Surface
-	local density = surface.treeDensity * Config.treeDensityMultiplier
+	local wx = bx * BLOCK_SIZE
+	local wz = bz * BLOCK_SIZE
+	local surface = BiomeConfig.getBiome(wx, wz)
+	local density = surface.treeDensity * (surface.treeDensityMultiplier or Config.treeDensityMultiplier)
 	if not isTreeDensityPass(seed, bx, bz, density) then
 		return false
 	end
@@ -603,7 +614,9 @@ local function isTreeRoot(seed: number, bx: number, bz: number): boolean
 end
 
 local function getTreeHeight(seed: number, bx: number, bz: number): number
-	local surface = BiomeConfig.Surface
+	local wx = bx * BLOCK_SIZE
+	local wz = bz * BLOCK_SIZE
+	local surface = BiomeConfig.getBiome(wx, wz)
 	local h = hashTwo(seed + 8888, bx, bz)
 	local range = surface.trunkHeightMax - surface.trunkHeightMin + 1
 	return surface.trunkHeightMin + (h % range)
@@ -612,7 +625,6 @@ end
 local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: number, cz: number)
 	local chunkBlockYBottom = cy * CHUNK_SIZE
 	local chunkBlockYTop = chunkBlockYBottom + CHUNK_SIZE - 1
-	local surface = BiomeConfig.Surface
 
 	local checkRadius = Config.treeCheckRadius
 	local chunkBlockX = cx * CHUNK_SIZE
@@ -632,6 +644,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				continue
 			end
 
+			local surface = BiomeConfig.getBiome(worldX, worldZ)
 			local trunkHeight = getTreeHeight(seed, bx, bz)
 			local canopyR = surface.canopyRadius
 
@@ -757,14 +770,17 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		return blocks
 	end
 
-	local surface = BiomeConfig.Surface
-
 	-- Fill terrain column by column (yield periodically to prevent freezes)
 	for lz = 0, CHUNK_SIZE - 1 do
 		for lx = 0, CHUNK_SIZE - 1 do
 			local colIdx = lz * 16 + lx
 			local surfaceBlockY = columnSurface[colIdx + 1]
 			local bedrockY = surfaceBlockY - Config.maxDepthBlocks
+
+			-- Per-column biome lookup
+			local wx = (chunkBlockX + lx) * BLOCK_SIZE
+			local wz = (chunkBlockZ + lz) * BLOCK_SIZE
+			local surface = BiomeConfig.getBiome(wx, wz)
 
 			for ly = 0, CHUNK_SIZE - 1 do
 				local worldBlockY = chunkBlockYBottom + ly
@@ -825,7 +841,9 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 					local wz = (chunkBlockZ + lz) * BLOCK_SIZE
 					local n = noise3D(seed + 999, wx, wy, wz, 1 / Config.caveFrequency)
 
-					if n > Config.caveThreshold then
+					local colBiome = BiomeConfig.getBiome(wx, wz)
+					local caveThr = colBiome.caveThreshold or Config.caveThreshold
+					if n > caveThr then
 						local idx = ChunkUtil.flatIndex(lx, ly, lz)
 						local existing = buffer.readu8(blocks, idx)
 						if existing ~= BlockType.Bedrock then

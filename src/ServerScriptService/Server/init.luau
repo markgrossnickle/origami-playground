@@ -25,13 +25,13 @@ function Server:_setupWorld()
 		baseplate:Destroy()
 	end
 
-	-- Lighting — Frozen Auroras: twilight aurora sky
+	-- Lighting — Sunset Mesa: golden hour
 	local GLOBAL_SHADOWS = true
 	Lighting.GlobalShadows = GLOBAL_SHADOWS
-	Lighting.ClockTime = 21
-	Lighting.Brightness = 0.3
-	Lighting.Ambient = Color3.fromRGB(30, 60, 80)
-	Lighting.OutdoorAmbient = Color3.fromRGB(50, 90, 120)
+	Lighting.ClockTime = 17
+	Lighting.Brightness = 1.5
+	Lighting.Ambient = Color3.fromRGB(140, 100, 60)
+	Lighting.OutdoorAmbient = Color3.fromRGB(180, 130, 80)
 end
 
 function Server:_loadComponentsIn(container: Instance)

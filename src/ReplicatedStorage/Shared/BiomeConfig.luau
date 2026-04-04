@@ -143,7 +143,7 @@ BiomeConfig.Biomes = {
 }
 
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
-BiomeConfig.Surface = BiomeConfig.Biomes.frozen_auroras
+BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
 -- Sector assignments: 6 sectors of 60° each
 local SECTOR_BIOMES = {
@@ -158,7 +158,7 @@ local SECTOR_BIOMES = {
 local CENTER_RADIUS_CHUNKS = 3
 
 -- Active biome: change this to preview different biomes
-local ACTIVE_BIOME = "frozen_auroras"
+local ACTIVE_BIOME = "sunset_mesa"
 
 -- Returns the biome config for a given world position (in studs)
 function BiomeConfig.getBiome(_wx: number, _wz: number)

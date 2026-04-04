@@ -249,6 +249,44 @@ BiomeConfig.Biomes = {
 		caveThreshold = 0.50,
 		treeDensityMultiplier = 1.2,
 	},
+	fairy_glade = {
+		name = "Fairy Glade",
+		surfaceBlock = BlockType.GladeGrass,
+		subsurfaceBlock = BlockType.GladeSoil,
+		fillerBlock = BlockType.Cardboard,
+		structureType = "tree",
+		treeDensity = 0.05,
+		trunkHeightMin = 3,
+		trunkHeightMax = 6,
+		canopyRadius = 2,
+		trunkBlock = BlockType.GladeTrunk,
+		canopyBlock = BlockType.GladeCanopy,
+		terrainFrequency = 0.005,
+		maxElevationBlocks = 12,
+		terrainOctaves = 2,
+		terrainSmoothingRadius = 2,
+		caveThreshold = 0.55,
+		treeDensityMultiplier = 0.8,
+	},
+	fairy_hollow = {
+		name = "Fairy Hollow",
+		surfaceBlock = BlockType.HollowMoss,
+		subsurfaceBlock = BlockType.HollowSoil,
+		fillerBlock = BlockType.FairyFiller,
+		structureType = "spire",
+		treeDensity = 0.04,
+		trunkHeightMin = 5,
+		trunkHeightMax = 9,
+		canopyRadius = 0,
+		trunkBlock = BlockType.HollowTrunk,
+		canopyBlock = BlockType.HollowCanopy,
+		terrainFrequency = 0.006,
+		maxElevationBlocks = 18,
+		terrainOctaves = 2,
+		terrainSmoothingRadius = 2,
+		caveThreshold = 0.48,
+		treeDensityMultiplier = 0.6,
+	},
 	mosaic_bazaar = {
 		name = "Mosaic Bazaar",
 		surfaceBlock = BlockType.TurquoiseTile,
@@ -270,22 +308,16 @@ BiomeConfig.Biomes = {
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
 BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
--- Sector assignments: 2 sectors of 180° each
+-- Sector assignments: single biome everywhere
 local SECTOR_BIOMES = {
-	"gazette_metropolis", -- 0°-180°
-	"fairy_world",        -- 180°-360°
+	"gazette_metropolis",
 }
 local SECTOR_COUNT = #SECTOR_BIOMES
 
-local CENTER_RADIUS_CHUNKS = 3
-
 -- Returns the biome config for a given world position (in studs)
 function BiomeConfig.getBiome(wx: number, wz: number)
-	-- Center zone = Sunset Mesa
-	local CHUNK_STUDS = 80
-	local centerDist = math.sqrt(wx * wx + wz * wz)
-	if centerDist < CENTER_RADIUS_CHUNKS * CHUNK_STUDS then
-		return BiomeConfig.Biomes.sunset_mesa
+	if SECTOR_COUNT == 1 then
+		return BiomeConfig.Biomes[SECTOR_BIOMES[1]]
 	end
 
 	-- Angle-based sector

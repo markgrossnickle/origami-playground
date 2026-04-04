@@ -457,6 +457,106 @@ local blocks: { [number]: BlockConfig } = {
 	},
 
 	-- ═══════════════════════════════════════════
+	-- Fairy Glade biome (surface)
+	-- Golden sunlit fairy clearing
+	-- ═══════════════════════════════════════════
+
+	[BlockType.GladeGrass] = {
+		id = BlockType.GladeGrass,
+		name = "Glade Grass",
+		hardness = 1,
+		color = Color3.fromRGB(200, 220, 130), -- warm golden-green
+		material = Enum.Material.Grass,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "glade_grass", count = 1, chance = 1 } },
+		xp = 1,
+	},
+	[BlockType.GladeSoil] = {
+		id = BlockType.GladeSoil,
+		name = "Glade Soil",
+		hardness = 2,
+		color = Color3.fromRGB(140, 110, 60), -- warm brown
+		material = Enum.Material.Mud,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "glade_soil", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.GladeTrunk] = {
+		id = BlockType.GladeTrunk,
+		name = "Golden Bark",
+		hardness = 2,
+		color = Color3.fromRGB(240, 210, 140), -- warm gold bark
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "glade_trunk", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.GladeCanopy] = {
+		id = BlockType.GladeCanopy,
+		name = "Sunlit Leaves",
+		hardness = 0.5,
+		color = Color3.fromRGB(255, 240, 100), -- glowing yellow-gold
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "glade_canopy", count = 1, chance = 0.5 } },
+		xp = 1,
+	},
+
+	-- ═══════════════════════════════════════════
+	-- Fairy Hollow biome (surface)
+	-- Deep twilight blue fairy hollow
+	-- ═══════════════════════════════════════════
+
+	[BlockType.HollowMoss] = {
+		id = BlockType.HollowMoss,
+		name = "Hollow Moss",
+		hardness = 1,
+		color = Color3.fromRGB(80, 120, 170), -- twilight blue
+		material = Enum.Material.Grass,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "hollow_moss", count = 1, chance = 1 } },
+		xp = 1,
+	},
+	[BlockType.HollowSoil] = {
+		id = BlockType.HollowSoil,
+		name = "Hollow Soil",
+		hardness = 2,
+		color = Color3.fromRGB(40, 50, 90), -- deep blue-gray
+		material = Enum.Material.Mud,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "hollow_soil", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.HollowTrunk] = {
+		id = BlockType.HollowTrunk,
+		name = "Moonwood",
+		hardness = 2,
+		color = Color3.fromRGB(160, 180, 210), -- pale blue-silver
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "hollow_trunk", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.HollowCanopy] = {
+		id = BlockType.HollowCanopy,
+		name = "Moonpetal",
+		hardness = 0.5,
+		color = Color3.fromRGB(100, 200, 255), -- glowing cyan-blue
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "hollow_canopy", count = 1, chance = 0.5 } },
+		xp = 1,
+	},
+
+	-- ═══════════════════════════════════════════
 	-- Sunset Mesa biome (surface)
 	-- Desert canyon at golden hour
 	-- ═══════════════════════════════════════════

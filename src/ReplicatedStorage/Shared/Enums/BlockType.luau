@@ -52,12 +52,24 @@ return {
 	Wood = 100,
 	Leaves = 101,
 
-	-- Fairy World biome (surface)
+	-- Fairy World biome (surface) — lilac mushroom grove
 	FairyMoss = 102,
 	EnchantedSoil = 103,
 	FairyFiller = 104,
 	FairyTrunk = 105,
 	FairyCanopy = 106,
+
+	-- Fairy Glade biome (surface) — golden sunlit clearing
+	GladeGrass = 107,
+	GladeSoil = 108,
+	GladeTrunk = 109,
+	GladeCanopy = 144,
+
+	-- Fairy Hollow biome (surface) — deep twilight blue
+	HollowMoss = 145,
+	HollowSoil = 146,
+	HollowTrunk = 147,
+	HollowCanopy = 148,
 
 	-- Clockwork biome (surface)
 	CorrugatedCardboard = 110,

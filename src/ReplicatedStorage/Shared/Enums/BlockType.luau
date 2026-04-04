@@ -48,6 +48,26 @@ return {
 	CoreFragment = 61,
 	RainbowPaper = 62,
 
+	-- Structure-specific blocks (mixed mode)
+	CactusGreen = 70,
+	CactusFlower = 71,
+	BoulderGray = 72,
+	BonsaiBark = 73,
+	CherryBlossom = 74,
+	LotusPetal = 75,
+	LotusCenter = 76,
+	JellyDome = 77,
+	JellyTendril = 78,
+	GatePillar = 79,
+	GateTop = 80,
+	PyramidStone = 81,
+	PyramidCap = 82,
+	ObeliskDark = 83,
+	ObeliskGlow = 84,
+	MushroomStem = 85,
+	MushroomCap = 86,
+	ShelfBracket = 87,
+
 	-- Surface nature
 	Wood = 100,
 	Leaves = 101,

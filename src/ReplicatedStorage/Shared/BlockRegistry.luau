@@ -396,6 +396,101 @@ local blocks: { [number]: BlockConfig } = {
 
 
 	-- ═══════════════════════════════════════════
+	-- Structure-specific blocks (mixed mode)
+	-- ═══════════════════════════════════════════
+
+	[BlockType.CactusGreen] = {
+		id = BlockType.CactusGreen, name = "Cactus", hardness = 2,
+		color = Color3.fromRGB(80, 160, 60), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "cactus", count = 1, chance = 1 } }, xp = 2,
+	},
+	[BlockType.CactusFlower] = {
+		id = BlockType.CactusFlower, name = "Cactus Flower", hardness = 0.5,
+		color = Color3.fromRGB(255, 200, 80), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "cactus_flower", count = 1, chance = 0.5 } }, xp = 1,
+	},
+	[BlockType.BoulderGray] = {
+		id = BlockType.BoulderGray, name = "Boulder", hardness = 3,
+		color = Color3.fromRGB(140, 135, 130), material = Enum.Material.Slate,
+		mineable = true, minTier = 0, drops = { { itemId = "boulder", count = 1, chance = 1 } }, xp = 2,
+	},
+	[BlockType.BonsaiBark] = {
+		id = BlockType.BonsaiBark, name = "Bonsai Trunk", hardness = 2,
+		color = Color3.fromRGB(90, 60, 40), material = Enum.Material.WoodPlanks,
+		mineable = true, minTier = 0, drops = { { itemId = "bonsai_bark", count = 1, chance = 1 } }, xp = 2,
+	},
+	[BlockType.CherryBlossom] = {
+		id = BlockType.CherryBlossom, name = "Cherry Blossom", hardness = 0.5,
+		color = Color3.fromRGB(255, 180, 200), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "cherry_blossom", count = 1, chance = 0.5 } }, xp = 1,
+	},
+	[BlockType.LotusPetal] = {
+		id = BlockType.LotusPetal, name = "Lotus Petal", hardness = 1,
+		color = Color3.fromRGB(250, 240, 245), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "lotus_petal", count = 1, chance = 1 } }, xp = 1,
+	},
+	[BlockType.LotusCenter] = {
+		id = BlockType.LotusCenter, name = "Lotus Heart", hardness = 1,
+		color = Color3.fromRGB(255, 220, 100), material = Enum.Material.Neon,
+		mineable = true, minTier = 0, drops = { { itemId = "lotus_center", count = 1, chance = 1 } }, xp = 2,
+	},
+	[BlockType.JellyDome] = {
+		id = BlockType.JellyDome, name = "Jelly Dome", hardness = 1,
+		color = Color3.fromRGB(150, 120, 255), material = Enum.Material.ForceField,
+		mineable = true, minTier = 0, drops = { { itemId = "jelly_dome", count = 1, chance = 1 } }, xp = 1,
+	},
+	[BlockType.JellyTendril] = {
+		id = BlockType.JellyTendril, name = "Jelly Tendril", hardness = 0.5,
+		color = Color3.fromRGB(180, 100, 255), material = Enum.Material.Neon,
+		mineable = true, minTier = 0, drops = { { itemId = "jelly_tendril", count = 1, chance = 0.5 } }, xp = 1,
+	},
+	[BlockType.GatePillar] = {
+		id = BlockType.GatePillar, name = "Gate Pillar", hardness = 3,
+		color = Color3.fromRGB(180, 60, 40), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "gate_pillar", count = 1, chance = 1 } }, xp = 2,
+	},
+	[BlockType.GateTop] = {
+		id = BlockType.GateTop, name = "Gate Crown", hardness = 2,
+		color = Color3.fromRGB(240, 200, 80), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "gate_top", count = 1, chance = 1 } }, xp = 2,
+	},
+	[BlockType.PyramidStone] = {
+		id = BlockType.PyramidStone, name = "Pyramid Stone", hardness = 3,
+		color = Color3.fromRGB(210, 180, 130), material = Enum.Material.Sandstone,
+		mineable = true, minTier = 0, drops = { { itemId = "pyramid_stone", count = 1, chance = 1 } }, xp = 2,
+	},
+	[BlockType.PyramidCap] = {
+		id = BlockType.PyramidCap, name = "Pyramid Cap", hardness = 2,
+		color = Color3.fromRGB(255, 215, 0), material = Enum.Material.Neon,
+		mineable = true, minTier = 0, drops = { { itemId = "pyramid_cap", count = 1, chance = 1 } }, xp = 3,
+	},
+	[BlockType.ObeliskDark] = {
+		id = BlockType.ObeliskDark, name = "Obelisk Stone", hardness = 4,
+		color = Color3.fromRGB(40, 35, 50), material = Enum.Material.Basalt,
+		mineable = true, minTier = 0, drops = { { itemId = "obelisk_dark", count = 1, chance = 1 } }, xp = 3,
+	},
+	[BlockType.ObeliskGlow] = {
+		id = BlockType.ObeliskGlow, name = "Obelisk Rune", hardness = 3,
+		color = Color3.fromRGB(0, 255, 200), material = Enum.Material.Neon,
+		mineable = true, minTier = 0, drops = { { itemId = "obelisk_glow", count = 1, chance = 1 } }, xp = 3,
+	},
+	[BlockType.MushroomStem] = {
+		id = BlockType.MushroomStem, name = "Mushroom Stem", hardness = 1,
+		color = Color3.fromRGB(235, 225, 200), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "mushroom_stem", count = 1, chance = 1 } }, xp = 1,
+	},
+	[BlockType.MushroomCap] = {
+		id = BlockType.MushroomCap, name = "Mushroom Cap", hardness = 0.5,
+		color = Color3.fromRGB(200, 50, 50), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "mushroom_cap", count = 1, chance = 0.5 } }, xp = 1,
+	},
+	[BlockType.ShelfBracket] = {
+		id = BlockType.ShelfBracket, name = "Shelf Fungus", hardness = 1,
+		color = Color3.fromRGB(200, 120, 60), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "shelf_bracket", count = 1, chance = 1 } }, xp = 1,
+	},
+
+	-- ═══════════════════════════════════════════
 	-- Fairy World biome (surface)
 	-- Enchanted fairy forest with glowing mushrooms
 	-- ═══════════════════════════════════════════

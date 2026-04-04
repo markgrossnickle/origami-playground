@@ -625,6 +625,35 @@ end
 -- All available structure types for "mixed" mode
 local MIXED_STRUCTURES = { "tree", "cactus", "boulder", "bonsai", "lotus", "jellyfish", "temple_gate", "stepped_pyramid", "obelisk", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
 
+-- Per-structure block overrides (used in mixed mode for visual variety)
+local STRUCTURE_BLOCKS = {
+	cactus = { trunk = BlockType.CactusGreen, canopy = BlockType.CactusFlower },
+	boulder = { trunk = BlockType.BoulderGray, canopy = BlockType.BoulderGray },
+	bonsai = { trunk = BlockType.BonsaiBark, canopy = BlockType.CherryBlossom },
+	lotus = { trunk = BlockType.LotusPetal, canopy = BlockType.LotusCenter },
+	jellyfish = { trunk = BlockType.JellyTendril, canopy = BlockType.JellyDome },
+	temple_gate = { trunk = BlockType.GatePillar, canopy = BlockType.GateTop },
+	stepped_pyramid = { trunk = BlockType.PyramidStone, canopy = BlockType.PyramidCap },
+	obelisk = { trunk = BlockType.ObeliskDark, canopy = BlockType.ObeliskGlow },
+	mushroom = { trunk = BlockType.MushroomStem, canopy = BlockType.MushroomCap },
+	mushroom_cluster = { trunk = BlockType.MushroomStem, canopy = BlockType.MushroomCap },
+	mushroom_tall = { trunk = BlockType.MushroomStem, canopy = BlockType.MushroomCap },
+	mushroom_shelf = { trunk = BlockType.MushroomStem, canopy = BlockType.ShelfBracket },
+}
+
+-- Structure label names for display
+local STRUCTURE_LABELS = {
+	tree = "Tree", cactus = "Cactus", boulder = "Boulder", bonsai = "Bonsai",
+	lotus = "Lotus", jellyfish = "Jellyfish", temple_gate = "Temple Gate",
+	stepped_pyramid = "Pyramid", obelisk = "Obelisk", mushroom = "Mushroom",
+	mushroom_cluster = "Mushroom Cluster", mushroom_tall = "Tall Mushroom",
+	mushroom_shelf = "Shelf Mushroom", spire = "Spire", cluster = "Cluster",
+	column = "Column",
+}
+
+-- Structure placements tracked per chunk for labeling
+local _structurePlacements: { [string]: { { x: number, y: number, z: number, label: string } } } = {}
+
 -- Helper: place a single block if within chunk bounds and target is air
 local function placeBlock(blocks: buffer, blockType: number, bx: number, worldBlockY: number, bz: number, chunkBlockX: number, chunkBlockYBottom: number, chunkBlockYTop: number, chunkBlockZ: number, requireAir: boolean?)
 	if worldBlockY < chunkBlockYBottom or worldBlockY > chunkBlockYTop then
@@ -673,11 +702,28 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 			local canopyBlock = surface.canopyBlock or BlockType.Leaves
 			local structureType = surface.structureType or "tree"
 
-			-- Mixed mode: pick structure type from hash
+			-- Mixed mode: pick structure type from hash + use unique blocks
 			if structureType == "mixed" then
 				local mixHash = hashTwo(seed + 9999, bx, bz)
 				structureType = MIXED_STRUCTURES[(mixHash % #MIXED_STRUCTURES) + 1]
+				local overrides = STRUCTURE_BLOCKS[structureType]
+				if overrides then
+					trunkBlock = overrides.trunk
+					canopyBlock = overrides.canopy
+				end
 			end
+
+			-- Track structure placement for labels
+			local chunkKey = cx .. "," .. cy .. "," .. cz
+			if not _structurePlacements[chunkKey] then
+				_structurePlacements[chunkKey] = {}
+			end
+			table.insert(_structurePlacements[chunkKey], {
+				x = worldX,
+				y = (surfaceBlockY + trunkHeight + 2) * BLOCK_SIZE,
+				z = worldZ,
+				label = STRUCTURE_LABELS[structureType] or structureType,
+			})
 
 			if structureType == "cactus" then
 				-- Saguaro cactus: tall trunk + 1-2 arm branches
@@ -1187,6 +1233,14 @@ end
 
 function WorldGenModule.getWorldRadiusChunks(): number
 	return Config.worldRadiusChunks
+end
+
+-- Get and clear structure placements for a chunk (used by WorldService for labels)
+function WorldGenModule.popStructurePlacements(cx: number, cy: number, cz: number): { { x: number, y: number, z: number, label: string } }?
+	local chunkKey = cx .. "," .. cy .. "," .. cz
+	local placements = _structurePlacements[chunkKey]
+	_structurePlacements[chunkKey] = nil
+	return placements
 end
 
 function WorldGenModule.verifyDeterminism(seed: number, cx: number, cy: number, cz: number): boolean

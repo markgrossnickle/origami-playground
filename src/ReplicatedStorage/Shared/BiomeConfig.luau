@@ -212,24 +212,6 @@ BiomeConfig.Biomes = {
 		caveThreshold = 0.55,
 		treeDensityMultiplier = 1.2,
 	},
-	gazette_metropolis = {
-		name = "Gazette Metropolis",
-		surfaceBlock = BlockType.NewsprintSurface,
-		subsurfaceBlock = BlockType.InkSubsurface,
-		fillerBlock = BlockType.Cardboard,
-		structureType = "column",
-		treeDensity = 0.04,
-		trunkHeightMin = 5,
-		trunkHeightMax = 9,
-		canopyRadius = 2,
-		trunkBlock = BlockType.SepiaTrunk,
-		canopyBlock = BlockType.DustyCanopy,
-		terrainFrequency = 0.015,
-		maxElevationBlocks = 20,
-		terrainSmoothingRadius = 0,
-		caveThreshold = 0.55,
-		treeDensityMultiplier = 0.8,
-	},
 	fairy_world = {
 		name = "Fairy World",
 		surfaceBlock = BlockType.FairyMoss,
@@ -308,9 +290,10 @@ BiomeConfig.Biomes = {
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
 BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
--- Sector assignments: single biome everywhere
+-- Sector assignments: 2 fairy sectors
 local SECTOR_BIOMES = {
-	"gazette_metropolis",
+	"fairy_glade",  -- 0°-180°
+	"fairy_hollow", -- 180°-360°
 }
 local SECTOR_COUNT = #SECTOR_BIOMES
 

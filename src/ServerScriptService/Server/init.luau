@@ -48,10 +48,6 @@ function Server:Start()
 		:andThenCall(self._loadComponentsIn, self, script.Components)
 		:andThenCall(self._loadComponentsIn, self, ReplicatedStorage.Shared.Components)
 		:andThen(function()
-			-- Spawn demo showcase models
-			local DemoShowcaseSpawner = require(ReplicatedStorage.Shared.DemoShowcaseSpawner)
-			DemoShowcaseSpawner.Build()
-
 			vServerStatus.Value = "Started"
 		end)
 		:catch(function(msg: string)

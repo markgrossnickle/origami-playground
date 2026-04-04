@@ -193,63 +193,6 @@ BiomeConfig.Biomes = {
 		caveThreshold = 0.55,
 		treeDensityMultiplier = 1.2,
 	},
-	fairy_world = {
-		name = "Fairy World",
-		surfaceBlock = BlockType.FairyMoss,
-		subsurfaceBlock = BlockType.EnchantedSoil,
-		fillerBlock = BlockType.FairyFiller,
-		structureType = "mushroom",
-		treeDensity = 0.06,
-		trunkHeightMin = 2,
-		trunkHeightMax = 4,
-		canopyRadius = 3,
-		trunkBlock = BlockType.FairyTrunk,
-		canopyBlock = BlockType.FairyCanopy,
-		terrainFrequency = 0.004,
-		maxElevationBlocks = 10,
-		terrainOctaves = 2,
-		terrainSmoothingRadius = 3,
-		caveThreshold = 0.50,
-		treeDensityMultiplier = 1.2,
-	},
-	fairy_glade = {
-		name = "Fairy Glade",
-		surfaceBlock = BlockType.GladeGrass,
-		subsurfaceBlock = BlockType.GladeSoil,
-		fillerBlock = BlockType.Cardboard,
-		structureType = "tree",
-		treeDensity = 0.05,
-		trunkHeightMin = 3,
-		trunkHeightMax = 6,
-		canopyRadius = 2,
-		trunkBlock = BlockType.GladeTrunk,
-		canopyBlock = BlockType.GladeCanopy,
-		terrainFrequency = 0.005,
-		maxElevationBlocks = 12,
-		terrainOctaves = 2,
-		terrainSmoothingRadius = 2,
-		caveThreshold = 0.55,
-		treeDensityMultiplier = 0.8,
-	},
-	fairy_hollow = {
-		name = "Fairy Hollow",
-		surfaceBlock = BlockType.HollowMoss,
-		subsurfaceBlock = BlockType.HollowSoil,
-		fillerBlock = BlockType.FairyFiller,
-		structureType = "spire",
-		treeDensity = 0.04,
-		trunkHeightMin = 5,
-		trunkHeightMax = 9,
-		canopyRadius = 0,
-		trunkBlock = BlockType.HollowTrunk,
-		canopyBlock = BlockType.HollowCanopy,
-		terrainFrequency = 0.006,
-		maxElevationBlocks = 18,
-		terrainOctaves = 2,
-		terrainSmoothingRadius = 2,
-		caveThreshold = 0.48,
-		treeDensityMultiplier = 0.6,
-	},
 	mosaic_bazaar = {
 		name = "Mosaic Bazaar",
 		surfaceBlock = BlockType.TurquoiseTile,
@@ -271,10 +214,9 @@ BiomeConfig.Biomes = {
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
 BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
--- Sector assignments: 2 fairy sectors
+-- Sector assignments
 local SECTOR_BIOMES = {
-	"fairy_glade",  -- 0°-180°
-	"fairy_hollow", -- 180°-360°
+	"sunset_mesa",
 }
 local SECTOR_COUNT = #SECTOR_BIOMES
 

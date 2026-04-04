@@ -96,4 +96,72 @@ return {
 	PinataWood = 203,
 	PinataLeaves = 204,
 	ConfettiFiller = 205,
+
+	-- Ink River biome (surface)
+	ScrollParchment = 120,
+	AgedPaper = 121,
+	InkBrushTrunk = 122,
+	InkSplatterLeaf = 123,
+
+	-- Paste Waterfalls biome (surface)
+	PapierMache = 130,
+	NewspaperGray = 131,
+	PasteDripTrunk = 132,
+	PasteDripLeaf = 133,
+
+	-- Balloon Chambers biome (surface)
+	BalloonRed = 140,
+	NewspaperLayer = 141,
+	BalloonString = 142,
+	BalloonTop = 143,
+
+	-- Ember Wastes biome (surface)
+	VolcanicRock = 160,
+	AshStone = 161,
+	ScorchedBase = 162,
+	BasaltColumn = 163,
+	MoltenCap = 164,
+	CrimsonVein = 165,
+
+	-- Pulp Nebula biome (surface)
+	CosmicPaper = 210,
+	StellarDust = 211,
+	SatelliteTrunk = 212,
+	CyanCanopy = 213,
+	NebulaFiller = 214,
+
+	-- Mosaic Bazaar biome (surface)
+	TurquoiseTile = 215,
+	TerracottaClay = 216,
+	SaffronTrunk = 217,
+	CobaltDome = 218,
+	MosaicSandstone = 219,
+
+	-- Washi Hot Springs biome (surface)
+	WashiPaper = 220,
+	CoralPaper = 221,
+	BambooTrunk = 222,
+	BambooTop = 223,
+	SteamFiller = 224,
+
+	-- Gazette Metropolis biome (surface)
+	NewsprintSurface = 230,
+	InkSubsurface = 231,
+	SepiaTrunk = 232,
+	DustyCanopy = 233,
+	RedHeadline = 234,
+
+	-- Crayon Savanna biome (surface)
+	WaxySurface = 240,
+	CrayonSubsurface = 241,
+	CrayonTrunk = 242,
+	CrayonCanopy = 243,
+	BurntOrange = 244,
+
+	-- Pastel Cloudtops biome (surface)
+	BabyBlueSurface = 250,
+	LavenderSubsurface = 251,
+	CreamTrunk = 252,
+	RosePinkCanopy = 253,
+	SoftPeach = 254,
 }

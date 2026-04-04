@@ -107,10 +107,10 @@ BiomeConfig.Biomes = {
 		surfaceBlock = BlockType.PartyPaper,
 		subsurfaceBlock = BlockType.GoldPaper,
 		fillerBlock = BlockType.ConfettiFiller,
-		structureType = "tree",
-		treeDensity = 0.04,
-		trunkHeightMin = 3,
-		trunkHeightMax = 5,
+		structureType = "cluster",
+		treeDensity = 0.06,
+		trunkHeightMin = 2,
+		trunkHeightMax = 3,
 		canopyRadius = 2,
 		trunkBlock = BlockType.PinataWood,
 		canopyBlock = BlockType.PinataLeaves,
@@ -145,25 +145,34 @@ BiomeConfig.Biomes = {
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
 BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
--- Sector assignments: 6 sectors of 60° each
+-- Sector assignments: 3 sectors of 120° each
 local SECTOR_BIOMES = {
-	"frozen_auroras",    -- 0°-60° (NE)
-	"crystal_bloom",     -- 60°-120° (E)
-	"neon_reef",         -- 120°-180° (SE)
-	"confetti_carnival", -- 180°-240° (SW)
-	"clockwork",         -- 240°-300° (W)
-	"sunset_mesa",       -- 300°-360° (NW)
+	"neon_reef",         -- 0°-120°
+	"confetti_carnival", -- 120°-240°
+	"clockwork",         -- 240°-360°
 }
+local SECTOR_COUNT = #SECTOR_BIOMES
 
 local CENTER_RADIUS_CHUNKS = 3
 
--- Active biome: change this to preview different biomes
-local ACTIVE_BIOME = "sunset_mesa"
-
 -- Returns the biome config for a given world position (in studs)
-function BiomeConfig.getBiome(_wx: number, _wz: number)
-	-- Single biome mode: return the active biome everywhere
-	return BiomeConfig.Biomes[ACTIVE_BIOME]
+function BiomeConfig.getBiome(wx: number, wz: number)
+	-- Center zone = Sunset Mesa
+	local CHUNK_STUDS = 80
+	local centerDist = math.sqrt(wx * wx + wz * wz)
+	if centerDist < CENTER_RADIUS_CHUNKS * CHUNK_STUDS then
+		return BiomeConfig.Biomes.sunset_mesa
+	end
+
+	-- Angle-based sector
+	local angle = math.atan2(wx, wz)
+	if angle < 0 then
+		angle = angle + math.pi * 2
+	end
+	local sectorIndex = math.floor(angle / (math.pi * 2 / SECTOR_COUNT)) + 1
+	sectorIndex = math.clamp(sectorIndex, 1, SECTOR_COUNT)
+
+	return BiomeConfig.Biomes[SECTOR_BIOMES[sectorIndex]]
 end
 
 -- Helper: get biome for a chunk coordinate

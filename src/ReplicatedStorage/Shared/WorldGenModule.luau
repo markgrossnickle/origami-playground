@@ -623,7 +623,7 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 end
 
 -- All available structure types for "mixed" mode
-local MIXED_STRUCTURES = { "tree", "cactus", "boulder", "bonsai", "lotus", "jellyfish", "temple_gate", "stepped_pyramid", "obelisk" }
+local MIXED_STRUCTURES = { "tree", "cactus", "boulder", "bonsai", "lotus", "jellyfish", "temple_gate", "stepped_pyramid", "obelisk", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
 
 -- Helper: place a single block if within chunk bounds and target is air
 local function placeBlock(blocks: buffer, blockType: number, bx: number, worldBlockY: number, bz: number, chunkBlockX: number, chunkBlockYBottom: number, chunkBlockYTop: number, chunkBlockZ: number, requireAir: boolean?)
@@ -857,6 +857,63 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					for dz = -1, 1 do
 						placeBlock(blocks, canopyBlock, bx + dx, topY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					end
+				end
+
+			elseif structureType == "mushroom_cluster" then
+				-- Group of 3 small mushrooms at slightly different heights
+				local offsets = { {0, 0}, {1, 1}, {-1, 1} }
+				for i, off in offsets do
+					local mh = 1 + (i - 1) -- heights 1, 2, 3
+					local mx, mz = bx + off[1], bz + off[2]
+					for ty = 0, mh - 1 do
+						placeBlock(blocks, trunkBlock, mx, surfaceBlockY + 1 + ty, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					end
+					-- Small cap: single block + cross
+					local capY = surfaceBlockY + mh + 1
+					placeBlock(blocks, canopyBlock, mx, capY, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, mx + 1, capY, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, mx - 1, capY, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, mx, capY, mz + 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, mx, capY, mz - 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				end
+
+			elseif structureType == "mushroom_tall" then
+				-- Extra tall thin mushroom with dome cap
+				local tallHeight = trunkHeight + 3
+				for ty = 0, tallHeight - 1 do
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+				-- Dome cap (hemisphere)
+				local domeR = 2
+				local domeY = surfaceBlockY + tallHeight + 1
+				for dx = -domeR, domeR do
+					for dz = -domeR, domeR do
+						for dy = 0, domeR do
+							if dx * dx + dy * dy + dz * dz <= domeR * domeR + 1 then
+								placeBlock(blocks, canopyBlock, bx + dx, domeY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							end
+						end
+					end
+				end
+
+			elseif structureType == "mushroom_shelf" then
+				-- Trunk with multiple shelf layers spiraling up
+				for ty = 0, trunkHeight + 1 do
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+				-- Shelf brackets at different heights and directions
+				local dirs = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} }
+				for shelf = 0, 2 do
+					local shelfY = surfaceBlockY + 2 + shelf * 2
+					local dir = dirs[(shelf % 4) + 1]
+					-- 2-block shelf sticking out
+					placeBlock(blocks, canopyBlock, bx + dir[1], shelfY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, bx + dir[1] * 2, shelfY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					-- Side blocks for width
+					local perpDx = if dir[1] == 0 then 1 else 0
+					local perpDz = if dir[2] == 0 then 1 else 0
+					placeBlock(blocks, canopyBlock, bx + dir[1] + perpDx, shelfY, bz + dir[2] + perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, bx + dir[1] - perpDx, shelfY, bz + dir[2] - perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 				end
 
 			elseif structureType == "mushroom" then

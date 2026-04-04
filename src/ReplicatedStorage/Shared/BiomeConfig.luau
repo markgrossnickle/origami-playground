@@ -137,7 +137,7 @@ BiomeConfig.Biomes = {
 }
 
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
-BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
+BiomeConfig.Surface = BiomeConfig.Biomes.neon_reef
 
 -- Sector assignments: 6 sectors of 60° each
 local SECTOR_BIOMES = {
@@ -151,25 +151,13 @@ local SECTOR_BIOMES = {
 
 local CENTER_RADIUS_CHUNKS = 3
 
+-- Active biome: change this to preview different biomes
+local ACTIVE_BIOME = "neon_reef"
+
 -- Returns the biome config for a given world position (in studs)
-function BiomeConfig.getBiome(wx: number, wz: number)
-	-- Center zone = Sunset Mesa
-	local CHUNK_STUDS = 80 -- ChunkUtil.CHUNK_STUDS (avoid circular require)
-	local centerDist = math.sqrt(wx * wx + wz * wz)
-	if centerDist < CENTER_RADIUS_CHUNKS * CHUNK_STUDS then
-		return BiomeConfig.Biomes.sunset_mesa
-	end
-
-	-- Angle-based sector
-	local angle = math.atan2(wx, wz) -- radians from +Z axis
-	if angle < 0 then
-		angle = angle + math.pi * 2
-	end
-	local sectorIndex = math.floor(angle / (math.pi * 2 / 6)) + 1
-	sectorIndex = math.clamp(sectorIndex, 1, 6)
-
-	local biomeKey = SECTOR_BIOMES[sectorIndex]
-	return BiomeConfig.Biomes[biomeKey]
+function BiomeConfig.getBiome(_wx: number, _wz: number)
+	-- Single biome mode: return the active biome everywhere
+	return BiomeConfig.Biomes[ACTIVE_BIOME]
 end
 
 -- Helper: get biome for a chunk coordinate

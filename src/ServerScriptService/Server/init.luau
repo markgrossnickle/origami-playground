@@ -25,13 +25,13 @@ function Server:_setupWorld()
 		baseplate:Destroy()
 	end
 
-	-- Lighting — neutral daytime for multi-biome world
+	-- Lighting — Neon Reef: deep underwater glow
 	local GLOBAL_SHADOWS = true
 	Lighting.GlobalShadows = GLOBAL_SHADOWS
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 1.2
-	Lighting.Ambient = Color3.fromRGB(120, 110, 100)
-	Lighting.OutdoorAmbient = Color3.fromRGB(150, 140, 130)
+	Lighting.ClockTime = 22
+	Lighting.Brightness = 0.4
+	Lighting.Ambient = Color3.fromRGB(40, 80, 120)
+	Lighting.OutdoorAmbient = Color3.fromRGB(20, 50, 100)
 end
 
 function Server:_loadComponentsIn(container: Instance)

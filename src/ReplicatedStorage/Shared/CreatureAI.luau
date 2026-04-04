@@ -149,12 +149,14 @@ function CreatureAI.Start(
 
 	local _cachedGroundY = spawnPos.Y
 	local _groundRaycastCounter = 0
-	local RAYCAST_INTERVAL = 5 -- only raycast every Nth call
+	local RAYCAST_INTERVAL = 3 -- raycast every Nth call
 
 	local function raycastGround(x: number, z: number): number
 		_groundRaycastCounter += 1
 		if _groundRaycastCounter % RAYCAST_INTERVAL == 0 then
-			local result = workspace:Raycast(Vector3.new(x, spawnPos.Y + 50, z), Vector3.new(0, -200, 0), rayParams)
+			-- Cast from well above terrain to handle any elevation
+			local originY = math.max(spawnPos.Y + 100, _cachedGroundY + 100)
+			local result = workspace:Raycast(Vector3.new(x, originY, z), Vector3.new(0, -300, 0), rayParams)
 			_cachedGroundY = if result then result.Position.Y else spawnPos.Y
 		end
 		return _cachedGroundY
@@ -238,6 +240,8 @@ function CreatureAI.Start(
 						-- Swooping flight: sine wave altitude + bank into turns
 						local swoopY = math.sin(t * math.pi * 2) * 4
 						finalY = baseGroundY + pivotAboveBottom + locoConfig.hoverHeight + swoopY
+						-- Clamp: never go below terrain surface + 2 studs
+						finalY = math.max(finalY, baseGroundY + pivotAboveBottom + 2)
 						-- Bank slightly into the swoop
 						local bankAngle = math.cos(t * math.pi * 2) * math.rad(15)
 						finalRot = lookRot * CFrame.Angles(0, 0, bankAngle)
@@ -245,6 +249,8 @@ function CreatureAI.Start(
 						-- Gentle hover with vertical bob
 						local bobY = math.sin(tick() * 1.5) * 1.0
 						finalY = baseGroundY + pivotAboveBottom + locoConfig.hoverHeight + bobY
+						-- Clamp: never go below terrain surface + 2 studs
+						finalY = math.max(finalY, baseGroundY + pivotAboveBottom + 2)
 						-- Slow gentle yaw drift
 						local driftYaw = math.sin(tick() * 0.5) * math.rad(10)
 						finalRot = lookRot * CFrame.Angles(0, driftYaw, 0)
@@ -278,6 +284,8 @@ function CreatureAI.Start(
 					local curGroundY = raycastGround(currentPos.X, currentPos.Z)
 					local bobY = math.sin(tick() * 1.5) * 1.0
 					local targetY = curGroundY + pivotAboveBottom + locoConfig.hoverHeight + bobY
+					-- Clamp: never go below terrain surface + 2 studs
+					targetY = math.max(targetY, curGroundY + pivotAboveBottom + 2)
 					local currentRot = model:GetPivot() - model:GetPivot().Position
 					model:PivotTo(CFrame.new(currentPos.X, targetY, currentPos.Z) * currentRot)
 					applyCreatureAnimation(model, animList, tick())

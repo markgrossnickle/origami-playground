@@ -102,8 +102,8 @@ local function _raycastToBlock(): (string?, number?, Vector3?, Vector3?)
 		return nil, nil, nil, nil
 	end
 
-	-- Offset slightly into the block to avoid edge cases
-	local hitPos = result.Position - result.Normal * (BLOCK_SIZE * 0.1)
+	-- Offset into the block center to reliably identify the correct block
+	local hitPos = result.Position - result.Normal * (BLOCK_SIZE * 0.4)
 	local cx, cy, cz = ChunkUtil.worldToChunk(hitPos.X, hitPos.Y, hitPos.Z)
 	local chunkKey = ChunkUtil.chunkKey(cx, cy, cz)
 	local flatIndex = ChunkUtil.worldToFlatIndex(hitPos.X, hitPos.Y, hitPos.Z)

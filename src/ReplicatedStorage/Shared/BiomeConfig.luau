@@ -83,8 +83,8 @@ BiomeConfig.Biomes = {
 		caveThreshold = 0.55,
 		treeDensityMultiplier = 1.0,
 	},
-	neon_reef = {
-		name = "Neon Reef",
+	neon_mushrooms = {
+		name = "Neon Mushrooms",
 		surfaceBlock = BlockType.CoralPlate,
 		subsurfaceBlock = BlockType.ReefRock,
 		fillerBlock = BlockType.CoralFiller,
@@ -100,44 +100,6 @@ BiomeConfig.Biomes = {
 		terrainOctaves = 2,
 		terrainSmoothingRadius = 2,
 		caveThreshold = 0.48,
-		treeDensityMultiplier = 1.0,
-	},
-	confetti_carnival = {
-		name = "Confetti Carnival",
-		surfaceBlock = BlockType.PartyPaper,
-		subsurfaceBlock = BlockType.GoldPaper,
-		fillerBlock = BlockType.ConfettiFiller,
-		structureType = "cluster",
-		treeDensity = 0.06,
-		trunkHeightMin = 2,
-		trunkHeightMax = 3,
-		canopyRadius = 2,
-		trunkBlock = BlockType.PinataWood,
-		canopyBlock = BlockType.PinataLeaves,
-		terrainFrequency = 0.005,
-		maxElevationBlocks = 12,
-		terrainOctaves = 2,
-		terrainSmoothingRadius = 2,
-		caveThreshold = 0.55,
-		treeDensityMultiplier = 1.5,
-	},
-	clockwork = {
-		name = "Clockwork",
-		surfaceBlock = BlockType.CorrugatedCardboard,
-		subsurfaceBlock = BlockType.DarkCardboard,
-		fillerBlock = BlockType.Cardboard,
-		structureType = "column",
-		treeDensity = 0.03,
-		trunkHeightMin = 5,
-		trunkHeightMax = 8,
-		canopyRadius = 2,
-		trunkBlock = BlockType.CopperGear,
-		canopyBlock = BlockType.BrassLeaf,
-		terrainFrequency = 0.005,
-		maxElevationBlocks = 20,
-		terrainOctaves = 2,
-		terrainSmoothingRadius = 2,
-		caveThreshold = 0.55,
 		treeDensityMultiplier = 1.0,
 	},
 	balloon_chambers = {
@@ -329,9 +291,9 @@ BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
 -- Sector assignments: 3 sectors of 120° each
 local SECTOR_BIOMES = {
-	"neon_reef",         -- 0°-120°
-	"confetti_carnival", -- 120°-240°
-	"clockwork",         -- 240°-360°
+	"gazette_metropolis", -- 0°-120°
+	"crayon_savanna",    -- 120°-240°
+	"pastel_cloudtops",  -- 240°-360°
 }
 local SECTOR_COUNT = #SECTOR_BIOMES
 

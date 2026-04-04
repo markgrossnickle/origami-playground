@@ -396,6 +396,67 @@ local blocks: { [number]: BlockConfig } = {
 
 
 	-- ═══════════════════════════════════════════
+	-- Fairy World biome (surface)
+	-- Enchanted fairy forest with glowing mushrooms
+	-- ═══════════════════════════════════════════
+
+	[BlockType.FairyMoss] = {
+		id = BlockType.FairyMoss,
+		name = "Fairy Moss",
+		hardness = 1,
+		color = Color3.fromRGB(180, 150, 220), -- soft lilac
+		material = Enum.Material.Grass,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "fairy_moss", count = 1, chance = 1 } },
+		xp = 1,
+	},
+	[BlockType.EnchantedSoil] = {
+		id = BlockType.EnchantedSoil,
+		name = "Enchanted Soil",
+		hardness = 2,
+		color = Color3.fromRGB(100, 60, 140), -- deep violet
+		material = Enum.Material.Mud,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "enchanted_soil", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.FairyFiller] = {
+		id = BlockType.FairyFiller,
+		name = "Fairy Stone",
+		hardness = 2,
+		color = Color3.fromRGB(60, 40, 80), -- dark mystical purple
+		material = Enum.Material.Slate,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "fairy_filler", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.FairyTrunk] = {
+		id = BlockType.FairyTrunk,
+		name = "Silver Stem",
+		hardness = 2,
+		color = Color3.fromRGB(220, 210, 240), -- silvery lavender
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "fairy_trunk", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.FairyCanopy] = {
+		id = BlockType.FairyCanopy,
+		name = "Fairy Cap",
+		hardness = 0.5,
+		color = Color3.fromRGB(255, 130, 200), -- glowing pink
+		material = Enum.Material.Neon,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "fairy_canopy", count = 1, chance = 0.5 } },
+		xp = 1,
+	},
+
+	-- ═══════════════════════════════════════════
 	-- Sunset Mesa biome (surface)
 	-- Desert canyon at golden hour
 	-- ═══════════════════════════════════════════

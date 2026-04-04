@@ -230,43 +230,24 @@ BiomeConfig.Biomes = {
 		caveThreshold = 0.55,
 		treeDensityMultiplier = 0.8,
 	},
-	crayon_savanna = {
-		name = "Crayon Savanna",
-		surfaceBlock = BlockType.WaxySurface,
-		subsurfaceBlock = BlockType.CrayonSubsurface,
-		fillerBlock = BlockType.Cardboard,
+	fairy_world = {
+		name = "Fairy World",
+		surfaceBlock = BlockType.FairyMoss,
+		subsurfaceBlock = BlockType.EnchantedSoil,
+		fillerBlock = BlockType.FairyFiller,
 		structureType = "mushroom",
-		treeDensity = 0.04,
-		trunkHeightMin = 3,
-		trunkHeightMax = 5,
-		canopyRadius = 3,
-		trunkBlock = BlockType.CrayonTrunk,
-		canopyBlock = BlockType.CrayonCanopy,
-		terrainFrequency = 0.004,
-		maxElevationBlocks = 12,
-		terrainOctaves = 1,
-		terrainSmoothingRadius = 3,
-		caveThreshold = 0.55,
-		treeDensityMultiplier = 0.6,
-	},
-	pastel_cloudtops = {
-		name = "Pastel Cloudtops",
-		surfaceBlock = BlockType.BabyBlueSurface,
-		subsurfaceBlock = BlockType.LavenderSubsurface,
-		fillerBlock = BlockType.Cardboard,
-		structureType = "cluster",
-		treeDensity = 0.05,
+		treeDensity = 0.06,
 		trunkHeightMin = 2,
-		trunkHeightMax = 3,
-		canopyRadius = 2,
-		trunkBlock = BlockType.CreamTrunk,
-		canopyBlock = BlockType.RosePinkCanopy,
-		terrainFrequency = 0.003,
-		maxElevationBlocks = 8,
-		terrainOctaves = 1,
-		terrainSmoothingRadius = 4,
-		caveThreshold = 0.55,
-		treeDensityMultiplier = 0.5,
+		trunkHeightMax = 4,
+		canopyRadius = 3,
+		trunkBlock = BlockType.FairyTrunk,
+		canopyBlock = BlockType.FairyCanopy,
+		terrainFrequency = 0.004,
+		maxElevationBlocks = 10,
+		terrainOctaves = 2,
+		terrainSmoothingRadius = 3,
+		caveThreshold = 0.50,
+		treeDensityMultiplier = 1.2,
 	},
 	mosaic_bazaar = {
 		name = "Mosaic Bazaar",
@@ -289,11 +270,10 @@ BiomeConfig.Biomes = {
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
 BiomeConfig.Surface = BiomeConfig.Biomes.sunset_mesa
 
--- Sector assignments: 3 sectors of 120° each
+-- Sector assignments: 2 sectors of 180° each
 local SECTOR_BIOMES = {
-	"gazette_metropolis", -- 0°-120°
-	"crayon_savanna",    -- 120°-240°
-	"pastel_cloudtops",  -- 240°-360°
+	"gazette_metropolis", -- 0°-180°
+	"fairy_world",        -- 180°-360°
 }
 local SECTOR_COUNT = #SECTOR_BIOMES
 

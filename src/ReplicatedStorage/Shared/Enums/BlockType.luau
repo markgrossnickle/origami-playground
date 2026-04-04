@@ -52,6 +52,13 @@ return {
 	Wood = 100,
 	Leaves = 101,
 
+	-- Fairy World biome (surface)
+	FairyMoss = 102,
+	EnchantedSoil = 103,
+	FairyFiller = 104,
+	FairyTrunk = 105,
+	FairyCanopy = 106,
+
 	-- Clockwork biome (surface)
 	CorrugatedCardboard = 110,
 	DarkCardboard = 111,

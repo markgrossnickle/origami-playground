@@ -52,6 +52,13 @@ return {
 	Wood = 100,
 	Leaves = 101,
 
+	-- Sunset Mesa biome (surface)
+	Sandstone = 180, -- burnt orange sandstone
+	RedClay = 181, -- dusty red clay subsurface
+	SandstoneTan = 182, -- sandstone tan cactus trunk
+	WarmPinkTop = 183, -- warm pink cactus top
+	DeepPurpleAccent = 184, -- deep purple accent
+
 	-- Egg nodes (rare, found underground)
 	EggNode = 200,
 }

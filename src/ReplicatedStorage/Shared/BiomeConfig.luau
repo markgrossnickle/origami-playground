@@ -23,15 +23,17 @@ export type DepthLayer = {
 
 local BiomeConfig = {}
 
--- Surface biome (used for above-ground terrain)
+-- Surface biome: Sunset Mesa — desert canyon at golden hour
 BiomeConfig.Surface = {
-	surfaceBlock = BlockType.PaperGrass,
-	subsurfaceBlock = BlockType.Paper,
+	surfaceBlock = BlockType.Sandstone,
+	subsurfaceBlock = BlockType.RedClay,
 	fillerBlock = BlockType.Cardboard,
 	treeDensity = 0.04,
 	trunkHeightMin = 3,
 	trunkHeightMax = 5,
-	canopyRadius = 2,
+	canopyRadius = 1,
+	trunkBlock = BlockType.SandstoneTan,
+	canopyBlock = BlockType.WarmPinkTop,
 }
 
 -- 7 depth layers (depth measured in studs below surface, positive = deeper)

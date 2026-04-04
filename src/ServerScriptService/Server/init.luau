@@ -25,13 +25,13 @@ function Server:_setupWorld()
 		baseplate:Destroy()
 	end
 
-	-- Lighting — warm afternoon light for paper aesthetic (reduced brightness to avoid washout)
+	-- Lighting — golden hour for Sunset Mesa biome
 	local GLOBAL_SHADOWS = true
 	Lighting.GlobalShadows = GLOBAL_SHADOWS
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 1.2
-	Lighting.Ambient = Color3.fromRGB(100, 95, 90)
-	Lighting.OutdoorAmbient = Color3.fromRGB(120, 115, 110)
+	Lighting.ClockTime = 17
+	Lighting.Brightness = 1.5
+	Lighting.Ambient = Color3.fromRGB(140, 100, 60)
+	Lighting.OutdoorAmbient = Color3.fromRGB(180, 130, 80)
 end
 
 function Server:_loadComponentsIn(container: Instance)

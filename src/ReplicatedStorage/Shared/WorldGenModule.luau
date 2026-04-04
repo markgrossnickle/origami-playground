@@ -18,18 +18,18 @@ local Config = {
 	worldRadiusChunks = 16, -- radius in chunks from center (32x32 total)
 	-- Terrain
 	seaLevelBlock = 4, -- surface baseline in blocks above world Y=0
-	maxElevationBlocks = 20, -- max surface height variation in blocks
+	maxElevationBlocks = 15, -- max surface height variation in blocks
 	maxDepthBlocks = 400, -- how deep underground goes (in blocks, 2000 studs / 5)
 	-- Island shape
 	islandFalloffStart = 0.55,
 	islandFalloffEnd = 0.85,
-	-- Noise — terrain
-	terrainFrequency = 0.005,
+	-- Noise — terrain (flat mesas with steep cliffs)
+	terrainFrequency = 0.004,
 	terrainOctaves = 2,
 	terrainLacunarity = 2.0,
 	terrainPersistence = 0.25,
 	-- Terrain smoothing
-	terrainSmoothingRadius = 2,
+	terrainSmoothingRadius = 1,
 	maxSlopeBlocks = 2,
 	-- Heightmap plateau enforcement
 	seaLevelFlattenRange = 3,
@@ -39,10 +39,10 @@ local Config = {
 	globalSlopePasses = 3,
 	-- Cave generation
 	caveFrequency = 0.02,
-	caveThreshold = 0.55, -- noise > this = cave
+	caveThreshold = 0.65, -- noise > this = cave (fewer caves for mesa)
 	caveMinDepth = 40, -- don't carve caves within 40 studs of surface
 	-- Trees
-	treeDensityMultiplier = 1.0,
+	treeDensityMultiplier = 0.3,
 	treeCheckRadius = 2,
 	minLargeTreeSpacingBlocks = 8,
 	largeTreeCanopyThreshold = 2,
@@ -635,6 +635,9 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 			local trunkHeight = getTreeHeight(seed, bx, bz)
 			local canopyR = surface.canopyRadius
 
+			local trunkBlock = surface.trunkBlock or BlockType.Wood
+			local canopyBlock = surface.canopyBlock or BlockType.Leaves
+
 			for ty = 0, trunkHeight - 1 do
 				local worldBlockY = surfaceBlockY + 1 + ty
 				if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
@@ -643,7 +646,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					local lz = bz - chunkBlockZ
 					if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
 						local idx = ChunkUtil.flatIndex(lx, ly, lz)
-						buffer.writeu8(blocks, idx, BlockType.Wood)
+						buffer.writeu8(blocks, idx, trunkBlock)
 					end
 				end
 			end
@@ -663,7 +666,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 							if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
 								local idx = ChunkUtil.flatIndex(lx, ly, lz2)
 								if buffer.readu8(blocks, idx) == BlockType.Air then
-									buffer.writeu8(blocks, idx, BlockType.Leaves)
+									buffer.writeu8(blocks, idx, canopyBlock)
 								end
 							end
 						end
@@ -679,7 +682,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
 					local idx = ChunkUtil.flatIndex(lx, ly, lz)
 					if buffer.readu8(blocks, idx) == BlockType.Air then
-						buffer.writeu8(blocks, idx, BlockType.Leaves)
+						buffer.writeu8(blocks, idx, canopyBlock)
 					end
 				end
 			end

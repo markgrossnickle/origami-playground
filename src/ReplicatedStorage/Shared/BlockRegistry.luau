@@ -394,6 +394,68 @@ local blocks: { [number]: BlockConfig } = {
 		xp = 1,
 	},
 
+
+	-- ═══════════════════════════════════════════
+	-- Sunset Mesa biome (surface)
+	-- Desert canyon at golden hour
+	-- ═══════════════════════════════════════════
+
+	[BlockType.Sandstone] = {
+		id = BlockType.Sandstone,
+		name = "Sandstone",
+		hardness = 1,
+		color = Color3.fromRGB(210, 130, 60), -- burnt orange
+		material = Enum.Material.Sandstone,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "sandstone", count = 1, chance = 1 } },
+		xp = 1,
+	},
+	[BlockType.RedClay] = {
+		id = BlockType.RedClay,
+		name = "Red Clay",
+		hardness = 2,
+		color = Color3.fromRGB(160, 70, 50), -- dusty red clay
+		material = Enum.Material.Slate,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "red_clay", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.SandstoneTan] = {
+		id = BlockType.SandstoneTan,
+		name = "Sandstone Trunk",
+		hardness = 2,
+		color = Color3.fromRGB(220, 190, 140), -- sandstone tan
+		material = Enum.Material.Sandstone,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "sandstone", count = 1, chance = 1 } },
+		xp = 2,
+	},
+	[BlockType.WarmPinkTop] = {
+		id = BlockType.WarmPinkTop,
+		name = "Cactus Bloom",
+		hardness = 0.5,
+		color = Color3.fromRGB(220, 140, 160), -- warm pink
+		material = Enum.Material.SmoothPlastic,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "sandstone", count = 1, chance = 0.5 } },
+		xp = 1,
+	},
+	[BlockType.DeepPurpleAccent] = {
+		id = BlockType.DeepPurpleAccent,
+		name = "Desert Amethyst",
+		hardness = 1,
+		color = Color3.fromRGB(80, 30, 90), -- deep purple
+		material = Enum.Material.Slate,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "sandstone", count = 1, chance = 1 } },
+		xp = 1,
+	},
+
 	-- ═══════════════════════════════════════════
 	-- Special
 	-- ═══════════════════════════════════════════

@@ -30,13 +30,13 @@ local Config = {
 	terrainPersistence = 0.25,
 	-- Terrain smoothing
 	terrainSmoothingRadius = 1,
-	maxSlopeBlocks = 2,
+	maxSlopeBlocks = 1,
 	-- Heightmap plateau enforcement
 	seaLevelFlattenRange = 3,
-	seaLevelFlattenStrength = 0.7,
-	plateauBandSize = 2,
-	minPlateauCells = 10,
-	globalSlopePasses = 3,
+	seaLevelFlattenStrength = 0.4,
+	plateauBandSize = 1,
+	minPlateauCells = 4,
+	globalSlopePasses = 2,
 	-- Cave generation
 	caveFrequency = 0.02,
 	caveThreshold = 0.65, -- noise > this = cave (fewer caves for mesa)
@@ -650,30 +650,85 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 
 			local trunkBlock = surface.trunkBlock or BlockType.Wood
 			local canopyBlock = surface.canopyBlock or BlockType.Leaves
+			local structureType = surface.structureType or "tree"
 
-			for ty = 0, trunkHeight - 1 do
-				local worldBlockY = surfaceBlockY + 1 + ty
-				if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-					local lx = bx - chunkBlockX
-					local ly = worldBlockY - chunkBlockYBottom
-					local lz = bz - chunkBlockZ
-					if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-						local idx = ChunkUtil.flatIndex(lx, ly, lz)
-						buffer.writeu8(blocks, idx, trunkBlock)
+			if structureType == "spire" then
+				-- Tall thin pillar, top block uses canopyBlock for pointed tip
+				for ty = 0, trunkHeight - 1 do
+					local worldBlockY = surfaceBlockY + 1 + ty
+					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
+						local lx = bx - chunkBlockX
+						local ly = worldBlockY - chunkBlockYBottom
+						local lz = bz - chunkBlockZ
+						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
+							local blockToPlace = if ty == trunkHeight - 1 then canopyBlock else trunkBlock
+							local idx = ChunkUtil.flatIndex(lx, ly, lz)
+							buffer.writeu8(blocks, idx, blockToPlace)
+						end
 					end
 				end
-			end
 
-			local canopyBaseY = surfaceBlockY + trunkHeight
-			for canopyLayer = 0, 1 do
-				local worldBlockY = canopyBaseY + canopyLayer
-				if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-					local ly = worldBlockY - chunkBlockYBottom
-					for dx = -canopyR, canopyR do
+			elseif structureType == "cluster" then
+				-- Short 3-block trunk + filled sphere of canopy
+				for ty = 0, math.min(2, trunkHeight - 1) do
+					local worldBlockY = surfaceBlockY + 1 + ty
+					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
+						local lx = bx - chunkBlockX
+						local ly = worldBlockY - chunkBlockYBottom
+						local lz = bz - chunkBlockZ
+						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
+							local idx = ChunkUtil.flatIndex(lx, ly, lz)
+							buffer.writeu8(blocks, idx, trunkBlock)
+						end
+					end
+				end
+				-- Filled sphere of canopy blocks centered at trunk top
+				local centerY = surfaceBlockY + 4
+				for dx = -canopyR, canopyR do
+					for dy = -canopyR, canopyR do
 						for dz = -canopyR, canopyR do
-							if canopyLayer == 0 and dx == 0 and dz == 0 then
-								continue
+							if dx * dx + dy * dy + dz * dz <= canopyR * canopyR then
+								local worldBlockY = centerY + dy
+								if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
+									local lx = (bx + dx) - chunkBlockX
+									local ly = worldBlockY - chunkBlockYBottom
+									local lz2 = (bz + dz) - chunkBlockZ
+									if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
+										local idx = ChunkUtil.flatIndex(lx, ly, lz2)
+										if buffer.readu8(blocks, idx) == BlockType.Air then
+											buffer.writeu8(blocks, idx, canopyBlock)
+										end
+									end
+								end
 							end
+						end
+					end
+				end
+
+			elseif structureType == "column" then
+				-- 2x2 trunk up to trunkHeight
+				for ty = 0, trunkHeight - 1 do
+					local worldBlockY = surfaceBlockY + 1 + ty
+					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
+						local ly = worldBlockY - chunkBlockYBottom
+						for dx = 0, 1 do
+							for dz = 0, 1 do
+								local lx = (bx + dx) - chunkBlockX
+								local lz2 = (bz + dz) - chunkBlockZ
+								if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
+									local idx = ChunkUtil.flatIndex(lx, ly, lz2)
+									buffer.writeu8(blocks, idx, trunkBlock)
+								end
+							end
+						end
+					end
+				end
+				-- Flat 3x3 canopy layer on top
+				local topY = surfaceBlockY + trunkHeight + 1
+				if topY >= chunkBlockYBottom and topY <= chunkBlockYTop then
+					local ly = topY - chunkBlockYBottom
+					for dx = -1, 1 do
+						for dz = -1, 1 do
 							local lx = (bx + dx) - chunkBlockX
 							local lz2 = (bz + dz) - chunkBlockZ
 							if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
@@ -685,17 +740,101 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 						end
 					end
 				end
-			end
 
-			local capY = canopyBaseY + 2
-			if capY >= chunkBlockYBottom and capY <= chunkBlockYTop then
-				local lx = bx - chunkBlockX
-				local ly = capY - chunkBlockYBottom
-				local lz = bz - chunkBlockZ
-				if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-					local idx = ChunkUtil.flatIndex(lx, ly, lz)
-					if buffer.readu8(blocks, idx) == BlockType.Air then
-						buffer.writeu8(blocks, idx, canopyBlock)
+			elseif structureType == "mushroom" then
+				-- Normal trunk
+				for ty = 0, trunkHeight - 1 do
+					local worldBlockY = surfaceBlockY + 1 + ty
+					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
+						local lx = bx - chunkBlockX
+						local ly = worldBlockY - chunkBlockYBottom
+						local lz = bz - chunkBlockZ
+						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
+							local idx = ChunkUtil.flatIndex(lx, ly, lz)
+							buffer.writeu8(blocks, idx, trunkBlock)
+						end
+					end
+				end
+				-- Single wide flat canopy layer
+				local capY = surfaceBlockY + trunkHeight + 1
+				if capY >= chunkBlockYBottom and capY <= chunkBlockYTop then
+					local ly = capY - chunkBlockYBottom
+					for dx = -canopyR, canopyR do
+						for dz = -canopyR, canopyR do
+							local lx = (bx + dx) - chunkBlockX
+							local lz2 = (bz + dz) - chunkBlockZ
+							if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
+								local idx = ChunkUtil.flatIndex(lx, ly, lz2)
+								if buffer.readu8(blocks, idx) == BlockType.Air then
+									buffer.writeu8(blocks, idx, canopyBlock)
+								end
+							end
+						end
+					end
+				end
+				-- Cap block on top center
+				local capTopY = capY + 1
+				if capTopY >= chunkBlockYBottom and capTopY <= chunkBlockYTop then
+					local lx = bx - chunkBlockX
+					local ly = capTopY - chunkBlockYBottom
+					local lz = bz - chunkBlockZ
+					if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
+						local idx = ChunkUtil.flatIndex(lx, ly, lz)
+						if buffer.readu8(blocks, idx) == BlockType.Air then
+							buffer.writeu8(blocks, idx, canopyBlock)
+						end
+					end
+				end
+
+			else -- "tree" (default)
+				-- Trunk column
+				for ty = 0, trunkHeight - 1 do
+					local worldBlockY = surfaceBlockY + 1 + ty
+					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
+						local lx = bx - chunkBlockX
+						local ly = worldBlockY - chunkBlockYBottom
+						local lz = bz - chunkBlockZ
+						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
+							local idx = ChunkUtil.flatIndex(lx, ly, lz)
+							buffer.writeu8(blocks, idx, trunkBlock)
+						end
+					end
+				end
+
+				-- Canopy sphere (2 layers) + cap
+				local canopyBaseY = surfaceBlockY + trunkHeight
+				for canopyLayer = 0, 1 do
+					local worldBlockY = canopyBaseY + canopyLayer
+					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
+						local ly = worldBlockY - chunkBlockYBottom
+						for dx = -canopyR, canopyR do
+							for dz = -canopyR, canopyR do
+								if canopyLayer == 0 and dx == 0 and dz == 0 then
+									continue
+								end
+								local lx = (bx + dx) - chunkBlockX
+								local lz2 = (bz + dz) - chunkBlockZ
+								if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
+									local idx = ChunkUtil.flatIndex(lx, ly, lz2)
+									if buffer.readu8(blocks, idx) == BlockType.Air then
+										buffer.writeu8(blocks, idx, canopyBlock)
+									end
+								end
+							end
+						end
+					end
+				end
+
+				local capY = canopyBaseY + 2
+				if capY >= chunkBlockYBottom and capY <= chunkBlockYTop then
+					local lx = bx - chunkBlockX
+					local ly = capY - chunkBlockYBottom
+					local lz = bz - chunkBlockZ
+					if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
+						local idx = ChunkUtil.flatIndex(lx, ly, lz)
+						if buffer.readu8(blocks, idx) == BlockType.Air then
+							buffer.writeu8(blocks, idx, canopyBlock)
+						end
 					end
 				end
 			end

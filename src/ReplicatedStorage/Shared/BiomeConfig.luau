@@ -30,6 +30,7 @@ BiomeConfig.Biomes = {
 		surfaceBlock = BlockType.Sandstone,
 		subsurfaceBlock = BlockType.RedClay,
 		fillerBlock = BlockType.Cardboard,
+		structureType = "tree",
 		treeDensity = 0.04,
 		trunkHeightMin = 3,
 		trunkHeightMax = 5,
@@ -49,10 +50,11 @@ BiomeConfig.Biomes = {
 		surfaceBlock = BlockType.GlacierIce,
 		subsurfaceBlock = BlockType.MintFrost,
 		fillerBlock = BlockType.Cardboard,
-		treeDensity = 0.04,
-		trunkHeightMin = 3,
-		trunkHeightMax = 5,
-		canopyRadius = 2,
+		structureType = "spire",
+		treeDensity = 0.06,
+		trunkHeightMin = 5,
+		trunkHeightMax = 10,
+		canopyRadius = 0,
 		trunkBlock = BlockType.IceWhiteTrunk,
 		canopyBlock = BlockType.AuroraVioletCanopy,
 		terrainFrequency = 0.003,
@@ -67,9 +69,10 @@ BiomeConfig.Biomes = {
 		surfaceBlock = BlockType.CrystalGround,
 		subsurfaceBlock = BlockType.RoseQuartz,
 		fillerBlock = BlockType.Cardboard,
-		treeDensity = 0.04,
+		structureType = "cluster",
+		treeDensity = 0.05,
 		trunkHeightMin = 3,
-		trunkHeightMax = 5,
+		trunkHeightMax = 4,
 		canopyRadius = 2,
 		trunkBlock = BlockType.CitrineTrunk,
 		canopyBlock = BlockType.AquamarineCanopy,
@@ -85,10 +88,11 @@ BiomeConfig.Biomes = {
 		surfaceBlock = BlockType.CoralPlate,
 		subsurfaceBlock = BlockType.ReefRock,
 		fillerBlock = BlockType.CoralFiller,
+		structureType = "mushroom",
 		treeDensity = 0.04,
-		trunkHeightMin = 3,
-		trunkHeightMax = 5,
-		canopyRadius = 2,
+		trunkHeightMin = 2,
+		trunkHeightMax = 3,
+		canopyRadius = 3,
 		trunkBlock = BlockType.CoralTrunk,
 		canopyBlock = BlockType.CoralCanopy,
 		terrainFrequency = 0.005,
@@ -103,6 +107,7 @@ BiomeConfig.Biomes = {
 		surfaceBlock = BlockType.PartyPaper,
 		subsurfaceBlock = BlockType.GoldPaper,
 		fillerBlock = BlockType.ConfettiFiller,
+		structureType = "tree",
 		treeDensity = 0.04,
 		trunkHeightMin = 3,
 		trunkHeightMax = 5,
@@ -121,9 +126,10 @@ BiomeConfig.Biomes = {
 		surfaceBlock = BlockType.CorrugatedCardboard,
 		subsurfaceBlock = BlockType.DarkCardboard,
 		fillerBlock = BlockType.Cardboard,
-		treeDensity = 0.04,
-		trunkHeightMin = 4,
-		trunkHeightMax = 7,
+		structureType = "column",
+		treeDensity = 0.03,
+		trunkHeightMin = 5,
+		trunkHeightMax = 8,
 		canopyRadius = 2,
 		trunkBlock = BlockType.CopperGear,
 		canopyBlock = BlockType.BrassLeaf,
@@ -137,7 +143,7 @@ BiomeConfig.Biomes = {
 }
 
 -- Keep BiomeConfig.Surface pointing to sunset_mesa for backwards compatibility
-BiomeConfig.Surface = BiomeConfig.Biomes.neon_reef
+BiomeConfig.Surface = BiomeConfig.Biomes.frozen_auroras
 
 -- Sector assignments: 6 sectors of 60° each
 local SECTOR_BIOMES = {
@@ -152,7 +158,7 @@ local SECTOR_BIOMES = {
 local CENTER_RADIUS_CHUNKS = 3
 
 -- Active biome: change this to preview different biomes
-local ACTIVE_BIOME = "neon_reef"
+local ACTIVE_BIOME = "frozen_auroras"
 
 -- Returns the biome config for a given world position (in studs)
 function BiomeConfig.getBiome(_wx: number, _wz: number)

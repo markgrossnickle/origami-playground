@@ -25,13 +25,13 @@ function Server:_setupWorld()
 		baseplate:Destroy()
 	end
 
-	-- Lighting — Neon Reef: deep underwater glow
+	-- Lighting — Frozen Auroras: twilight aurora sky
 	local GLOBAL_SHADOWS = true
 	Lighting.GlobalShadows = GLOBAL_SHADOWS
-	Lighting.ClockTime = 22
-	Lighting.Brightness = 0.4
-	Lighting.Ambient = Color3.fromRGB(40, 80, 120)
-	Lighting.OutdoorAmbient = Color3.fromRGB(20, 50, 100)
+	Lighting.ClockTime = 21
+	Lighting.Brightness = 0.3
+	Lighting.Ambient = Color3.fromRGB(30, 60, 80)
+	Lighting.OutdoorAmbient = Color3.fromRGB(50, 90, 120)
 end
 
 function Server:_loadComponentsIn(container: Instance)

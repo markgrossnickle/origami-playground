@@ -43,7 +43,7 @@ local Config = {
 	caveMinDepth = 40, -- don't carve caves within 40 studs of surface
 	-- Trees
 	treeDensityMultiplier = 0.3,
-	treeCheckRadius = 2,
+	treeCheckRadius = 4,
 	minLargeTreeSpacingBlocks = 8,
 	largeTreeCanopyThreshold = 2,
 	-- Ore
@@ -622,6 +622,27 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 	return surface.trunkHeightMin + (h % range)
 end
 
+-- All available structure types for "mixed" mode
+local MIXED_STRUCTURES = { "tree", "cactus", "boulder", "bonsai", "lotus", "jellyfish", "temple_gate", "stepped_pyramid", "obelisk" }
+
+-- Helper: place a single block if within chunk bounds and target is air
+local function placeBlock(blocks: buffer, blockType: number, bx: number, worldBlockY: number, bz: number, chunkBlockX: number, chunkBlockYBottom: number, chunkBlockYTop: number, chunkBlockZ: number, requireAir: boolean?)
+	if worldBlockY < chunkBlockYBottom or worldBlockY > chunkBlockYTop then
+		return
+	end
+	local lx = bx - chunkBlockX
+	local ly = worldBlockY - chunkBlockYBottom
+	local lz = bz - chunkBlockZ
+	if lx < 0 or lx >= CHUNK_SIZE or lz < 0 or lz >= CHUNK_SIZE then
+		return
+	end
+	local idx = ChunkUtil.flatIndex(lx, ly, lz)
+	if requireAir and buffer.readu8(blocks, idx) ~= BlockType.Air then
+		return
+	end
+	buffer.writeu8(blocks, idx, blockType)
+end
+
 local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: number, cz: number)
 	local chunkBlockYBottom = cy * CHUNK_SIZE
 	local chunkBlockYTop = chunkBlockYBottom + CHUNK_SIZE - 1
@@ -652,191 +673,221 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 			local canopyBlock = surface.canopyBlock or BlockType.Leaves
 			local structureType = surface.structureType or "tree"
 
-			if structureType == "spire" then
-				-- Tall thin pillar, top block uses canopyBlock for pointed tip
-				for ty = 0, trunkHeight - 1 do
-					local worldBlockY = surfaceBlockY + 1 + ty
-					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-						local lx = bx - chunkBlockX
-						local ly = worldBlockY - chunkBlockYBottom
-						local lz = bz - chunkBlockZ
-						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-							local blockToPlace = if ty == trunkHeight - 1 then canopyBlock else trunkBlock
-							local idx = ChunkUtil.flatIndex(lx, ly, lz)
-							buffer.writeu8(blocks, idx, blockToPlace)
+			-- Mixed mode: pick structure type from hash
+			if structureType == "mixed" then
+				local mixHash = hashTwo(seed + 9999, bx, bz)
+				structureType = MIXED_STRUCTURES[(mixHash % #MIXED_STRUCTURES) + 1]
+			end
+
+			if structureType == "cactus" then
+				-- Saguaro cactus: tall trunk + 1-2 arm branches
+				for ty = 0, trunkHeight do
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+				-- Canopy tip
+				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + trunkHeight + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				-- Arm at height 2-3 (direction from hash)
+				local armDir = hashTwo(seed + 3333, bx, bz) % 4
+				local armDx = if armDir == 0 then 1 elseif armDir == 1 then -1 else 0
+				local armDz = if armDir == 2 then 1 elseif armDir == 3 then -1 else 0
+				local armY = surfaceBlockY + 3
+				placeBlock(blocks, trunkBlock, bx + armDx, armY, bz + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				placeBlock(blocks, trunkBlock, bx + armDx, armY + 1, bz + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				placeBlock(blocks, canopyBlock, bx + armDx, armY + 2, bz + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				-- Second arm on opposite side (50% chance)
+				if hashTwo(seed + 4444, bx, bz) % 2 == 0 and trunkHeight >= 4 then
+					local arm2Y = surfaceBlockY + 4
+					placeBlock(blocks, trunkBlock, bx - armDx, arm2Y, bz - armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, canopyBlock, bx - armDx, arm2Y + 1, bz - armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+
+			elseif structureType == "boulder" then
+				-- Low irregular mound of canopy blocks, no trunk
+				local boulderR = math.min(canopyR, 2)
+				for dy = 0, 1 do
+					for dx = -boulderR, boulderR do
+						for dz = -boulderR, boulderR do
+							local dist = math.abs(dx) + math.abs(dz) + dy
+							if dist <= boulderR + 1 then
+								local blockToUse = if dy == 0 then trunkBlock else canopyBlock
+								placeBlock(blocks, blockToUse, bx + dx, surfaceBlockY + 1 + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							end
 						end
 					end
 				end
 
-			elseif structureType == "cluster" then
-				-- Short 3-block trunk + filled sphere of canopy
-				for ty = 0, math.min(2, trunkHeight - 1) do
-					local worldBlockY = surfaceBlockY + 1 + ty
-					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-						local lx = bx - chunkBlockX
-						local ly = worldBlockY - chunkBlockYBottom
-						local lz = bz - chunkBlockZ
-						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-							local idx = ChunkUtil.flatIndex(lx, ly, lz)
-							buffer.writeu8(blocks, idx, trunkBlock)
+			elseif structureType == "bonsai" then
+				-- Short trunk (1-2) + very wide flat canopy
+				local bonsaiTrunk = math.min(2, trunkHeight)
+				for ty = 0, bonsaiTrunk - 1 do
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+				-- Wide flat canopy (radius 3)
+				local bonsaiR = 3
+				local capY = surfaceBlockY + bonsaiTrunk + 1
+				for dx = -bonsaiR, bonsaiR do
+					for dz = -bonsaiR, bonsaiR do
+						if dx * dx + dz * dz <= bonsaiR * bonsaiR + 1 then
+							placeBlock(blocks, canopyBlock, bx + dx, capY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 						end
 					end
 				end
-				-- Filled sphere of canopy blocks centered at trunk top
+
+			elseif structureType == "lotus" then
+				-- Concentric rings shrinking upward (3 layers)
+				for layer = 0, 2 do
+					local r = 3 - layer
+					local layerY = surfaceBlockY + 1 + layer
+					for dx = -r, r do
+						for dz = -r, r do
+							-- Ring: only edges
+							if math.abs(dx) == r or math.abs(dz) == r then
+								local blockToUse = if layer == 2 then canopyBlock else trunkBlock
+								placeBlock(blocks, blockToUse, bx + dx, layerY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							end
+						end
+					end
+					-- Center canopy on top layer
+					if layer == 2 then
+						placeBlock(blocks, canopyBlock, bx, layerY, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					end
+				end
+				-- Glowing tip
+				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + 4, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+
+			elseif structureType == "jellyfish" then
+				-- Wide dome cap + hanging tendrils
+				local domeR = math.max(2, canopyR)
+				local domeY = surfaceBlockY + trunkHeight + 1
+				-- Hemisphere dome
+				for dx = -domeR, domeR do
+					for dz = -domeR, domeR do
+						for dy = 0, domeR do
+							local distSq = dx * dx + dy * dy + dz * dz
+							if distSq <= domeR * domeR and distSq > (domeR - 1) * (domeR - 1) then
+								placeBlock(blocks, canopyBlock, bx + dx, domeY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							end
+						end
+					end
+				end
+				-- Fill dome center
+				placeBlock(blocks, canopyBlock, bx, domeY, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				-- Hanging tendrils (4 corners)
+				for _, offset in { {-1, -1}, {1, -1}, {-1, 1}, {1, 1} } do
+					for ty = 0, trunkHeight - 1 do
+						placeBlock(blocks, trunkBlock, bx + offset[1], domeY - 1 - ty, bz + offset[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					end
+				end
+
+			elseif structureType == "temple_gate" then
+				-- Two pillars + bridge across top
+				local pillarSpacing = 2
+				-- Left pillar
+				for ty = 0, trunkHeight - 1 do
+					placeBlock(blocks, trunkBlock, bx - pillarSpacing, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+				-- Right pillar
+				for ty = 0, trunkHeight - 1 do
+					placeBlock(blocks, trunkBlock, bx + pillarSpacing, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+				-- Bridge across top
+				local bridgeY = surfaceBlockY + trunkHeight + 1
+				for dx = -pillarSpacing, pillarSpacing do
+					placeBlock(blocks, canopyBlock, bx + dx, bridgeY, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				end
+				-- Peak in center
+				placeBlock(blocks, canopyBlock, bx, bridgeY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+
+			elseif structureType == "stepped_pyramid" then
+				-- Stacked shrinking layers: 5x5, 3x3, 1x1
+				local layers = { 2, 1, 0 }
+				for i, r in layers do
+					local layerY = surfaceBlockY + i
+					for dx = -r, r do
+						for dz = -r, r do
+							local blockToUse = if i == #layers then canopyBlock else trunkBlock
+							placeBlock(blocks, blockToUse, bx + dx, layerY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+						end
+					end
+				end
+				-- Glowing cap
+				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + #layers + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+
+			elseif structureType == "obelisk" then
+				-- Tall tapered monolith with banded colors
+				for ty = 0, trunkHeight + 2 do
+					local blockToUse = if ty % 3 == 0 then canopyBlock else trunkBlock
+					placeBlock(blocks, blockToUse, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+				-- Canopy tip
+				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + trunkHeight + 4, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+
+			elseif structureType == "spire" then
+				for ty = 0, trunkHeight - 1 do
+					local blockToPlace = if ty == trunkHeight - 1 then canopyBlock else trunkBlock
+					placeBlock(blocks, blockToPlace, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
+
+			elseif structureType == "cluster" then
+				for ty = 0, math.min(2, trunkHeight - 1) do
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				end
 				local centerY = surfaceBlockY + 4
 				for dx = -canopyR, canopyR do
 					for dy = -canopyR, canopyR do
 						for dz = -canopyR, canopyR do
 							if dx * dx + dy * dy + dz * dz <= canopyR * canopyR then
-								local worldBlockY = centerY + dy
-								if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-									local lx = (bx + dx) - chunkBlockX
-									local ly = worldBlockY - chunkBlockYBottom
-									local lz2 = (bz + dz) - chunkBlockZ
-									if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
-										local idx = ChunkUtil.flatIndex(lx, ly, lz2)
-										if buffer.readu8(blocks, idx) == BlockType.Air then
-											buffer.writeu8(blocks, idx, canopyBlock)
-										end
-									end
-								end
+								placeBlock(blocks, canopyBlock, bx + dx, centerY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
 				end
 
 			elseif structureType == "column" then
-				-- 2x2 trunk up to trunkHeight
 				for ty = 0, trunkHeight - 1 do
 					local worldBlockY = surfaceBlockY + 1 + ty
-					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-						local ly = worldBlockY - chunkBlockYBottom
-						for dx = 0, 1 do
-							for dz = 0, 1 do
-								local lx = (bx + dx) - chunkBlockX
-								local lz2 = (bz + dz) - chunkBlockZ
-								if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
-									local idx = ChunkUtil.flatIndex(lx, ly, lz2)
-									buffer.writeu8(blocks, idx, trunkBlock)
-								end
-							end
+					for dx = 0, 1 do
+						for dz = 0, 1 do
+							placeBlock(blocks, trunkBlock, bx + dx, worldBlockY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 						end
 					end
 				end
-				-- Flat 3x3 canopy layer on top
 				local topY = surfaceBlockY + trunkHeight + 1
-				if topY >= chunkBlockYBottom and topY <= chunkBlockYTop then
-					local ly = topY - chunkBlockYBottom
-					for dx = -1, 1 do
-						for dz = -1, 1 do
-							local lx = (bx + dx) - chunkBlockX
-							local lz2 = (bz + dz) - chunkBlockZ
-							if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
-								local idx = ChunkUtil.flatIndex(lx, ly, lz2)
-								if buffer.readu8(blocks, idx) == BlockType.Air then
-									buffer.writeu8(blocks, idx, canopyBlock)
-								end
-							end
-						end
+				for dx = -1, 1 do
+					for dz = -1, 1 do
+						placeBlock(blocks, canopyBlock, bx + dx, topY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					end
 				end
 
 			elseif structureType == "mushroom" then
-				-- Normal trunk
 				for ty = 0, trunkHeight - 1 do
-					local worldBlockY = surfaceBlockY + 1 + ty
-					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-						local lx = bx - chunkBlockX
-						local ly = worldBlockY - chunkBlockYBottom
-						local lz = bz - chunkBlockZ
-						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-							local idx = ChunkUtil.flatIndex(lx, ly, lz)
-							buffer.writeu8(blocks, idx, trunkBlock)
-						end
-					end
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
-				-- Single wide flat canopy layer
 				local capY = surfaceBlockY + trunkHeight + 1
-				if capY >= chunkBlockYBottom and capY <= chunkBlockYTop then
-					local ly = capY - chunkBlockYBottom
-					for dx = -canopyR, canopyR do
-						for dz = -canopyR, canopyR do
-							local lx = (bx + dx) - chunkBlockX
-							local lz2 = (bz + dz) - chunkBlockZ
-							if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
-								local idx = ChunkUtil.flatIndex(lx, ly, lz2)
-								if buffer.readu8(blocks, idx) == BlockType.Air then
-									buffer.writeu8(blocks, idx, canopyBlock)
-								end
-							end
-						end
+				for dx = -canopyR, canopyR do
+					for dz = -canopyR, canopyR do
+						placeBlock(blocks, canopyBlock, bx + dx, capY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					end
 				end
-				-- Cap block on top center
-				local capTopY = capY + 1
-				if capTopY >= chunkBlockYBottom and capTopY <= chunkBlockYTop then
-					local lx = bx - chunkBlockX
-					local ly = capTopY - chunkBlockYBottom
-					local lz = bz - chunkBlockZ
-					if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-						local idx = ChunkUtil.flatIndex(lx, ly, lz)
-						if buffer.readu8(blocks, idx) == BlockType.Air then
-							buffer.writeu8(blocks, idx, canopyBlock)
-						end
-					end
-				end
+				placeBlock(blocks, canopyBlock, bx, capY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			else -- "tree" (default)
-				-- Trunk column
 				for ty = 0, trunkHeight - 1 do
-					local worldBlockY = surfaceBlockY + 1 + ty
-					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-						local lx = bx - chunkBlockX
-						local ly = worldBlockY - chunkBlockYBottom
-						local lz = bz - chunkBlockZ
-						if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-							local idx = ChunkUtil.flatIndex(lx, ly, lz)
-							buffer.writeu8(blocks, idx, trunkBlock)
-						end
-					end
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
-
-				-- Canopy sphere (2 layers) + cap
 				local canopyBaseY = surfaceBlockY + trunkHeight
 				for canopyLayer = 0, 1 do
 					local worldBlockY = canopyBaseY + canopyLayer
-					if worldBlockY >= chunkBlockYBottom and worldBlockY <= chunkBlockYTop then
-						local ly = worldBlockY - chunkBlockYBottom
-						for dx = -canopyR, canopyR do
-							for dz = -canopyR, canopyR do
-								if canopyLayer == 0 and dx == 0 and dz == 0 then
-									continue
-								end
-								local lx = (bx + dx) - chunkBlockX
-								local lz2 = (bz + dz) - chunkBlockZ
-								if lx >= 0 and lx < CHUNK_SIZE and lz2 >= 0 and lz2 < CHUNK_SIZE then
-									local idx = ChunkUtil.flatIndex(lx, ly, lz2)
-									if buffer.readu8(blocks, idx) == BlockType.Air then
-										buffer.writeu8(blocks, idx, canopyBlock)
-									end
-								end
+					for dx = -canopyR, canopyR do
+						for dz = -canopyR, canopyR do
+							if canopyLayer == 0 and dx == 0 and dz == 0 then
+								continue
 							end
+							placeBlock(blocks, canopyBlock, bx + dx, worldBlockY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 						end
 					end
 				end
-
-				local capY = canopyBaseY + 2
-				if capY >= chunkBlockYBottom and capY <= chunkBlockYTop then
-					local lx = bx - chunkBlockX
-					local ly = capY - chunkBlockYBottom
-					local lz = bz - chunkBlockZ
-					if lx >= 0 and lx < CHUNK_SIZE and lz >= 0 and lz < CHUNK_SIZE then
-						local idx = ChunkUtil.flatIndex(lx, ly, lz)
-						if buffer.readu8(blocks, idx) == BlockType.Air then
-							buffer.writeu8(blocks, idx, canopyBlock)
-						end
-					end
-				end
+				placeBlock(blocks, canopyBlock, bx, canopyBaseY + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 			end
 		end
 	end

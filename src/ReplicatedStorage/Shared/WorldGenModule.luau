@@ -623,14 +623,13 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 end
 
 -- All available structure types for "mixed" mode
-local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "tree_birch", "cactus", "boulder", "bonsai", "lotus", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
+local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "tree_birch", "cactus", "boulder", "bonsai", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
 
 -- Per-structure block overrides (used in mixed mode for visual variety)
 local STRUCTURE_BLOCKS = {
 	cactus = { trunk = BlockType.CactusGreen, canopy = BlockType.CactusFlower },
 	boulder = { trunk = BlockType.BoulderGray, canopy = BlockType.BoulderGray },
 	bonsai = { trunk = BlockType.BonsaiBark, canopy = BlockType.CherryBlossom },
-	lotus = { trunk = BlockType.LotusPetal, canopy = BlockType.LotusCenter },
 	tree_giant = { trunk = BlockType.GiantBark, canopy = BlockType.Leaves },
 	tree_pine = { trunk = BlockType.Wood, canopy = BlockType.PineNeedle },
 	tree_willow = { trunk = BlockType.Wood, canopy = BlockType.WillowVine },
@@ -646,7 +645,7 @@ local STRUCTURE_BLOCKS = {
 local STRUCTURE_LABELS = {
 	tree = "Tree", tree_giant = "Giant Tree", tree_pine = "Pine", tree_willow = "Willow",
 	tree_palm = "Palm", tree_birch = "Birch", cactus = "Cactus", boulder = "Boulder",
-	bonsai = "Bonsai", lotus = "Lotus", mushroom = "Mushroom",
+	bonsai = "Bonsai", mushroom = "Mushroom",
 	mushroom_cluster = "Mushroom Cluster", mushroom_tall = "Tall Mushroom",
 	mushroom_shelf = "Shelf Mushroom", spire = "Spire", cluster = "Cluster",
 	column = "Column",
@@ -820,32 +819,6 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					end
 				end
 				placeBlock(blocks, canopyBlock, bx, capY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-
-			elseif structureType == "lotus" then
-				-- Large lotus: stem (3 tall) + 5 concentric petal rings shrinking upward
-				-- Central stem with gap before petals
-				for ty = 0, 2 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				end
-				-- 5 petal layers, base r=5 shrinking to r=1
-				for layer = 0, 4 do
-					local r = 5 - layer
-					local layerY = surfaceBlockY + 3 + layer
-					for dx = -r, r do
-						for dz = -r, r do
-							-- Ring edges only (petals)
-							if math.abs(dx) >= r - 1 or math.abs(dz) >= r - 1 then
-								if dx * dx + dz * dz <= r * r + 2 then
-									local blockToUse = if layer >= 3 then canopyBlock else trunkBlock
-									placeBlock(blocks, blockToUse, bx + dx, layerY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								end
-							end
-						end
-					end
-				end
-				-- Golden center + tip
-				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + 8, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + 9, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "tree_giant" then
 				-- Terraria Living Tree: 2x2 base trunk, 1x1 upper, root buttresses, huge canopy

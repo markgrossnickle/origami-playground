@@ -40,6 +40,24 @@ local SIMPLE_TINT_RANGE = 0.08
 local LOD_NEAR_DIST2 = 2 -- dist <= 2 chunk = paper layers (~19 chunks)
 local RENDER_MAX_DIST2 = 18 -- skip rendering chunks beyond this
 
+-- Bouncy block config
+local BOUNCY_BLOCKS: { [number]: boolean } = {
+	[BlockType.MushroomCap] = true,
+	[BlockType.ShelfBracket] = true,
+}
+local BOUNCE_VEL_MIN = 60
+local BOUNCE_VEL_MAX = 80
+local BOUNCE_MULTIPLIER = 1.2
+local BOUNCE_DEBOUNCE = 0.2
+local FLASH_DURATION = 0.3
+local MUSHROOM_FLASH_COLORS = {
+	Color3.fromRGB(255, 0, 200),
+	Color3.fromRGB(0, 220, 255),
+	Color3.fromRGB(255, 230, 0),
+	Color3.fromRGB(0, 255, 100),
+	Color3.fromRGB(255, 140, 0),
+}
+
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
@@ -119,6 +137,89 @@ local chunkBlocks: { [string]: buffer } = {}
 local chunkLOD: { [string]: number } = {}
 
 local chunkContainer: Folder
+
+-- Bouncy block tracking
+local bouncyConns: { [BasePart]: RBXScriptConnection } = {}
+local bouncyOrigColor: { [BasePart]: Color3 } = {}
+local lastBounceTime: { [Player]: number } = {}
+
+local function _setupBounce(part: BasePart, blockTypeId: number)
+	if not BOUNCY_BLOCKS[blockTypeId] then
+		return
+	end
+
+	part.CanTouch = true
+	bouncyOrigColor[part] = part.Color
+
+	local conn = part.Touched:Connect(function(hit: BasePart)
+		local character = hit.Parent
+		if not character then
+			return
+		end
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if not humanoid then
+			return
+		end
+		local rootPart = humanoid.RootPart
+		if not rootPart then
+			return
+		end
+
+		local player = Players:GetPlayerFromCharacter(character)
+		if not player then
+			return
+		end
+
+		-- Only bounce when falling
+		local vel = rootPart.AssemblyLinearVelocity
+		if vel.Y > -5 then
+			return
+		end
+
+		-- Debounce per player
+		local now = os.clock()
+		if lastBounceTime[player] and now - lastBounceTime[player] < BOUNCE_DEBOUNCE then
+			return
+		end
+		lastBounceTime[player] = now
+
+		-- Spring bounce
+		local bounceY = math.min(BOUNCE_VEL_MAX, math.max(BOUNCE_VEL_MIN, -vel.Y * BOUNCE_MULTIPLIER))
+		rootPart.AssemblyLinearVelocity = Vector3.new(vel.X, bounceY, vel.Z)
+
+		-- Color flash on all visual parts in the group
+		local flashColor = MUSHROOM_FLASH_COLORS[math.random(1, #MUSHROOM_FLASH_COLORS)]
+		local origColor = bouncyOrigColor[part]
+		part.Color = flashColor
+		task.delay(FLASH_DURATION, function()
+			if bouncyOrigColor[part] then
+				part.Color = origColor
+			end
+		end)
+
+		-- Bounce sound
+		local sound = Instance.new("Sound")
+		sound.SoundId = "rbxasset://sounds/action_footsteps_plastic.mp3"
+		sound.Volume = 0.5
+		sound.PlayOnRemove = false
+		sound.Parent = part
+		sound:Play()
+		task.delay(1, function()
+			sound:Destroy()
+		end)
+	end)
+
+	bouncyConns[part] = conn
+end
+
+local function _cleanupBounce(part: BasePart)
+	local conn = bouncyConns[part]
+	if conn then
+		conn:Disconnect()
+		bouncyConns[part] = nil
+	end
+	bouncyOrigColor[part] = nil
+end
 
 local renderQueue: { { key: string, blocks: buffer } } = {}
 local isProcessingQueue = false
@@ -208,10 +309,12 @@ local function _getPart(): BasePart
 end
 
 local function _returnPart(part: BasePart)
+	_cleanupBounce(part)
 	part.CFrame = FAR_AWAY
 	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
 	part.CanCollide = false
 	part.CanQuery = false
+	part.CanTouch = false
 	part.Transparency = 0
 	for _, child in part:GetChildren() do
 		child:Destroy()
@@ -350,6 +453,74 @@ local function _makeLayerParts(
 	end
 	table.insert(parts, collisionPart)
 
+	-- Bouncy mushroom caps: setup on collision part, flash visual layers
+	if BOUNCY_BLOCKS[blockTypeId] then
+		collisionPart.CanTouch = true
+		bouncyOrigColor[collisionPart] = baseColor
+
+		local visualParts = {}
+		for i = 1, #parts - 1 do
+			table.insert(visualParts, parts[i])
+		end
+
+		local conn = collisionPart.Touched:Connect(function(hit: BasePart)
+			local character = hit.Parent
+			if not character then
+				return
+			end
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if not humanoid or not humanoid.RootPart then
+				return
+			end
+			local rootPart = humanoid.RootPart
+
+			local player = Players:GetPlayerFromCharacter(character)
+			if not player then
+				return
+			end
+
+			local vel = rootPart.AssemblyLinearVelocity
+			if vel.Y > -5 then
+				return
+			end
+
+			local now = os.clock()
+			if lastBounceTime[player] and now - lastBounceTime[player] < BOUNCE_DEBOUNCE then
+				return
+			end
+			lastBounceTime[player] = now
+
+			local bounceY = math.min(BOUNCE_VEL_MAX, math.max(BOUNCE_VEL_MIN, -vel.Y * BOUNCE_MULTIPLIER))
+			rootPart.AssemblyLinearVelocity = Vector3.new(vel.X, bounceY, vel.Z)
+
+			-- Flash visual layers
+			local flashColor = MUSHROOM_FLASH_COLORS[math.random(1, #MUSHROOM_FLASH_COLORS)]
+			local savedColors = {}
+			for _, vp in visualParts do
+				table.insert(savedColors, vp.Color)
+				vp.Color = flashColor
+			end
+			task.delay(FLASH_DURATION, function()
+				for idx, vp in visualParts do
+					if bouncyConns[collisionPart] then
+						vp.Color = savedColors[idx]
+					end
+				end
+			end)
+
+			local sound = Instance.new("Sound")
+			sound.SoundId = "rbxasset://sounds/action_footsteps_plastic.mp3"
+			sound.Volume = 0.5
+			sound.Parent = collisionPart
+			sound:Play()
+			task.delay(1, function()
+				sound:Destroy()
+			end)
+		end)
+
+		bouncyConns[collisionPart] = conn
+	end
+
 	return parts
 end
 
@@ -408,6 +579,8 @@ local function _makeSimplePart(
 		light.Range = 15
 		light.Parent = part
 	end
+
+	_setupBounce(part, blockTypeId)
 
 	return { part }
 end

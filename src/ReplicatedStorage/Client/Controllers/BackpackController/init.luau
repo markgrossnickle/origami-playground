@@ -1429,6 +1429,16 @@ function BackpackController:KnitStart()
 		buildUI()
 	end)
 
+	-- Keyboard/gamepad hotkeys
+	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		if processed then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.B or input.KeyCode == Enum.KeyCode.DPadDown then
+			togglePanel()
+		end
+	end)
+
 	-- Live update listeners
 	task.spawn(function()
 		local MiningService = Knit.GetService("MiningService")

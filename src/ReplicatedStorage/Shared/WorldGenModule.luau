@@ -2177,59 +2177,6 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		placeTreesInChunk(blocks, seed, cx, cy, cz)
 	end
 
-	-- DEBUG: Force mushroom cave directly below spawn
-	-- Surface is at ~blockY 4 (seaLevelBlock). Cave floor at blockY -2 = 6 blocks below surface.
-	-- Spans cx=-1..0, cz=-1..0, cy=-1 to catch wherever spawn lands.
-	if cy == -1 and cx >= -1 and cx <= 0 and cz >= -1 and cz <= 0 then
-		-- blockY -2 = local Y 14 in cy=-1 chunk (chunkBlockYBottom = -16, -16+14 = -2)
-		-- Carve cave ly=9..15, floor at ly=8
-		for lx = 1, 14 do
-			for lz = 1, 14 do
-				for ly = 9, 15 do
-					local idx = ChunkUtil.flatIndex(lx, ly, lz)
-					buffer.writeu8(blocks, idx, BlockType.Air)
-				end
-				-- Floor
-				local floorIdx = ChunkUtil.flatIndex(lx, 8, lz)
-				buffer.writeu8(blocks, floorIdx, BlockType.CompressedPulp)
-			end
-		end
-		-- Only place mushrooms in one chunk to avoid duplicates
-		if cx == 0 and cz == 0 then
-			local stemBlock = BlockType.MushroomStem
-			local capBlock = BlockType.MushroomCap
-			local shelfBlock = BlockType.ShelfBracket
-			local floorY = chunkBlockYBottom + 9
-			local cbx, cbz = chunkBlockX, chunkBlockZ
-			local cbyBot, cbyTop = chunkBlockYBottom, chunkBlockYTop
-			-- Basic mushroom
-			placeBlock(blocks, stemBlock, cbx + 4, floorY, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, stemBlock, cbx + 4, floorY + 1, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 4, floorY + 2, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 5, floorY + 2, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 3, floorY + 2, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 4, floorY + 2, cbz + 5, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 4, floorY + 2, cbz + 3, cbx, cbyBot, cbyTop, cbz)
-			-- Tall mushroom
-			for ty = 0, 3 do
-				placeBlock(blocks, stemBlock, cbx + 8, floorY + ty, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			end
-			placeBlock(blocks, capBlock, cbx + 8, floorY + 4, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 9, floorY + 4, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 7, floorY + 4, cbz + 4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 8, floorY + 4, cbz + 5, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 8, floorY + 4, cbz + 3, cbx, cbyBot, cbyTop, cbz)
-			-- Shelf mushroom
-			placeBlock(blocks, stemBlock, cbx + 4, floorY, cbz + 9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, stemBlock, cbx + 4, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, shelfBlock, cbx + 5, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, shelfBlock, cbx + 6, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
-			-- Cluster
-			placeBlock(blocks, stemBlock, cbx + 8, floorY, cbz + 9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx + 8, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
-		end
-	end
-
 	return blocks
 end
 

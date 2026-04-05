@@ -41,7 +41,28 @@ function UIController:KnitInit()
 	self:_collectPages()
 end
 
-function UIController:KnitStart() end
+function UIController:KnitStart()
+	-- Version display (top-right)
+	local GameVersion = require(ReplicatedStorage.Shared.GameVersion)
+	local versionGui = Instance.new("ScreenGui")
+	versionGui.Name = "VersionDisplay"
+	versionGui.DisplayOrder = 1
+	versionGui.ResetOnSpawn = false
+	versionGui.Parent = PlayerGui
+
+	local label = Instance.new("TextLabel")
+	label.Name = "VersionLabel"
+	label.AnchorPoint = Vector2.new(1, 0)
+	label.Position = UDim2.new(1, -8, 0, 4)
+	label.Size = UDim2.fromOffset(80, 16)
+	label.BackgroundTransparency = 1
+	label.Text = "v" .. GameVersion
+	label.TextColor3 = Color3.fromRGB(140, 140, 160)
+	label.TextSize = 11
+	label.Font = Enum.Font.Gotham
+	label.TextXAlignment = Enum.TextXAlignment.Right
+	label.Parent = versionGui
+end
 
 function UIController:_collectPages()
 	for _, module: ModuleScript in PAGE_FOLDER:GetChildren() do

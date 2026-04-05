@@ -56,6 +56,8 @@ return {
 	CherryBlossom = 74,
 	LotusPetal = 75,
 	LotusCenter = 76,
+	FlyTrapStem = 77,
+	FlyTrapMaw = 78,
 	PineNeedle = 88,
 	WillowVine = 89,
 	PalmFrond = 90,

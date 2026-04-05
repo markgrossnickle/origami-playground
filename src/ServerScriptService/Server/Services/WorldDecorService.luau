@@ -69,13 +69,11 @@ function WorldDecorService:KnitStart()
 			return
 		end
 
-		-- Place small Venus fly trap creature: 15 studs to the right of spawn
+		-- Place small origami Venus fly trap creature near spawn
 		local creaturePos = spawnPos + Vector3.new(15, 0, 5)
 		placeModel(WorldDecorModels.VenusFlyTrap, creaturePos, math.rad(-30))
 
-		-- Place giant Venus fly trap tree: 20 studs to the left of spawn
-		local treePos = spawnPos + Vector3.new(-20, 0, -8)
-		placeModel(WorldDecorModels.VenusFlyTrapTree, treePos, math.rad(15))
+		-- NOTE: The voxel fly trap tree spawns naturally via WorldGenModule's mixed structure system
 	end)
 end
 

@@ -14,6 +14,7 @@ local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
 local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
+local MountConfig = require(ReplicatedStorage.Shared.MountConfig)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 
 local Player = Players.LocalPlayer
@@ -91,6 +92,7 @@ local _plotAssignedIds: { [string]: boolean } = {}
 -- Creature spawn state
 local _activeCreatureModel: Model? = nil
 local _activeCreatureCleanup: (() -> ())? = nil
+local _activeCreatureData: { [string]: any }? = nil
 
 -- Egg timer
 local _eggTimerThread: thread? = nil
@@ -535,6 +537,7 @@ local function despawnActiveCreature()
 		_activeCreatureModel:Destroy()
 	end
 	_activeCreatureModel = nil
+	_activeCreatureData = nil
 end
 
 local function spawnCreatureInWorld(creature: { [string]: any })
@@ -560,7 +563,41 @@ local function spawnCreatureInWorld(creature: { [string]: any })
 	model:PivotTo(CFrame.new(spawnPos.X, rootPart.Position.Y, spawnPos.Z))
 
 	_activeCreatureModel = model
+	_activeCreatureData = creature
 	_activeCreatureCleanup = CreatureAI.Start(model, creature.modelData, spawnPos, { model, character })
+
+	-- Add ProximityPrompt for mounting (if creature is mountable)
+	local locomotion = creature.modelData.locomotion or "walk"
+	if MountConfig.isMountable(locomotion) then
+		local primaryPart = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+		if primaryPart then
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.ObjectText = creature.name or "Creature"
+			prompt.ActionText = "Ride"
+			prompt.HoldDuration = 0.3
+			prompt.MaxActivationDistance = 12
+			prompt.RequiresLineOfSight = false
+			prompt.Parent = primaryPart
+
+			prompt.Triggered:Connect(function(triggerPlayer: Player)
+				if triggerPlayer ~= Player then
+					return
+				end
+				local MountController = Knit.GetController("MountController")
+				if MountController and _activeCreatureData and _activeCreatureModel then
+					prompt.Enabled = false
+					task.spawn(function()
+						MountController:mountCreatureFromWorld(
+							_activeCreatureData,
+							_activeCreatureModel,
+							_activeCreatureCleanup
+						)
+						_activeCreatureCleanup = nil
+					end)
+				end
+			end)
+		end
+	end
 
 	local rarityColor = EggCraftingConfig.RARITY_COLORS[creature.rarity] or COLORS.success
 	VFXUtil.sparkle(spawnPos + Vector3.new(0, 2, 0), rarityColor, 15, 1.5)
@@ -724,16 +761,19 @@ renderCreaturesTab = function()
 		statsLabel.TextXAlignment = Enum.TextXAlignment.Left
 		statsLabel.Parent = card
 
-		-- Action buttons (2×2 grid at bottom)
+		-- Action buttons: row 1 = Spawn, Ride, To Plot (3-col); row 2 = Rename, Release (2-col)
 		local btnW = math.floor((cellWidth - 16) / 2)
+		local btnW3 = math.floor((cellWidth - 20) / 3)
 		local btnH = 22
 		local btnY1 = 58
 		local btnY2 = 84
 		local btnX2 = btnW + 10
 
+		local isMountable = MountConfig.isMountable(creature.modelData and creature.modelData.locomotion or "walk")
+
 		-- Spawn
 		local spawnBtn = Instance.new("TextButton")
-		spawnBtn.Size = UDim2.fromOffset(btnW, btnH)
+		spawnBtn.Size = UDim2.fromOffset(if isMountable then btnW3 else btnW, btnH)
 		spawnBtn.Position = UDim2.fromOffset(4, btnY1)
 		spawnBtn.BackgroundColor3 = COLORS.success
 		spawnBtn.Text = "Spawn"
@@ -746,10 +786,33 @@ renderCreaturesTab = function()
 			spawnCreatureInWorld(creature)
 		end)
 
+		-- Ride (only for mountable creatures)
+		if isMountable then
+			local rideBtn = Instance.new("TextButton")
+			rideBtn.Size = UDim2.fromOffset(btnW3, btnH)
+			rideBtn.Position = UDim2.fromOffset(4 + btnW3 + 4, btnY1)
+			rideBtn.BackgroundColor3 = Color3.fromRGB(200, 160, 60)
+			rideBtn.Text = "Ride"
+			rideBtn.TextColor3 = COLORS.bg
+			rideBtn.TextSize = 10
+			rideBtn.Font = Enum.Font.GothamBold
+			rideBtn.Parent = card
+			createCorner(rideBtn, 4)
+			rideBtn.MouseButton1Click:Connect(function()
+				local MountController = Knit.GetController("MountController")
+				if MountController then
+					despawnActiveCreature()
+					task.spawn(function()
+						MountController:mountCreature(creature)
+					end)
+				end
+			end)
+		end
+
 		-- To Plot / On Plot
 		local plotBtn = Instance.new("TextButton")
-		plotBtn.Size = UDim2.fromOffset(btnW, btnH)
-		plotBtn.Position = UDim2.fromOffset(btnX2, btnY1)
+		plotBtn.Size = UDim2.fromOffset(if isMountable then btnW3 else btnW, btnH)
+		plotBtn.Position = UDim2.fromOffset(if isMountable then (4 + (btnW3 + 4) * 2) else btnX2, btnY1)
 		plotBtn.BackgroundColor3 = if isOnPlot then COLORS.textDim else COLORS.accent
 		plotBtn.Text = if isOnPlot then "On Plot" else "To Plot"
 		plotBtn.TextColor3 = COLORS.bg

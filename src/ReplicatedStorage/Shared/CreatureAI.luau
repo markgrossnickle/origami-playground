@@ -307,4 +307,32 @@ function CreatureAI.Start(
 	end
 end
 
+--[[
+	CreateAnimator — build an animator handle for external use (e.g. mount riding).
+	Returns { apply = function(t: number) } that animates all parts relative to model pivot.
+	Caller is responsible for calling apply() every frame.
+]]
+function CreatureAI.CreateAnimator(model: Model): { apply: (number) -> () }
+	local animList: { AnimPartData } = {}
+	local currentPivot = model:GetPivot()
+	for _, child in ipairs(model:GetChildren()) do
+		if child:IsA("BasePart") then
+			local animType, param1, param2 = classifyPart(child.Name)
+			table.insert(animList, {
+				part = child,
+				baseOffset = currentPivot:ToObjectSpace(child.CFrame),
+				animType = animType,
+				param1 = param1,
+				param2 = param2,
+			})
+		end
+	end
+
+	return {
+		apply = function(t: number)
+			applyCreatureAnimation(model, animList, t)
+		end,
+	}
+end
+
 return CreatureAI

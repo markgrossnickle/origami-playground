@@ -38,6 +38,13 @@ function CmdrController:KnitStart()
 	corner.CornerRadius = UDim.new(0, 10)
 	corner.Parent = btn
 
+	-- Connect click handler immediately — toggles Cmdr if loaded
+	btn.Activated:Connect(function()
+		if CmdrController.CmdrClient then
+			CmdrController.CmdrClient:Toggle()
+		end
+	end)
+
 	-- Load Cmdr async so the button is visible immediately
 	task.spawn(function()
 		local cmdrModule = ReplicatedStorage:WaitForChild("CmdrClient", 30)
@@ -54,10 +61,6 @@ function CmdrController:KnitStart()
 			assert(module:IsA("ModuleScript"), "Expected ModuleScript")
 			require(module)
 		end
-
-		btn.Activated:Connect(function()
-			CmdrController.CmdrClient:Toggle()
-		end)
 	end)
 end
 

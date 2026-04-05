@@ -413,4 +413,12 @@ function MiningService:KnitStart()
 	end)
 end
 
+function MiningService.Client:GetMiningInventory(player: Player)
+	return PlayerDataService:Read(player, { "MiningInventory" }) or {}
+end
+
+function MiningService.Client:GetEquippedTool(player: Player)
+	return PlayerDataService:Read(player, { "EquippedTool" }) or "paper_hands"
+end
+
 return MiningService

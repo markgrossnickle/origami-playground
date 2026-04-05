@@ -867,51 +867,31 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				placeBlock(blocks, canopyBlock, bx, coneStart + coneLayers, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "tree_willow" then
-				-- Weeping willow: single trunk + fork branches with spread-out canopy clusters + vines
+				-- Weeping willow: trunk + wide flat canopy + dense long hanging vines
 				for ty = 0, trunkHeight - 1 do
 					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
-				-- 4 fork branches near top, each 4-6 blocks outward
-				local branchStartY = surfaceBlockY + trunkHeight - 2
-				local willowDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
-				for bi, bdir in willowDirs do
-					local branchLen = 4 + (hashTwo(seed + 7770 + bi, bx, bz) % 3) -- 4-6
-					for step = 1, branchLen do
-						local stepY = branchStartY + math.floor(step * 0.5)
-						placeBlock(blocks, trunkBlock, bx + bdir[1] * step, stepY, bz + bdir[2] * step, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					end
-					-- Canopy cluster at branch tip (r=2)
-					local tipX = bx + bdir[1] * branchLen
-					local tipZ = bz + bdir[2] * branchLen
-					local tipY = branchStartY + math.floor(branchLen * 0.5)
-					for dx = -2, 2 do
-						for dz = -2, 2 do
-							if dx * dx + dz * dz <= 5 then
-								placeBlock(blocks, canopyBlock, tipX + dx, tipY, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, canopyBlock, tipX + dx, tipY + 1, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-							end
-						end
-					end
-					-- Hanging vines from cluster (~40% density, 5-9 blocks long)
-					for dx = -2, 2 do
-						for dz = -2, 2 do
-							if dx * dx + dz * dz <= 5 then
-								if hashTwo(seed + 6660 + bi, tipX + dx, tipZ + dz) % 5 < 2 then
-									local vineLen = 5 + (hashTwo(seed + 6666, tipX + dx, tipZ + dz) % 5)
-									for vy = 1, vineLen do
-										placeBlock(blocks, canopyBlock, tipX + dx, tipY - vy, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-									end
-								end
-							end
+				-- Wide flat canopy (r=4, 2 layers thick)
+				local canopyY = surfaceBlockY + trunkHeight + 1
+				for dx = -4, 4 do
+					for dz = -4, 4 do
+						if dx * dx + dz * dz <= 18 then
+							placeBlock(blocks, canopyBlock, bx + dx, canopyY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							placeBlock(blocks, canopyBlock, bx + dx, canopyY + 1, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 						end
 					end
 				end
-				-- Small crown at trunk top
-				local crownY = surfaceBlockY + trunkHeight + 1
-				for dx = -1, 1 do
-					for dz = -1, 1 do
-						if dx * dx + dz * dz <= 2 then
-							placeBlock(blocks, canopyBlock, bx + dx, crownY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				-- Dense hanging vines from canopy edge (~70% density, 6-12 blocks long)
+				for dx = -4, 4 do
+					for dz = -4, 4 do
+						local dist2 = dx * dx + dz * dz
+						if dist2 <= 18 and dist2 >= 4 then -- ring: not center, just edges
+							if hashTwo(seed + 6660, bx + dx, bz + dz) % 10 < 7 then
+								local vineLen = 6 + (hashTwo(seed + 6666, bx + dx, bz + dz) % 7)
+								for vy = 1, vineLen do
+									placeBlock(blocks, canopyBlock, bx + dx, canopyY - vy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								end
+							end
 						end
 					end
 				end
@@ -1326,56 +1306,57 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		placeTreesInChunk(blocks, seed, cx, cy, cz)
 	end
 
-	-- DEBUG: Force mushroom cave 6 blocks below spawn (cx=0, cz=0, cy=-1)
-	if cx == 0 and cz == 0 and cy == -1 then
-		-- Cave from ly=8 to ly=14 (blockY -8 to -2, about 6 blocks below surface at blockY 4)
-		for lx = 2, 13 do
-			for lz = 2, 13 do
-				for ly = 9, 14 do
+	-- DEBUG: Force mushroom cave directly below spawn
+	-- Surface is at ~blockY 4 (seaLevelBlock). Cave floor at blockY -2 = 6 blocks below surface.
+	-- Spans cx=-1..0, cz=-1..0, cy=-1 to catch wherever spawn lands.
+	if cy == -1 and cx >= -1 and cx <= 0 and cz >= -1 and cz <= 0 then
+		-- blockY -2 = local Y 14 in cy=-1 chunk (chunkBlockYBottom = -16, -16+14 = -2)
+		-- Carve cave ly=9..15, floor at ly=8
+		for lx = 1, 14 do
+			for lz = 1, 14 do
+				for ly = 9, 15 do
 					local idx = ChunkUtil.flatIndex(lx, ly, lz)
 					buffer.writeu8(blocks, idx, BlockType.Air)
 				end
+				-- Floor
+				local floorIdx = ChunkUtil.flatIndex(lx, 8, lz)
+				buffer.writeu8(blocks, floorIdx, BlockType.CompressedPulp)
 			end
 		end
-		-- Place floor at ly=8
-		for lx = 2, 13 do
-			for lz = 2, 13 do
-				local idx = ChunkUtil.flatIndex(lx, 8, lz)
-				buffer.writeu8(blocks, idx, BlockType.CompressedPulp)
+		-- Only place mushrooms in one chunk to avoid duplicates
+		if cx == 0 and cz == 0 then
+			local stemBlock = BlockType.MushroomStem
+			local capBlock = BlockType.MushroomCap
+			local shelfBlock = BlockType.ShelfBracket
+			local floorY = chunkBlockYBottom + 9
+			local cbx, cbz = chunkBlockX, chunkBlockZ
+			local cbyBot, cbyTop = chunkBlockYBottom, chunkBlockYTop
+			-- Basic mushroom
+			placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+3, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+3, cbx, cbyBot, cbyTop, cbz)
+			-- Tall mushroom
+			for ty = 0, 3 do
+				placeBlock(blocks, stemBlock, cbx+8, floorY+ty, cbz+4, cbx, cbyBot, cbyTop, cbz)
 			end
+			placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+9, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+7, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+3, cbx, cbyBot, cbyTop, cbz)
+			-- Shelf mushroom
+			placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, shelfBlock, cbx+5, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, shelfBlock, cbx+6, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+			-- Cluster
+			placeBlock(blocks, stemBlock, cbx+8, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx+8, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
 		end
-		-- Place one of each mushroom type on the floor
-		local stemBlock = BlockType.MushroomStem
-		local capBlock = BlockType.MushroomCap
-		local shelfBlock = BlockType.ShelfBracket
-		local floorY = chunkBlockYBottom + 9
-		local cbx, cbz = chunkBlockX, chunkBlockZ
-		local cbyBot, cbyTop = chunkBlockYBottom, chunkBlockYTop
-		-- Basic mushroom at (4,floor,4)
-		placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+3, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+3, cbx, cbyBot, cbyTop, cbz)
-		-- Tall mushroom at (8,floor,4)
-		for ty = 0, 3 do
-			placeBlock(blocks, stemBlock, cbx+8, floorY+ty, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		end
-		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+9, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+7, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+3, cbx, cbyBot, cbyTop, cbz)
-		-- Shelf mushroom at (4,floor,9)
-		placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, shelfBlock, cbx+5, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, shelfBlock, cbx+6, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
-		-- Cluster at (8,floor,9)
-		placeBlock(blocks, stemBlock, cbx+8, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+8, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
 	end
 
 	return blocks

@@ -18,8 +18,8 @@ PlotConfig.MAX_BLOCKS = 500
 PlotConfig.MAX_CREATURES = 5
 
 -- Grid placement (far from mine area at origin)
-PlotConfig.GRID_ORIGIN_X = 2000 -- start X offset
-PlotConfig.GRID_ORIGIN_Z = 0
+PlotConfig.GRID_ORIGIN_X = -80 -- near spawn
+PlotConfig.GRID_ORIGIN_Z = -80
 PlotConfig.GRID_SPACING = 200 -- studs between plot centers
 PlotConfig.GRID_COLUMNS = 20 -- plots per row before wrapping
 

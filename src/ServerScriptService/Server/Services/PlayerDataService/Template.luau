@@ -86,7 +86,7 @@ local playerDataTemplate: PlayerData = {
 	CoopTDHighestWave = 0,
 
 	MiningInventory = {},
-	EquippedTool = "crystal_pick", -- DEBUG: better tool for testing
+	EquippedTool = "prismatic_pick", -- DEBUG: best tool for testing
 	BlocksMined = 0,
 	DepthReached = 0,
 

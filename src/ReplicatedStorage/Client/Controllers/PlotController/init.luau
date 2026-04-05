@@ -337,11 +337,22 @@ local function buildUI()
 		buildToggleBtn.BackgroundColor3 = if _buildMode then COLORS.buildMode else COLORS.panel
 	end)
 
-	-- Show build button when plot is loaded
+	-- Show build button only when near plot
 	task.spawn(function()
 		while true do
 			task.wait(1)
-			buildToggleBtn.Visible = _plotOrigin ~= nil
+			local nearPlot = false
+			if _plotOrigin and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+				local pos = Player.Character.HumanoidRootPart.Position
+				local center = _plotOrigin + Vector3.new(PlotConfig.PLOT_SIZE_STUDS / 2, 0, PlotConfig.PLOT_SIZE_STUDS / 2)
+				nearPlot = (pos - center).Magnitude < PlotConfig.PLOT_SIZE_STUDS
+			end
+			buildToggleBtn.Visible = nearPlot
+			if not nearPlot and _buildMode then
+				toggleBuildMode()
+				buildToggleBtn.Text = "Build"
+				buildToggleBtn.BackgroundColor3 = COLORS.panel
+			end
 		end
 	end)
 
@@ -402,13 +413,19 @@ local function buildUI()
 	-- Visit menu (simple panel)
 	_visitFrame = Instance.new("Frame")
 	_visitFrame.Name = "VisitMenu"
-	_visitFrame.Size = UDim2.fromOffset(240, 300)
-	_visitFrame.Position = UDim2.new(0, 60, 0.5, -150)
+	_visitFrame.Size = UDim2.new(0.75, 0, 0.55, 0)
+	_visitFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	_visitFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	_visitFrame.BackgroundColor3 = COLORS.bg
 	_visitFrame.BorderSizePixel = 0
 	_visitFrame.Visible = false
 	_visitFrame.Parent = _screenGui
 	createCorner(_visitFrame, 12)
+
+	local visitSizeConstraint = Instance.new("UISizeConstraint")
+	visitSizeConstraint.MaxSize = Vector2.new(300, 360)
+	visitSizeConstraint.MinSize = Vector2.new(200, 250)
+	visitSizeConstraint.Parent = _visitFrame
 
 	local visitTitle = Instance.new("TextLabel")
 	visitTitle.Size = UDim2.new(1, 0, 0, 32)

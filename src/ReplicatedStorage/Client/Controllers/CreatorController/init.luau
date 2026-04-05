@@ -711,29 +711,12 @@ local function createUI()
 		return btn
 	end
 
-	local modesBtn = makeSidebarButton("ModesBtn", "Mode", COLORS.accentDim, 1)
-	local editBtn = makeSidebarButton("EditBtn", "Edit", Color3.fromRGB(220, 160, 60), 2)
-
 	-- "Create" sidebar button — always visible, toggles creator panel
-	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 3)
+	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 1)
 	_sidebarCreateBtn.Activated:Connect(function()
 		toggleMinimize()
 	end)
 	_sidebarCreateBtn.Visible = false
-
-	modesBtn.Activated:Connect(function()
-		local GameModeController = Knit.GetController("GameModeController")
-		if GameModeController then
-			GameModeController:Toggle()
-		end
-	end)
-
-	editBtn.Activated:Connect(function()
-		local EditController = Knit.GetController("EditController")
-		if EditController then
-			EditController:Toggle()
-		end
-	end)
 
 	-- Browse button
 	_browseButton = Instance.new("TextButton")

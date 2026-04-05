@@ -725,13 +725,13 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 				-- Height overrides for tree variants
 				if structureType == "tree_giant" then
-					trunkHeight = 10 + (hashTwo(seed + 5555, bx, bz) % 6) -- 10-15
+					trunkHeight = 40 + (hashTwo(seed + 5555, bx, bz) % 25) -- 40-64
 					canopyR = 4
 				elseif structureType == "tree_pine" then
 					trunkHeight = 6 + (hashTwo(seed + 5556, bx, bz) % 4) -- 6-9
 				elseif structureType == "tree_willow" then
-					trunkHeight = 14 + (hashTwo(seed + 5557, bx, bz) % 7) -- 14-20
-					canopyR = 5
+					trunkHeight = 5 + (hashTwo(seed + 5557, bx, bz) % 3) -- 5-7
+					canopyR = 3
 				elseif structureType == "tree_palm" then
 					trunkHeight = 7 + (hashTwo(seed + 5558, bx, bz) % 4) -- 7-10
 				end
@@ -815,20 +815,47 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 
 			elseif structureType == "tree_giant" then
-				-- Tall tree: straight trunk + large sphere canopy
-				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				-- Massive tree: 2x2 trunk + short stubby leafy branches at intervals
+				-- Root buttresses
+				for _, roff in { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1} } do
+					placeBlock(blocks, trunkBlock, bx + roff[1], surfaceBlockY + 1, bz + roff[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
-				local centerY = surfaceBlockY + trunkHeight + 1
-				for dx = -canopyR, canopyR do
-					for dy = -canopyR, canopyR do
-						for dz = -canopyR, canopyR do
-							if dx * dx + dy * dy + dz * dz <= canopyR * canopyR then
-								placeBlock(blocks, canopyBlock, bx + dx, centerY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				-- Full 2x2 trunk
+				for ty = 0, trunkHeight - 1 do
+					for dx = 0, 1 do
+						for dz = 0, 1 do
+							placeBlock(blocks, trunkBlock, bx + dx, surfaceBlockY + 1 + ty, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+						end
+					end
+				end
+				-- Stubby branches every 6 blocks, 4 directions, with flat canopy pads
+				local branchDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
+				local branchInterval = 6
+				for bi = 1, math.floor(trunkHeight / branchInterval) do
+					local branchY = surfaceBlockY + bi * branchInterval
+					local dirIdx = ((hashTwo(seed + 7000 + bi, bx, bz) % #branchDirs)) + 1
+					local dir = branchDirs[dirIdx]
+					placeBlock(blocks, trunkBlock, bx + dir[1], branchY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bx + dir[1] * 2, branchY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local padX, padZ = bx + dir[1] * 2, bz + dir[2] * 2
+					for dx = -2, 2 do
+						for dz = -2, 2 do
+							if dx * dx + dz * dz <= 5 then
+								placeBlock(blocks, canopyBlock, padX + dx, branchY + 1, padZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
 				end
+				-- Crown at very top
+				local crownY = surfaceBlockY + trunkHeight + 1
+				for dx = -3, 3 do
+					for dz = -3, 3 do
+						if dx * dx + dz * dz <= 10 then
+							placeBlock(blocks, canopyBlock, bx + dx, crownY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+						end
+					end
+				end
+				placeBlock(blocks, canopyBlock, bx, crownY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "tree_pine" then
 				-- Pine: straight trunk + cone canopy
@@ -852,56 +879,32 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				placeBlock(blocks, canopyBlock, bx, coneStart + coneLayers, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "tree_willow" then
-				-- Weeping willow: 2x2 trunk, fork branches with canopy clusters + hanging vines
-				-- 2x2 trunk
+				-- Weeping willow: straight trunk + sphere canopy + hanging vines
 				for ty = 0, trunkHeight - 1 do
-					for dx = 0, 1 do
-						for dz = 0, 1 do
-							placeBlock(blocks, trunkBlock, bx + dx, surfaceBlockY + 1 + ty, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-						end
-					end
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
-				-- 4 major fork branches near top, each 3 blocks outward
-				local branchStartY = surfaceBlockY + trunkHeight - 2
-				local willowDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
-				for bi, bdir in willowDirs do
-					local branchLen = 5 + (hashTwo(seed + 7770 + bi, bx, bz) % 4) -- 5-8
-					for step = 1, branchLen do
-						local stepY = branchStartY + math.floor(step * 0.5)
-						placeBlock(blocks, trunkBlock, bx + bdir[1] * step, stepY, bz + bdir[2] * step, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					end
-					-- Canopy cluster at branch tip (r=2)
-					local tipX = bx + bdir[1] * branchLen
-					local tipZ = bz + bdir[2] * branchLen
-					local tipY = branchStartY + math.floor(branchLen * 0.5)
-					for dx = -2, 2 do
-						for dz = -2, 2 do
-							if dx * dx + dz * dz <= 5 then
-								placeBlock(blocks, canopyBlock, tipX + dx, tipY, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, canopyBlock, tipX + dx, tipY + 1, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				-- Sphere canopy
+				local centerY = surfaceBlockY + trunkHeight + 1
+				for dx = -canopyR, canopyR do
+					for dy = -canopyR, canopyR do
+						for dz = -canopyR, canopyR do
+							if dx * dx + dy * dy + dz * dz <= canopyR * canopyR then
+								placeBlock(blocks, canopyBlock, bx + dx, centerY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
-					-- Hanging vines from canopy cluster (4-7 blocks down, ~50% density)
-					for dx = -2, 2 do
-						for dz = -2, 2 do
-							if dx * dx + dz * dz <= 5 then
-								if hashTwo(seed + 6660 + bi, tipX + dx, tipZ + dz) % 2 == 0 then
-									local vineLen = 6 + (hashTwo(seed + 6666, tipX + dx, tipZ + dz) % 6)
-									for vy = 1, vineLen do
-										placeBlock(blocks, canopyBlock, tipX + dx, tipY - vy, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-									end
+				end
+				-- Hanging vines from canopy bottom (~40% density, 3-6 blocks long)
+				local vineBaseY = centerY - canopyR
+				for dx = -canopyR, canopyR do
+					for dz = -canopyR, canopyR do
+						if dx * dx + dz * dz <= canopyR * canopyR then
+							if hashTwo(seed + 6660, bx + dx, bz + dz) % 5 < 2 then
+								local vineLen = 3 + (hashTwo(seed + 6666, bx + dx, bz + dz) % 4)
+								for vy = 1, vineLen do
+									placeBlock(blocks, canopyBlock, bx + dx, vineBaseY - vy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 								end
 							end
-						end
-					end
-				end
-				-- Crown at trunk top
-				local crownY = surfaceBlockY + trunkHeight + 1
-				for dx = -1, 1 do
-					for dz = -1, 1 do
-						if dx * dx + dz * dz <= 2 then
-							placeBlock(blocks, canopyBlock, bx + dx, crownY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 						end
 					end
 				end

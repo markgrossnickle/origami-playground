@@ -23,6 +23,11 @@ function CmdrHelper.HasCmdrPermissions(player: Player): boolean
 		return true
 	end
 
+	-- Always allow game creator
+	if game.CreatorType == Enum.CreatorType.User and player.UserId == game.CreatorId then
+		return true
+	end
+
 	local ok, rank = pcall(player.GetRankInGroup, player, GROUP_ID)
 	if not ok then
 		warn("[CmdrHelper] GetRankInGroup failed:", rank)

@@ -909,12 +909,22 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 				bc:refreshEggs()
 			end
 
-			-- Refresh data and re-render
+			-- Refresh eggs data
 			local ok2, eggs = BreedingService:CheckEggs():await()
 			if ok2 and type(eggs) == "table" then
 				_pendingEggs = eggs
 			end
-			renderEggsTab()
+
+			-- Refresh creatures and switch to Critters tab to show the new hatch
+			local ok3, creatures = pcall(function()
+				local CreatureService = Knit.GetService("CreatureService")
+				local cOk, cList = CreatureService:GetCreatures():await()
+				if cOk and type(cList) == "table" then
+					_creatures = cList
+				end
+			end)
+
+			switchTab("Critters")
 		elseif button and button.Parent then
 			button.Text = "Failed"
 			button.BackgroundColor3 = COLORS.error

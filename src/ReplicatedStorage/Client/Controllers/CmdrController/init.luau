@@ -29,36 +29,35 @@ function CmdrController:KnitStart()
 		require(module)
 	end
 
-	-- Mobile Cmdr button (touch devices only)
-	if UserInputService.TouchEnabled then
-		local PlayerGui = Knit.Player:WaitForChild("PlayerGui")
-		local gui = Instance.new("ScreenGui")
-		gui.Name = "CmdrMobile"
-		gui.DisplayOrder = 100
-		gui.ResetOnSpawn = false
-		gui.Parent = PlayerGui
+	-- Mobile Cmdr button
+	local PlayerGui = Knit.Player:WaitForChild("PlayerGui")
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "CmdrMobile"
+	gui.DisplayOrder = 100
+	gui.ResetOnSpawn = false
+	gui.Parent = PlayerGui
 
-		local btn = Instance.new("TextButton")
-		btn.Name = "CmdrToggle"
-		btn.Size = UDim2.fromOffset(36, 36)
-		btn.Position = UDim2.fromOffset(10, 40)
-		btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-		btn.BackgroundTransparency = 0.7
-		btn.Text = ">_"
-		btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-		btn.TextSize = 14
-		btn.Font = Enum.Font.Code
-		btn.BorderSizePixel = 0
-		btn.Parent = gui
+	local btn = Instance.new("TextButton")
+	btn.Name = "CmdrToggle"
+	btn.Size = UDim2.fromOffset(44, 44)
+	btn.Position = UDim2.new(0, 10, 1, -54)
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	btn.BackgroundTransparency = 0.4
+	btn.Text = ">_"
+	btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+	btn.TextSize = 16
+	btn.Font = Enum.Font.Code
+	btn.BorderSizePixel = 0
+	btn.ZIndex = 10
+	btn.Parent = gui
 
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0, 6)
-		corner.Parent = btn
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = btn
 
-		btn.Activated:Connect(function()
-			CmdrController.CmdrClient:Toggle()
-		end)
-	end
+	btn.Activated:Connect(function()
+		CmdrController.CmdrClient:Toggle()
+	end)
 end
 
 function CmdrController:RegisterCmdrContent(container: Instance)

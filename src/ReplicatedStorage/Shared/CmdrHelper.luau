@@ -23,7 +23,11 @@ function CmdrHelper.HasCmdrPermissions(player: Player): boolean
 		return true
 	end
 
-	local rank = player:GetRankInGroupAsync(GROUP_ID)
+	local ok, rank = pcall(player.GetRankInGroup, player, GROUP_ID)
+	if not ok then
+		warn("[CmdrHelper] GetRankInGroup failed:", rank)
+		return false
+	end
 	return rank >= MIN_RANK
 end
 

@@ -49,6 +49,33 @@ local BATCH_FLUSH_SIZE = 256
 local TRICKLE_FILL_PER_FRAME = 4
 local TRICKLE_FILL_TARGET = 500
 
+-- Leaf blocks that get random Y-rotation for organic look (not vines, not platform/shelf)
+local ROTATABLE_LEAVES: { [number]: boolean } = {
+	[BlockType.Leaves] = true,
+	[BlockType.CherryBlossom] = true,
+	[BlockType.PineNeedle] = true,
+	[BlockType.PalmFrond] = true,
+	[BlockType.GladeCanopy] = true,
+	[BlockType.FairyCanopy] = true,
+	[BlockType.HollowCanopy] = true,
+	[BlockType.BrassLeaf] = true,
+	[BlockType.CoralCanopy] = true,
+	[BlockType.AquamarineCanopy] = true,
+	[BlockType.WarmPinkTop] = true,
+	[BlockType.AuroraVioletCanopy] = true,
+	[BlockType.InkSplatterLeaf] = true,
+	[BlockType.PasteDripLeaf] = true,
+	[BlockType.BalloonTop] = true,
+	[BlockType.MoltenCap] = true,
+	[BlockType.CyanCanopy] = true,
+	[BlockType.CobaltDome] = true,
+	[BlockType.BambooTop] = true,
+	[BlockType.DustyCanopy] = true,
+	[BlockType.CrayonCanopy] = true,
+	[BlockType.RosePinkCanopy] = true,
+	[BlockType.PinataLeaves] = true,
+}
+
 -- Small startup pool to reduce initial Instance.new calls
 local POOL_STARTUP = 1000
 local POOL_STARTUP_BATCH = 100
@@ -267,6 +294,7 @@ local function _makeLayerParts(
 
 		local tiltX = (_hash(layerSeed, 3, 0, 0) - 0.5) * 2 * MAX_TILT
 		local tiltZ = (_hash(layerSeed, 4, 0, 0) - 0.5) * 2 * MAX_TILT
+		local rotY = if ROTATABLE_LEAVES[blockTypeId] then _hash(layerSeed, 6, 0, 0) * math.pi * 2 else 0
 
 		local stretchAxis = layerSeed % 2
 		local sx, sz
@@ -286,7 +314,7 @@ local function _makeLayerParts(
 		part.CanQuery = false
 		part.Transparency = 0
 
-		local targetCFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
+		local targetCFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, rotY, tiltZ)
 
 		if batched then
 			table.insert(_batchParts, part)
@@ -352,6 +380,7 @@ local function _makeSimplePart(
 	local oz = (_hash(seed, 2, 0, 0) - 0.5) * 2 * SIMPLE_MAX_OFFSET
 	local tiltX = (_hash(seed, 3, 0, 0) - 0.5) * 2 * SIMPLE_MAX_TILT
 	local tiltZ = (_hash(seed, 4, 0, 0) - 0.5) * 2 * SIMPLE_MAX_TILT
+	local rotY = if ROTATABLE_LEAVES[blockTypeId] then _hash(seed, 6, 0, 0) * math.pi * 2 else 0
 
 	local tint = 1.0 + (_hash(seed, 5, 0, 0) - 0.5) * 2 * SIMPLE_TINT_RANGE
 	local baseColor = _getColor(blockTypeId)
@@ -364,7 +393,7 @@ local function _makeSimplePart(
 	part.CanQuery = true
 	part.Transparency = 0
 
-	local targetCFrame = CFrame.new(px + ox, py, pz + oz) * CFrame.Angles(tiltX, 0, tiltZ)
+	local targetCFrame = CFrame.new(px + ox, py, pz + oz) * CFrame.Angles(tiltX, rotY, tiltZ)
 
 	if batched then
 		table.insert(_batchParts, part)

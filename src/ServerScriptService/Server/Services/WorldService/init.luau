@@ -236,6 +236,7 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 			billboard.Size = UDim2.new(0, 100, 0, 24)
 			billboard.StudsOffset = Vector3.new(0, 2, 0)
 			billboard.AlwaysOnTop = true
+			billboard.MaxDistance = 120
 			billboard.Parent = part
 
 			local label = Instance.new("TextLabel")

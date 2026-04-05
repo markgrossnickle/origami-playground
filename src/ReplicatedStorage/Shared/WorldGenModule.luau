@@ -623,7 +623,7 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 end
 
 -- All available structure types for "mixed" mode
-local MIXED_STRUCTURES = { "tree", "cactus", "boulder", "bonsai", "lotus", "jellyfish", "temple_gate", "stepped_pyramid", "obelisk", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
+local MIXED_STRUCTURES = { "tree", "cactus", "boulder", "bonsai", "lotus", "temple_gate", "stepped_pyramid", "obelisk", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
 
 -- Per-structure block overrides (used in mixed mode for visual variety)
 local STRUCTURE_BLOCKS = {
@@ -631,7 +631,6 @@ local STRUCTURE_BLOCKS = {
 	boulder = { trunk = BlockType.BoulderGray, canopy = BlockType.BoulderGray },
 	bonsai = { trunk = BlockType.BonsaiBark, canopy = BlockType.CherryBlossom },
 	lotus = { trunk = BlockType.LotusPetal, canopy = BlockType.LotusCenter },
-	jellyfish = { trunk = BlockType.JellyTendril, canopy = BlockType.JellyDome },
 	temple_gate = { trunk = BlockType.GatePillar, canopy = BlockType.GateTop },
 	stepped_pyramid = { trunk = BlockType.PyramidStone, canopy = BlockType.PyramidCap },
 	obelisk = { trunk = BlockType.ObeliskDark, canopy = BlockType.ObeliskGlow },
@@ -644,7 +643,7 @@ local STRUCTURE_BLOCKS = {
 -- Structure label names for display
 local STRUCTURE_LABELS = {
 	tree = "Tree", cactus = "Cactus", boulder = "Boulder", bonsai = "Bonsai",
-	lotus = "Lotus", jellyfish = "Jellyfish", temple_gate = "Temple Gate",
+	lotus = "Lotus", temple_gate = "Temple Gate",
 	stepped_pyramid = "Pyramid", obelisk = "Obelisk", mushroom = "Mushroom",
 	mushroom_cluster = "Mushroom Cluster", mushroom_tall = "Tall Mushroom",
 	mushroom_shelf = "Shelf Mushroom", spire = "Spire", cluster = "Cluster",
@@ -800,30 +799,6 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 				-- Glowing tip
 				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + 4, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-
-			elseif structureType == "jellyfish" then
-				-- Wide dome cap + hanging tendrils
-				local domeR = math.max(2, canopyR)
-				local domeY = surfaceBlockY + trunkHeight + 1
-				-- Hemisphere dome
-				for dx = -domeR, domeR do
-					for dz = -domeR, domeR do
-						for dy = 0, domeR do
-							local distSq = dx * dx + dy * dy + dz * dz
-							if distSq <= domeR * domeR and distSq > (domeR - 1) * (domeR - 1) then
-								placeBlock(blocks, canopyBlock, bx + dx, domeY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-							end
-						end
-					end
-				end
-				-- Fill dome center
-				placeBlock(blocks, canopyBlock, bx, domeY, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-				-- Hanging tendrils (4 corners)
-				for _, offset in { {-1, -1}, {1, -1}, {-1, 1}, {1, 1} } do
-					for ty = 0, trunkHeight - 1 do
-						placeBlock(blocks, trunkBlock, bx + offset[1], domeY - 1 - ty, bz + offset[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					end
-				end
 
 			elseif structureType == "temple_gate" then
 				-- Two pillars + bridge across top

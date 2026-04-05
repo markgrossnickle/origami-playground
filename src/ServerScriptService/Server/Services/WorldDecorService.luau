@@ -62,19 +62,7 @@ end
 function WorldDecorService:KnitInit() end
 
 function WorldDecorService:KnitStart()
-	task.spawn(function()
-		local spawnPos = getSpawnPosition()
-		if not spawnPos then
-			warn("[WorldDecor] Could not find spawn position, skipping decor placement")
-			return
-		end
-
-		-- Place small origami Venus fly trap creature near spawn
-		local creaturePos = spawnPos + Vector3.new(15, 0, 5)
-		placeModel(WorldDecorModels.VenusFlyTrap, creaturePos, math.rad(-30))
-
-		-- NOTE: The voxel fly trap tree spawns naturally via WorldGenModule's mixed structure system
-	end)
+	-- World decoration spawning disabled for now
 end
 
 return WorldDecorService

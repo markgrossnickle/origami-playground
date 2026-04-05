@@ -613,8 +613,8 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 end
 
 -- All available structure types for "mixed" mode
-local MIXED_STRUCTURES =
-	{ "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "cactus", "bonsai", "fly_trap" }
+-- NOTE: "fly_trap" structure builder exists below but is disabled from mixed rotation for now
+local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "cactus", "bonsai" }
 
 -- Per-structure block overrides (used in mixed mode for visual variety)
 local STRUCTURE_BLOCKS = {

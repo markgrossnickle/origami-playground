@@ -288,7 +288,7 @@ local function validateEmoteData(data: any): (boolean, string?)
 	return true, nil
 end
 
---- Get a preset emote by name.
+-- Get a preset emote by name.
 function EmoteService.Client:GetPresetEmotes(_player: Player)
 	local result = {}
 	for key, emote in pairs(PRESET_EMOTES) do
@@ -301,7 +301,7 @@ function EmoteService.Client:GetPresetEmotes(_player: Player)
 	return result
 end
 
---- Play a preset emote (free — no currency cost).
+-- Play a preset emote (free — no currency cost).
 function EmoteService.Client:PlayPresetEmote(player: Player, presetName: string)
 	local now = os.clock()
 	local lastTime = _lastEmoteTime[player.UserId] or 0
@@ -320,7 +320,7 @@ function EmoteService.Client:PlayPresetEmote(player: Player, presetName: string)
 	return { success = true }
 end
 
---- Play a saved/custom emote.
+-- Play a saved/custom emote.
 function EmoteService.Client:PlayEmote(player: Player, keyframeData: any)
 	local now = os.clock()
 	local lastTime = _lastEmoteTime[player.UserId] or 0
@@ -338,7 +338,7 @@ function EmoteService.Client:PlayEmote(player: Player, keyframeData: any)
 	return { success = true }
 end
 
---- Request a custom emote from LLM (costs Cranes).
+-- Request a custom emote from LLM (costs Cranes).
 function EmoteService.Client:RequestEmote(player: Player, prompt: string, style: string?)
 	-- Rate limit
 	local now = os.clock()
@@ -395,14 +395,14 @@ function EmoteService.Client:RequestEmote(player: Player, prompt: string, style:
 	return { success = true, emote = emoteData }
 end
 
---- Get saved emotes for a player.
+-- Get saved emotes for a player.
 function EmoteService.Client:GetSavedEmotes(player: Player)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)
 	return data and data.SavedEmotes or {}
 end
 
---- Save a custom emote (max 10).
+-- Save a custom emote (max 10).
 function EmoteService.Client:SaveEmote(player: Player, name: string, keyframeData: any)
 	if type(name) ~= "string" or #name < 1 or #name > 30 then
 		return { success = false, error = "Name must be 1-30 characters" }
@@ -435,7 +435,7 @@ function EmoteService.Client:SaveEmote(player: Player, name: string, keyframeDat
 	return { success = true }
 end
 
---- Delete a saved emote by index.
+-- Delete a saved emote by index.
 function EmoteService.Client:DeleteEmote(player: Player, index: number)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)

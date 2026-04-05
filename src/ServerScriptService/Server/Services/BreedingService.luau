@@ -41,7 +41,7 @@ local function cleanExpiredRequests()
 	end
 end
 
---- Request to breed a creature. Looks for a nearby pending request from another player.
+-- Request to breed a creature. Looks for a nearby pending request from another player.
 function BreedingService.Client:RequestBreed(
 	player: Player,
 	creatureName: string,
@@ -241,7 +241,7 @@ function BreedingService.Client:RequestBreed(
 	end
 end
 
---- Cancel a pending breed request.
+-- Cancel a pending breed request.
 function BreedingService.Client:CancelBreed(player: Player)
 	for id, req in pairs(_breedRequests) do
 		if req.player == player then
@@ -252,7 +252,7 @@ function BreedingService.Client:CancelBreed(player: Player)
 	return { success = false, error = "No pending request" }
 end
 
---- Check eggs and their readiness.
+-- Check eggs and their readiness.
 function BreedingService.Client:CheckEggs(player: Player)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)
@@ -278,7 +278,7 @@ function BreedingService.Client:CheckEggs(player: Player)
 	return eggs
 end
 
---- Hatch an egg that's ready.
+-- Hatch an egg that's ready.
 function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)

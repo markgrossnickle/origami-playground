@@ -81,7 +81,7 @@ local function getCreatureList(player: Player): { CreatureData }
 	return creatures
 end
 
---- Add a new creature to the player's collection. Returns the CreatureData.
+-- Add a new creature to the player's collection. Returns the CreatureData.
 function CreatureService:AddCreature(
 	player: Player,
 	data: {
@@ -122,12 +122,12 @@ function CreatureService:AddCreature(
 	return creature
 end
 
---- Get all creatures for a player.
+-- Get all creatures for a player.
 function CreatureService.Client:GetCreatures(player: Player): { CreatureData }
 	return getCreatureList(player)
 end
 
---- Release (delete) a creature by ID.
+-- Release (delete) a creature by ID.
 function CreatureService.Client:ReleaseCreature(player: Player, creatureId: string)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)
@@ -148,7 +148,7 @@ function CreatureService.Client:ReleaseCreature(player: Player, creatureId: stri
 	return { success = false, error = "Creature not found" }
 end
 
---- Rename a creature by ID.
+-- Rename a creature by ID.
 function CreatureService.Client:RenameCreature(player: Player, creatureId: string, newName: string)
 	if #newName < 1 or #newName > 30 then
 		return { success = false, error = "Name must be 1-30 characters" }
@@ -173,7 +173,7 @@ function CreatureService.Client:RenameCreature(player: Player, creatureId: strin
 	return { success = false, error = "Creature not found" }
 end
 
---- Get a single creature by ID.
+-- Get a single creature by ID.
 function CreatureService:GetCreatureById(player: Player, creatureId: string): CreatureData?
 	local creatures = getCreatureList(player)
 	for _, creature in ipairs(creatures) do
@@ -184,7 +184,7 @@ function CreatureService:GetCreatureById(player: Player, creatureId: string): Cr
 	return nil
 end
 
---- Check if a creature can breed (cooldown check).
+-- Check if a creature can breed (cooldown check).
 function CreatureService:CanBreed(player: Player, creatureId: string): (boolean, number?)
 	local creature = self:GetCreatureById(player, creatureId)
 	if not creature then
@@ -197,7 +197,7 @@ function CreatureService:CanBreed(player: Player, creatureId: string): (boolean,
 	return true, nil
 end
 
---- Set breed cooldown on a creature.
+-- Set breed cooldown on a creature.
 function CreatureService:SetBreedCooldown(player: Player, creatureId: string)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)

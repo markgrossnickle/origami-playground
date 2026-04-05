@@ -5,7 +5,7 @@
 
 local VFXUtil = {}
 
---- Emit a burst of sparkle particles at a position.
+-- Emit a burst of sparkle particles at a position.
 function VFXUtil.sparkle(position: Vector3, color: Color3?, count: number?, lifetime: number?)
 	local part = Instance.new("Part")
 	part.Size = Vector3.new(0.5, 0.5, 0.5)
@@ -35,7 +35,7 @@ function VFXUtil.sparkle(position: Vector3, color: Color3?, count: number?, life
 	end)
 end
 
---- Flash-glow effect on a part (brief neon pulse).
+-- Flash-glow effect on a part (brief neon pulse).
 function VFXUtil.glow(target: BasePart, color: Color3?, duration: number?)
 	local dur = duration or 0.5
 	local origColor = target.Color
@@ -54,7 +54,7 @@ function VFXUtil.glow(target: BasePart, color: Color3?, duration: number?)
 	end)
 end
 
---- Pop effect: scale up briefly then destroy (for creep deaths).
+-- Pop effect: scale up briefly then destroy (for creep deaths).
 function VFXUtil.pop(target: BasePart, color: Color3?)
 	VFXUtil.sparkle(target.Position, color or target.Color, 10, 1)
 	if target.Parent then
@@ -62,7 +62,7 @@ function VFXUtil.pop(target: BasePart, color: Color3?)
 	end
 end
 
---- Rising text effect (e.g. "+10g", "Hatched!").
+-- Rising text effect (e.g. "+10g", "Hatched!").
 function VFXUtil.risingText(position: Vector3, text: string, color: Color3?)
 	local part = Instance.new("Part")
 	part.Size = Vector3.new(0.5, 0.5, 0.5)

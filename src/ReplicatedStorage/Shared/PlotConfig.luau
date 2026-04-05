@@ -56,7 +56,7 @@ PlotConfig.PLACEABLE_BLOCKS = {
 	rainbow_paper = { color = { 255, 180, 200 }, material = "Neon", name = "Rainbow Paper" },
 }
 
---- Compute the world origin of a plot from its grid index (0-based).
+-- Compute the world origin of a plot from its grid index (0-based).
 function PlotConfig.getPlotOrigin(plotIndex: number): Vector3
 	local col = plotIndex % PlotConfig.GRID_COLUMNS
 	local row = math.floor(plotIndex / PlotConfig.GRID_COLUMNS)
@@ -65,7 +65,7 @@ function PlotConfig.getPlotOrigin(plotIndex: number): Vector3
 	return Vector3.new(x, PlotConfig.GROUND_Y, z)
 end
 
---- Convert a local block coordinate (0-based) to world position (center of block).
+-- Convert a local block coordinate (0-based) to world position (center of block).
 function PlotConfig.localToWorld(plotOrigin: Vector3, lx: number, ly: number, lz: number): Vector3
 	return plotOrigin
 		+ Vector3.new(
@@ -75,7 +75,7 @@ function PlotConfig.localToWorld(plotOrigin: Vector3, lx: number, ly: number, lz
 		)
 end
 
---- Convert world position to local block coordinate (floored).
+-- Convert world position to local block coordinate (floored).
 function PlotConfig.worldToLocal(plotOrigin: Vector3, worldPos: Vector3): (number, number, number)
 	local rel = worldPos - plotOrigin
 	local lx = math.floor(rel.X / PlotConfig.BLOCK_SIZE)
@@ -84,7 +84,7 @@ function PlotConfig.worldToLocal(plotOrigin: Vector3, worldPos: Vector3): (numbe
 	return lx, ly, lz
 end
 
---- Check if local coordinates are within plot bounds.
+-- Check if local coordinates are within plot bounds.
 function PlotConfig.isInBounds(lx: number, ly: number, lz: number): boolean
 	return lx >= 0
 		and lx < PlotConfig.PLOT_SIZE_BLOCKS

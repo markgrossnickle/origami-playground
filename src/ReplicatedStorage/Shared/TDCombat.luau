@@ -31,7 +31,7 @@ export type Creep = {
 TDCombat.VALID_ATTACK_TYPES = { single = true, splash = true, rapid = true, piercing = true }
 TDCombat.VALID_TARGET_PRIORITIES = { nearest = true, weakest = true, strongest = true, fastest = true }
 
---- Find best creep target within range based on priority.
+-- Find best creep target within range based on priority.
 function TDCombat.findCreepTarget(pos: Vector3, range: number, creepList: { Creep }, priority: TargetPriority): Creep?
 	local best: Creep? = nil
 	local bestScore = math.huge
@@ -80,8 +80,8 @@ function TDCombat.findCreepTarget(pos: Vector3, range: number, creepList: { Cree
 	return best
 end
 
---- Apply damage to a creep, handling armor/dodge/piercing. Returns actual damage dealt.
---- onKill callback is called with the creep if it dies.
+-- Apply damage to a creep, handling armor/dodge/piercing. Returns actual damage dealt.
+-- onKill callback is called with the creep if it dies.
 function TDCombat.damageCreep(creep: Creep, damage: number, attackType: AttackType, onKill: ((Creep) -> ())?): number
 	if not creep.alive then
 		return 0
@@ -114,7 +114,7 @@ function TDCombat.damageCreep(creep: Creep, damage: number, attackType: AttackTy
 	return dmg
 end
 
---- Derive tower stats (damage, range) from a model's bounding box.
+-- Derive tower stats (damage, range) from a model's bounding box.
 function TDCombat.deriveTowerStats(model: Model | BasePart): { damage: number, range: number }
 	if model:IsA("Model") then
 		local _, size = model:GetBoundingBox()
@@ -129,7 +129,7 @@ function TDCombat.deriveTowerStats(model: Model | BasePart): { damage: number, r
 	end
 end
 
---- Apply HP regeneration to creeps with "regen" defense type.
+-- Apply HP regeneration to creeps with "regen" defense type.
 function TDCombat.applyCreepRegen(creepList: { Creep }, dt: number)
 	for _, creep in ipairs(creepList) do
 		if creep.alive and creep.defenseType == "regen" and creep.hp < creep.maxHp then

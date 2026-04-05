@@ -17,7 +17,7 @@ local EggCraftingService = Knit.CreateService({
 
 local MAX_EGGS = 3 -- crafted eggs allow more slots than breeding alone
 
---- Get available recipes and whether the player can afford each.
+-- Get available recipes and whether the player can afford each.
 function EggCraftingService.Client:GetRecipes(player: Player)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)
@@ -51,7 +51,7 @@ function EggCraftingService.Client:GetRecipes(player: Player)
 	return recipes
 end
 
---- Craft an egg from a recipe.
+-- Craft an egg from a recipe.
 function EggCraftingService.Client:CraftEgg(player: Player, recipeId: string)
 	local recipe = EggCraftingConfig.getRecipeById(recipeId)
 	if not recipe then

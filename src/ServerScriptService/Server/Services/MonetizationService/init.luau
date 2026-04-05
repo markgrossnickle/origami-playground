@@ -139,7 +139,7 @@ function MonetizationService:_handleProCreation(player: Player, _productName: st
 	return true
 end
 
---- Check if the player has a pending Pro creation credit and consume it.
+-- Check if the player has a pending Pro creation credit and consume it.
 function MonetizationService:ConsumeProCreation(player: Player): boolean
 	if _proCreationAllowed[player.UserId] then
 		_proCreationAllowed[player.UserId] = nil
@@ -148,7 +148,7 @@ function MonetizationService:ConsumeProCreation(player: Player): boolean
 	return false
 end
 
---- Check if the player has a Pro creation credit (does NOT consume).
+-- Check if the player has a Pro creation credit (does NOT consume).
 function MonetizationService:HasProCreation(player: Player): boolean
 	return _proCreationAllowed[player.UserId] == true
 end

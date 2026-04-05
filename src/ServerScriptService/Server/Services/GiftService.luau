@@ -22,7 +22,7 @@ local _lastGiftTime: { [number]: number } = {}
 -- Ownership registry: model instance → owner UserId
 local _ownership: { [Instance]: number } = {}
 
---- Register a model as owned by a player.
+-- Register a model as owned by a player.
 function GiftService.Client:RegisterModel(player: Player, model: Instance)
 	if not model or not model.Parent then
 		return { success = false, error = "Invalid model" }
@@ -38,7 +38,7 @@ function GiftService.Client:RegisterModel(player: Player, model: Instance)
 	return { success = true }
 end
 
---- Get nearby players within 50 studs.
+-- Get nearby players within 50 studs.
 function GiftService.Client:GetNearbyPlayers(player: Player)
 	local character = player.Character
 	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
@@ -65,7 +65,7 @@ function GiftService.Client:GetNearbyPlayers(player: Player)
 	return nearby
 end
 
---- Gift a model to another player. Validates ownership and cooldown.
+-- Gift a model to another player. Validates ownership and cooldown.
 function GiftService.Client:GiftModel(player: Player, model: Instance, targetUserId: number)
 	-- Validate model exists
 	if not model or not model.Parent then
@@ -144,7 +144,7 @@ function GiftService.Client:GiftModel(player: Player, model: Instance, targetUse
 	return { success = true, modelName = modelName }
 end
 
---- Check remaining cooldown for a player.
+-- Check remaining cooldown for a player.
 function GiftService.Client:GetCooldownRemaining(player: Player): number
 	local now = os.clock()
 	local lastTime = _lastGiftTime[player.UserId] or 0

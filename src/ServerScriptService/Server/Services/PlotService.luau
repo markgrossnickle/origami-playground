@@ -65,7 +65,7 @@ local function notifySubscribers(ownerUserId: number, signalName: string, ...)
 	end
 end
 
---- Claim a plot. Assigns a grid index to the player.
+-- Claim a plot. Assigns a grid index to the player.
 function PlotService.Client:ClaimPlot(player: Player)
 	local plotData = getPlotData(player)
 	if not plotData then
@@ -99,7 +99,7 @@ function PlotService.Client:ClaimPlot(player: Player)
 	}
 end
 
---- Place a block at local coordinates. Deducts material from MiningInventory.
+-- Place a block at local coordinates. Deducts material from MiningInventory.
 function PlotService.Client:PlaceBlock(
 	player: Player,
 	localX: number,
@@ -155,7 +155,7 @@ function PlotService.Client:PlaceBlock(
 	return { success = true, key = key, materialId = materialItemId }
 end
 
---- Remove a block at local coordinates. Refunds material to MiningInventory.
+-- Remove a block at local coordinates. Refunds material to MiningInventory.
 function PlotService.Client:RemoveBlock(player: Player, localX: number, localY: number, localZ: number)
 	local plotData = getPlotData(player)
 	if not plotData or plotData.plotIndex < 0 then
@@ -186,7 +186,7 @@ function PlotService.Client:RemoveBlock(player: Player, localX: number, localY: 
 	return { success = true, refundedMaterial = materialItemId }
 end
 
---- Assign a creature to the plot.
+-- Assign a creature to the plot.
 function PlotService.Client:AssignCreature(player: Player, creatureId: string, localX: number, localZ: number)
 	local plotData = getPlotData(player)
 	if not plotData or plotData.plotIndex < 0 then
@@ -222,7 +222,7 @@ function PlotService.Client:AssignCreature(player: Player, creatureId: string, l
 	return { success = true }
 end
 
---- Unassign a creature from the plot.
+-- Unassign a creature from the plot.
 function PlotService.Client:UnassignCreature(player: Player, creatureId: string)
 	local plotData = getPlotData(player)
 	if not plotData or plotData.plotIndex < 0 then
@@ -243,7 +243,7 @@ function PlotService.Client:UnassignCreature(player: Player, creatureId: string)
 	return { success = false, error = "Creature not assigned" }
 end
 
---- Get your own plot data.
+-- Get your own plot data.
 function PlotService.Client:GetPlotData(player: Player)
 	local plotData = getPlotData(player)
 	if not plotData then
@@ -264,7 +264,7 @@ function PlotService.Client:GetPlotData(player: Player)
 	}
 end
 
---- Get another player's plot data (for visiting).
+-- Get another player's plot data (for visiting).
 function PlotService.Client:GetPlotDataForVisit(player: Player, ownerUserId: number)
 	local Players = game:GetService("Players")
 	local owner = Players:GetPlayerByUserId(ownerUserId)
@@ -292,7 +292,7 @@ function PlotService.Client:GetPlotDataForVisit(player: Player, ownerUserId: num
 	}
 end
 
---- Subscribe to live updates for a plot (when visiting).
+-- Subscribe to live updates for a plot (when visiting).
 function PlotService.Client:SubscribePlot(player: Player, ownerUserId: number)
 	if not _subscribers[ownerUserId] then
 		_subscribers[ownerUserId] = {}
@@ -301,7 +301,7 @@ function PlotService.Client:SubscribePlot(player: Player, ownerUserId: number)
 	return { success = true }
 end
 
---- Unsubscribe from plot updates.
+-- Unsubscribe from plot updates.
 function PlotService.Client:UnsubscribePlot(player: Player, ownerUserId: number)
 	if _subscribers[ownerUserId] then
 		_subscribers[ownerUserId][player] = nil
@@ -309,7 +309,7 @@ function PlotService.Client:UnsubscribePlot(player: Player, ownerUserId: number)
 	return { success = true }
 end
 
---- Get list of online players who have plots (for visit menu).
+-- Get list of online players who have plots (for visit menu).
 function PlotService.Client:GetPlotOwners(player: Player)
 	local Players = game:GetService("Players")
 	local owners = {}

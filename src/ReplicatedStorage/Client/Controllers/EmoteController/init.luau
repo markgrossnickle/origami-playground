@@ -166,13 +166,13 @@ end
 
 local EmoteController = Knit.CreateController({ Name = "EmoteController" })
 
---- Play a preset emote on the local player.
+-- Play a preset emote on the local player.
 function EmoteController:PlayPreset(presetName: string)
 	local EmoteService = Knit.GetService("EmoteService")
 	EmoteService:PlayPresetEmote(presetName) -- server broadcasts to all
 end
 
---- Play emote data on a specific character (used for remote players).
+-- Play emote data on a specific character (used for remote players).
 function EmoteController:PlayOnCharacter(character: Model, keyframeData: { [string]: any })
 	-- Stop any active animation on this character
 	return _playEmoteOnCharacter(character, keyframeData)

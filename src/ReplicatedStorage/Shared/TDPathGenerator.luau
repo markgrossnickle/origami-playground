@@ -5,8 +5,8 @@
 
 local TDPathGenerator = {}
 
---- Generate a linear path with sine-wave curvature (existing solo TD pattern).
---- Returns array of Vector3 waypoints.
+-- Generate a linear path with sine-wave curvature (existing solo TD pattern).
+-- Returns array of Vector3 waypoints.
 function TDPathGenerator.generateLinearPath(
 	origin: Vector3,
 	length: number,
@@ -24,9 +24,9 @@ function TDPathGenerator.generateLinearPath(
 	return waypoints
 end
 
---- Generate N paths that converge on a central point from different directions.
---- Used for co-op TD where enemies come from multiple sides.
---- Returns { [directionIndex]: { Vector3 } } — one waypoint array per direction.
+-- Generate N paths that converge on a central point from different directions.
+-- Used for co-op TD where enemies come from multiple sides.
+-- Returns { [directionIndex]: { Vector3 } } — one waypoint array per direction.
 function TDPathGenerator.generateConvergingPaths(
 	center: Vector3,
 	directionCount: number,

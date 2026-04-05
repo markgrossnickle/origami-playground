@@ -11,6 +11,7 @@ local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
+local WorldGenModule = require(ReplicatedStorage.Shared.WorldGenModule)
 
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local MAX_RAYCAST_DISTANCE = 30
@@ -253,7 +254,8 @@ local function _updateHighlight(chunkKey: string, flatIndex: number, blockTypeId
 
 	if blockNameLabel and blockTypeId then
 		local config = BlockRegistry.get(blockTypeId)
-		blockNameLabel.Text = if config then config.name else ""
+		local structureName = WorldGenModule.getStructureName(blockTypeId)
+		blockNameLabel.Text = if structureName then structureName elseif config then config.name else ""
 		if config and config.minTier >= 4 then
 			blockNameLabel.TextColor3 = Color3.fromRGB(255, 150, 255)
 		elseif config and config.minTier >= 3 then
@@ -450,7 +452,8 @@ local function _updateMining(dt: number)
 			miningProgressGui.Enabled = true
 		end
 		if miningProgressNameLabel and blockConfig then
-			miningProgressNameLabel.Text = blockConfig.name
+			local progressStructName = WorldGenModule.getStructureName(blockTypeId)
+			miningProgressNameLabel.Text = if progressStructName then progressStructName else blockConfig.name
 			if blockConfig.minTier >= 4 then
 				miningProgressNameLabel.TextColor3 = Color3.fromRGB(255, 150, 255)
 			elseif blockConfig.minTier >= 3 then

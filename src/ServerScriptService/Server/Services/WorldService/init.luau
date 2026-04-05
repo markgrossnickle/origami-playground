@@ -214,49 +214,6 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 	chunks[chunkKey] = chunkData
 	pendingChunks[chunkKey] = nil
 
-	-- Create floating labels for structures in this chunk
-	local placements = WorldGenModule.popStructurePlacements(cx, cy, cz)
-	if placements then
-		local labelFolder = workspace:FindFirstChild("StructureLabels")
-		if not labelFolder then
-			labelFolder = Instance.new("Folder")
-			labelFolder.Name = "StructureLabels"
-			labelFolder.Parent = workspace
-		end
-		for _, p in placements do
-			local part = Instance.new("Part")
-			part.Name = p.label
-			part.Anchored = true
-			part.CanCollide = false
-			part.Transparency = 1
-			part.Size = Vector3.new(1, 1, 1)
-			part.Position = Vector3.new(p.x, p.y + 5, p.z)
-
-			local billboard = Instance.new("BillboardGui")
-			billboard.Size = UDim2.new(0, 100, 0, 24)
-			billboard.StudsOffset = Vector3.new(0, 2, 0)
-			billboard.AlwaysOnTop = true
-			billboard.MaxDistance = 120
-			billboard.Parent = part
-
-			local label = Instance.new("TextLabel")
-			label.Size = UDim2.new(1, 0, 1, 0)
-			label.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-			label.BackgroundTransparency = 0.3
-			label.TextColor3 = Color3.fromRGB(255, 255, 255)
-			label.Font = Enum.Font.GothamBold
-			label.TextSize = 14
-			label.Text = p.label
-			label.Parent = billboard
-
-			local corner = Instance.new("UICorner")
-			corner.CornerRadius = UDim.new(0, 4)
-			corner.Parent = label
-
-			part.Parent = labelFolder
-		end
-	end
-
 	return chunkData
 end
 

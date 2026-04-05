@@ -461,17 +461,17 @@ local blocks: { [number]: BlockConfig } = {
 	},
 	[BlockType.MushroomStem] = {
 		id = BlockType.MushroomStem, name = "Mushroom Stem", hardness = 1,
-		color = Color3.fromRGB(235, 225, 200), material = Enum.Material.SmoothPlastic,
+		color = Color3.fromRGB(180, 255, 220), material = Enum.Material.Neon,
 		mineable = true, minTier = 0, drops = { { itemId = "mushroom_stem", count = 1, chance = 1 } }, xp = 1,
 	},
 	[BlockType.MushroomCap] = {
 		id = BlockType.MushroomCap, name = "Mushroom Cap", hardness = 0.5,
-		color = Color3.fromRGB(200, 50, 50), material = Enum.Material.SmoothPlastic,
+		color = Color3.fromRGB(255, 60, 200), material = Enum.Material.Neon,
 		mineable = true, minTier = 0, drops = { { itemId = "mushroom_cap", count = 1, chance = 0.5 } }, xp = 1,
 	},
 	[BlockType.ShelfBracket] = {
 		id = BlockType.ShelfBracket, name = "Shelf Fungus", hardness = 1,
-		color = Color3.fromRGB(200, 120, 60), material = Enum.Material.SmoothPlastic,
+		color = Color3.fromRGB(255, 170, 50), material = Enum.Material.Neon,
 		mineable = true, minTier = 0, drops = { { itemId = "shelf_bracket", count = 1, chance = 1 } }, xp = 1,
 	},
 

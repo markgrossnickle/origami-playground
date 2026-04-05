@@ -29,12 +29,13 @@ jobs:
   publish:
     name: Build & Publish
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Aftman
         uses: ok-nick/setup-aftman@v0.4.2
@@ -50,6 +51,7 @@ jobs:
           echo "$MAJOR.$MINOR.$PATCH" > GameVersion.txt
 
       - name: Commit version bump
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

@@ -883,7 +883,10 @@ end
 local function hatchEgg(eggIndex: number, button: TextButton?)
 	task.spawn(function()
 		local BreedingService = Knit.GetService("BreedingService")
-		local result = BreedingService:HatchEgg(eggIndex):await()
+		local ok, result = BreedingService:HatchEgg(eggIndex):await()
+		if not ok then
+			result = { success = false, error = "Service call failed" }
+		end
 
 		if result and result.success then
 			local character = Player.Character

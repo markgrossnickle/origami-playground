@@ -803,44 +803,7 @@ local PlotController = Knit.CreateController({ Name = "PlotController" })
 function PlotController:KnitInit() end
 
 function PlotController:KnitStart()
-	task.delay(3, function()
-		buildUI()
-
-		-- Load plot if player has one
-		loadMyPlot()
-
-		-- Input
-		UserInputService.InputBegan:Connect(onInputBegan)
-
-		-- Ghost block update loop
-		RunService.RenderStepped:Connect(function()
-			if _buildMode then
-				updateGhostBlock()
-			end
-		end)
-
-		-- Listen for live updates from visited plots
-		local PlotService = Knit.GetService("PlotService")
-		PlotService.BlockPlaced:Connect(function(ownerUserId, key, materialId)
-			renderBlock(key, materialId)
-		end)
-		PlotService.BlockRemoved:Connect(function(ownerUserId, key)
-			unrenderBlock(key)
-		end)
-		PlotService.CreatureAssigned:Connect(function(ownerUserId, creatureId, localX, localZ)
-			spawnPlotCreature(creatureId, localX, localZ)
-		end)
-		PlotService.CreatureUnassigned:Connect(function(ownerUserId, creatureId)
-			local entry = _creatureModels[creatureId]
-			if entry then
-				entry.cleanup()
-				if entry.model and entry.model.Parent then
-					entry.model:Destroy()
-				end
-				_creatureModels[creatureId] = nil
-			end
-		end)
-	end)
+	-- Plot UI disabled
 end
 
 return PlotController

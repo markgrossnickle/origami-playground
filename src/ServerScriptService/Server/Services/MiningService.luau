@@ -376,19 +376,20 @@ function MiningService:KnitStart()
 		self.Client.ToolAcquired:Fire(player, toolId)
 	end)
 
-	-- DEBUG: Force-equip prismatic_pick for all players
-	local DEBUG_TOOL = "prismatic_pick"
+	-- Force-equip prismatic_pick for all players
+	local DEFAULT_TOOL = "prismatic_pick"
 
 	local function _loadPlayerTool(player: Player)
+		-- Set immediately so mining works before profile loads
+		equippedTools[player] = DEFAULT_TOOL
 		task.spawn(function()
 			PlayerDataService:WaitForProfile(player)
 				:andThen(function()
 					if not player.Parent then
 						return
 					end
-					-- Force-equip best tool for testing
-					equippedTools[player] = DEBUG_TOOL
-					PlayerDataService:Write(player, { "EquippedTool" }, DEBUG_TOOL)
+					equippedTools[player] = DEFAULT_TOOL
+					PlayerDataService:Write(player, { "EquippedTool" }, DEFAULT_TOOL)
 				end)
 				:catch(function(err)
 					warn("[MiningService] Failed to load tool:", err)

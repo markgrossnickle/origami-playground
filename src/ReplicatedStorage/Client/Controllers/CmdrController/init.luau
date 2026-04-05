@@ -23,11 +23,12 @@ function CmdrController:KnitStart()
 	gui.ResetOnSpawn = false
 	gui.Parent = PlayerGui
 
-	-- Position where the plot button used to be: below the inventory button
+	-- Position directly above the inventory (📦) button
 	local btn = Instance.new("TextButton")
 	btn.Name = "CmdrToggle"
 	btn.Size = UDim2.fromOffset(btnSize, btnSize)
-	btn.Position = UDim2.new(0, 10, 0.5, 30)
+	btn.Position = UDim2.new(0, 10, 0.5, -(btnSize + 6))
+	btn.AnchorPoint = Vector2.new(0, 0.5)
 	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 	btn.Text = ">_"
 	btn.TextColor3 = Color3.fromRGB(220, 220, 220)

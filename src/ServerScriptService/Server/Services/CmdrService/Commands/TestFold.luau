@@ -41,7 +41,7 @@ return {
 
 		OrigamiUnfold.Animate(model, spawnPos, style)
 
-		task.delay(5, function()
+		task.delay(10, function()
 			if model.Parent then
 				model:Destroy()
 			end

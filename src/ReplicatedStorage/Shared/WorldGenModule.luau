@@ -623,12 +623,11 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 end
 
 -- All available structure types for "mixed" mode
-local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "tree_birch", "cactus", "boulder", "bonsai", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
+local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "tree_birch", "cactus", "bonsai", "mushroom", "mushroom_cluster", "mushroom_tall", "mushroom_shelf" }
 
 -- Per-structure block overrides (used in mixed mode for visual variety)
 local STRUCTURE_BLOCKS = {
 	cactus = { trunk = BlockType.CactusGreen, canopy = BlockType.CactusFlower },
-	boulder = { trunk = BlockType.BoulderGray, canopy = BlockType.BoulderGray },
 	bonsai = { trunk = BlockType.BonsaiBark, canopy = BlockType.CherryBlossom },
 	tree_giant = { trunk = BlockType.GiantBark, canopy = BlockType.Leaves },
 	tree_pine = { trunk = BlockType.Wood, canopy = BlockType.PineNeedle },
@@ -768,21 +767,6 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					placeBlock(blocks, canopyBlock, bx - armDx * 2, arm2Y + 2, bz - armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
 
-			elseif structureType == "boulder" then
-				-- Low irregular mound of canopy blocks, no trunk
-				local boulderR = math.min(canopyR, 2)
-				for dy = 0, 1 do
-					for dx = -boulderR, boulderR do
-						for dz = -boulderR, boulderR do
-							local dist = math.abs(dx) + math.abs(dz) + dy
-							if dist <= boulderR + 1 then
-								local blockToUse = if dy == 0 then trunkBlock else canopyBlock
-								placeBlock(blocks, blockToUse, bx + dx, surfaceBlockY + 1 + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-							end
-						end
-					end
-				end
-
 			elseif structureType == "bonsai" then
 				-- Thick trunk (4-5) with angled branches + wide flat canopy
 				local bonsaiTrunk = 4 + (hashTwo(seed + 6100, bx, bz) % 2) -- 4-5
@@ -796,9 +780,9 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					local dir = branchDirs[((hashTwo(seed + 6102 + bi, bx, bz) % #branchDirs)) + 1]
 					local branchY = surfaceBlockY + 2 + (bi - 1) * 2
 					-- Connected: offset 1 connector, offset 2-3 branch angling up
-					placeBlock(blocks, trunkBlock, bx + dir[1], branchY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, trunkBlock, bx + dir[1] * 2, branchY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, trunkBlock, bx + dir[1] * 3, branchY + 1, bz + dir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, trunkBlock, bx + dir[1], branchY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bx + dir[1] * 2, branchY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bx + dir[1] * 3, branchY + 1, bz + dir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 					-- Small canopy cluster at branch end
 					local endX, endZ = bx + dir[1] * 3, bz + dir[2] * 3
 					local endY = branchY + 2
@@ -883,9 +867,9 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				local willowBranchY = surfaceBlockY + trunkHeight - 2
 				for _, bdir in { {1, 0}, {-1, 0}, {0, 1}, {0, -1} } do
 					-- Connector at offset 1, branch extends to offset 3
-					placeBlock(blocks, trunkBlock, bx + bdir[1], willowBranchY, bz + bdir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, trunkBlock, bx + bdir[1] * 2, willowBranchY + 1, bz + bdir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, trunkBlock, bx + bdir[1] * 3, willowBranchY + 2, bz + bdir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, trunkBlock, bx + bdir[1], willowBranchY, bz + bdir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bx + bdir[1] * 2, willowBranchY + 1, bz + bdir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bx + bdir[1] * 3, willowBranchY + 2, bz + bdir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
 				-- Large round canopy (r=5)
 				local willowCY = surfaceBlockY + trunkHeight + 1

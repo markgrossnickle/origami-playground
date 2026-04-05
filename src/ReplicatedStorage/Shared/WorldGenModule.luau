@@ -725,7 +725,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 				-- Height overrides for tree variants
 				if structureType == "tree_giant" then
-					trunkHeight = 40 + (hashTwo(seed + 5555, bx, bz) % 25) -- 40-64
+					trunkHeight = 10 + (hashTwo(seed + 5555, bx, bz) % 7) -- 10-16
 					canopyR = 4
 				elseif structureType == "tree_pine" then
 					trunkHeight = 6 + (hashTwo(seed + 5556, bx, bz) % 4) -- 6-9
@@ -815,47 +815,20 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 
 			elseif structureType == "tree_giant" then
-				-- Massive tree: 2x2 trunk + short stubby leafy branches at intervals
-				-- Root buttresses
-				for _, roff in { {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {1, 1} } do
-					placeBlock(blocks, trunkBlock, bx + roff[1], surfaceBlockY + 1, bz + roff[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				end
-				-- Full 2x2 trunk
+				-- Giant tree: tall single trunk + large sphere canopy
 				for ty = 0, trunkHeight - 1 do
-					for dx = 0, 1 do
-						for dz = 0, 1 do
-							placeBlock(blocks, trunkBlock, bx + dx, surfaceBlockY + 1 + ty, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-						end
-					end
+					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
-				-- Stubby branches every 6 blocks, 4 directions, with flat canopy pads
-				local branchDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
-				local branchInterval = 6
-				for bi = 1, math.floor(trunkHeight / branchInterval) do
-					local branchY = surfaceBlockY + bi * branchInterval
-					local dirIdx = ((hashTwo(seed + 7000 + bi, bx, bz) % #branchDirs)) + 1
-					local dir = branchDirs[dirIdx]
-					placeBlock(blocks, trunkBlock, bx + dir[1], branchY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + dir[1] * 2, branchY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					local padX, padZ = bx + dir[1] * 2, bz + dir[2] * 2
-					for dx = -2, 2 do
-						for dz = -2, 2 do
-							if dx * dx + dz * dz <= 5 then
-								placeBlock(blocks, canopyBlock, padX + dx, branchY + 1, padZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				local centerY = surfaceBlockY + trunkHeight + 1
+				for dx = -canopyR, canopyR do
+					for dy = -canopyR, canopyR do
+						for dz = -canopyR, canopyR do
+							if dx * dx + dy * dy + dz * dz <= canopyR * canopyR then
+								placeBlock(blocks, canopyBlock, bx + dx, centerY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
 				end
-				-- Crown at very top
-				local crownY = surfaceBlockY + trunkHeight + 1
-				for dx = -3, 3 do
-					for dz = -3, 3 do
-						if dx * dx + dz * dz <= 10 then
-							placeBlock(blocks, canopyBlock, bx + dx, crownY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-						end
-					end
-				end
-				placeBlock(blocks, canopyBlock, bx, crownY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "tree_pine" then
 				-- Pine: straight trunk + cone canopy

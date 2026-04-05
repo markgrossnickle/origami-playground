@@ -380,25 +380,7 @@ local function createUI()
 		end
 	end)
 
-	-- Touch button for mobile (always visible small button)
-	if IS_MOBILE then
-		local touchBtn = Instance.new("TextButton")
-		touchBtn.Name = "EmoteTouchButton"
-		touchBtn.Size = UDim2.fromOffset(BUTTON_SIZE, BUTTON_SIZE)
-		touchBtn.Position = UDim2.new(1, -(BUTTON_SIZE + 12), 0.5, 0)
-		touchBtn.Text = "E"
-		touchBtn.TextColor3 = COLORS.text
-		touchBtn.BackgroundColor3 = COLORS.bg
-		touchBtn.BackgroundTransparency = 0.3
-		touchBtn.BorderSizePixel = 0
-		touchBtn.TextSize = 20
-		touchBtn.Font = Enum.Font.GothamBold
-		touchBtn.AutoButtonColor = true
-		touchBtn.Parent = gui
-		makeCorner(touchBtn, BUTTON_SIZE / 2)
-
-		touchBtn.Activated:Connect(toggleWheel)
-	end
+	-- Emote touch button disabled
 end
 
 ---------- Lifecycle ----------

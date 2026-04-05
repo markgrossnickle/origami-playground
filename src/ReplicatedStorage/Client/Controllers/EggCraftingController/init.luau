@@ -86,13 +86,19 @@ local function buildUI()
 	-- Main panel
 	_mainFrame = Instance.new("Frame")
 	_mainFrame.Name = "CraftPanel"
-	_mainFrame.Size = UDim2.fromOffset(340, 420)
-	_mainFrame.Position = UDim2.new(0, 60, 0.5, -210)
+	_mainFrame.Size = UDim2.new(0.8, 0, 0.65, 0)
+	_mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+	_mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	_mainFrame.BackgroundColor3 = COLORS.bg
 	_mainFrame.BorderSizePixel = 0
 	_mainFrame.Visible = false
 	_mainFrame.Parent = _screenGui
 	createCorner(_mainFrame, 12)
+
+	local sizeConstraint = Instance.new("UISizeConstraint")
+	sizeConstraint.MaxSize = Vector2.new(380, 480)
+	sizeConstraint.MinSize = Vector2.new(240, 300)
+	sizeConstraint.Parent = _mainFrame
 
 	-- Title
 	local title = Instance.new("TextLabel")

@@ -40,7 +40,7 @@ function CmdrController:KnitStart()
 	local btn = Instance.new("TextButton")
 	btn.Name = "CmdrToggle"
 	btn.Size = UDim2.fromOffset(44, 44)
-	btn.Position = UDim2.new(0, 10, 1, -54)
+	btn.Position = UDim2.new(0, 10, 0.5, -22)
 	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 	btn.BackgroundTransparency = 0.4
 	btn.Text = ">_"

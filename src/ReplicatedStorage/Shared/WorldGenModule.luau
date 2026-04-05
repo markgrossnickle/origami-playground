@@ -1326,21 +1326,21 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		placeTreesInChunk(blocks, seed, cx, cy, cz)
 	end
 
-	-- DEBUG: Force mushroom cave below spawn (cx=0, cz=0, cy=-2 which is ~10 blocks below surface)
-	if cx == 0 and cz == 0 and cy == -2 then
-		-- Carve a big cave (8x6x8 air pocket)
-		for lx = 4, 11 do
-			for lz = 4, 11 do
-				for ly = 1, 6 do
+	-- DEBUG: Force mushroom cave 6 blocks below spawn (cx=0, cz=0, cy=-1)
+	if cx == 0 and cz == 0 and cy == -1 then
+		-- Cave from ly=8 to ly=14 (blockY -8 to -2, about 6 blocks below surface at blockY 4)
+		for lx = 2, 13 do
+			for lz = 2, 13 do
+				for ly = 9, 14 do
 					local idx = ChunkUtil.flatIndex(lx, ly, lz)
 					buffer.writeu8(blocks, idx, BlockType.Air)
 				end
 			end
 		end
-		-- Place floor
-		for lx = 4, 11 do
-			for lz = 4, 11 do
-				local idx = ChunkUtil.flatIndex(lx, 0, lz)
+		-- Place floor at ly=8
+		for lx = 2, 13 do
+			for lz = 2, 13 do
+				local idx = ChunkUtil.flatIndex(lx, 8, lz)
 				buffer.writeu8(blocks, idx, BlockType.CompressedPulp)
 			end
 		end
@@ -1348,31 +1348,31 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		local stemBlock = BlockType.MushroomStem
 		local capBlock = BlockType.MushroomCap
 		local shelfBlock = BlockType.ShelfBracket
-		local floorY = chunkBlockYBottom + 1
+		local floorY = chunkBlockYBottom + 9
 		local cbx, cbz = chunkBlockX, chunkBlockZ
 		local cbyBot, cbyTop = chunkBlockYBottom, chunkBlockYTop
-		-- Basic mushroom at (5,floor,5)
-		placeBlock(blocks, stemBlock, cbx+5, floorY, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, stemBlock, cbx+5, floorY+1, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+6, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+6, cbx, cbyBot, cbyTop, cbz)
+		-- Basic mushroom at (4,floor,4)
+		placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+4, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+4, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
 		placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		-- Tall mushroom at (8,floor,5)
+		placeBlock(blocks, capBlock, cbx+3, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+3, cbx, cbyBot, cbyTop, cbz)
+		-- Tall mushroom at (8,floor,4)
 		for ty = 0, 3 do
-			placeBlock(blocks, stemBlock, cbx+8, floorY+ty, cbz+5, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx+8, floorY+ty, cbz+4, cbx, cbyBot, cbyTop, cbz)
 		end
-		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+9, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+7, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+6, cbx, cbyBot, cbyTop, cbz)
 		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
-		-- Shelf mushroom at (5,floor,9)
-		placeBlock(blocks, stemBlock, cbx+5, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, stemBlock, cbx+5, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+9, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+7, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+3, cbx, cbyBot, cbyTop, cbz)
+		-- Shelf mushroom at (4,floor,9)
+		placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, shelfBlock, cbx+5, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
 		placeBlock(blocks, shelfBlock, cbx+6, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
-		placeBlock(blocks, shelfBlock, cbx+7, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
 		-- Cluster at (8,floor,9)
 		placeBlock(blocks, stemBlock, cbx+8, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
 		placeBlock(blocks, capBlock, cbx+8, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)

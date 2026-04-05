@@ -730,7 +730,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				elseif structureType == "tree_pine" then
 					trunkHeight = 8 + (hashTwo(seed + 5556, bx, bz) % 5) -- 8-12
 				elseif structureType == "tree_willow" then
-					trunkHeight = 18 + (hashTwo(seed + 5557, bx, bz) % 9) -- 18-26
+					trunkHeight = 14 + (hashTwo(seed + 5557, bx, bz) % 7) -- 14-20
 					canopyR = 5
 				elseif structureType == "tree_palm" then
 					trunkHeight = 7 + (hashTwo(seed + 5558, bx, bz) % 4) -- 7-10
@@ -891,14 +891,15 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				local branchStartY = surfaceBlockY + trunkHeight - 2
 				local willowDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
 				for bi, bdir in willowDirs do
-					for step = 1, 3 do
-						local stepY = branchStartY + math.floor(step * 0.6)
+					local branchLen = 5 + (hashTwo(seed + 7770 + bi, bx, bz) % 4) -- 5-8
+					for step = 1, branchLen do
+						local stepY = branchStartY + math.floor(step * 0.5)
 						placeBlock(blocks, trunkBlock, bx + bdir[1] * step, stepY, bz + bdir[2] * step, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 					end
 					-- Canopy cluster at branch tip (r=2)
-					local tipX = bx + bdir[1] * 3
-					local tipZ = bz + bdir[2] * 3
-					local tipY = branchStartY + 2
+					local tipX = bx + bdir[1] * branchLen
+					local tipZ = bz + bdir[2] * branchLen
+					local tipY = branchStartY + math.floor(branchLen * 0.5)
 					for dx = -2, 2 do
 						for dz = -2, 2 do
 							if dx * dx + dz * dz <= 5 then
@@ -912,7 +913,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 						for dz = -2, 2 do
 							if dx * dx + dz * dz <= 5 then
 								if hashTwo(seed + 6660 + bi, tipX + dx, tipZ + dz) % 2 == 0 then
-									local vineLen = 4 + (hashTwo(seed + 6666, tipX + dx, tipZ + dz) % 4)
+									local vineLen = 6 + (hashTwo(seed + 6666, tipX + dx, tipZ + dz) % 6)
 									for vy = 1, vineLen do
 										placeBlock(blocks, canopyBlock, tipX + dx, tipY - vy, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 									end

@@ -2,4 +2,7 @@ std = "roblox"
 exclude = ["Packages/*", "ServerPackages/*", "tests/*"]
 
 [lints]
-roblox_manual_fromscale_or_fromoffset = "allow"  # turn it off
+roblox_manual_fromscale_or_fromoffset = "allow"
+unused_variable = "allow"  # Knit injects `player` param on Client methods; many intentionally unused
+shadowing = "allow"  # Common in nested loops (e.g. wx/wz in WorldGenModule)
+unscoped_variables = "allow"  # CreatorController legacy pattern

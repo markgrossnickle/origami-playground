@@ -434,45 +434,30 @@ local blocks: { [number]: BlockConfig } = {
 		color = Color3.fromRGB(255, 220, 100), material = Enum.Material.Neon,
 		mineable = true, minTier = 0, drops = { { itemId = "lotus_center", count = 1, chance = 1 } }, xp = 2,
 	},
-	[BlockType.JellyDome] = {
-		id = BlockType.JellyDome, name = "Jelly Dome", hardness = 1,
-		color = Color3.fromRGB(150, 120, 255), material = Enum.Material.ForceField,
-		mineable = true, minTier = 0, drops = { { itemId = "jelly_dome", count = 1, chance = 1 } }, xp = 1,
+	[BlockType.PineNeedle] = {
+		id = BlockType.PineNeedle, name = "Pine Needle", hardness = 0.3,
+		color = Color3.fromRGB(30, 90, 40), material = Enum.Material.Grass,
+		mineable = true, minTier = 0, drops = { { itemId = "pine_needle", count = 1, chance = 1 } }, xp = 1,
 	},
-	[BlockType.JellyTendril] = {
-		id = BlockType.JellyTendril, name = "Jelly Tendril", hardness = 0.5,
-		color = Color3.fromRGB(180, 100, 255), material = Enum.Material.Neon,
-		mineable = true, minTier = 0, drops = { { itemId = "jelly_tendril", count = 1, chance = 0.5 } }, xp = 1,
+	[BlockType.WillowVine] = {
+		id = BlockType.WillowVine, name = "Willow Vine", hardness = 0.3,
+		color = Color3.fromRGB(140, 180, 80), material = Enum.Material.Grass,
+		mineable = true, minTier = 0, drops = { { itemId = "willow_vine", count = 1, chance = 1 } }, xp = 1,
 	},
-	[BlockType.GatePillar] = {
-		id = BlockType.GatePillar, name = "Gate Pillar", hardness = 3,
-		color = Color3.fromRGB(180, 60, 40), material = Enum.Material.SmoothPlastic,
-		mineable = true, minTier = 0, drops = { { itemId = "gate_pillar", count = 1, chance = 1 } }, xp = 2,
+	[BlockType.PalmFrond] = {
+		id = BlockType.PalmFrond, name = "Palm Frond", hardness = 0.3,
+		color = Color3.fromRGB(60, 160, 50), material = Enum.Material.Grass,
+		mineable = true, minTier = 0, drops = { { itemId = "palm_frond", count = 1, chance = 1 } }, xp = 1,
 	},
-	[BlockType.GateTop] = {
-		id = BlockType.GateTop, name = "Gate Crown", hardness = 2,
-		color = Color3.fromRGB(240, 200, 80), material = Enum.Material.SmoothPlastic,
-		mineable = true, minTier = 0, drops = { { itemId = "gate_top", count = 1, chance = 1 } }, xp = 2,
+	[BlockType.GiantBark] = {
+		id = BlockType.GiantBark, name = "Giant Bark", hardness = 2,
+		color = Color3.fromRGB(70, 45, 25), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "giant_bark", count = 1, chance = 1 } }, xp = 2,
 	},
-	[BlockType.PyramidStone] = {
-		id = BlockType.PyramidStone, name = "Pyramid Stone", hardness = 3,
-		color = Color3.fromRGB(210, 180, 130), material = Enum.Material.Sandstone,
-		mineable = true, minTier = 0, drops = { { itemId = "pyramid_stone", count = 1, chance = 1 } }, xp = 2,
-	},
-	[BlockType.PyramidCap] = {
-		id = BlockType.PyramidCap, name = "Pyramid Cap", hardness = 2,
-		color = Color3.fromRGB(255, 215, 0), material = Enum.Material.Neon,
-		mineable = true, minTier = 0, drops = { { itemId = "pyramid_cap", count = 1, chance = 1 } }, xp = 3,
-	},
-	[BlockType.ObeliskDark] = {
-		id = BlockType.ObeliskDark, name = "Obelisk Stone", hardness = 4,
-		color = Color3.fromRGB(40, 35, 50), material = Enum.Material.Basalt,
-		mineable = true, minTier = 0, drops = { { itemId = "obelisk_dark", count = 1, chance = 1 } }, xp = 3,
-	},
-	[BlockType.ObeliskGlow] = {
-		id = BlockType.ObeliskGlow, name = "Obelisk Rune", hardness = 3,
-		color = Color3.fromRGB(0, 255, 200), material = Enum.Material.Neon,
-		mineable = true, minTier = 0, drops = { { itemId = "obelisk_glow", count = 1, chance = 1 } }, xp = 3,
+	[BlockType.BirchBark] = {
+		id = BlockType.BirchBark, name = "Birch Bark", hardness = 1,
+		color = Color3.fromRGB(230, 225, 210), material = Enum.Material.SmoothPlastic,
+		mineable = true, minTier = 0, drops = { { itemId = "birch_bark", count = 1, chance = 1 } }, xp = 1,
 	},
 	[BlockType.MushroomStem] = {
 		id = BlockType.MushroomStem, name = "Mushroom Stem", hardness = 1,

@@ -671,6 +671,19 @@ local function placeBlock(blocks: buffer, blockType: number, bx: number, worldBl
 	buffer.writeu8(blocks, idx, blockType)
 end
 
+-- Compute cumulative trunk sway: slight organic drift every 3 blocks of height
+local function getTrunkPos(seed: number, bx: number, bz: number, ty: number): (number, number)
+	local sx, sz = 0, 0
+	local step = 0
+	while step * 3 < ty do
+		step += 1
+		local h = hashSeed(seed + 11111, bx, bz, step)
+		sx = sx + ((h % 3) - 1) -- -1, 0, or 1
+		sz = sz + ((hashTwo(seed + 11112, bx + step, bz) % 3) - 1)
+	end
+	return bx + sx, bz + sz
+end
+
 local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: number, cz: number)
 	local chunkBlockYBottom = cy * CHUNK_SIZE
 	local chunkBlockYTop = chunkBlockYBottom + CHUNK_SIZE - 1
@@ -739,186 +752,204 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 			})
 
 			if structureType == "cactus" then
-				-- Saguaro cactus: tall trunk + arms connected by horizontal block
+				-- Saguaro cactus with organic sway + connected arms
+				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- Canopy tip
-				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + trunkHeight + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				-- Arm at height 3 (direction from hash), offset 2 out with connector at offset 1
+				placeBlock(blocks, canopyBlock, topX, surfaceBlockY + trunkHeight + 2, topZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				-- Arm at height 3
 				local armDir = hashTwo(seed + 3333, bx, bz) % 4
 				local armDx = if armDir == 0 then 1 elseif armDir == 1 then -1 else 0
 				local armDz = if armDir == 2 then 1 elseif armDir == 3 then -1 else 0
+				local armSx, armSz = getTrunkPos(seed, bx, bz, 2)
 				local armY = surfaceBlockY + 3
-				-- Connector block at offset 1
-				placeBlock(blocks, trunkBlock, bx + armDx, armY, bz + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				-- Arm column at offset 2
-				placeBlock(blocks, trunkBlock, bx + armDx * 2, armY, bz + armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				placeBlock(blocks, trunkBlock, bx + armDx * 2, armY + 1, bz + armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				placeBlock(blocks, canopyBlock, bx + armDx * 2, armY + 2, bz + armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				-- Second arm on opposite side (50% chance)
+				placeBlock(blocks, trunkBlock, armSx + armDx, armY, armSz + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				placeBlock(blocks, trunkBlock, armSx + armDx * 2, armY, armSz + armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				placeBlock(blocks, trunkBlock, armSx + armDx * 2, armY + 1, armSz + armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				placeBlock(blocks, canopyBlock, armSx + armDx * 2, armY + 2, armSz + armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				-- Second arm opposite (50%)
 				if hashTwo(seed + 4444, bx, bz) % 2 == 0 and trunkHeight >= 4 then
+					local arm2Sx, arm2Sz = getTrunkPos(seed, bx, bz, 4)
 					local arm2Y = surfaceBlockY + 5
-					-- Connector at offset 1
-					placeBlock(blocks, trunkBlock, bx - armDx, arm2Y, bz - armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					-- Arm column at offset 2
-					placeBlock(blocks, trunkBlock, bx - armDx * 2, arm2Y, bz - armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx - armDx * 2, arm2Y + 1, bz - armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, canopyBlock, bx - armDx * 2, arm2Y + 2, bz - armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, arm2Sx - armDx, arm2Y, arm2Sz - armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, arm2Sx - armDx * 2, arm2Y, arm2Sz - armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, arm2Sx - armDx * 2, arm2Y + 1, arm2Sz - armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, canopyBlock, arm2Sx - armDx * 2, arm2Y + 2, arm2Sz - armDz * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
 
 			elseif structureType == "bonsai" then
-				-- Thick trunk (4-5) with angled branches + wide flat canopy
+				-- Bonsai with organic sway trunk + fork-like branches with separate canopy clusters
 				local bonsaiTrunk = 4 + (hashTwo(seed + 6100, bx, bz) % 2) -- 4-5
+				local topX, topZ = bx, bz
 				for ty = 0, bonsaiTrunk - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- 2-3 branches extending outward, connected to trunk
+				-- 3 branches like fork tines: connected to trunk, each with its own canopy cluster
 				local branchDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
 				local branchCount = 2 + (hashTwo(seed + 6101, bx, bz) % 2)
 				for bi = 1, branchCount do
 					local dir = branchDirs[((hashTwo(seed + 6102 + bi, bx, bz) % #branchDirs)) + 1]
-					local branchY = surfaceBlockY + 2 + (bi - 1) * 2
-					-- Connected: offset 1 connector, offset 2-3 branch angling up
-					placeBlock(blocks, trunkBlock, bx + dir[1], branchY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + dir[1] * 2, branchY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + dir[1] * 3, branchY + 1, bz + dir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					-- Small canopy cluster at branch end
-					local endX, endZ = bx + dir[1] * 3, bz + dir[2] * 3
-					local endY = branchY + 2
-					for dx = -1, 1 do
-						for dz = -1, 1 do
-							placeBlock(blocks, canopyBlock, endX + dx, endY, endZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					local branchStartY = surfaceBlockY + 2 + (bi - 1) * 2
+					local bsx, bsz = getTrunkPos(seed, bx, bz, 1 + (bi - 1) * 2)
+					-- Branch: connector → extends 3 blocks outward, angling up
+					placeBlock(blocks, trunkBlock, bsx + dir[1], branchStartY, bsz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bsx + dir[1] * 2, branchStartY + 1, bsz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bsx + dir[1] * 3, branchStartY + 2, bsz + dir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(blocks, trunkBlock, bsx + dir[1] * 4, branchStartY + 2, bsz + dir[2] * 4, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					-- Canopy cluster at branch end (r=2 flat)
+					local endX, endZ = bsx + dir[1] * 4, bsz + dir[2] * 4
+					local endY = branchStartY + 3
+					for dx = -2, 2 do
+						for dz = -2, 2 do
+							if dx * dx + dz * dz <= 5 then
+								placeBlock(blocks, canopyBlock, endX + dx, endY, endZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							end
 						end
 					end
+					placeBlock(blocks, canopyBlock, endX, endY + 1, endZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 				end
-				-- Wide flat main canopy at top (radius 4)
-				local bonsaiR = 4
-				local capY = surfaceBlockY + bonsaiTrunk + 2
-				for dx = -bonsaiR, bonsaiR do
-					for dz = -bonsaiR, bonsaiR do
-						if dx * dx + dz * dz <= bonsaiR * bonsaiR + 1 then
-							placeBlock(blocks, canopyBlock, bx + dx, capY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-						end
+				-- Small crown at trunk top
+				local crownY = surfaceBlockY + bonsaiTrunk + 1
+				for dx = -1, 1 do
+					for dz = -1, 1 do
+						placeBlock(blocks, canopyBlock, topX + dx, crownY, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					end
 				end
-				placeBlock(blocks, canopyBlock, bx, capY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "tree_giant" then
-				-- Terraria Living Tree: 2x2 base trunk, 1x1 upper, root buttresses, huge canopy
+				-- Giant tree with organic sway: 2x2 base, 1x1 upper, root buttresses, huge canopy
 				-- Root buttresses
 				for _, roff in { {-1, 0}, {1, 0}, {0, -1}, {0, 1} } do
 					placeBlock(blocks, trunkBlock, bx + roff[1], surfaceBlockY + 1, bz + roff[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 				end
-				-- 2x2 trunk for lower half
+				-- 2x2 trunk for lower half with sway
 				local halfH = math.floor(trunkHeight / 2)
+				local topX, topZ = bx, bz
 				for ty = 0, halfH - 1 do
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
 					for dx = 0, 1 do
 						for dz = 0, 1 do
-							placeBlock(blocks, trunkBlock, bx + dx, surfaceBlockY + 1 + ty, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+							placeBlock(blocks, trunkBlock, sx + dx, surfaceBlockY + 1 + ty, sz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
 						end
 					end
+					topX, topZ = sx, sz
 				end
-				-- 1x1 trunk for upper half
+				-- 1x1 trunk for upper half with sway
 				for ty = halfH, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- Large spherical canopy (r=4)
+				-- Large spherical canopy centered on top of trunk
 				local giantR = canopyR
 				local giantCY = surfaceBlockY + trunkHeight + 1
 				for dx = -giantR, giantR do
 					for dz = -giantR, giantR do
 						for dy = -giantR, giantR do
 							if dx * dx + dy * dy + dz * dz <= giantR * giantR + 1 then
-								placeBlock(blocks, canopyBlock, bx + dx, giantCY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(blocks, canopyBlock, topX + dx, giantCY + dy, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
 				end
 
 			elseif structureType == "tree_pine" then
-				-- Conifer: tall trunk + layered cone canopy tapering upward
+				-- Pine with organic sway + layered cone canopy
+				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- Cone canopy: 4 layers with decreasing radius
+				-- Cone canopy centered on trunk top
 				local pineBase = surfaceBlockY + math.floor(trunkHeight * 0.4)
 				local pineLayers = trunkHeight - math.floor(trunkHeight * 0.4) + 2
 				for layer = 0, pineLayers - 1 do
 					local r = math.max(0, math.floor((pineLayers - layer) * 3 / pineLayers))
 					local layerY = pineBase + layer
+					local lsx, lsz = getTrunkPos(seed, bx, bz, math.floor(trunkHeight * 0.4) + layer)
 					for dx = -r, r do
 						for dz = -r, r do
 							if dx * dx + dz * dz <= r * r + 1 then
-								placeBlock(blocks, canopyBlock, bx + dx, layerY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(blocks, canopyBlock, lsx + dx, layerY, lsz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
 				end
-				-- Tip
-				placeBlock(blocks, canopyBlock, bx, pineBase + pineLayers, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				placeBlock(blocks, canopyBlock, topX, pineBase + pineLayers, topZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "tree_willow" then
-				-- Large weeping willow: tall trunk + connected branches + huge canopy + sparse hanging vines
+				-- Weeping willow: organic sway trunk → fork-like branches → separate canopy clusters with hanging vines
+				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- 4 major branches connected to trunk, angling outward and up
-				local willowBranchY = surfaceBlockY + trunkHeight - 2
-				for _, bdir in { {1, 0}, {-1, 0}, {0, 1}, {0, -1} } do
-					-- Connector at offset 1, branch extends to offset 3
-					placeBlock(blocks, trunkBlock, bx + bdir[1], willowBranchY, bz + bdir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + bdir[1] * 2, willowBranchY + 1, bz + bdir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + bdir[1] * 3, willowBranchY + 2, bz + bdir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				end
-				-- Large round canopy (r=5)
-				local willowCY = surfaceBlockY + trunkHeight + 1
-				local willowR = 5
-				for dx = -willowR, willowR do
-					for dz = -willowR, willowR do
-						for dy = 0, 2 do
-							if dx * dx + dz * dz + dy * dy <= willowR * willowR + 2 then
-								placeBlock(blocks, canopyBlock, bx + dx, willowCY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				-- 4 branches like fork tines, each gets its own canopy blob + hanging vines
+				local branchStartY = surfaceBlockY + trunkHeight - 2
+				local branchSx, branchSz = getTrunkPos(seed, bx, bz, trunkHeight - 3)
+				local willowDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
+				for bi, bdir in willowDirs do
+					-- Branch: 4 blocks outward, angling up — fully connected
+					for step = 1, 4 do
+						local stepY = branchStartY + math.floor(step * 0.5)
+						placeBlock(blocks, trunkBlock, branchSx + bdir[1] * step, stepY, branchSz + bdir[2] * step, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					end
+					-- Canopy cluster at branch tip (r=2)
+					local tipX = branchSx + bdir[1] * 4
+					local tipZ = branchSz + bdir[2] * 4
+					local tipY = branchStartY + 3
+					for dx = -2, 2 do
+						for dz = -2, 2 do
+							if dx * dx + dz * dz <= 5 then
+								placeBlock(blocks, canopyBlock, tipX + dx, tipY, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(blocks, canopyBlock, tipX + dx, tipY + 1, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
-				end
-				-- Sparse hanging vines with gaps (only ~40% of edge positions, drop 5-9 blocks)
-				for dx = -willowR, willowR do
-					for dz = -willowR, willowR do
-						local edgeDist = dx * dx + dz * dz
-						if edgeDist >= (willowR - 1) * (willowR - 1) and edgeDist <= willowR * willowR + 1 then
-							-- Only place vine ~40% of the time for visible gaps
-							if hashTwo(seed + 6667, bx + dx, bz + dz) % 5 < 2 then
-								local vineLen = 5 + (hashTwo(seed + 6666, bx + dx, bz + dz) % 5)
-								for vy = 1, vineLen do
-									placeBlock(blocks, canopyBlock, bx + dx, willowCY - vy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					-- Hanging vines from this branch's canopy (5-8 blocks down)
+					for dx = -2, 2 do
+						for dz = -2, 2 do
+							if dx * dx + dz * dz <= 5 then
+								-- ~50% chance per position for gaps between vines
+								if hashTwo(seed + 6660 + bi, tipX + dx, tipZ + dz) % 2 == 0 then
+									local vineLen = 5 + (hashTwo(seed + 6666, tipX + dx, tipZ + dz) % 4)
+									for vy = 1, vineLen do
+										placeBlock(blocks, canopyBlock, tipX + dx, tipY - vy, tipZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+									end
 								end
 							end
 						end
 					end
 				end
-
-			elseif structureType == "tree_palm" then
-				-- Tall thin trunk with slight lean + small frond fan at top
-				local leanDir = hashTwo(seed + 7777, bx, bz) % 4
-				local leanDx = if leanDir == 0 then 1 elseif leanDir == 1 then -1 else 0
-				local leanDz = if leanDir == 2 then 1 elseif leanDir == 3 then -1 else 0
-				local topBx, topBz = bx, bz
-				for ty = 0, trunkHeight - 1 do
-					local curBx = bx + (if ty > trunkHeight / 2 then leanDx else 0)
-					local curBz = bz + (if ty > trunkHeight / 2 then leanDz else 0)
-					placeBlock(blocks, trunkBlock, curBx, surfaceBlockY + 1 + ty, curBz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					if ty == trunkHeight - 1 then
-						topBx, topBz = curBx, curBz
+				-- Small crown at trunk top
+				for dx = -1, 1 do
+					for dz = -1, 1 do
+						placeBlock(blocks, canopyBlock, topX + dx, surfaceBlockY + trunkHeight + 1, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					end
 				end
-				-- Frond fan: + shape with 2-block arms
+
+			elseif structureType == "tree_palm" then
+				-- Palm with organic sway trunk + frond fan at top
+				local topBx, topBz = bx, bz
+				for ty = 0, trunkHeight - 1 do
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topBx, topBz = sx, sz
+				end
+				-- Frond fan: + shape with 2-block drooping arms
 				local frondY = surfaceBlockY + trunkHeight + 1
 				placeBlock(blocks, canopyBlock, topBx, frondY, topBz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 				for _, fdir in { {1, 0}, {-1, 0}, {0, 1}, {0, -1} } do
 					placeBlock(blocks, canopyBlock, topBx + fdir[1], frondY, topBz + fdir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					placeBlock(blocks, canopyBlock, topBx + fdir[1] * 2, frondY - 1, topBz + fdir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, topBx + fdir[1] * 3, frondY - 2, topBz + fdir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 				end
 				-- Diagonal fronds
 				for _, fdir in { {1, 1}, {-1, 1}, {1, -1}, {-1, -1} } do
@@ -926,23 +957,25 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 
 			elseif structureType == "tree_birch" then
-				-- Slender trunk + small multi-layer canopy
+				-- Slender birch with organic sway + small multi-layer canopy
+				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- 3-layer stacked canopy, r=1 per layer
+				-- 3-layer stacked canopy centered on trunk top
 				for layer = 0, 2 do
 					local layerY = surfaceBlockY + trunkHeight - 1 + layer
 					for dx = -1, 1 do
 						for dz = -1, 1 do
 							if layer == 1 or (math.abs(dx) + math.abs(dz) <= 1) then
-								placeBlock(blocks, canopyBlock, bx + dx, layerY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(blocks, canopyBlock, topX + dx, layerY, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
 				end
-				-- Tip
-				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + trunkHeight + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				placeBlock(blocks, canopyBlock, topX, surfaceBlockY + trunkHeight + 2, topZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
 			elseif structureType == "spire" then
 				for ty = 0, trunkHeight - 1 do
@@ -1000,59 +1033,71 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 
 			elseif structureType == "mushroom_tall" then
-				-- Extra tall thin mushroom with dome cap
+				-- Extra tall mushroom with organic sway + dome cap
 				local tallHeight = trunkHeight + 3
+				local topX, topZ = bx, bz
 				for ty = 0, tallHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- Dome cap (hemisphere)
+				-- Dome cap centered on trunk top
 				local domeR = 2
 				local domeY = surfaceBlockY + tallHeight + 1
 				for dx = -domeR, domeR do
 					for dz = -domeR, domeR do
 						for dy = 0, domeR do
 							if dx * dx + dy * dy + dz * dz <= domeR * domeR + 1 then
-								placeBlock(blocks, canopyBlock, bx + dx, domeY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(blocks, canopyBlock, topX + dx, domeY + dy, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 							end
 						end
 					end
 				end
 
 			elseif structureType == "mushroom_shelf" then
-				-- Trunk with multiple shelf layers spiraling up
+				-- Shelf mushroom with organic sway + spiraling shelves
+				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight + 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
-				-- Shelf brackets at different heights and directions
+				-- Shelf brackets at different heights, following trunk sway
 				local dirs = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} }
 				for shelf = 0, 2 do
 					local shelfY = surfaceBlockY + 2 + shelf * 2
+					local shelfSx, shelfSz = getTrunkPos(seed, bx, bz, 1 + shelf * 2)
 					local dir = dirs[(shelf % 4) + 1]
-					-- 2-block shelf sticking out
-					placeBlock(blocks, canopyBlock, bx + dir[1], shelfY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, bx + dir[1] * 2, shelfY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					-- Side blocks for width
+					placeBlock(blocks, canopyBlock, shelfSx + dir[1], shelfY, shelfSz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, shelfSx + dir[1] * 2, shelfY, shelfSz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					local perpDx = if dir[1] == 0 then 1 else 0
 					local perpDz = if dir[2] == 0 then 1 else 0
-					placeBlock(blocks, canopyBlock, bx + dir[1] + perpDx, shelfY, bz + dir[2] + perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, bx + dir[1] - perpDx, shelfY, bz + dir[2] - perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, shelfSx + dir[1] + perpDx, shelfY, shelfSz + dir[2] + perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(blocks, canopyBlock, shelfSx + dir[1] - perpDx, shelfY, shelfSz + dir[2] - perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 				end
 
 			elseif structureType == "mushroom" then
+				-- Mushroom with organic sway trunk
+				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
 				local capY = surfaceBlockY + trunkHeight + 1
 				for dx = -canopyR, canopyR do
 					for dz = -canopyR, canopyR do
-						placeBlock(blocks, canopyBlock, bx + dx, capY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+						placeBlock(blocks, canopyBlock, topX + dx, capY, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 					end
 				end
-				placeBlock(blocks, canopyBlock, bx, capY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				placeBlock(blocks, canopyBlock, topX, capY + 1, topZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 
-			else -- "tree" (default)
+			else -- "tree" (default) with organic sway
+				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					local sx, sz = getTrunkPos(seed, bx, bz, ty)
+					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					topX, topZ = sx, sz
 				end
 				local canopyBaseY = surfaceBlockY + trunkHeight
 				for canopyLayer = 0, 1 do
@@ -1062,11 +1107,11 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 							if canopyLayer == 0 and dx == 0 and dz == 0 then
 								continue
 							end
-							placeBlock(blocks, canopyBlock, bx + dx, worldBlockY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							placeBlock(blocks, canopyBlock, topX + dx, worldBlockY, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 						end
 					end
 				end
-				placeBlock(blocks, canopyBlock, bx, canopyBaseY + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				placeBlock(blocks, canopyBlock, topX, canopyBaseY + 2, topZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
 			end
 		end
 	end

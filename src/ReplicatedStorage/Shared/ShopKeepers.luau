@@ -18,9 +18,7 @@ local SHOP_COLORS = {
 	create_pro = Color3.fromRGB(160, 100, 220), -- purple for atelier
 }
 
-----------------------------------------------------------------------
 -- Billboard helpers
-----------------------------------------------------------------------
 
 local function addShopNameSign(parent: Instance, shopName: string, shopType: string)
 	local bb = Instance.new("BillboardGui")
@@ -93,9 +91,7 @@ local function addSpeechBubble(parent: Instance, text: string)
 	return bb
 end
 
-----------------------------------------------------------------------
 -- Build
-----------------------------------------------------------------------
 
 function ShopKeepers.Build(service)
 	ShopKeepers.Clear()

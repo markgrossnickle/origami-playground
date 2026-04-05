@@ -72,11 +72,8 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 		-- Orientation (accept both "orientation" and "rotation" from LLM)
 		local orient = partData.orientation or partData.rotation
 		if orient then
-			part.Orientation = Vector3.new(
-				orient[1] or orient.x or 0,
-				orient[2] or orient.y or 0,
-				orient[3] or orient.z or 0
-			)
+			part.Orientation =
+				Vector3.new(orient[1] or orient.x or 0, orient[2] or orient.y or 0, orient[3] or orient.z or 0)
 		end
 
 		-- Color
@@ -214,13 +211,17 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 					if cData.angularVelocity then
 						constraint.AngularVelocity = readVector3(cData.angularVelocity)
 					end
-					if cData.maxTorque then constraint.MaxTorque = cData.maxTorque end
+					if cData.maxTorque then
+						constraint.MaxTorque = cData.maxTorque
+					end
 					constraint.RelativeTo = Enum.ActuatorRelativeTo.World
 				elseif cData.type == "LinearVelocity" then
 					if cData.vectorVelocity then
 						constraint.VectorVelocity = readVector3(cData.vectorVelocity)
 					end
-					if cData.maxForce then constraint.MaxForce = cData.maxForce end
+					if cData.maxForce then
+						constraint.MaxForce = cData.maxForce
+					end
 					constraint.RelativeTo = Enum.ActuatorRelativeTo.World
 				elseif cData.type == "VectorForce" then
 					if cData.force then
@@ -230,18 +231,20 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 				end
 
 				constraint.Parent = p0
-
 			elseif className == "WeldConstraint" then
 				local p1 = partsByName[cData.part1]
-				if not p1 then continue end
+				if not p1 then
+					continue
+				end
 				local weld = Instance.new("WeldConstraint")
 				weld.Part0 = p0
 				weld.Part1 = p1
 				weld.Parent = p0
-
 			else
 				local p1 = partsByName[cData.part1]
-				if not p1 then continue end
+				if not p1 then
+					continue
+				end
 
 				local att0 = Instance.new("Attachment")
 				if cData.offset0 then
@@ -267,34 +270,72 @@ function OrigamiBuilder.BuildModel(modelData: { [string]: any }): Model
 
 				-- Type-specific properties
 				if cData.type == "Spring" then
-					if cData.stiffness then constraint.Stiffness = cData.stiffness end
-					if cData.damping then constraint.Damping = cData.damping end
-					if cData.freeLength then constraint.FreeLength = cData.freeLength end
+					if cData.stiffness then
+						constraint.Stiffness = cData.stiffness
+					end
+					if cData.damping then
+						constraint.Damping = cData.damping
+					end
+					if cData.freeLength then
+						constraint.FreeLength = cData.freeLength
+					end
 				elseif cData.type == "Hinge" then
-					if cData.limitsEnabled then constraint.LimitsEnabled = true end
-					if cData.lowerAngle then constraint.LowerAngle = cData.lowerAngle end
-					if cData.upperAngle then constraint.UpperAngle = cData.upperAngle end
+					if cData.limitsEnabled then
+						constraint.LimitsEnabled = true
+					end
+					if cData.lowerAngle then
+						constraint.LowerAngle = cData.lowerAngle
+					end
+					if cData.upperAngle then
+						constraint.UpperAngle = cData.upperAngle
+					end
 					if cData.actuatorType == "Motor" then
 						constraint.ActuatorType = Enum.ActuatorType.Motor
-						if cData.motorSpeed then constraint.AngularVelocity = cData.motorSpeed end
-						if cData.motorMaxTorque then constraint.MotorMaxTorque = cData.motorMaxTorque end
+						if cData.motorSpeed then
+							constraint.AngularVelocity = cData.motorSpeed
+						end
+						if cData.motorMaxTorque then
+							constraint.MotorMaxTorque = cData.motorMaxTorque
+						end
 					end
 				elseif cData.type == "BallSocket" then
-					if cData.limitsEnabled then constraint.LimitsEnabled = true end
-					if cData.upperAngle then constraint.UpperAngle = cData.upperAngle end
+					if cData.limitsEnabled then
+						constraint.LimitsEnabled = true
+					end
+					if cData.upperAngle then
+						constraint.UpperAngle = cData.upperAngle
+					end
 				elseif cData.type == "Rod" then
-					if cData.length then constraint.Length = cData.length end
+					if cData.length then
+						constraint.Length = cData.length
+					end
 				elseif cData.type == "Rope" then
-					if cData.length then constraint.Length = cData.length end
-					if cData.restitution then constraint.Restitution = cData.restitution end
+					if cData.length then
+						constraint.Length = cData.length
+					end
+					if cData.restitution then
+						constraint.Restitution = cData.restitution
+					end
 				elseif cData.type == "Prismatic" then
-					if cData.limitsEnabled then constraint.LimitsEnabled = true end
-					if cData.lowerLimit then constraint.LowerLimit = cData.lowerLimit end
-					if cData.upperLimit then constraint.UpperLimit = cData.upperLimit end
+					if cData.limitsEnabled then
+						constraint.LimitsEnabled = true
+					end
+					if cData.lowerLimit then
+						constraint.LowerLimit = cData.lowerLimit
+					end
+					if cData.upperLimit then
+						constraint.UpperLimit = cData.upperLimit
+					end
 				elseif cData.type == "TorsionSpring" then
-					if cData.stiffness then constraint.Stiffness = cData.stiffness end
-					if cData.damping then constraint.Damping = cData.damping end
-					if cData.maxAngle then constraint.MaxAngle = cData.maxAngle end
+					if cData.stiffness then
+						constraint.Stiffness = cData.stiffness
+					end
+					if cData.damping then
+						constraint.Damping = cData.damping
+					end
+					if cData.maxAngle then
+						constraint.MaxAngle = cData.maxAngle
+					end
 				end
 
 				constraint.Parent = p0
@@ -330,7 +371,6 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 				end
 			end
 		end)
-
 	elseif animationType == "spin_slow" then
 		connection = RunService.Heartbeat:Connect(function(dt)
 			if model.PrimaryPart and model.PrimaryPart.Parent then
@@ -338,7 +378,6 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 				model:PivotTo(pivot * CFrame.Angles(0, math.rad(30) * dt, 0))
 			end
 		end)
-
 	elseif animationType == "bounce" then
 		local origins = {}
 		for _, part in ipairs(parts) do
@@ -355,7 +394,6 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 				end
 			end
 		end)
-
 	elseif animationType == "wobble" then
 		connection = RunService.Heartbeat:Connect(function()
 			local t = tick() - startTime
@@ -366,7 +404,6 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 				model:PivotTo(CFrame.new(pivot.Position) * CFrame.Angles(wobbleX, 0, wobbleZ))
 			end
 		end)
-
 	elseif animationType == "flutter" then
 		-- Wing-like movement on parts named with "wing" or outer parts
 		local wingParts = {}
@@ -387,7 +424,6 @@ function OrigamiBuilder.ApplyAnimation(model: Model, animationType: string)
 				end
 			end
 		end)
-
 	elseif animationType == "breathe" then
 		local origins = {}
 		for _, part in ipairs(parts) do

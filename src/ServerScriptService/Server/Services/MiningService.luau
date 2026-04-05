@@ -47,9 +47,7 @@ local PlayerDataService
 local miningStates: { [Player]: MiningState } = {}
 local equippedTools: { [Player]: string } = {}
 
--------------------------------------------------
 -- Helpers
--------------------------------------------------
 
 local function _getPlayerTool(player: Player)
 	local toolId = equippedTools[player] or "paper_hands"
@@ -124,9 +122,7 @@ local function _awardDrops(player: Player, blockTypeId: number, chunkKey: string
 	end
 end
 
--------------------------------------------------
 -- Tree cascade-break
--------------------------------------------------
 
 local TREE_COLLAPSE_DELAY = 0.08
 local TREE_MAX_LATERAL = 3
@@ -233,9 +229,7 @@ local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: num
 	end)
 end
 
--------------------------------------------------
 -- Mine request handler
--------------------------------------------------
 
 local function _handleMineRequest(player: Player, chunkKey: string, flatIndex: number)
 	if flatIndex < 0 or flatIndex >= BLOCKS_PER_CHUNK then
@@ -312,9 +306,7 @@ local function _handleMineRequest(player: Player, chunkKey: string, flatIndex: n
 	end
 end
 
--------------------------------------------------
 -- Knit lifecycle
--------------------------------------------------
 
 function MiningService:KnitInit()
 	Players.PlayerRemoving:Connect(function(player)

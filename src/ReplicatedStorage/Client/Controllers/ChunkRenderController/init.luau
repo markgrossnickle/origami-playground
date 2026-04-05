@@ -130,9 +130,7 @@ local pendingChunkData: { { key: string, blocks: buffer } } = {}
 -- LOD re-evaluation timer
 local lastLODCheck = 0
 
--------------------------------------------------
 -- LOD helper
--------------------------------------------------
 
 local function _getPlayerChunkPos(): (number?, number?, number?)
 	local player = Players.LocalPlayer
@@ -165,9 +163,7 @@ local function _getChunkLOD(cx: number, cy: number, cz: number): number
 	return 1
 end
 
--------------------------------------------------
 -- Part pool
--------------------------------------------------
 
 local function _createPart(): BasePart
 	local part = Instance.new("Part")
@@ -234,9 +230,7 @@ local function _returnGroup(group: { BasePart })
 	end
 end
 
--------------------------------------------------
 -- BulkMoveTo batch
--------------------------------------------------
 
 local _batchParts: { BasePart } = {}
 local _batchCFrames: { CFrame } = {}
@@ -249,23 +243,23 @@ local function _flushBatch()
 	end
 end
 
--------------------------------------------------
 -- Deterministic hash
--------------------------------------------------
 
 local function _hash(a: number, b: number, c: number, d: number): number
 	local h = a * 7919 + b * 6271 + c * 4153 + d * 1009
 	return (h % 65521) / 65521
 end
 
--------------------------------------------------
 -- LOD 0: Paper-crystal layers + collision part
--------------------------------------------------
 
 local function _makeLayerParts(
 	blockTypeId: number,
-	cx: number, cy: number, cz: number,
-	lx: number, ly: number, lz: number,
+	cx: number,
+	cy: number,
+	cz: number,
+	lx: number,
+	ly: number,
+	lz: number,
 	batched: boolean?
 ): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
@@ -359,14 +353,16 @@ local function _makeLayerParts(
 	return parts
 end
 
--------------------------------------------------
 -- LOD 1: Single full-size block (visual + collision)
--------------------------------------------------
 
 local function _makeSimplePart(
 	blockTypeId: number,
-	cx: number, cy: number, cz: number,
-	lx: number, ly: number, lz: number,
+	cx: number,
+	cy: number,
+	cz: number,
+	lx: number,
+	ly: number,
+	lz: number,
 	batched: boolean?
 ): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
@@ -416,14 +412,16 @@ local function _makeSimplePart(
 	return { part }
 end
 
--------------------------------------------------
 -- Block creation dispatcher
--------------------------------------------------
 
 local function _makeBlockParts(
 	blockTypeId: number,
-	cx: number, cy: number, cz: number,
-	lx: number, ly: number, lz: number,
+	cx: number,
+	cy: number,
+	cz: number,
+	lx: number,
+	ly: number,
+	lz: number,
 	lod: number,
 	batched: boolean?
 ): { BasePart }
@@ -434,9 +432,7 @@ local function _makeBlockParts(
 	end
 end
 
--------------------------------------------------
 -- Visibility checks
--------------------------------------------------
 
 local function _isTransparent(blockId: number): boolean
 	return blockId == BlockType.Air
@@ -468,9 +464,7 @@ local function _isExposed(blocks: buffer, lx: number, ly: number, lz: number): b
 	return false
 end
 
--------------------------------------------------
 -- Chunk rendering
--------------------------------------------------
 
 local function _renderChunk(chunkKey: string, blocks: buffer)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
@@ -544,9 +538,7 @@ local function _unrenderChunk(chunkKey: string)
 	chunkBlocks[chunkKey] = nil
 end
 
--------------------------------------------------
 -- Block update (surgical per-block)
--------------------------------------------------
 
 local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockTypeId: number)
 	local blocks = chunkBlocks[chunkKey]
@@ -596,9 +588,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 end
 
--------------------------------------------------
 -- Public API
--------------------------------------------------
 
 function ChunkRenderController:GetBlockAt(chunkKey: string, flatIndex: number): number
 	local blocks = chunkBlocks[chunkKey]
@@ -623,9 +613,7 @@ function ChunkRenderController:GetPoolSize(): number
 	return #partPool
 end
 
--------------------------------------------------
 -- Render queue processing
--------------------------------------------------
 
 local function _processRenderQueue()
 	if isProcessingQueue then
@@ -670,9 +658,7 @@ local function _processRenderQueue()
 	isProcessingQueue = false
 end
 
--------------------------------------------------
 -- LOD re-evaluation
--------------------------------------------------
 
 local function _reevaluateLODs()
 	if not characterReady then
@@ -702,9 +688,7 @@ local function _reevaluateLODs()
 	end
 end
 
--------------------------------------------------
 -- Knit lifecycle
--------------------------------------------------
 
 function ChunkRenderController:KnitInit()
 	chunkContainer = Instance.new("Folder")

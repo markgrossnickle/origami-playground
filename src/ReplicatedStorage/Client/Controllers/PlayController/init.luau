@@ -25,9 +25,7 @@ local PlayController = Knit.CreateController({
 	Name = "PlayController",
 })
 
------------------------------------------------------------
 -- Constants
------------------------------------------------------------
 
 local COLORS = {
 	bg = Color3.fromRGB(30, 30, 40),
@@ -41,9 +39,7 @@ local COLORS = {
 	danger = Color3.fromRGB(200, 60, 60),
 }
 
------------------------------------------------------------
 -- State
------------------------------------------------------------
 
 local _active = false
 local _gui = nil
@@ -63,9 +59,7 @@ local _buildButton: TextButton? = nil
 local _countLabel: TextLabel? = nil
 local _clearButton: TextButton? = nil
 
------------------------------------------------------------
 -- Utility
------------------------------------------------------------
 
 local function setStatus(text: string, color: Color3?)
 	if not _statusLabel then
@@ -86,9 +80,7 @@ local function updateCount()
 	end
 end
 
------------------------------------------------------------
 -- Placement (raycast from mouse)
------------------------------------------------------------
 
 local function getPlacementCFrame(): CFrame
 	local mouse = Player:GetMouse()
@@ -113,9 +105,7 @@ local function getPlacementCFrame(): CFrame
 	return CFrame.new(camera.CFrame.Position + camera.CFrame.LookVector * 30)
 end
 
------------------------------------------------------------
 -- Behavior wiring (LLM-driven via attributes)
------------------------------------------------------------
 
 local function wireBehaviors(model: Model)
 	local conns: { RBXScriptConnection } = {}
@@ -148,11 +138,8 @@ local function wireBehaviors(model: Model)
 					local humanoid = character:FindFirstChildOfClass("Humanoid")
 					local rootPart = character:FindFirstChild("HumanoidRootPart")
 					if humanoid and rootPart then
-						rootPart.AssemblyLinearVelocity = Vector3.new(
-							rootPart.AssemblyLinearVelocity.X,
-							force,
-							rootPart.AssemblyLinearVelocity.Z
-						)
+						rootPart.AssemblyLinearVelocity =
+							Vector3.new(rootPart.AssemblyLinearVelocity.X, force, rootPart.AssemblyLinearVelocity.Z)
 					end
 				end)
 				table.insert(conns, conn)
@@ -245,9 +232,7 @@ local function wireBehaviors(model: Model)
 	end
 end
 
------------------------------------------------------------
 -- Name label
------------------------------------------------------------
 
 local function addNameLabel(model: Model)
 	if not model.PrimaryPart then
@@ -272,9 +257,7 @@ local function addNameLabel(model: Model)
 	label.Parent = billboard
 end
 
------------------------------------------------------------
 -- Clear all
------------------------------------------------------------
 
 local function clearAll()
 	for _, model in _placedModels do
@@ -294,9 +277,7 @@ local function clearAll()
 	setStatus("All cleared!", COLORS.success)
 end
 
------------------------------------------------------------
 -- Build action
------------------------------------------------------------
 
 local function submitBuild()
 	if not _active or not _promptInput or _building then
@@ -361,9 +342,7 @@ local function submitBuild()
 	end)
 end
 
------------------------------------------------------------
 -- UI Creation
------------------------------------------------------------
 
 local function createUI(): ScreenGui
 	local gui = Instance.new("ScreenGui")
@@ -481,9 +460,7 @@ local function createUI(): ScreenGui
 	return gui
 end
 
------------------------------------------------------------
 -- Activate / Cleanup
------------------------------------------------------------
 
 function PlayController:Activate()
 	if _active then
@@ -534,9 +511,7 @@ function PlayController:Cleanup()
 	_clearButton = nil
 end
 
------------------------------------------------------------
 -- Knit lifecycle
------------------------------------------------------------
 
 function PlayController:KnitInit() end
 

@@ -42,7 +42,12 @@ local function cleanExpiredRequests()
 end
 
 --- Request to breed a creature. Looks for a nearby pending request from another player.
-function BreedingService.Client:RequestBreed(player: Player, creatureName: string, creatureStyle: string?, creatureId: string?)
+function BreedingService.Client:RequestBreed(
+	player: Player,
+	creatureName: string,
+	creatureStyle: string?,
+	creatureId: string?
+)
 	-- Check egg capacity
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)
@@ -93,7 +98,14 @@ function BreedingService.Client:RequestBreed(player: Player, creatureName: strin
 		if creatureId then
 			local canBreed, remaining = CreatureService:CanBreed(player, creatureId)
 			if not canBreed then
-				return { success = false, error = string.format("Creature on cooldown (%dh %dm)", math.floor((remaining or 0) / 3600), math.floor(((remaining or 0) % 3600) / 60)) }
+				return {
+					success = false,
+					error = string.format(
+						"Creature on cooldown (%dh %dm)",
+						math.floor((remaining or 0) / 3600),
+						math.floor(((remaining or 0) % 3600) / 60)
+					),
+				}
 			end
 		end
 		if matchReq.creatureId then

@@ -6,9 +6,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local GameMode = require(ReplicatedStorage.Shared.GameMode)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 
-----------------------------------------------------------------------
 -- Types
-----------------------------------------------------------------------
 
 type AttackType = "single" | "splash" | "rapid" | "piercing"
 type TargetPriority = "nearest" | "weakest" | "strongest" | "fastest"
@@ -30,9 +28,7 @@ type UnitData = {
 	defenseType: DefenseType,
 }
 
-----------------------------------------------------------------------
 -- Constants
-----------------------------------------------------------------------
 
 local COLORS = {
 	bg = Color3.fromRGB(30, 30, 40),
@@ -78,9 +74,7 @@ local ENEMY_COLORS = {
 	Color3.fromRGB(160, 80, 40),
 }
 
-----------------------------------------------------------------------
 -- State
-----------------------------------------------------------------------
 
 local _gui: ScreenGui = nil :: any
 local _active = false
@@ -103,9 +97,7 @@ local _addButton: TextButton = nil :: any
 local _fightButton: TextButton = nil :: any
 local _unitListFrame: Frame = nil :: any
 
-----------------------------------------------------------------------
 -- Helpers
-----------------------------------------------------------------------
 
 local function setStatus(text: string, color: Color3?)
 	_statusLabel.Text = text
@@ -138,9 +130,7 @@ local function updateInputState()
 		else "Describe a creature..."
 end
 
-----------------------------------------------------------------------
 -- HP Bar
-----------------------------------------------------------------------
 
 local function createHpBar(unit: UnitData)
 	local billboard = Instance.new("BillboardGui")
@@ -188,9 +178,7 @@ local function updateHpBar(unit: UnitData)
 	end
 end
 
-----------------------------------------------------------------------
 -- Unit List UI
-----------------------------------------------------------------------
 
 local function refreshUnitList()
 	for _, child in _unitListFrame:GetChildren() do
@@ -255,9 +243,7 @@ local function refreshUnitList()
 	end
 end
 
-----------------------------------------------------------------------
 -- Arena
-----------------------------------------------------------------------
 
 local function getArenaCenter(): Vector3
 	local player = Players.LocalPlayer
@@ -306,9 +292,7 @@ local function createArena()
 	enemyFloor.Parent = _arenaFolder
 end
 
-----------------------------------------------------------------------
 -- Unit Placement
-----------------------------------------------------------------------
 
 local function getPlayerSlotPosition(index: number): Vector3
 	local zOffset = (index - 1 - (#_playerUnits - 1) / 2) * UNIT_SPACING
@@ -329,9 +313,7 @@ local function repositionPlayerUnits()
 	end
 end
 
-----------------------------------------------------------------------
 -- Enemy Generation
-----------------------------------------------------------------------
 
 local function createEnemyModel(round: number): Model
 	local model = Instance.new("Model")
@@ -425,9 +407,7 @@ local function spawnEnemyTeam()
 	end
 end
 
-----------------------------------------------------------------------
 -- Player Unit Creation
-----------------------------------------------------------------------
 
 local function deriveStatsFromModel(model: Model): (number, number, number)
 	local partCount = 0
@@ -542,9 +522,7 @@ local function addPlayerUnit(prompt: string)
 	end)
 end
 
-----------------------------------------------------------------------
 -- Combat
-----------------------------------------------------------------------
 
 local function findTarget(unit: UnitData, targets: { UnitData }): UnitData?
 	local unitPos = unit.model:GetPivot().Position
@@ -781,9 +759,7 @@ local function runCombat()
 	end)
 end
 
-----------------------------------------------------------------------
 -- UI
-----------------------------------------------------------------------
 
 local function createUI()
 	_gui = Instance.new("ScreenGui")
@@ -973,9 +949,7 @@ local function createUI()
 	end)
 end
 
-----------------------------------------------------------------------
 -- Activate / Cleanup
-----------------------------------------------------------------------
 
 local AutoBattlerController = Knit.CreateController({
 	Name = "AutoBattlerController",

@@ -144,7 +144,7 @@ local _baseFolder: Folder? = nil
 local _playerBasePart: BasePart? = nil
 local _botBasePart: BasePart? = nil
 
----------- Helpers ----------
+-- Helpers
 
 local function getPathOrigin(): Vector3
 	local char = Player.Character
@@ -279,7 +279,7 @@ local function updateHUD()
 	end
 end
 
----------- Combat ----------
+-- Combat
 
 local function findCreepTarget(pos: Vector3, range: number, creepList: { Creep }, priority: TargetPriority): Creep?
 	local best: Creep? = nil
@@ -440,7 +440,7 @@ local function checkGameOver()
 	end
 end
 
----------- Creep System ----------
+-- Creep System
 
 local function spawnCreep(side: string, tierName: string)
 	if #_waypoints < 2 or _gameOver then
@@ -587,7 +587,7 @@ local function spawnCreep(side: string, tierName: string)
 	end)
 end
 
----------- Tower Placement ----------
+-- Tower Placement
 
 local function placeTowerAtPosition(model: Model | BasePart, side: string, placePos: Vector3): Tower
 	if typeof(model) == "Instance" and model:IsA("Model") then
@@ -737,7 +737,7 @@ local function submitPrompt()
 	end)
 end
 
----------- Bot AI ----------
+-- Bot AI
 
 local function spawnBotTower()
 	if #_waypoints < 2 then
@@ -787,7 +787,7 @@ local function botThink()
 	end
 end
 
----------- Attack Loop ----------
+-- Attack Loop
 
 local function towerAttack(tower: Tower, targetCreepList: { Creep }, killerSide: string)
 	local interval = if tower.attackType == "rapid" then ATTACK_INTERVAL * 0.5 else ATTACK_INTERVAL
@@ -835,7 +835,7 @@ local function startAttackLoop()
 	table.insert(_connections, conn)
 end
 
----------- Economy Loop ----------
+-- Economy Loop
 
 local function applyCreepRegen(creepList: { Creep }, dt: number)
 	for _, creep in ipairs(creepList) do
@@ -869,7 +869,7 @@ local function startEconomyLoop()
 	end)
 end
 
----------- Bot AI Loop ----------
+-- Bot AI Loop
 
 local function startBotAILoop()
 	task.spawn(function()
@@ -880,7 +880,7 @@ local function startBotAILoop()
 	end)
 end
 
----------- UI ----------
+-- UI
 
 local function makeCorner(parent: GuiObject, radius: number?)
 	local corner = Instance.new("UICorner")
@@ -1088,7 +1088,7 @@ local function createUI()
 	end)
 end
 
----------- Lifecycle ----------
+-- Lifecycle
 
 local function resetState()
 	_playerGold = STARTING_GOLD

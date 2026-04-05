@@ -6,9 +6,7 @@
 
 local TerrainBuilder = {}
 
-----------------------------------------------------------------------
 -- Palette
-----------------------------------------------------------------------
 
 local MAT = Enum.Material.SmoothPlastic
 
@@ -48,9 +46,7 @@ local C = {
 	checkerWhite = Color3.fromRGB(240, 240, 235),
 }
 
-----------------------------------------------------------------------
 -- Helpers
-----------------------------------------------------------------------
 
 local function makePart(folder: Folder, props: { [string]: any }): BasePart
 	local className = props.ClassName or "Part"
@@ -88,9 +84,7 @@ local function makeWedge(folder: Folder, props: { [string]: any }): WedgePart
 	return makePart(folder, props) :: WedgePart
 end
 
-----------------------------------------------------------------------
 -- Baseplate & Spawn
-----------------------------------------------------------------------
 
 local function createBaseplate(folder: Folder)
 	-- Main ground — warm paper tan
@@ -130,9 +124,7 @@ local function createSpawnPlatform(folder: Folder)
 	end
 end
 
-----------------------------------------------------------------------
 -- Mountains (NE quadrant)
-----------------------------------------------------------------------
 
 local function createMountainRange(folder: Folder)
 	local peaks = {
@@ -177,9 +169,7 @@ local function createMountainRange(folder: Folder)
 	})
 end
 
-----------------------------------------------------------------------
 -- Canyon (SE quadrant)
-----------------------------------------------------------------------
 
 local function createCanyon(folder: Folder)
 	-- Canyon is in the SE quadrant, well away from the track which goes around its rim
@@ -243,9 +233,7 @@ local function createCanyon(folder: Folder)
 	})
 end
 
-----------------------------------------------------------------------
 -- Water Area (SW quadrant)
-----------------------------------------------------------------------
 
 local function createWaterArea(folder: Folder)
 	-- Main water surface — CanCollide = false! Players fall through.
@@ -302,9 +290,7 @@ local function createWaterArea(folder: Folder)
 	end
 end
 
-----------------------------------------------------------------------
 -- Floating Islands (NW quadrant)
-----------------------------------------------------------------------
 
 local function createFloatingIslands(folder: Folder)
 	local islands = {
@@ -357,9 +343,7 @@ local function createFloatingIslands(folder: Folder)
 	end
 end
 
-----------------------------------------------------------------------
 -- Paper Forest (W area)
-----------------------------------------------------------------------
 
 local function makePaperTree(folder: Folder, pos: Vector3, scale: number, leafColor: Color3)
 	local treeFolder = Instance.new("Folder")
@@ -418,9 +402,7 @@ local function createPaperForest(folder: Folder)
 	end
 end
 
-----------------------------------------------------------------------
 -- Race Track
-----------------------------------------------------------------------
 
 local TRACK_WIDTH = 16
 local BARRIER_HEIGHT = 2.5
@@ -542,9 +524,7 @@ local function createRaceTrack(folder: Folder)
 	createBridge(trackFolder)
 end
 
-----------------------------------------------------------------------
 -- Decorative details
-----------------------------------------------------------------------
 
 local function createDecorations(folder: Folder)
 	-- Scattered paper fold decorations around the world
@@ -567,9 +547,7 @@ local function createDecorations(folder: Folder)
 	end
 end
 
-----------------------------------------------------------------------
 -- Public API
-----------------------------------------------------------------------
 
 function TerrainBuilder.Build()
 	-- Clean up any existing terrain

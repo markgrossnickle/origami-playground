@@ -384,6 +384,30 @@ Things we got wrong and must not repeat:
 - **Throttle per-frame raycasts.** Mining highlight only needs ~20Hz, not 60Hz. Cache results and skip frames.
 - **Pre-classify creature animation parts at spawn, not per-frame.** string:match per part per tick creates GC pressure. Classify once into a lookup table.
 
+## CI & Linting Rules (IMPORTANT)
+
+Three GitHub Actions workflows run on every push:
+
+1. **Publish to Roblox** — deploys the game
+2. **CI** — runs `selene src/` (lint). Exit code 1 = failure.
+3. **Codebase Check** — runs StyLua format check + moonwave doc extraction + selene lint
+
+### Before committing, always run:
+```bash
+/opt/homebrew/bin/stylua src/    # Fix formatting
+selene src/                       # Check for lint errors
+```
+
+### Comment style rules (moonwave compatibility):
+- **NEVER use `---` (triple dash) for non-doc comments.** Moonwave parses `---` as documentation comments. Use `--` for regular comments.
+- **NEVER use `---------- Section ----------` separator lines.** These start with `---` and trigger moonwave parsing. Use `-- Section` instead.
+- **NEVER use lines of pure dashes** (e.g., `-------------------------------------------------`). Same reason — moonwave interprets them as doc comments.
+- `---` is ONLY valid immediately before a public module method (e.g., `function MyService:MethodName()`) where moonwave can extract `@within` from the function signature.
+- For section headers in code, use: `-- Section Name` (plain double-dash comment)
+
+### Selene rules to watch:
+- `if_same_then_else` — don't have `if A then X elseif B then X end` where both branches do the same thing. Combine conditions: `if A or B then X end`.
+
 ## Conventions
 
 - Services in `Services/` (folder with `init.luau` or single `.luau` file)

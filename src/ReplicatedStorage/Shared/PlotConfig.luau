@@ -67,11 +67,12 @@ end
 
 --- Convert a local block coordinate (0-based) to world position (center of block).
 function PlotConfig.localToWorld(plotOrigin: Vector3, lx: number, ly: number, lz: number): Vector3
-	return plotOrigin + Vector3.new(
-		lx * PlotConfig.BLOCK_SIZE + PlotConfig.BLOCK_SIZE / 2,
-		ly * PlotConfig.BLOCK_SIZE + PlotConfig.BLOCK_SIZE / 2,
-		lz * PlotConfig.BLOCK_SIZE + PlotConfig.BLOCK_SIZE / 2
-	)
+	return plotOrigin
+		+ Vector3.new(
+			lx * PlotConfig.BLOCK_SIZE + PlotConfig.BLOCK_SIZE / 2,
+			ly * PlotConfig.BLOCK_SIZE + PlotConfig.BLOCK_SIZE / 2,
+			lz * PlotConfig.BLOCK_SIZE + PlotConfig.BLOCK_SIZE / 2
+		)
 end
 
 --- Convert world position to local block coordinate (floored).
@@ -85,9 +86,12 @@ end
 
 --- Check if local coordinates are within plot bounds.
 function PlotConfig.isInBounds(lx: number, ly: number, lz: number): boolean
-	return lx >= 0 and lx < PlotConfig.PLOT_SIZE_BLOCKS
-		and ly >= 0 and ly < PlotConfig.PLOT_HEIGHT_BLOCKS
-		and lz >= 0 and lz < PlotConfig.PLOT_SIZE_BLOCKS
+	return lx >= 0
+		and lx < PlotConfig.PLOT_SIZE_BLOCKS
+		and ly >= 0
+		and ly < PlotConfig.PLOT_HEIGHT_BLOCKS
+		and lz >= 0
+		and lz < PlotConfig.PLOT_SIZE_BLOCKS
 end
 
 return PlotConfig

@@ -19,9 +19,7 @@ local MODEL_Y_OFFSET = 3 -- raise models above ground
 
 local FOLDER_NAME = "CompetitionGrid"
 
-----------------------------------------------------------------------
 -- Billboard helpers
-----------------------------------------------------------------------
 
 local function makeBillboard(parent: Instance, text: string, offset: Vector3, size: UDim2?, textSize: number?)
 	local bb = Instance.new("BillboardGui")
@@ -63,13 +61,17 @@ local function makeFailPlaceholder(folder: Folder, position: Vector3, labelText:
 	return part
 end
 
-----------------------------------------------------------------------
 -- Grid builder
-----------------------------------------------------------------------
 
-local function buildStyleGrid(gridFolder: Folder, styleKey: string, styleResults: { [string]: any },
-	models: { string }, modelDisplay: { [string]: string }, prompts: { any }, originX: number)
-
+local function buildStyleGrid(
+	gridFolder: Folder,
+	styleKey: string,
+	styleResults: { [string]: any },
+	models: { string },
+	modelDisplay: { [string]: string },
+	prompts: { any },
+	originX: number
+)
 	-- Center the grid vertically (Z) on the baseplate
 	local totalRows = #prompts + 2 * SECTION_GAP -- 30 prompts + 4 gap rows = 34
 	local originZ = -math.floor((totalRows - 1) * ROW_SPACING / 2)
@@ -85,13 +87,7 @@ local function buildStyleGrid(gridFolder: Folder, styleKey: string, styleResults
 	titlePart.Color = Color3.fromRGB(180, 140, 220)
 	titlePart.Parent = gridFolder
 
-	makeBillboard(
-		titlePart,
-		string.upper(styleKey),
-		Vector3.new(0, 4, 0),
-		UDim2.new(0, 200, 0, 40),
-		20
-	)
+	makeBillboard(titlePart, string.upper(styleKey), Vector3.new(0, 4, 0), UDim2.new(0, 200, 0, 40), 20)
 
 	-- Column headers (model names)
 	for col, modelKey in ipairs(models) do

@@ -32,16 +32,43 @@ local _eggTimers: { [number]: number } = {} -- eggIndex → remaining seconds (l
 local _breedPrompt = nil
 local _pendingBreed = false
 
----------- Egg Model ----------
+-- Egg Model
 
 -- Hardcoded egg shape (no LLM call needed)
 local EGG_MODEL_DATA = {
 	name = "Egg",
 	category = "prop",
 	parts = {
-		{ name = "egg_body", shape = "Ball", position = { 0, 0.8, 0 }, size = { 1.5, 2, 1.5 }, rotation = { 0, 0, 0 }, color = { 255, 235, 200 }, material = "SmoothPlastic", transparency = 0 },
-		{ name = "egg_spot1", shape = "Ball", position = { 0.3, 1.2, 0.4 }, size = { 0.4, 0.4, 0.4 }, rotation = { 0, 0, 0 }, color = { 255, 200, 150 }, material = "SmoothPlastic", transparency = 0 },
-		{ name = "egg_spot2", shape = "Ball", position = { -0.4, 0.6, -0.3 }, size = { 0.35, 0.35, 0.35 }, rotation = { 0, 0, 0 }, color = { 255, 210, 160 }, material = "SmoothPlastic", transparency = 0 },
+		{
+			name = "egg_body",
+			shape = "Ball",
+			position = { 0, 0.8, 0 },
+			size = { 1.5, 2, 1.5 },
+			rotation = { 0, 0, 0 },
+			color = { 255, 235, 200 },
+			material = "SmoothPlastic",
+			transparency = 0,
+		},
+		{
+			name = "egg_spot1",
+			shape = "Ball",
+			position = { 0.3, 1.2, 0.4 },
+			size = { 0.4, 0.4, 0.4 },
+			rotation = { 0, 0, 0 },
+			color = { 255, 200, 150 },
+			material = "SmoothPlastic",
+			transparency = 0,
+		},
+		{
+			name = "egg_spot2",
+			shape = "Ball",
+			position = { -0.4, 0.6, -0.3 },
+			size = { 0.35, 0.35, 0.35 },
+			rotation = { 0, 0, 0 },
+			color = { 255, 210, 160 },
+			material = "SmoothPlastic",
+			transparency = 0,
+		},
 	},
 	animation = "breathe",
 }
@@ -65,7 +92,9 @@ end
 local function spawnEggInWorld(eggIndex: number, eggInfo: { [string]: any })
 	local character = Player.Character
 	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-	if not rootPart then return end
+	if not rootPart then
+		return
+	end
 
 	-- Place egg near the player, offset to the side so it doesn't stack
 	local offset = Vector3.new(3 + (eggIndex - 1) * 3, 0, 3)
@@ -73,7 +102,9 @@ local function spawnEggInWorld(eggIndex: number, eggInfo: { [string]: any })
 
 	-- Build egg model
 	local model = OrigamiBuilder.BuildModel(EGG_MODEL_DATA)
-	if not model then return end
+	if not model then
+		return
+	end
 
 	model.Name = "Egg_" .. eggIndex
 	model.Parent = workspace
@@ -110,7 +141,9 @@ local function spawnEggInWorld(eggIndex: number, eggInfo: { [string]: any })
 	nameLabel.Size = UDim2.new(1, 0, 0, 20)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Text = (eggInfo.parent1Name or "?") .. " x " .. (eggInfo.parent2Name or "?")
-	nameLabel.TextColor3 = if eggInfo.rarity then (EggCraftingConfig.RARITY_COLORS[eggInfo.rarity] or COLORS.egg) else COLORS.egg
+	nameLabel.TextColor3 = if eggInfo.rarity
+		then (EggCraftingConfig.RARITY_COLORS[eggInfo.rarity] or COLORS.egg)
+		else COLORS.egg
 	nameLabel.TextStrokeTransparency = 0.5
 	nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	nameLabel.TextSize = 12
@@ -164,7 +197,9 @@ function hatchEgg(eggIndex: number, eggModel: Model?)
 			-- Hatch VFX
 			if eggModel and eggModel.Parent then
 				local eggPos = eggModel:GetPivot().Position
-				local rarityColor = if result.rarity then (EggCraftingConfig.RARITY_COLORS[result.rarity] or COLORS.eggReady) else COLORS.eggReady
+				local rarityColor = if result.rarity
+					then (EggCraftingConfig.RARITY_COLORS[result.rarity] or COLORS.eggReady)
+					else COLORS.eggReady
 				VFXUtil.sparkle(eggPos, rarityColor, 30, 2)
 				local hatchText = "Hatched!"
 				if result.rarity then
@@ -200,7 +235,12 @@ function hatchEgg(eggIndex: number, eggModel: Model?)
 				end
 
 				local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
-				CreatureAI.Start(builtModel, result.offspringData, builtModel:GetPivot().Position, { builtModel, character })
+				CreatureAI.Start(
+					builtModel,
+					result.offspringData,
+					builtModel:GetPivot().Position,
+					{ builtModel, character }
+				)
 			end
 		end
 	end)
@@ -222,7 +262,9 @@ local function refreshEggs()
 		local BreedingService = Knit.GetService("BreedingService")
 		local success, eggs = BreedingService:CheckEggs():await()
 
-		if not success or type(eggs) ~= "table" then return end
+		if not success or type(eggs) ~= "table" then
+			return
+		end
 		for _, eggInfo in ipairs(eggs) do
 			spawnEggInWorld(eggInfo.index, eggInfo)
 		end
@@ -275,11 +317,15 @@ local function startTimerLoop()
 	task.spawn(function()
 		while true do
 			task.wait(30)
-			if #_eggModels == 0 then continue end
+			if #_eggModels == 0 then
+				continue
+			end
 
 			local BreedingService = Knit.GetService("BreedingService")
 			local ok, eggs = BreedingService:CheckEggs():await()
-			if not ok or type(eggs) ~= "table" then continue end
+			if not ok or type(eggs) ~= "table" then
+				continue
+			end
 			for _, eggInfo in ipairs(eggs) do
 				_eggTimers[eggInfo.index] = eggInfo.remainingSeconds or 0
 			end
@@ -287,28 +333,36 @@ local function startTimerLoop()
 	end)
 end
 
----------- Breed Proximity ----------
+-- Breed Proximity
 
 local function startBreedProximityLoop()
 	task.spawn(function()
 		while true do
 			task.wait(2) -- 0.5Hz — proximity check doesn't need to be fast
 
-			if _pendingBreed then continue end
+			if _pendingBreed then
+				continue
+			end
 
 			local character = Player.Character
 			local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-			if not rootPart then continue end
+			if not rootPart then
+				continue
+			end
 
 			-- Check if any other player's creature is near our creature
 			-- We look for models with OwnerUserId attribute set to other players
 			local hasNearbyBreedable = false
 
 			for _, other in ipairs(Players:GetPlayers()) do
-				if other == Player then continue end
+				if other == Player then
+					continue
+				end
 				local otherChar = other.Character
 				local otherRoot = otherChar and otherChar:FindFirstChild("HumanoidRootPart")
-				if not otherRoot then continue end
+				if not otherRoot then
+					continue
+				end
 				if (rootPart.Position - otherRoot.Position).Magnitude <= 20 then
 					hasNearbyBreedable = true
 					break
@@ -343,7 +397,9 @@ local function startBreedProximityLoop()
 									local billboard = child:FindFirstChild("NameLabel", true)
 									if billboard then
 										local lbl = billboard:FindFirstChildOfClass("TextLabel")
-										if lbl then creatureName = lbl.Text end
+										if lbl then
+											creatureName = lbl.Text
+										end
 									end
 
 									local result = BreedingService:RequestBreed(creatureName):await()
@@ -373,7 +429,7 @@ local function startBreedProximityLoop()
 	end)
 end
 
----------- Lifecycle ----------
+-- Lifecycle
 
 local BreedingController = Knit.CreateController({ Name = "BreedingController" })
 
@@ -390,7 +446,7 @@ function BreedingController:KnitStart()
 	startBreedProximityLoop()
 end
 
---- Public method for EggCraftingController to call after crafting an egg.
+-- Public method for EggCraftingController to call after crafting an egg.
 function BreedingController:refreshEggs()
 	refreshEggs()
 end

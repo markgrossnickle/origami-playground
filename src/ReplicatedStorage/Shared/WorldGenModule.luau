@@ -9,9 +9,7 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 
-------------------------------------------------------------
 -- Configuration
-------------------------------------------------------------
 
 local Config = {
 	-- World size
@@ -52,9 +50,7 @@ local Config = {
 
 local WorldGenModule = {}
 
-------------------------------------------------------------
 -- Global Heightmap (pre-computed 512x512 buffer)
-------------------------------------------------------------
 local WORLD_SIZE_BLOCKS = Config.worldRadiusChunks * 2 * CHUNK_SIZE -- 512
 local HEIGHTMAP_ORIGIN = -Config.worldRadiusChunks * CHUNK_SIZE -- -256
 local HEIGHTMAP_OFFSET = 128
@@ -62,9 +58,7 @@ local HEIGHTMAP_OFFSET = 128
 local globalHeightmap: buffer? = nil
 local heightmapSeed: number? = nil
 
-------------------------------------------------------------
 -- Hash & RNG (deterministic)
-------------------------------------------------------------
 
 local function hashSeed(seed: number, a: number, b: number, c: number): number
 	local h = seed
@@ -96,9 +90,7 @@ local function createRNG(seed: number)
 	end
 end
 
-------------------------------------------------------------
 -- 2D Value Noise
-------------------------------------------------------------
 
 local function noiseCorner(seed: number, ix: number, iz: number): number
 	local h = hashTwo(seed, ix, iz)
@@ -135,7 +127,15 @@ local function noise3D(seed: number, x: number, y: number, z: number, scale: num
 	return (n1 + n2 + n3) / 3
 end
 
-local function fbmNoise(seed: number, x: number, z: number, baseScale: number, octaves: number, persistence: number?, lacunarity: number?): number
+local function fbmNoise(
+	seed: number,
+	x: number,
+	z: number,
+	baseScale: number,
+	octaves: number,
+	persistence: number?,
+	lacunarity: number?
+): number
 	local value = 0
 	local amplitude = 1
 	local frequency = 1
@@ -153,9 +153,7 @@ local function fbmNoise(seed: number, x: number, z: number, baseScale: number, o
 	return value / maxAmplitude
 end
 
-------------------------------------------------------------
 -- Island Mask
-------------------------------------------------------------
 
 local function getIslandMask(wx: number, wz: number): number
 	local worldRadius = Config.worldRadiusChunks * CHUNK_STUDS
@@ -173,9 +171,7 @@ local function getIslandMask(wx: number, wz: number): number
 	end
 end
 
-------------------------------------------------------------
 -- Surface Height
-------------------------------------------------------------
 
 local function getSurfaceHeightRaw(seed: number, wx: number, wz: number, biome: any?): number
 	local islandMask = getIslandMask(wx, wz)
@@ -194,9 +190,7 @@ local function getSurfaceHeightRaw(seed: number, wx: number, wz: number, biome: 
 	return surfaceBlock
 end
 
-------------------------------------------------------------
 -- Heightmap Initialization (5-pass pipeline)
-------------------------------------------------------------
 
 local function _initializeGlobalHeightmap(seed: number)
 	local size = WORLD_SIZE_BLOCKS
@@ -495,9 +489,7 @@ local function getSurfaceHeight(seed: number, wx: number, wz: number): number
 	return buffer.readu8(globalHeightmap :: buffer, bz * WORLD_SIZE_BLOCKS + bx) - HEIGHTMAP_OFFSET
 end
 
-------------------------------------------------------------
 -- Ore Vein Placement (random walk)
-------------------------------------------------------------
 
 local solidBlocks: { [number]: boolean } = {
 	[BlockType.Paper] = true,
@@ -560,9 +552,7 @@ local function placeOreVeins(blocks: buffer, rng: () -> number, oreConfig: Biome
 	end
 end
 
-------------------------------------------------------------
 -- Tree Placement (deterministic, cross-chunk safe)
-------------------------------------------------------------
 
 local function isTreeDensityPass(seed: number, bx: number, bz: number, density: number): boolean
 	if density <= 0 then
@@ -641,11 +631,19 @@ local STRUCTURE_BLOCKS = {
 
 -- Structure label names for display
 local STRUCTURE_LABELS = {
-	tree = "Tree", tree_giant = "Giant Tree", tree_pine = "Pine", tree_willow = "Willow",
-	tree_palm = "Palm", cactus = "Cactus",
-	bonsai = "Bonsai", mushroom = "Mushroom",
-	mushroom_cluster = "Mushroom Cluster", mushroom_tall = "Tall Mushroom",
-	mushroom_shelf = "Shelf Mushroom", spire = "Spire", cluster = "Cluster",
+	tree = "Tree",
+	tree_giant = "Giant Tree",
+	tree_pine = "Pine",
+	tree_willow = "Willow",
+	tree_palm = "Palm",
+	cactus = "Cactus",
+	bonsai = "Bonsai",
+	mushroom = "Mushroom",
+	mushroom_cluster = "Mushroom Cluster",
+	mushroom_tall = "Tall Mushroom",
+	mushroom_shelf = "Shelf Mushroom",
+	spire = "Spire",
+	cluster = "Cluster",
 	column = "Column",
 }
 
@@ -662,7 +660,18 @@ for structName, overrides in STRUCTURE_BLOCKS do
 end
 
 -- Helper: place a single block if within chunk bounds and target is air
-local function placeBlock(blocks: buffer, blockType: number, bx: number, worldBlockY: number, bz: number, chunkBlockX: number, chunkBlockYBottom: number, chunkBlockYTop: number, chunkBlockZ: number, requireAir: boolean?)
+local function placeBlock(
+	blocks: buffer,
+	blockType: number,
+	bx: number,
+	worldBlockY: number,
+	bz: number,
+	chunkBlockX: number,
+	chunkBlockYBottom: number,
+	chunkBlockYTop: number,
+	chunkBlockZ: number,
+	requireAir: boolean?
+)
 	if worldBlockY < chunkBlockYBottom or worldBlockY > chunkBlockYTop then
 		return
 	end
@@ -740,14 +749,74 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				for ty = 0, trunkHeight do
 					local y = surfaceBlockY + 1 + ty
 					-- 2x2 cylinder core (+ cross pattern for roundness)
-					placeBlock(blocks, trunkBlock, bx, y, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + 1, y, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx, y, bz + 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + 1, y, bz + 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx,
+						y,
+						bz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx + 1,
+						y,
+						bz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx,
+						y,
+						bz + 1,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx + 1,
+						y,
+						bz + 1,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 				end
 				-- Flower on top
-				placeBlock(blocks, canopyBlock, bx, surfaceBlockY + trunkHeight + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				placeBlock(blocks, canopyBlock, bx + 1, surfaceBlockY + trunkHeight + 2, bz + 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				placeBlock(
+					blocks,
+					canopyBlock,
+					bx,
+					surfaceBlockY + trunkHeight + 2,
+					bz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ
+				)
+				placeBlock(
+					blocks,
+					canopyBlock,
+					bx + 1,
+					surfaceBlockY + trunkHeight + 2,
+					bz + 1,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ
+				)
 				-- Arm at height 3 (cylindrical: 1-block wide arm extending out)
 				local armDir = hashTwo(seed + 3333, bx, bz) % 4
 				local armDx = if armDir == 0 then 1 elseif armDir == 1 then -1 else 0
@@ -756,81 +825,283 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				-- Arm extends 2 blocks outward from trunk edge, then goes up 2
 				local armBaseX = bx + (if armDx > 0 then 2 else if armDx < 0 then -1 else 0)
 				local armBaseZ = bz + (if armDz > 0 then 2 else if armDz < 0 then -1 else 0)
-				placeBlock(blocks, trunkBlock, armBaseX, armY, armBaseZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				placeBlock(blocks, trunkBlock, armBaseX + armDx, armY, armBaseZ + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				placeBlock(blocks, trunkBlock, armBaseX + armDx, armY + 1, armBaseZ + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-				placeBlock(blocks, canopyBlock, armBaseX + armDx, armY + 2, armBaseZ + armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+				placeBlock(
+					blocks,
+					trunkBlock,
+					armBaseX,
+					armY,
+					armBaseZ,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ
+				)
+				placeBlock(
+					blocks,
+					trunkBlock,
+					armBaseX + armDx,
+					armY,
+					armBaseZ + armDz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ
+				)
+				placeBlock(
+					blocks,
+					trunkBlock,
+					armBaseX + armDx,
+					armY + 1,
+					armBaseZ + armDz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ
+				)
+				placeBlock(
+					blocks,
+					canopyBlock,
+					armBaseX + armDx,
+					armY + 2,
+					armBaseZ + armDz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ
+				)
 				-- Second arm opposite (50%)
 				if hashTwo(seed + 4444, bx, bz) % 2 == 0 and trunkHeight >= 4 then
 					local arm2Y = surfaceBlockY + 5
 					local arm2BaseX = bx + (if armDx > 0 then -1 else if armDx < 0 then 2 else 0)
 					local arm2BaseZ = bz + (if armDz > 0 then -1 else if armDz < 0 then 2 else 0)
-					placeBlock(blocks, trunkBlock, arm2BaseX, arm2Y, arm2BaseZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, arm2BaseX - armDx, arm2Y, arm2BaseZ - armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, arm2BaseX - armDx, arm2Y + 1, arm2BaseZ - armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, canopyBlock, arm2BaseX - armDx, arm2Y + 2, arm2BaseZ - armDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						arm2BaseX,
+						arm2Y,
+						arm2BaseZ,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						arm2BaseX - armDx,
+						arm2Y,
+						arm2BaseZ - armDz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						arm2BaseX - armDx,
+						arm2Y + 1,
+						arm2BaseZ - armDz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						arm2BaseX - armDx,
+						arm2Y + 2,
+						arm2BaseZ - armDz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 				end
-
 			elseif structureType == "bonsai" then
 				-- Bonsai with organic sway trunk + fork-like branches with separate canopy clusters
 				local bonsaiTrunk = 4 + (hashTwo(seed + 6100, bx, bz) % 2) -- 4-5
 				local topX, topZ = bx, bz
 				for ty = 0, bonsaiTrunk - 1 do
 					local sx, sz = getTrunkPos(seed, bx, bz, ty)
-					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						sx,
+						surfaceBlockY + 1 + ty,
+						sz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					topX, topZ = sx, sz
 				end
 				-- 3 branches like fork tines: connected to trunk, each with its own canopy cluster
-				local branchDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
+				local branchDirs = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
 				local branchCount = 2 + (hashTwo(seed + 6101, bx, bz) % 2)
 				for bi = 1, branchCount do
-					local dir = branchDirs[((hashTwo(seed + 6102 + bi, bx, bz) % #branchDirs)) + 1]
+					local dir = branchDirs[(hashTwo(seed + 6102 + bi, bx, bz) % #branchDirs) + 1]
 					local branchStartY = surfaceBlockY + 2 + (bi - 1) * 2
 					local bsx, bsz = getTrunkPos(seed, bx, bz, 1 + (bi - 1) * 2)
 					-- Branch: connector → extends 3 blocks outward, angling up
-					placeBlock(blocks, trunkBlock, bsx + dir[1], branchStartY, bsz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bsx + dir[1] * 2, branchStartY + 1, bsz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bsx + dir[1] * 3, branchStartY + 2, bsz + dir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bsx + dir[1] * 4, branchStartY + 2, bsz + dir[2] * 4, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bsx + dir[1],
+						branchStartY,
+						bsz + dir[2],
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bsx + dir[1] * 2,
+						branchStartY + 1,
+						bsz + dir[2] * 2,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bsx + dir[1] * 3,
+						branchStartY + 2,
+						bsz + dir[2] * 3,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bsx + dir[1] * 4,
+						branchStartY + 2,
+						bsz + dir[2] * 4,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					-- Canopy cluster at branch end (r=2 flat)
 					local endX, endZ = bsx + dir[1] * 4, bsz + dir[2] * 4
 					local endY = branchStartY + 3
 					for dx = -2, 2 do
 						for dz = -2, 2 do
 							if dx * dx + dz * dz <= 5 then
-								placeBlock(blocks, canopyBlock, endX + dx, endY, endZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									canopyBlock,
+									endX + dx,
+									endY,
+									endZ + dz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							end
 						end
 					end
-					placeBlock(blocks, canopyBlock, endX, endY + 1, endZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						endX,
+						endY + 1,
+						endZ,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
 				end
 				-- Small crown at trunk top
 				local crownY = surfaceBlockY + bonsaiTrunk + 1
 				for dx = -1, 1 do
 					for dz = -1, 1 do
-						placeBlock(blocks, canopyBlock, topX + dx, crownY, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+						placeBlock(
+							blocks,
+							canopyBlock,
+							topX + dx,
+							crownY,
+							topZ + dz,
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ,
+							true
+						)
 					end
 				end
-
 			elseif structureType == "tree_giant" then
 				-- Giant tree: tall single trunk + stubby platform branches at intervals
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx,
+						surfaceBlockY + 1 + ty,
+						bz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 				end
 				-- Stubby branches every 6 blocks with flat canopy pads
-				local branchDirs = { {1, 0}, {-1, 0}, {0, 1}, {0, -1} }
+				local branchDirs = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
 				local branchInterval = 6
 				for bi = 1, math.floor(trunkHeight / branchInterval) do
 					local branchY = surfaceBlockY + bi * branchInterval
-					local dirIdx = ((hashTwo(seed + 7000 + bi, bx, bz) % #branchDirs)) + 1
+					local dirIdx = (hashTwo(seed + 7000 + bi, bx, bz) % #branchDirs) + 1
 					local dir = branchDirs[dirIdx]
-					placeBlock(blocks, trunkBlock, bx + dir[1], branchY, bz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-					placeBlock(blocks, trunkBlock, bx + dir[1] * 2, branchY, bz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx + dir[1],
+						branchY,
+						bz + dir[2],
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx + dir[1] * 2,
+						branchY,
+						bz + dir[2] * 2,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					local padX, padZ = bx + dir[1] * 2, bz + dir[2] * 2
 					for dx = -2, 2 do
 						for dz = -2, 2 do
 							if dx * dx + dz * dz <= 5 then
-								placeBlock(blocks, canopyBlock, padX + dx, branchY + 1, padZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									canopyBlock,
+									padX + dx,
+									branchY + 1,
+									padZ + dz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							end
 						end
 					end
@@ -840,15 +1111,35 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				for dx = -3, 3 do
 					for dz = -3, 3 do
 						if dx * dx + dz * dz <= 10 then
-							placeBlock(blocks, canopyBlock, bx + dx, crownY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							placeBlock(
+								blocks,
+								canopyBlock,
+								bx + dx,
+								crownY,
+								bz + dz,
+								chunkBlockX,
+								chunkBlockYBottom,
+								chunkBlockYTop,
+								chunkBlockZ,
+								true
+							)
 						end
 					end
 				end
-
 			elseif structureType == "tree_pine" then
 				-- Pine: straight trunk + cone canopy
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx,
+						surfaceBlockY + 1 + ty,
+						bz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 				end
 				-- Cone canopy: widest at bottom, narrows to tip
 				local coneStart = surfaceBlockY + math.floor(trunkHeight * 0.4)
@@ -859,25 +1150,78 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					for dx = -r, r do
 						for dz = -r, r do
 							if dx * dx + dz * dz <= r * r + 1 then
-								placeBlock(blocks, canopyBlock, bx + dx, layerY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									canopyBlock,
+									bx + dx,
+									layerY,
+									bz + dz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							end
 						end
 					end
 				end
-				placeBlock(blocks, canopyBlock, bx, coneStart + coneLayers, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-
+				placeBlock(
+					blocks,
+					canopyBlock,
+					bx,
+					coneStart + coneLayers,
+					bz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
 			elseif structureType == "tree_willow" then
 				-- Weeping willow: trunk + wide flat canopy + dense long hanging vines
 				for ty = 0, trunkHeight - 1 do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx,
+						surfaceBlockY + 1 + ty,
+						bz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 				end
 				-- Wide flat canopy (r=4, 2 layers thick)
 				local canopyY = surfaceBlockY + trunkHeight + 1
 				for dx = -4, 4 do
 					for dz = -4, 4 do
 						if dx * dx + dz * dz <= 18 then
-							placeBlock(blocks, canopyBlock, bx + dx, canopyY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-							placeBlock(blocks, canopyBlock, bx + dx, canopyY + 1, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							placeBlock(
+								blocks,
+								canopyBlock,
+								bx + dx,
+								canopyY,
+								bz + dz,
+								chunkBlockX,
+								chunkBlockYBottom,
+								chunkBlockYTop,
+								chunkBlockZ,
+								true
+							)
+							placeBlock(
+								blocks,
+								canopyBlock,
+								bx + dx,
+								canopyY + 1,
+								bz + dz,
+								chunkBlockX,
+								chunkBlockYBottom,
+								chunkBlockYTop,
+								chunkBlockZ,
+								true
+							)
 						end
 					end
 				end
@@ -889,96 +1233,293 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 							if hashTwo(seed + 6660, bx + dx, bz + dz) % 10 < 7 then
 								local vineLen = 6 + (hashTwo(seed + 6666, bx + dx, bz + dz) % 7)
 								for vy = 1, vineLen do
-									placeBlock(blocks, canopyBlock, bx + dx, canopyY - vy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+									placeBlock(
+										blocks,
+										canopyBlock,
+										bx + dx,
+										canopyY - vy,
+										bz + dz,
+										chunkBlockX,
+										chunkBlockYBottom,
+										chunkBlockYTop,
+										chunkBlockZ,
+										true
+									)
 								end
 							end
 						end
 					end
 				end
-
 			elseif structureType == "tree_palm" then
 				-- Palm with organic sway trunk + frond fan at top
 				local topBx, topBz = bx, bz
 				for ty = 0, trunkHeight - 1 do
 					local sx, sz = getTrunkPos(seed, bx, bz, ty)
-					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						sx,
+						surfaceBlockY + 1 + ty,
+						sz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					topBx, topBz = sx, sz
 				end
 				-- Frond fan: + shape with 2-block drooping arms
 				local frondY = surfaceBlockY + trunkHeight + 1
-				placeBlock(blocks, canopyBlock, topBx, frondY, topBz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-				for _, fdir in { {1, 0}, {-1, 0}, {0, 1}, {0, -1} } do
-					placeBlock(blocks, canopyBlock, topBx + fdir[1], frondY, topBz + fdir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, topBx + fdir[1] * 2, frondY - 1, topBz + fdir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, topBx + fdir[1] * 3, frondY - 2, topBz + fdir[2] * 3, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				placeBlock(
+					blocks,
+					canopyBlock,
+					topBx,
+					frondY,
+					topBz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
+				for _, fdir in { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } } do
+					placeBlock(
+						blocks,
+						canopyBlock,
+						topBx + fdir[1],
+						frondY,
+						topBz + fdir[2],
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						topBx + fdir[1] * 2,
+						frondY - 1,
+						topBz + fdir[2] * 2,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						topBx + fdir[1] * 3,
+						frondY - 2,
+						topBz + fdir[2] * 3,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
 				end
 				-- Diagonal fronds
-				for _, fdir in { {1, 1}, {-1, 1}, {1, -1}, {-1, -1} } do
-					placeBlock(blocks, canopyBlock, topBx + fdir[1], frondY, topBz + fdir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				for _, fdir in { { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } } do
+					placeBlock(
+						blocks,
+						canopyBlock,
+						topBx + fdir[1],
+						frondY,
+						topBz + fdir[2],
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
 				end
-
 			elseif structureType == "spire" then
 				for ty = 0, trunkHeight - 1 do
 					local blockToPlace = if ty == trunkHeight - 1 then canopyBlock else trunkBlock
-					placeBlock(blocks, blockToPlace, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						blockToPlace,
+						bx,
+						surfaceBlockY + 1 + ty,
+						bz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 				end
-
 			elseif structureType == "cluster" then
 				for ty = 0, math.min(2, trunkHeight - 1) do
-					placeBlock(blocks, trunkBlock, bx, surfaceBlockY + 1 + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx,
+						surfaceBlockY + 1 + ty,
+						bz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 				end
 				local centerY = surfaceBlockY + 4
 				for dx = -canopyR, canopyR do
 					for dy = -canopyR, canopyR do
 						for dz = -canopyR, canopyR do
 							if dx * dx + dy * dy + dz * dz <= canopyR * canopyR then
-								placeBlock(blocks, canopyBlock, bx + dx, centerY + dy, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									canopyBlock,
+									bx + dx,
+									centerY + dy,
+									bz + dz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							end
 						end
 					end
 				end
-
 			elseif structureType == "column" then
 				for ty = 0, trunkHeight - 1 do
 					local worldBlockY = surfaceBlockY + 1 + ty
 					for dx = 0, 1 do
 						for dz = 0, 1 do
-							placeBlock(blocks, trunkBlock, bx + dx, worldBlockY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+							placeBlock(
+								blocks,
+								trunkBlock,
+								bx + dx,
+								worldBlockY,
+								bz + dz,
+								chunkBlockX,
+								chunkBlockYBottom,
+								chunkBlockYTop,
+								chunkBlockZ
+							)
 						end
 					end
 				end
 				local topY = surfaceBlockY + trunkHeight + 1
 				for dx = -1, 1 do
 					for dz = -1, 1 do
-						placeBlock(blocks, canopyBlock, bx + dx, topY, bz + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+						placeBlock(
+							blocks,
+							canopyBlock,
+							bx + dx,
+							topY,
+							bz + dz,
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ,
+							true
+						)
 					end
 				end
-
 			elseif structureType == "mushroom_cluster" then
 				-- Group of 3 small mushrooms at slightly different heights
-				local offsets = { {0, 0}, {1, 1}, {-1, 1} }
+				local offsets = { { 0, 0 }, { 1, 1 }, { -1, 1 } }
 				for i, off in offsets do
 					local mh = 1 + (i - 1) -- heights 1, 2, 3
 					local mx, mz = bx + off[1], bz + off[2]
 					for ty = 0, mh - 1 do
-						placeBlock(blocks, trunkBlock, mx, surfaceBlockY + 1 + ty, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+						placeBlock(
+							blocks,
+							trunkBlock,
+							mx,
+							surfaceBlockY + 1 + ty,
+							mz,
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ
+						)
 					end
 					-- Small cap: single block + cross
 					local capY = surfaceBlockY + mh + 1
-					placeBlock(blocks, canopyBlock, mx, capY, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, mx + 1, capY, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, mx - 1, capY, mz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, mx, capY, mz + 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, mx, capY, mz - 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						mx,
+						capY,
+						mz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						mx + 1,
+						capY,
+						mz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						mx - 1,
+						capY,
+						mz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						mx,
+						capY,
+						mz + 1,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						mx,
+						capY,
+						mz - 1,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
 				end
-
 			elseif structureType == "mushroom_tall" then
 				-- Extra tall mushroom with organic sway + dome cap
 				local tallHeight = trunkHeight + 3
 				local topX, topZ = bx, bz
 				for ty = 0, tallHeight - 1 do
 					local sx, sz = getTrunkPos(seed, bx, bz, ty)
-					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						sx,
+						surfaceBlockY + 1 + ty,
+						sz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					topX, topZ = sx, sz
 				end
 				-- Dome cap centered on trunk top
@@ -988,55 +1529,159 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					for dz = -domeR, domeR do
 						for dy = 0, domeR do
 							if dx * dx + dy * dy + dz * dz <= domeR * domeR + 1 then
-								placeBlock(blocks, canopyBlock, topX + dx, domeY + dy, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									canopyBlock,
+									topX + dx,
+									domeY + dy,
+									topZ + dz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							end
 						end
 					end
 				end
-
 			elseif structureType == "mushroom_shelf" then
 				-- Shelf mushroom with organic sway + spiraling shelves
 				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight + 1 do
 					local sx, sz = getTrunkPos(seed, bx, bz, ty)
-					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						sx,
+						surfaceBlockY + 1 + ty,
+						sz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					topX, topZ = sx, sz
 				end
 				-- Shelf brackets at different heights, following trunk sway
-				local dirs = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} }
+				local dirs = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } }
 				for shelf = 0, 2 do
 					local shelfY = surfaceBlockY + 2 + shelf * 2
 					local shelfSx, shelfSz = getTrunkPos(seed, bx, bz, 1 + shelf * 2)
 					local dir = dirs[(shelf % 4) + 1]
-					placeBlock(blocks, canopyBlock, shelfSx + dir[1], shelfY, shelfSz + dir[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, shelfSx + dir[1] * 2, shelfY, shelfSz + dir[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						shelfSx + dir[1],
+						shelfY,
+						shelfSz + dir[2],
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						shelfSx + dir[1] * 2,
+						shelfY,
+						shelfSz + dir[2] * 2,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
 					local perpDx = if dir[1] == 0 then 1 else 0
 					local perpDz = if dir[2] == 0 then 1 else 0
-					placeBlock(blocks, canopyBlock, shelfSx + dir[1] + perpDx, shelfY, shelfSz + dir[2] + perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-					placeBlock(blocks, canopyBlock, shelfSx + dir[1] - perpDx, shelfY, shelfSz + dir[2] - perpDz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						shelfSx + dir[1] + perpDx,
+						shelfY,
+						shelfSz + dir[2] + perpDz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
+					placeBlock(
+						blocks,
+						canopyBlock,
+						shelfSx + dir[1] - perpDx,
+						shelfY,
+						shelfSz + dir[2] - perpDz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ,
+						true
+					)
 				end
-
 			elseif structureType == "mushroom" then
 				-- Mushroom with organic sway trunk
 				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight - 1 do
 					local sx, sz = getTrunkPos(seed, bx, bz, ty)
-					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						sx,
+						surfaceBlockY + 1 + ty,
+						sz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					topX, topZ = sx, sz
 				end
 				local capY = surfaceBlockY + trunkHeight + 1
 				for dx = -canopyR, canopyR do
 					for dz = -canopyR, canopyR do
-						placeBlock(blocks, canopyBlock, topX + dx, capY, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+						placeBlock(
+							blocks,
+							canopyBlock,
+							topX + dx,
+							capY,
+							topZ + dz,
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ,
+							true
+						)
 					end
 				end
-				placeBlock(blocks, canopyBlock, topX, capY + 1, topZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-
+				placeBlock(
+					blocks,
+					canopyBlock,
+					topX,
+					capY + 1,
+					topZ,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
 			else -- "tree" (default) with organic sway
 				local topX, topZ = bx, bz
 				for ty = 0, trunkHeight - 1 do
 					local sx, sz = getTrunkPos(seed, bx, bz, ty)
-					placeBlock(blocks, trunkBlock, sx, surfaceBlockY + 1 + ty, sz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						sx,
+						surfaceBlockY + 1 + ty,
+						sz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
 					topX, topZ = sx, sz
 				end
 				local canopyBaseY = surfaceBlockY + trunkHeight
@@ -1047,19 +1692,39 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 							if canopyLayer == 0 and dx == 0 and dz == 0 then
 								continue
 							end
-							placeBlock(blocks, canopyBlock, topX + dx, worldBlockY, topZ + dz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+							placeBlock(
+								blocks,
+								canopyBlock,
+								topX + dx,
+								worldBlockY,
+								topZ + dz,
+								chunkBlockX,
+								chunkBlockYBottom,
+								chunkBlockYTop,
+								chunkBlockZ,
+								true
+							)
 						end
 					end
 				end
-				placeBlock(blocks, canopyBlock, topX, canopyBaseY + 2, topZ, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+				placeBlock(
+					blocks,
+					canopyBlock,
+					topX,
+					canopyBaseY + 2,
+					topZ,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
 			end
 		end
 	end
 end
 
-------------------------------------------------------------
 -- Egg Node Placement
-------------------------------------------------------------
 
 local function placeEggNodes(blocks: buffer, rng: () -> number, eggChance: number)
 	if eggChance <= 0 or rng() > eggChance then
@@ -1105,34 +1770,242 @@ local function placeCaveMushrooms(blocks: buffer, seed: number, cx: number, cy: 
 
 							if mushType == "mushroom_cluster" then
 								-- Small cluster
-								placeBlock(blocks, stemBlock, bx, worldBlockY, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ)
-								placeBlock(blocks, capBlock, bx, worldBlockY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									stemBlock,
+									bx,
+									worldBlockY,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx,
+									worldBlockY + 1,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							elseif mushType == "mushroom_tall" then
 								-- Tall stem + small dome
 								for ty = 0, 3 do
-									placeBlock(blocks, stemBlock, bx, worldBlockY + ty, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+									placeBlock(
+										blocks,
+										stemBlock,
+										bx,
+										worldBlockY + ty,
+										bz,
+										chunkBlockX,
+										chunkBlockYBottom,
+										chunkBlockYTop,
+										chunkBlockZ,
+										true
+									)
 								end
-								placeBlock(blocks, capBlock, bx, worldBlockY + 4, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx + 1, worldBlockY + 4, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx - 1, worldBlockY + 4, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx, worldBlockY + 4, bz + 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx, worldBlockY + 4, bz - 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx,
+									worldBlockY + 4,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx + 1,
+									worldBlockY + 4,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx - 1,
+									worldBlockY + 4,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx,
+									worldBlockY + 4,
+									bz + 1,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx,
+									worldBlockY + 4,
+									bz - 1,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							elseif mushType == "mushroom_shelf" then
 								-- Short stem + shelf
-								placeBlock(blocks, stemBlock, bx, worldBlockY, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, stemBlock, bx, worldBlockY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								local dir = { {1, 0}, {0, 1}, {-1, 0}, {0, -1} }
+								placeBlock(
+									blocks,
+									stemBlock,
+									bx,
+									worldBlockY,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									stemBlock,
+									bx,
+									worldBlockY + 1,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								local dir = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } }
 								local d = dir[(h % 4) + 1]
-								placeBlock(blocks, capBlock, bx + d[1], worldBlockY + 1, bz + d[2], chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx + d[1] * 2, worldBlockY + 1, bz + d[2] * 2, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx + d[1],
+									worldBlockY + 1,
+									bz + d[2],
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx + d[1] * 2,
+									worldBlockY + 1,
+									bz + d[2] * 2,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							else -- basic mushroom
-								placeBlock(blocks, stemBlock, bx, worldBlockY, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, stemBlock, bx, worldBlockY + 1, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx, worldBlockY + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx + 1, worldBlockY + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx - 1, worldBlockY + 2, bz, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx, worldBlockY + 2, bz + 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
-								placeBlock(blocks, capBlock, bx, worldBlockY + 2, bz - 1, chunkBlockX, chunkBlockYBottom, chunkBlockYTop, chunkBlockZ, true)
+								placeBlock(
+									blocks,
+									stemBlock,
+									bx,
+									worldBlockY,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									stemBlock,
+									bx,
+									worldBlockY + 1,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx,
+									worldBlockY + 2,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx + 1,
+									worldBlockY + 2,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx - 1,
+									worldBlockY + 2,
+									bz,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx,
+									worldBlockY + 2,
+									bz + 1,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
+								placeBlock(
+									blocks,
+									capBlock,
+									bx,
+									worldBlockY + 2,
+									bz - 1,
+									chunkBlockX,
+									chunkBlockYBottom,
+									chunkBlockYTop,
+									chunkBlockZ,
+									true
+								)
 							end
 						end
 					end
@@ -1142,9 +2015,7 @@ local function placeCaveMushrooms(blocks: buffer, seed: number, cx: number, cy: 
 	end
 end
 
-------------------------------------------------------------
 -- Main Chunk Generation
-------------------------------------------------------------
 
 function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: number): buffer
 	local blocks = buffer.create(BLOCKS_PER_CHUNK)
@@ -1332,39 +2203,37 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 			local cbx, cbz = chunkBlockX, chunkBlockZ
 			local cbyBot, cbyTop = chunkBlockYBottom, chunkBlockYTop
 			-- Basic mushroom
-			placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+3, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+3, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx + 4, floorY, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx + 4, floorY + 1, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 4, floorY + 2, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 5, floorY + 2, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 3, floorY + 2, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 4, floorY + 2, cbz + 5, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 4, floorY + 2, cbz + 3, cbx, cbyBot, cbyTop, cbz)
 			-- Tall mushroom
 			for ty = 0, 3 do
-				placeBlock(blocks, stemBlock, cbx+8, floorY+ty, cbz+4, cbx, cbyBot, cbyTop, cbz)
+				placeBlock(blocks, stemBlock, cbx + 8, floorY + ty, cbz + 4, cbx, cbyBot, cbyTop, cbz)
 			end
-			placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+9, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+7, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+3, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 8, floorY + 4, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 9, floorY + 4, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 7, floorY + 4, cbz + 4, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 8, floorY + 4, cbz + 5, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 8, floorY + 4, cbz + 3, cbx, cbyBot, cbyTop, cbz)
 			-- Shelf mushroom
-			placeBlock(blocks, stemBlock, cbx+4, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, stemBlock, cbx+4, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, shelfBlock, cbx+5, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, shelfBlock, cbx+6, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx + 4, floorY, cbz + 9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx + 4, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, shelfBlock, cbx + 5, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, shelfBlock, cbx + 6, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
 			-- Cluster
-			placeBlock(blocks, stemBlock, cbx+8, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
-			placeBlock(blocks, capBlock, cbx+8, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, stemBlock, cbx + 8, floorY, cbz + 9, cbx, cbyBot, cbyTop, cbz)
+			placeBlock(blocks, capBlock, cbx + 8, floorY + 1, cbz + 9, cbx, cbyBot, cbyTop, cbz)
 		end
 	end
 
 	return blocks
 end
 
-------------------------------------------------------------
 -- Spawn & Surface
-------------------------------------------------------------
 
 function WorldGenModule.getSpawnPosition(seed: number): Vector3
 	local bestX, bestZ = 0, 0

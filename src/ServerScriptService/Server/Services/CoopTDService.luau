@@ -388,7 +388,7 @@ function startNextWave(lobby)
 	startCombatLoop(lobby)
 end
 
----------- Client Methods ----------
+-- Client Methods
 
 function CoopTDService.Client:JoinLobby(player: Player)
 	if not _lobby then
@@ -653,7 +653,7 @@ function CoopTDService.Client:GetLobbyState(player: Player)
 	}
 end
 
----------- Lifecycle ----------
+-- Lifecycle
 
 function CoopTDService:KnitInit() end
 

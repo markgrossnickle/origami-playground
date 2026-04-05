@@ -57,7 +57,11 @@ function SpawnService:KnitStart()
 					return
 				end
 				-- If player is near default origin (0,0,0), teleport to spawn
-				if rootPart.Position.Y < 5 and math.abs(rootPart.Position.X) < 20 and math.abs(rootPart.Position.Z) < 20 then
+				if
+					rootPart.Position.Y < 5
+					and math.abs(rootPart.Position.X) < 20
+					and math.abs(rootPart.Position.Z) < 20
+				then
 					rootPart.CFrame = CFrame.new(spawnPos)
 				end
 			end)

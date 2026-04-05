@@ -82,16 +82,19 @@ local function getCreatureList(player: Player): { CreatureData }
 end
 
 --- Add a new creature to the player's collection. Returns the CreatureData.
-function CreatureService:AddCreature(player: Player, data: {
-	name: string?,
-	modelData: { [string]: any },
-	rarity: string?,
-	stats: { hp: number, atk: number, def: number, spd: number }?,
-	source: string?,
-	parentRecipeId: string?,
-	parent1Id: string?,
-	parent2Id: string?,
-}): CreatureData
+function CreatureService:AddCreature(
+	player: Player,
+	data: {
+		name: string?,
+		modelData: { [string]: any },
+		rarity: string?,
+		stats: { hp: number, atk: number, def: number, spd: number }?,
+		source: string?,
+		parentRecipeId: string?,
+		parent1Id: string?,
+		parent2Id: string?,
+	}
+): CreatureData
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local pdata = PlayerDataService:Read(player)
 	if not pdata then

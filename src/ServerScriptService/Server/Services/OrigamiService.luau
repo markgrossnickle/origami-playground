@@ -688,10 +688,10 @@ function OrigamiService.Client:CreateTestVehicleRing(player: Player, centerPos: 
 		if variant ~= "seat_only" then
 			-- 4 wheels
 			local wheelPositions = {
-				CFrame.new(-3.5, -0.5, 3.5),  -- front-left
-				CFrame.new(3.5, -0.5, 3.5),   -- front-right
+				CFrame.new(-3.5, -0.5, 3.5), -- front-left
+				CFrame.new(3.5, -0.5, 3.5), -- front-right
 				CFrame.new(-3.5, -0.5, -3.5), -- rear-left
-				CFrame.new(3.5, -0.5, -3.5),  -- rear-right
+				CFrame.new(3.5, -0.5, -3.5), -- rear-right
 			}
 			for i, offset in ipairs(wheelPositions) do
 				local wheel = Instance.new("Part")

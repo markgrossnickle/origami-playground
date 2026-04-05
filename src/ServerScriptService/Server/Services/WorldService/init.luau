@@ -58,9 +58,7 @@ local WorldStore: DataStore?
 local SeedStore: DataStore?
 local pendingChunks: { [string]: boolean } = {}
 
--------------------------------------------------
 -- Internal helpers
--------------------------------------------------
 
 local function _getOrCreateSeed(): number
 	if RunService:IsStudio() then
@@ -133,9 +131,7 @@ local function _markDirty(chunkKey: string, cx: number, cy: number, cz: number)
 	end
 end
 
--------------------------------------------------
 -- Chunk lifecycle
--------------------------------------------------
 
 function WorldService:_loadDeltasForChunk(chunkKey: string, cx: number, cy: number, cz: number)
 	if savedDeltas[chunkKey] then
@@ -273,9 +269,7 @@ function WorldService:BreakBlock(chunkKey: string, flatIndex: number): number
 	return oldBlock
 end
 
--------------------------------------------------
 -- Subscription management
--------------------------------------------------
 
 function WorldService:Subscribe(player: Player, chunkKey: string)
 	if not playerSubscriptions[player] then
@@ -352,9 +346,7 @@ function WorldService:IsSubscribed(player: Player, chunkKey: string): boolean
 	return subs ~= nil and subs[chunkKey] == true
 end
 
--------------------------------------------------
 -- Persistence
--------------------------------------------------
 
 function WorldService:_saveAllDirtyRegions()
 	-- Pre-group deltas by region to avoid O(n*m) scanning in _saveRegion
@@ -449,9 +441,7 @@ function WorldService:_evictUnusedChunks(): number
 	return #evictList
 end
 
--------------------------------------------------
 -- Knit lifecycle
--------------------------------------------------
 
 function WorldService:KnitInit()
 	WorldStore = DataStoreService:GetDataStore("WorldData")

@@ -73,7 +73,7 @@ local _currentBaseHP = 0
 local _currentWave = 0
 local _basePart = nil
 
----------- Helpers ----------
+-- Helpers
 
 local function makeCorner(parent: GuiObject, radius: number?)
 	local corner = Instance.new("UICorner")
@@ -106,7 +106,7 @@ local function updateHUD()
 	end
 end
 
----------- World Visualization ----------
+-- World Visualization
 
 local function createBase(center: Vector3)
 	local base = Instance.new("Part")
@@ -161,7 +161,7 @@ local function createPathVisuals(paths: { { { x: number, y: number, z: number } 
 	end
 end
 
----------- UI ----------
+-- UI
 
 local function createUI()
 	local gui = Instance.new("ScreenGui")
@@ -298,7 +298,9 @@ local function createUI()
 	local bottomBar = Instance.new("Frame")
 	bottomBar.Name = "BottomBar"
 	bottomBar.Size = if IS_MOBILE then UDim2.new(0.92, 0, 0, BUTTON_HEIGHT + 14) else UDim2.new(0, 500, 0, 50)
-	bottomBar.Position = if IS_MOBILE then UDim2.new(0.04, 0, 1, -(BUTTON_HEIGHT + 14 + BOTTOM_SAFE)) else UDim2.new(0.5, -250, 1, -70)
+	bottomBar.Position = if IS_MOBILE
+		then UDim2.new(0.04, 0, 1, -(BUTTON_HEIGHT + 14 + BOTTOM_SAFE))
+		else UDim2.new(0.5, -250, 1, -70)
 	bottomBar.BackgroundColor3 = COLORS.bg
 	bottomBar.BackgroundTransparency = 0.2
 	bottomBar.BorderSizePixel = 0
@@ -374,14 +376,18 @@ local function createUI()
 		submitBuildPrompt()
 	end)
 	inputBox.FocusLost:Connect(function(enter)
-		if enter then submitBuildPrompt() end
+		if enter then
+			submitBuildPrompt()
+		end
 	end)
 end
 
----------- Tower Building ----------
+-- Tower Building
 
 function submitBuildPrompt()
-	if not _inputBox then return end
+	if not _inputBox then
+		return
+	end
 	local prompt = _inputBox.Text
 	if prompt == "" then
 		setStatus("Type a tower description!", COLORS.error)
@@ -412,7 +418,8 @@ function submitBuildPrompt()
 			placePos = Vector3.new(placePos.X, 0.5, placePos.Z)
 
 			local CoopTDService = Knit.GetService("CoopTDService")
-			local placeOk, placeResult = CoopTDService:PlaceTower(result.model, { x = placePos.X, y = placePos.Y, z = placePos.Z }):await()
+			local placeOk, placeResult =
+				CoopTDService:PlaceTower(result.model, { x = placePos.X, y = placePos.Y, z = placePos.Z }):await()
 
 			if placeOk and placeResult and placeResult.success then
 				setStatus("Tower placed!", COLORS.success)
@@ -425,10 +432,12 @@ function submitBuildPrompt()
 	end)
 end
 
----------- Lobby UI Updates ----------
+-- Lobby UI Updates
 
 local function updatePlayerList(players: { any })
-	if not _playerListFrame then return end
+	if not _playerListFrame then
+		return
+	end
 
 	-- Clear existing
 	for _, child in ipairs(_playerListFrame:GetChildren()) do
@@ -452,20 +461,37 @@ local function updatePlayerList(players: { any })
 	end
 end
 
----------- Lifecycle ----------
+-- Lifecycle
 
 local CoopTowerDefenseController = Knit.CreateController({ Name = "CoopTowerDefenseController" })
 
 function CoopTowerDefenseController:Activate()
-	if _active then return end
+	if _active then
+		return
+	end
 	_active = true
 
 	-- Create world folders
-	_pathFolder = Instance.new("Folder"); _pathFolder.Name = "CoopTD_Path"; _pathFolder.Parent = workspace; table.insert(_allInstances, _pathFolder)
-	_towerFolder = Instance.new("Folder"); _towerFolder.Name = "CoopTD_Towers"; _towerFolder.Parent = workspace; table.insert(_allInstances, _towerFolder)
-	_creepFolder = Instance.new("Folder"); _creepFolder.Name = "CoopTD_Creep"; _creepFolder.Parent = workspace; table.insert(_allInstances, _creepFolder)
-	_projectileFolder = Instance.new("Folder"); _projectileFolder.Name = "CoopTD_Projectiles"; _projectileFolder.Parent = workspace; table.insert(_allInstances, _projectileFolder)
-	_baseFolder = Instance.new("Folder"); _baseFolder.Name = "CoopTD_Bases"; _baseFolder.Parent = workspace; table.insert(_allInstances, _baseFolder)
+	_pathFolder = Instance.new("Folder")
+	_pathFolder.Name = "CoopTD_Path"
+	_pathFolder.Parent = workspace
+	table.insert(_allInstances, _pathFolder)
+	_towerFolder = Instance.new("Folder")
+	_towerFolder.Name = "CoopTD_Towers"
+	_towerFolder.Parent = workspace
+	table.insert(_allInstances, _towerFolder)
+	_creepFolder = Instance.new("Folder")
+	_creepFolder.Name = "CoopTD_Creep"
+	_creepFolder.Parent = workspace
+	table.insert(_allInstances, _creepFolder)
+	_projectileFolder = Instance.new("Folder")
+	_projectileFolder.Name = "CoopTD_Projectiles"
+	_projectileFolder.Parent = workspace
+	table.insert(_allInstances, _projectileFolder)
+	_baseFolder = Instance.new("Folder")
+	_baseFolder.Name = "CoopTD_Bases"
+	_baseFolder.Parent = workspace
+	table.insert(_allInstances, _baseFolder)
 
 	if _gui then
 		_gui.Enabled = true
@@ -499,7 +525,9 @@ function CoopTowerDefenseController:Cleanup()
 	_connections = {}
 
 	for _, inst in ipairs(_allInstances) do
-		if inst and inst.Parent then inst:Destroy() end
+		if inst and inst.Parent then
+			inst:Destroy()
+		end
 	end
 	_allInstances = {}
 	_creepModels = {}
@@ -512,7 +540,9 @@ function CoopTowerDefenseController:Cleanup()
 	_baseFolder = nil
 	_basePart = nil
 
-	if _gui then _gui.Enabled = false end
+	if _gui then
+		_gui.Enabled = false
+	end
 
 	if _inLobby then
 		task.spawn(function()
@@ -551,8 +581,12 @@ function CoopTowerDefenseController:KnitStart()
 		end
 		if state.phase == "starting" then
 			-- Transition to game view
-			if _lobbyFrame then _lobbyFrame.Visible = false end
-			if _gameFrame then _gameFrame.Visible = true end
+			if _lobbyFrame then
+				_lobbyFrame.Visible = false
+			end
+			if _gameFrame then
+				_gameFrame.Visible = true
+			end
 
 			if state.center then
 				createBase(Vector3.new(state.center.x, state.center.y, state.center.z))
@@ -577,7 +611,10 @@ function CoopTowerDefenseController:KnitStart()
 			while remaining > 0 and _active do
 				task.wait(1)
 				remaining -= 1
-				setStatus("Wave " .. (data.nextWave or "?") .. " in " .. remaining .. "s — Build towers!", COLORS.accent)
+				setStatus(
+					"Wave " .. (data.nextWave or "?") .. " in " .. remaining .. "s — Build towers!",
+					COLORS.accent
+				)
 			end
 		end)
 	end)
@@ -626,7 +663,9 @@ function CoopTowerDefenseController:KnitStart()
 		if _basePart then
 			_basePart.Color = COLORS.danger
 			task.delay(0.3, function()
-				if _basePart then _basePart.Color = COLORS.accent end
+				if _basePart then
+					_basePart.Color = COLORS.accent
+				end
 			end)
 		end
 	end)
@@ -715,7 +754,9 @@ function CoopTowerDefenseController:KnitStart()
 				elapsed += task.wait()
 				proj.Position = from:Lerp(to, math.min(elapsed / 0.3, 1))
 			end
-			if proj.Parent then proj:Destroy() end
+			if proj.Parent then
+				proj:Destroy()
+			end
 		end)
 	end)
 
@@ -726,7 +767,11 @@ function CoopTowerDefenseController:KnitStart()
 		-- VFX: sparkle at base + rising gold text
 		if _basePart then
 			VFXUtil.sparkle(_basePart.Position, COLORS.success, 30, 2)
-			VFXUtil.risingText(_basePart.Position + Vector3.new(0, 3, 0), "+" .. (data.goldBonus or 0) .. "g", COLORS.gold)
+			VFXUtil.risingText(
+				_basePart.Position + Vector3.new(0, 3, 0),
+				"+" .. (data.goldBonus or 0) .. "g",
+				COLORS.gold
+			)
 		end
 
 		-- Trigger celebration emote

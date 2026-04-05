@@ -44,7 +44,7 @@ local VALID_JOINTS: { [string]: boolean } = {
 	Root = true,
 }
 
---- Preset emotes (hardcoded, no LLM call needed)
+-- Preset emotes (hardcoded, no LLM call needed)
 local PRESET_EMOTES = {
 	celebration = {
 		name = "Celebration",
@@ -52,10 +52,22 @@ local PRESET_EMOTES = {
 		loop = false,
 		keyframes = {
 			{ time = 0, joints = {} },
-			{ time = 0.4, joints = { RightShoulder = { 0, 0, -170 }, LeftShoulder = { 0, 0, 170 }, Waist = { -10, 0, 0 } } },
-			{ time = 0.8, joints = { RightShoulder = { 0, 0, -160 }, LeftShoulder = { 0, 0, 160 }, Waist = { -5, 15, 0 } } },
-			{ time = 1.2, joints = { RightShoulder = { 0, 0, -170 }, LeftShoulder = { 0, 0, 170 }, Waist = { -5, -15, 0 } } },
-			{ time = 1.6, joints = { RightShoulder = { 0, 0, -160 }, LeftShoulder = { 0, 0, 160 }, Waist = { -5, 10, 0 } } },
+			{
+				time = 0.4,
+				joints = { RightShoulder = { 0, 0, -170 }, LeftShoulder = { 0, 0, 170 }, Waist = { -10, 0, 0 } },
+			},
+			{
+				time = 0.8,
+				joints = { RightShoulder = { 0, 0, -160 }, LeftShoulder = { 0, 0, 160 }, Waist = { -5, 15, 0 } },
+			},
+			{
+				time = 1.2,
+				joints = { RightShoulder = { 0, 0, -170 }, LeftShoulder = { 0, 0, 170 }, Waist = { -5, -15, 0 } },
+			},
+			{
+				time = 1.6,
+				joints = { RightShoulder = { 0, 0, -160 }, LeftShoulder = { 0, 0, 160 }, Waist = { -5, 10, 0 } },
+			},
 			{ time = 2.0, joints = {} },
 		},
 	},
@@ -65,8 +77,24 @@ local PRESET_EMOTES = {
 		loop = false,
 		keyframes = {
 			{ time = 0, joints = {} },
-			{ time = 0.5, joints = { Waist = { 30, 0, 0 }, RightShoulder = { 30, 0, -20 }, RightElbow = { 60, 0, 0 }, Neck = { 15, 0, 0 } } },
-			{ time = 1.2, joints = { Waist = { 35, 0, 0 }, RightShoulder = { 30, 0, -20 }, RightElbow = { 60, 0, 0 }, Neck = { 15, 0, 0 } } },
+			{
+				time = 0.5,
+				joints = {
+					Waist = { 30, 0, 0 },
+					RightShoulder = { 30, 0, -20 },
+					RightElbow = { 60, 0, 0 },
+					Neck = { 15, 0, 0 },
+				},
+			},
+			{
+				time = 1.2,
+				joints = {
+					Waist = { 35, 0, 0 },
+					RightShoulder = { 30, 0, -20 },
+					RightElbow = { 60, 0, 0 },
+					Neck = { 15, 0, 0 },
+				},
+			},
 			{ time = 2.0, joints = {} },
 		},
 	},
@@ -90,21 +118,65 @@ local PRESET_EMOTES = {
 		loop = true,
 		keyframes = {
 			{ time = 0, joints = { Waist = { 0, 0, 0 }, RightShoulder = { 0, 0, -40 }, LeftShoulder = { 0, 0, 40 } } },
-			{ time = 0.5, joints = { Waist = { 0, 20, 0 }, RightShoulder = { 0, 0, -90 }, LeftShoulder = { 0, 0, 20 }, RightHip = { 0, 0, 0 }, LeftHip = { -20, 0, 0 } } },
-			{ time = 1.0, joints = { Waist = { 0, -20, 0 }, RightShoulder = { 0, 0, -20 }, LeftShoulder = { 0, 0, 90 }, RightHip = { -20, 0, 0 }, LeftHip = { 0, 0, 0 } } },
-			{ time = 1.5, joints = { Waist = { 0, 20, 0 }, RightShoulder = { 0, 0, -90 }, LeftShoulder = { 0, 0, 20 }, RightHip = { 0, 0, 0 }, LeftHip = { -20, 0, 0 } } },
-			{ time = 2.0, joints = { Waist = { 0, -20, 0 }, RightShoulder = { 0, 0, -20 }, LeftShoulder = { 0, 0, 90 }, RightHip = { -20, 0, 0 }, LeftHip = { 0, 0, 0 } } },
-			{ time = 2.5, joints = { Waist = { 0, 15, 0 }, RightShoulder = { 0, 0, -70 }, LeftShoulder = { 0, 0, 40 } } },
-			{ time = 3.0, joints = { Waist = { 0, 0, 0 }, RightShoulder = { 0, 0, -40 }, LeftShoulder = { 0, 0, 40 } } },
+			{
+				time = 0.5,
+				joints = {
+					Waist = { 0, 20, 0 },
+					RightShoulder = { 0, 0, -90 },
+					LeftShoulder = { 0, 0, 20 },
+					RightHip = { 0, 0, 0 },
+					LeftHip = { -20, 0, 0 },
+				},
+			},
+			{
+				time = 1.0,
+				joints = {
+					Waist = { 0, -20, 0 },
+					RightShoulder = { 0, 0, -20 },
+					LeftShoulder = { 0, 0, 90 },
+					RightHip = { -20, 0, 0 },
+					LeftHip = { 0, 0, 0 },
+				},
+			},
+			{
+				time = 1.5,
+				joints = {
+					Waist = { 0, 20, 0 },
+					RightShoulder = { 0, 0, -90 },
+					LeftShoulder = { 0, 0, 20 },
+					RightHip = { 0, 0, 0 },
+					LeftHip = { -20, 0, 0 },
+				},
+			},
+			{
+				time = 2.0,
+				joints = {
+					Waist = { 0, -20, 0 },
+					RightShoulder = { 0, 0, -20 },
+					LeftShoulder = { 0, 0, 90 },
+					RightHip = { -20, 0, 0 },
+					LeftHip = { 0, 0, 0 },
+				},
+			},
+			{
+				time = 2.5,
+				joints = { Waist = { 0, 15, 0 }, RightShoulder = { 0, 0, -70 }, LeftShoulder = { 0, 0, 40 } },
+			},
+			{
+				time = 3.0,
+				joints = { Waist = { 0, 0, 0 }, RightShoulder = { 0, 0, -40 }, LeftShoulder = { 0, 0, 40 } },
+			},
 		},
 	},
 }
 
---- Content safety: detect inappropriate movement patterns
+-- Content safety: detect inappropriate movement patterns
 local function isInappropriate(keyframes: { any }): (boolean, string?)
 	for _, kf in ipairs(keyframes) do
 		local joints = kf.joints
-		if not joints then continue end
+		if not joints then
+			continue
+		end
 
 		-- Check for thrusting: rapid hip forward motion combined with waist motion
 		local waist = joints.Waist
@@ -116,10 +188,14 @@ local function isInappropriate(keyframes: { any }): (boolean, string?)
 			local waistX = if type(waist) == "table" then (waist[1] or 0) else 0
 			local hipForward = false
 			if rightHip and type(rightHip) == "table" then
-				if (rightHip[1] or 0) < -15 then hipForward = true end
+				if (rightHip[1] or 0) < -15 then
+					hipForward = true
+				end
 			end
 			if leftHip and type(leftHip) == "table" then
-				if (leftHip[1] or 0) < -15 then hipForward = true end
+				if (leftHip[1] or 0) < -15 then
+					hipForward = true
+				end
 			end
 			if waistX > 25 and hipForward then
 				return true, "Inappropriate hip/waist combination detected"
@@ -159,7 +235,7 @@ local function isInappropriate(keyframes: { any }): (boolean, string?)
 	return false, nil
 end
 
---- Validate emote keyframe data for safety and correctness.
+-- Validate emote keyframe data for safety and correctness.
 local function validateEmoteData(data: any): (boolean, string?)
 	if type(data) ~= "table" then
 		return false, "Emote data must be a table"
@@ -268,7 +344,10 @@ function EmoteService.Client:RequestEmote(player: Player, prompt: string, style:
 	local now = os.clock()
 	local lastGen = _lastGenerationTime[player.UserId] or 0
 	if now - lastGen < GENERATION_COOLDOWN then
-		return { success = false, error = "Generation cooldown (" .. math.ceil(GENERATION_COOLDOWN - (now - lastGen)) .. "s)" }
+		return {
+			success = false,
+			error = "Generation cooldown (" .. math.ceil(GENERATION_COOLDOWN - (now - lastGen)) .. "s)",
+		}
 	end
 
 	-- Validate prompt

@@ -53,7 +53,7 @@ local function createCorner(parent: GuiObject, radius: number?)
 	return corner
 end
 
----------- Block Rendering ----------
+-- Block Rendering
 
 local function getOrCreatePlotFolder(): Folder
 	if _plotFolder and _plotFolder.Parent then
@@ -118,7 +118,7 @@ local function renderAllBlocks(placedBlocks: { [string]: string })
 	end
 end
 
----------- Creature Display ----------
+-- Creature Display
 
 local function clearCreatures()
 	for id, entry in pairs(_creatureModels) do
@@ -170,7 +170,7 @@ local function spawnPlotCreature(creatureId: string, localX: number, localZ: num
 	end)
 end
 
----------- Ghost Block (Build Mode Preview) ----------
+-- Ghost Block (Build Mode Preview)
 
 local function createGhostBlock()
 	if _ghostBlock then
@@ -234,7 +234,7 @@ local function destroyGhostBlock()
 	end
 end
 
----------- Plot Floor (visual boundary) ----------
+-- Plot Floor (visual boundary)
 
 local function renderPlotFloor()
 	if not _plotOrigin then
@@ -270,7 +270,7 @@ local function renderPlotFloor()
 	end
 end
 
----------- UI ----------
+-- UI
 
 local function buildUI()
 	if _screenGui then
@@ -685,7 +685,7 @@ function toggleBuildMode()
 	updateHUD()
 end
 
----------- Input ----------
+-- Input
 
 local function onInputBegan(input: InputObject, processed: boolean)
 	if processed then
@@ -705,8 +705,7 @@ local function onInputBegan(input: InputObject, processed: boolean)
 	end
 
 	-- Left click / tap: place or remove block (remove mode on mobile)
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		local mouse = Player:GetMouse()
 		local ray = Camera:ScreenPointToRay(mouse.X, mouse.Y)
 		local rayParams = RaycastParams.new()
@@ -797,7 +796,7 @@ local function onInputBegan(input: InputObject, processed: boolean)
 	end
 end
 
----------- Lifecycle ----------
+-- Lifecycle
 
 local PlotController = Knit.CreateController({ Name = "PlotController" })
 

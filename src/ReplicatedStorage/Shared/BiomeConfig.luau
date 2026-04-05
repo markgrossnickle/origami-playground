@@ -180,7 +180,12 @@ BiomeConfig.DepthLayers = {
 		secondaryBlock = BlockType.FoilSheet,
 		ores = {
 			{ blockType = BlockType.MetalOrigami, chance = 0.02, veinSize = { min = 2, max = 4 }, veinsPerChunk = 2 },
-			{ blockType = BlockType.SapphireCrystal, chance = 0.01, veinSize = { min = 1, max = 3 }, veinsPerChunk = 1 },
+			{
+				blockType = BlockType.SapphireCrystal,
+				chance = 0.01,
+				veinSize = { min = 1, max = 3 },
+				veinsPerChunk = 1,
+			},
 		},
 		eggChance = 0.04,
 	} :: DepthLayer,

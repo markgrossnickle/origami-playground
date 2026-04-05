@@ -66,9 +66,7 @@ local miningProgressNameLabel: TextLabel? = nil
 local miningProgressBarBg: Frame? = nil
 local miningProgressFill: Frame? = nil
 
--------------------------------------------------
 -- Raycast helpers
--------------------------------------------------
 
 local _cachedRaycastParams: RaycastParams = RaycastParams.new()
 _cachedRaycastParams.FilterType = Enum.RaycastFilterType.Include
@@ -130,9 +128,7 @@ local function _raycastToBlock(): (string?, number?, Vector3?, Vector3?)
 	return chunkKey, flatIndex, hitPos, result.Normal
 end
 
--------------------------------------------------
 -- Visual feedback
--------------------------------------------------
 
 local function _createHighlight()
 	highlightPart = Instance.new("Part")
@@ -352,9 +348,7 @@ local function _updateTierBlockedUI()
 	end
 end
 
--------------------------------------------------
 -- Mining logic
--------------------------------------------------
 
 local function _getCurrentToolConfig()
 	return ToolRegistry.get(equippedToolId) or ToolRegistry.getDefault()
@@ -496,9 +490,7 @@ local function _updateMining(dt: number)
 	end
 end
 
--------------------------------------------------
 -- Knit lifecycle
--------------------------------------------------
 
 function MiningController:KnitInit()
 	camera = workspace.CurrentCamera :: Camera

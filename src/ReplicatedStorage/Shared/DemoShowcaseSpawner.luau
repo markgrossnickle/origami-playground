@@ -41,10 +41,8 @@ local function makeBillboard(parent: Instance, text: string, offset: Vector3)
 	return bb
 end
 
-----------------------------------------------------------------------
 -- Vehicle setup: creates VehicleSeat + collision plate + ProximityPrompt
 -- Mirrors OrigamiService:CreateVehicleSeat logic for demo vehicles
-----------------------------------------------------------------------
 local function setupVehicle(builtModel: Model, position: Vector3, modelData: { [string]: any }, folder: Folder)
 	local _, modelSize = builtModel:GetBoundingBox()
 	local modelName = modelData.name or "Vehicle"
@@ -152,9 +150,7 @@ local function setupVehicle(builtModel: Model, position: Vector3, modelData: { [
 	makeBillboard(seat, modelName, Vector3.new(0, modelSize.Y / 2 + 3, 0))
 end
 
-----------------------------------------------------------------------
 -- Main build function
-----------------------------------------------------------------------
 function DemoShowcaseSpawner.Build()
 	-- Clean up previous
 	local existing = workspace:FindFirstChild(FOLDER_NAME)

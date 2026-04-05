@@ -29,7 +29,9 @@ function VFXUtil.sparkle(position: Vector3, color: Color3?, count: number?, life
 	emitter:Emit(count or 20)
 
 	task.delay(lifetime or 1.5, function()
-		if part.Parent then part:Destroy() end
+		if part.Parent then
+			part:Destroy()
+		end
 	end)
 end
 
@@ -98,7 +100,9 @@ function VFXUtil.risingText(position: Vector3, text: string, color: Color3?)
 			label.TextTransparency = math.clamp(elapsed - 0.8, 0, 1)
 			label.TextStrokeTransparency = math.clamp(0.3 + elapsed, 0, 1)
 		end
-		if part.Parent then part:Destroy() end
+		if part.Parent then
+			part:Destroy()
+		end
 	end)
 end
 

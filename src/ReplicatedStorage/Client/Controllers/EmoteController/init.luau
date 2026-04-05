@@ -58,7 +58,7 @@ local _statusLabel = nil
 local _wheelVisible = false
 local _activeAnimation = nil
 
----------- Motor6D Animation Engine ----------
+-- Motor6D Animation Engine
 
 local function findMotor6D(character: Model, motorName: string): Motor6D?
 	for _, desc in ipairs(character:GetDescendants()) do
@@ -74,13 +74,17 @@ local function lerpAngle(a: number, b: number, t: number): number
 end
 
 local function getJointRotation(joints, jointName: string): (number, number, number)
-	if not joints then return 0, 0, 0 end
+	if not joints then
+		return 0, 0, 0
+	end
 	local rot = joints[jointName]
-	if not rot then return 0, 0, 0 end
+	if not rot then
+		return 0, 0, 0
+	end
 	return rot[1] or 0, rot[2] or 0, rot[3] or 0
 end
 
---- Play keyframe animation on a character. Returns cleanup function.
+-- Play keyframe animation on a character. Returns cleanup function.
 function _playEmoteOnCharacter(character: Model, emoteData: { [string]: any }): () -> ()
 	local keyframes = emoteData.keyframes
 	local duration = emoteData.duration or 2
@@ -102,7 +106,9 @@ function _playEmoteOnCharacter(character: Model, emoteData: { [string]: any }): 
 
 			while not state.stopped do
 				local elapsed = os.clock() - startTime
-				if elapsed >= duration then break end
+				if elapsed >= duration then
+					break
+				end
 
 				-- Find surrounding keyframes
 				local prevKF, nextKF = keyframes[1], keyframes[#keyframes]
@@ -122,7 +128,9 @@ function _playEmoteOnCharacter(character: Model, emoteData: { [string]: any }): 
 				-- Interpolate each joint
 				for jointName, motorName in pairs(JOINT_TO_MOTOR) do
 					local motor = findMotor6D(character, motorName)
-					if not motor then continue end
+					if not motor then
+						continue
+					end
 
 					local px, py, pz = getJointRotation(prevKF.joints, jointName)
 					local nx, ny, nz = getJointRotation(nextKF.joints, jointName)
@@ -154,7 +162,7 @@ function _playEmoteOnCharacter(character: Model, emoteData: { [string]: any }): 
 	end
 end
 
----------- Public API ----------
+-- Public API
 
 local EmoteController = Knit.CreateController({ Name = "EmoteController" })
 
@@ -170,7 +178,7 @@ function EmoteController:PlayOnCharacter(character: Model, keyframeData: { [stri
 	return _playEmoteOnCharacter(character, keyframeData)
 end
 
----------- UI ----------
+-- UI
 
 local function makeCorner(parent: GuiObject, radius: number?)
 	local corner = Instance.new("UICorner")
@@ -349,7 +357,9 @@ local function createUI()
 
 	-- Custom emote generation
 	local function submitCustom()
-		if not _customInput then return end
+		if not _customInput then
+			return
+		end
 		local prompt = _customInput.Text
 		if prompt == "" then
 			setStatus("Type an emote description", COLORS.error)
@@ -383,7 +393,7 @@ local function createUI()
 	-- Emote touch button disabled
 end
 
----------- Lifecycle ----------
+-- Lifecycle
 
 function EmoteController:KnitInit() end
 
@@ -392,27 +402,30 @@ function EmoteController:KnitStart()
 
 	-- Keyboard: T to toggle emote wheel
 	UserInputService.InputBegan:Connect(function(input, processed)
-		if processed then return end
-		if input.KeyCode == Enum.KeyCode.T then
-			toggleWheel()
-		elseif input.KeyCode == Enum.KeyCode.DPadUp then
+		if processed then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.T or input.KeyCode == Enum.KeyCode.DPadUp then
 			toggleWheel()
 		end
 	end)
 
 	-- Close wheel when clicking outside
 	UserInputService.InputBegan:Connect(function(input, _processed)
-		if not _wheelVisible then return end
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch then
+		if not _wheelVisible then
+			return
+		end
+		if
+			input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
 			-- Small delay to let button clicks process first
 			task.defer(function()
 				if _wheelFrame and _wheelVisible then
 					local mouse = UserInputService:GetMouseLocation()
 					local pos = _wheelFrame.AbsolutePosition
 					local size = _wheelFrame.AbsoluteSize
-					if mouse.X < pos.X or mouse.X > pos.X + size.X
-						or mouse.Y < pos.Y or mouse.Y > pos.Y + size.Y then
+					if mouse.X < pos.X or mouse.X > pos.X + size.X or mouse.Y < pos.Y or mouse.Y > pos.Y + size.Y then
 						_wheelVisible = false
 						_wheelFrame.Visible = false
 					end
@@ -425,7 +438,9 @@ function EmoteController:KnitStart()
 	local EmoteService = Knit.GetService("EmoteService")
 	EmoteService.EmotePlayed:Connect(function(emotePlayer: Player, keyframeData: any)
 		local character = emotePlayer.Character
-		if not character then return end
+		if not character then
+			return
+		end
 
 		-- Stop any active animation
 		if _activeAnimation then

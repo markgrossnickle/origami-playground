@@ -38,13 +38,31 @@ local COLORS = {
 
 -- Material depth ordering for sort (shallow → deep)
 local MATERIAL_DEPTH_ORDER = {
-	paper_scrap = 1, cardboard = 2, wood = 3, dried_pulp = 4,
-	compressed_pulp = 5, clay_chunk = 6,
-	folded_stone = 7, quartz_shard = 8, paper_crystal = 9, ink_stone = 10,
-	origami_rock = 11, gem_fragment = 12, foil_ore = 13, ruby_paper = 14,
-	crystal_shard = 15, foil_sheet = 16, metal_origami = 17, sapphire_crystal = 18,
-	void_stone = 19, dark_paper = 20, shadow_fold = 21, void_crystal = 22,
-	prismatic_shard = 23, core_fragment = 24, rainbow_paper = 25,
+	paper_scrap = 1,
+	cardboard = 2,
+	wood = 3,
+	dried_pulp = 4,
+	compressed_pulp = 5,
+	clay_chunk = 6,
+	folded_stone = 7,
+	quartz_shard = 8,
+	paper_crystal = 9,
+	ink_stone = 10,
+	origami_rock = 11,
+	gem_fragment = 12,
+	foil_ore = 13,
+	ruby_paper = 14,
+	crystal_shard = 15,
+	foil_sheet = 16,
+	metal_origami = 17,
+	sapphire_crystal = 18,
+	void_stone = 19,
+	dark_paper = 20,
+	shadow_fold = 21,
+	void_crystal = 22,
+	prismatic_shard = 23,
+	core_fragment = 24,
+	rainbow_paper = 25,
 }
 
 -- Auto-positioning for creature plot assignment
@@ -83,9 +101,7 @@ local renderToolsTab: () -> ()
 local renderCreaturesTab: () -> ()
 local renderEggsTab: () -> ()
 
--------------------------------------------------
 -- Utility
--------------------------------------------------
 
 local function createCorner(parent: GuiObject, radius: number?)
 	local corner = Instance.new("UICorner")
@@ -109,12 +125,18 @@ local function formatMaterialName(itemId: string): string
 end
 
 local function formatTime(seconds: number): string
-	if seconds <= 0 then return "Ready!" end
+	if seconds <= 0 then
+		return "Ready!"
+	end
 	local h = math.floor(seconds / 3600)
 	local m = math.floor((seconds % 3600) / 60)
 	local s = math.floor(seconds % 60)
-	if h > 0 then return string.format("%dh %dm", h, m) end
-	if m > 0 then return if s > 0 then string.format("%dm %ds", m, s) else string.format("%dm", m) end
+	if h > 0 then
+		return string.format("%dh %dm", h, m)
+	end
+	if m > 0 then
+		return if s > 0 then string.format("%dm %ds", m, s) else string.format("%dm", m)
+	end
 	return string.format("%ds", s)
 end
 
@@ -131,9 +153,7 @@ local function createEmptyState(parent: GuiObject, text: string)
 	label.Parent = parent
 end
 
--------------------------------------------------
 -- Data Fetching
--------------------------------------------------
 
 local function fetchAllData(callback: (() -> ())?)
 	local remaining = 6
@@ -147,35 +167,45 @@ local function fetchAllData(callback: (() -> ())?)
 	task.spawn(function()
 		local MiningService = Knit.GetService("MiningService")
 		local ok, inv = MiningService:GetMiningInventory():await()
-		if ok and type(inv) == "table" then _inventory = inv end
+		if ok and type(inv) == "table" then
+			_inventory = inv
+		end
 		onComplete()
 	end)
 
 	task.spawn(function()
 		local MiningService = Knit.GetService("MiningService")
 		local ok, tool = MiningService:GetEquippedTool():await()
-		if ok and type(tool) == "string" then _equippedTool = tool end
+		if ok and type(tool) == "string" then
+			_equippedTool = tool
+		end
 		onComplete()
 	end)
 
 	task.spawn(function()
 		local CreatureService = Knit.GetService("CreatureService")
 		local ok, creatures = CreatureService:GetCreatures():await()
-		if ok and type(creatures) == "table" then _creatures = creatures end
+		if ok and type(creatures) == "table" then
+			_creatures = creatures
+		end
 		onComplete()
 	end)
 
 	task.spawn(function()
 		local BreedingService = Knit.GetService("BreedingService")
 		local ok, eggs = BreedingService:CheckEggs():await()
-		if ok and type(eggs) == "table" then _pendingEggs = eggs end
+		if ok and type(eggs) == "table" then
+			_pendingEggs = eggs
+		end
 		onComplete()
 	end)
 
 	task.spawn(function()
 		local EggCraftingService = Knit.GetService("EggCraftingService")
 		local ok, recipes = EggCraftingService:GetRecipes():await()
-		if ok and type(recipes) == "table" then _recipes = recipes end
+		if ok and type(recipes) == "table" then
+			_recipes = recipes
+		end
 		onComplete()
 	end)
 
@@ -192,12 +222,12 @@ local function fetchAllData(callback: (() -> ())?)
 	end)
 end
 
--------------------------------------------------
 -- Materials Tab
--------------------------------------------------
 
 renderMaterialsTab = function()
-	if not _contentFrame then return end
+	if not _contentFrame then
+		return
+	end
 	clearChildren(_contentFrame)
 
 	-- Build sorted material list (only items in PLACEABLE_BLOCKS with count > 0)
@@ -277,9 +307,7 @@ renderMaterialsTab = function()
 	end
 end
 
--------------------------------------------------
 -- Tools Tab
--------------------------------------------------
 
 local function equipTool(toolId: string)
 	local MiningService = Knit.GetService("MiningService")
@@ -289,7 +317,9 @@ local function equipTool(toolId: string)
 end
 
 local function craftTool(toolId: string, button: TextButton?)
-	if _crafting then return end
+	if _crafting then
+		return
+	end
 	_crafting = true
 	if button then
 		button.Text = "Crafting..."
@@ -310,7 +340,9 @@ local function craftTool(toolId: string, button: TextButton?)
 end
 
 renderToolsTab = function()
-	if not _contentFrame then return end
+	if not _contentFrame then
+		return
+	end
 	clearChildren(_contentFrame)
 
 	local container = Instance.new("Frame")
@@ -376,7 +408,9 @@ renderToolsTab = function()
 	-- Tool list (ordered by tier)
 	for orderIdx, toolId in ipairs(ToolRegistry.TierOrder) do
 		local toolConfig = ToolRegistry.get(toolId)
-		if not toolConfig then continue end
+		if not toolConfig then
+			continue
+		end
 
 		local isEquipped = toolId == _equippedTool
 		local hasItem = toolId == "paper_hands" or (_inventory[toolId] and _inventory[toolId] > 0)
@@ -414,7 +448,13 @@ renderToolsTab = function()
 		statsLine.Size = UDim2.new(1, -16, 0, 12)
 		statsLine.Position = UDim2.fromOffset(8, 22)
 		statsLine.BackgroundTransparency = 1
-		statsLine.Text = string.format("Pwr:%d  Spd:%.1f  Rch:%d  T%d", toolConfig.power, toolConfig.speed, toolConfig.reach, toolConfig.tier)
+		statsLine.Text = string.format(
+			"Pwr:%d  Spd:%.1f  Rch:%d  T%d",
+			toolConfig.power,
+			toolConfig.speed,
+			toolConfig.reach,
+			toolConfig.tier
+		)
 		statsLine.TextColor3 = COLORS.textDim
 		statsLine.TextSize = 10
 		statsLine.Font = Enum.Font.Gotham
@@ -484,9 +524,7 @@ renderToolsTab = function()
 	end
 end
 
--------------------------------------------------
 -- Creatures Tab
--------------------------------------------------
 
 local function despawnActiveCreature()
 	if _activeCreatureCleanup then
@@ -504,10 +542,14 @@ local function spawnCreatureInWorld(creature: { [string]: any })
 
 	local character = Player.Character
 	local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-	if not rootPart or not creature.modelData then return end
+	if not rootPart or not creature.modelData then
+		return
+	end
 
 	local model = OrigamiBuilder.BuildModel(creature.modelData)
-	if not model then return end
+	if not model then
+		return
+	end
 
 	model.Name = creature.name or "Creature"
 	model:SetAttribute("OwnerUserId", Player.UserId)
@@ -528,7 +570,9 @@ local function assignCreatureToPlot(creatureId: string)
 	task.spawn(function()
 		local PlotService = Knit.GetService("PlotService")
 		local ok, plotData = PlotService:GetPlotData():await()
-		if not ok or type(plotData) ~= "table" or not plotData.origin then return end
+		if not ok or type(plotData) ~= "table" or not plotData.origin then
+			return
+		end
 
 		-- Find first open position
 		local assigned = plotData.assignedCreatures or {}
@@ -544,7 +588,9 @@ local function assignCreatureToPlot(creatureId: string)
 				break
 			end
 		end
-		if not localX then return end
+		if not localX then
+			return
+		end
 
 		local result = PlotService:AssignCreature(creatureId, localX, localZ):await()
 		if result and result.success then
@@ -571,7 +617,9 @@ local function releaseCreature(creatureId: string, button: TextButton)
 					despawnActiveCreature()
 				end
 				local ok2, creatures = CreatureService:GetCreatures():await()
-				if ok2 and type(creatures) == "table" then _creatures = creatures end
+				if ok2 and type(creatures) == "table" then
+					_creatures = creatures
+				end
 				renderCreaturesTab()
 			end
 		end)
@@ -586,7 +634,9 @@ local function releaseCreature(creatureId: string, button: TextButton)
 end
 
 renderCreaturesTab = function()
-	if not _contentFrame then return end
+	if not _contentFrame then
+		return
+	end
 	clearChildren(_contentFrame)
 
 	if #_creatures == 0 then
@@ -727,7 +777,9 @@ renderCreaturesTab = function()
 		createCorner(renameBtn, 4)
 		renameBtn.MouseButton1Click:Connect(function()
 			local nameL = card:FindFirstChild("NameLabel")
-			if not nameL then return end
+			if not nameL then
+				return
+			end
 
 			local renameBox = Instance.new("TextBox")
 			renameBox.Size = nameL.Size
@@ -775,9 +827,7 @@ renderCreaturesTab = function()
 	end
 end
 
--------------------------------------------------
 -- Eggs Tab
--------------------------------------------------
 
 local function startEggTimers()
 	if _eggTimerThread then
@@ -807,7 +857,9 @@ local function startEggTimers()
 							for _, egg in ipairs(_pendingEggs) do
 								if egg.index == eggIdx then
 									child.Text = formatTime(egg.remainingSeconds or 0)
-									child.TextColor3 = if (egg.remainingSeconds or 0) <= 0 then COLORS.success else COLORS.text
+									child.TextColor3 = if (egg.remainingSeconds or 0) <= 0
+										then COLORS.success
+										else COLORS.text
 									break
 								end
 							end
@@ -847,14 +899,18 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 			end
 
 			-- Refresh BreedingController world eggs
-			local ok, bc = pcall(function() return Knit.GetController("BreedingController") end)
+			local ok, bc = pcall(function()
+				return Knit.GetController("BreedingController")
+			end)
 			if ok and bc and bc.refreshEggs then
 				bc:refreshEggs()
 			end
 
 			-- Refresh data and re-render
 			local ok2, eggs = BreedingService:CheckEggs():await()
-			if ok2 and type(eggs) == "table" then _pendingEggs = eggs end
+			if ok2 and type(eggs) == "table" then
+				_pendingEggs = eggs
+			end
 			renderEggsTab()
 		elseif button and button.Parent then
 			button.Text = "Failed"
@@ -870,7 +926,9 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 end
 
 local function craftEgg(recipeId: string, button: TextButton?)
-	if _crafting then return end
+	if _crafting then
+		return
+	end
 	_crafting = true
 	if button then
 		button.Text = "Crafting..."
@@ -887,21 +945,33 @@ local function craftEgg(recipeId: string, button: TextButton?)
 			if rootPart then
 				local rarityColor = EggCraftingConfig.RARITY_COLORS[result.rarity] or COLORS.success
 				VFXUtil.sparkle(rootPart.Position + Vector3.new(0, 3, 0), rarityColor, 25, 2)
-				VFXUtil.risingText(rootPart.Position + Vector3.new(0, 4, 0), (result.displayName or "Egg") .. " crafted!", rarityColor)
+				VFXUtil.risingText(
+					rootPart.Position + Vector3.new(0, 4, 0),
+					(result.displayName or "Egg") .. " crafted!",
+					rarityColor
+				)
 			end
 
-			local ok, bc = pcall(function() return Knit.GetController("BreedingController") end)
+			local ok, bc = pcall(function()
+				return Knit.GetController("BreedingController")
+			end)
 			if ok and bc and bc.refreshEggs then
 				bc:refreshEggs()
 			end
 
 			-- Refresh all egg-related data
 			local ok2, eggs = Knit.GetService("BreedingService"):CheckEggs():await()
-			if ok2 and type(eggs) == "table" then _pendingEggs = eggs end
+			if ok2 and type(eggs) == "table" then
+				_pendingEggs = eggs
+			end
 			local ok3, recipes = EggCraftingService:GetRecipes():await()
-			if ok3 and type(recipes) == "table" then _recipes = recipes end
+			if ok3 and type(recipes) == "table" then
+				_recipes = recipes
+			end
 			local ok4, inv = Knit.GetService("MiningService"):GetMiningInventory():await()
-			if ok4 and type(inv) == "table" then _inventory = inv end
+			if ok4 and type(inv) == "table" then
+				_inventory = inv
+			end
 
 			renderEggsTab()
 		else
@@ -919,7 +989,9 @@ local function craftEgg(recipeId: string, button: TextButton?)
 end
 
 renderEggsTab = function()
-	if not _contentFrame then return end
+	if not _contentFrame then
+		return
+	end
 	clearChildren(_contentFrame)
 
 	local container = Instance.new("Frame")
@@ -1110,7 +1182,8 @@ renderEggsTab = function()
 				statsLine.Size = UDim2.new(0.5, -8, 0, 14)
 				statsLine.Position = UDim2.new(0.5, 0, 0, 24)
 				statsLine.BackgroundTransparency = 1
-				statsLine.Text = string.format("HP:%d ATK:%d DEF:%d SPD:%d", bstats.hp, bstats.atk, bstats.def, bstats.spd)
+				statsLine.Text =
+					string.format("HP:%d ATK:%d DEF:%d SPD:%d", bstats.hp, bstats.atk, bstats.def, bstats.spd)
 				statsLine.TextColor3 = COLORS.textDim
 				statsLine.TextSize = 9
 				statsLine.Font = Enum.Font.Gotham
@@ -1160,9 +1233,7 @@ renderEggsTab = function()
 	startEggTimers()
 end
 
--------------------------------------------------
 -- Tab Switching & Panel Toggle
--------------------------------------------------
 
 local function switchTab(tabName: string)
 	_activeTab = tabName
@@ -1178,10 +1249,14 @@ local function switchTab(tabName: string)
 		_eggTimerThread = nil
 	end
 
-	if tabName == "Mats" then renderMaterialsTab()
-	elseif tabName == "Tools" then renderToolsTab()
-	elseif tabName == "Critters" then renderCreaturesTab()
-	elseif tabName == "Eggs" then renderEggsTab()
+	if tabName == "Mats" then
+		renderMaterialsTab()
+	elseif tabName == "Tools" then
+		renderToolsTab()
+	elseif tabName == "Critters" then
+		renderCreaturesTab()
+	elseif tabName == "Eggs" then
+		renderEggsTab()
 	end
 end
 
@@ -1205,9 +1280,7 @@ local function togglePanel()
 	end
 end
 
--------------------------------------------------
 -- UI Construction
--------------------------------------------------
 
 local function buildUI()
 	if _screenGui then
@@ -1345,9 +1418,7 @@ local function buildUI()
 	end)
 end
 
--------------------------------------------------
 -- Lifecycle
--------------------------------------------------
 
 local BackpackController = Knit.CreateController({ Name = "BackpackController" })
 
@@ -1390,7 +1461,9 @@ function BackpackController:KnitStart()
 			if _visible and _activeTab == "Tools" then
 				task.spawn(function()
 					local ok, inv = MiningService:GetMiningInventory():await()
-					if ok and type(inv) == "table" then _inventory = inv end
+					if ok and type(inv) == "table" then
+						_inventory = inv
+					end
 					renderToolsTab()
 				end)
 			end
@@ -1404,7 +1477,9 @@ function BackpackController:KnitStart()
 		CreatureService.CreatureAdded:Connect(function()
 			task.spawn(function()
 				local ok, creatures = CreatureService:GetCreatures():await()
-				if ok and type(creatures) == "table" then _creatures = creatures end
+				if ok and type(creatures) == "table" then
+					_creatures = creatures
+				end
 				if _visible and _activeTab == "Critters" then
 					renderCreaturesTab()
 				end
@@ -1414,7 +1489,9 @@ function BackpackController:KnitStart()
 		CreatureService.CreatureRemoved:Connect(function()
 			task.spawn(function()
 				local ok, creatures = CreatureService:GetCreatures():await()
-				if ok and type(creatures) == "table" then _creatures = creatures end
+				if ok and type(creatures) == "table" then
+					_creatures = creatures
+				end
 				if _visible and _activeTab == "Critters" then
 					renderCreaturesTab()
 				end

@@ -39,7 +39,9 @@ function TDCombat.findCreepTarget(pos: Vector3, range: number, creepList: { Cree
 	for _, creep in ipairs(creepList) do
 		if creep.alive then
 			local creepPos = if creep.part and creep.part.Parent then creep.part.Position else creep.position
-			if not creepPos then continue end
+			if not creepPos then
+				continue
+			end
 
 			local dist = (creepPos - pos).Magnitude
 			if dist <= range then
@@ -80,12 +82,7 @@ end
 
 --- Apply damage to a creep, handling armor/dodge/piercing. Returns actual damage dealt.
 --- onKill callback is called with the creep if it dies.
-function TDCombat.damageCreep(
-	creep: Creep,
-	damage: number,
-	attackType: AttackType,
-	onKill: ((Creep) -> ())?
-): number
+function TDCombat.damageCreep(creep: Creep, damage: number, attackType: AttackType, onKill: ((Creep) -> ())?): number
 	if not creep.alive then
 		return 0
 	end

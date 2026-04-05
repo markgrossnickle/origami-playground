@@ -91,12 +91,22 @@ function PlotService.Client:ClaimPlot(player: Player)
 	return {
 		success = true,
 		plotIndex = plotIndex,
-		origin = { PlotConfig.getPlotOrigin(plotIndex).X, PlotConfig.getPlotOrigin(plotIndex).Y, PlotConfig.getPlotOrigin(plotIndex).Z },
+		origin = {
+			PlotConfig.getPlotOrigin(plotIndex).X,
+			PlotConfig.getPlotOrigin(plotIndex).Y,
+			PlotConfig.getPlotOrigin(plotIndex).Z,
+		},
 	}
 end
 
 --- Place a block at local coordinates. Deducts material from MiningInventory.
-function PlotService.Client:PlaceBlock(player: Player, localX: number, localY: number, localZ: number, materialItemId: string)
+function PlotService.Client:PlaceBlock(
+	player: Player,
+	localX: number,
+	localY: number,
+	localZ: number,
+	materialItemId: string
+)
 	local plotData = getPlotData(player)
 	if not plotData or plotData.plotIndex < 0 then
 		return { success = false, error = "No plot claimed" }
@@ -245,7 +255,11 @@ function PlotService.Client:GetPlotData(player: Player)
 		assignedCreatures = plotData.assignedCreatures,
 		blockCount = countBlocks(plotData.placedBlocks),
 		origin = if plotData.plotIndex >= 0
-			then { PlotConfig.getPlotOrigin(plotData.plotIndex).X, PlotConfig.getPlotOrigin(plotData.plotIndex).Y, PlotConfig.getPlotOrigin(plotData.plotIndex).Z }
+			then {
+				PlotConfig.getPlotOrigin(plotData.plotIndex).X,
+				PlotConfig.getPlotOrigin(plotData.plotIndex).Y,
+				PlotConfig.getPlotOrigin(plotData.plotIndex).Z,
+			}
 			else nil,
 	}
 end
@@ -269,7 +283,11 @@ function PlotService.Client:GetPlotDataForVisit(player: Player, ownerUserId: num
 		placedBlocks = plotData.placedBlocks,
 		assignedCreatures = plotData.assignedCreatures,
 		blockCount = countBlocks(plotData.placedBlocks),
-		origin = { PlotConfig.getPlotOrigin(plotData.plotIndex).X, PlotConfig.getPlotOrigin(plotData.plotIndex).Y, PlotConfig.getPlotOrigin(plotData.plotIndex).Z },
+		origin = {
+			PlotConfig.getPlotOrigin(plotData.plotIndex).X,
+			PlotConfig.getPlotOrigin(plotData.plotIndex).Y,
+			PlotConfig.getPlotOrigin(plotData.plotIndex).Z,
+		},
 		ownerName = owner.DisplayName,
 	}
 end

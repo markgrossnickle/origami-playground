@@ -14,9 +14,7 @@ local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 
 local CardBattlerController = Knit.CreateController({ Name = "CardBattlerController" })
 
---------------------------------------------------------------------------------
 -- Constants
---------------------------------------------------------------------------------
 
 local COLORS = {
 	bg = Color3.fromRGB(30, 30, 40),
@@ -68,9 +66,7 @@ type AttackType = "single" | "splash" | "rapid" | "piercing"
 type TargetPriority = "nearest" | "weakest" | "strongest" | "fastest"
 type DefenseType = "none" | "armor" | "dodge" | "regen"
 
---------------------------------------------------------------------------------
 -- Types
---------------------------------------------------------------------------------
 
 type CardData = {
 	name: string,
@@ -97,112 +93,292 @@ type BattleUnit = {
 	hpFill: Frame?,
 }
 
---------------------------------------------------------------------------------
 -- Bot Templates
---------------------------------------------------------------------------------
 
 local ENEMY_TEMPLATES = {
 	{
 		name = "Goblin",
-		hp = 25, atk = 8, speed = 10,
+		hp = 25,
+		atk = 8,
+		speed = 10,
 		attackType = "single" :: AttackType,
 		targetPriority = "nearest" :: TargetPriority,
 		defenseType = "dodge" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Block", position = { 0, 1, 0 }, size = { 1.5, 2, 1 }, color = { 80, 200, 80 }, material = "SmoothPlastic" },
-			{ name = "head", shape = "Ball", position = { 0, 2.5, 0 }, size = { 1, 1, 1 }, color = { 80, 200, 80 }, material = "SmoothPlastic" },
+			{
+				name = "body",
+				shape = "Block",
+				position = { 0, 1, 0 },
+				size = { 1.5, 2, 1 },
+				color = { 80, 200, 80 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "head",
+				shape = "Ball",
+				position = { 0, 2.5, 0 },
+				size = { 1, 1, 1 },
+				color = { 80, 200, 80 },
+				material = "SmoothPlastic",
+			},
 		},
 	},
 	{
 		name = "Imp",
-		hp = 20, atk = 12, speed = 12,
+		hp = 20,
+		atk = 12,
+		speed = 12,
 		attackType = "rapid" :: AttackType,
 		targetPriority = "weakest" :: TargetPriority,
 		defenseType = "none" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Block", position = { 0, 1, 0 }, size = { 1.2, 1.8, 1 }, color = { 200, 60, 60 }, material = "SmoothPlastic" },
-			{ name = "head", shape = "Ball", position = { 0, 2.3, 0 }, size = { 0.8, 0.8, 0.8 }, color = { 200, 60, 60 }, material = "SmoothPlastic" },
-			{ name = "horn", shape = "Wedge", position = { 0, 3, 0 }, size = { 0.3, 0.6, 0.3 }, color = { 160, 40, 40 }, material = "SmoothPlastic" },
+			{
+				name = "body",
+				shape = "Block",
+				position = { 0, 1, 0 },
+				size = { 1.2, 1.8, 1 },
+				color = { 200, 60, 60 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "head",
+				shape = "Ball",
+				position = { 0, 2.3, 0 },
+				size = { 0.8, 0.8, 0.8 },
+				color = { 200, 60, 60 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "horn",
+				shape = "Wedge",
+				position = { 0, 3, 0 },
+				size = { 0.3, 0.6, 0.3 },
+				color = { 160, 40, 40 },
+				material = "SmoothPlastic",
+			},
 		},
 	},
 	{
 		name = "Slime",
-		hp = 35, atk = 6, speed = 7,
+		hp = 35,
+		atk = 6,
+		speed = 7,
 		attackType = "splash" :: AttackType,
 		targetPriority = "nearest" :: TargetPriority,
 		defenseType = "regen" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Ball", position = { 0, 0.8, 0 }, size = { 2, 1.6, 2 }, color = { 100, 220, 200 }, material = "Glass" },
-			{ name = "core", shape = "Ball", position = { 0, 0.8, 0 }, size = { 0.8, 0.8, 0.8 }, color = { 60, 180, 160 }, material = "Neon" },
+			{
+				name = "body",
+				shape = "Ball",
+				position = { 0, 0.8, 0 },
+				size = { 2, 1.6, 2 },
+				color = { 100, 220, 200 },
+				material = "Glass",
+			},
+			{
+				name = "core",
+				shape = "Ball",
+				position = { 0, 0.8, 0 },
+				size = { 0.8, 0.8, 0.8 },
+				color = { 60, 180, 160 },
+				material = "Neon",
+			},
 		},
 	},
 	{
 		name = "Golem",
-		hp = 60, atk = 10, speed = 4,
+		hp = 60,
+		atk = 10,
+		speed = 4,
 		attackType = "single" :: AttackType,
 		targetPriority = "nearest" :: TargetPriority,
 		defenseType = "armor" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Block", position = { 0, 1.2, 0 }, size = { 2, 2.4, 1.5 }, color = { 140, 120, 100 }, material = "Concrete" },
-			{ name = "head", shape = "Block", position = { 0, 3, 0 }, size = { 1.2, 1.2, 1.2 }, color = { 140, 120, 100 }, material = "Concrete" },
-			{ name = "arm_l", shape = "Block", position = { -1.5, 1.5, 0 }, size = { 0.8, 2, 0.8 }, color = { 120, 100, 80 }, material = "Concrete" },
-			{ name = "arm_r", shape = "Block", position = { 1.5, 1.5, 0 }, size = { 0.8, 2, 0.8 }, color = { 120, 100, 80 }, material = "Concrete" },
+			{
+				name = "body",
+				shape = "Block",
+				position = { 0, 1.2, 0 },
+				size = { 2, 2.4, 1.5 },
+				color = { 140, 120, 100 },
+				material = "Concrete",
+			},
+			{
+				name = "head",
+				shape = "Block",
+				position = { 0, 3, 0 },
+				size = { 1.2, 1.2, 1.2 },
+				color = { 140, 120, 100 },
+				material = "Concrete",
+			},
+			{
+				name = "arm_l",
+				shape = "Block",
+				position = { -1.5, 1.5, 0 },
+				size = { 0.8, 2, 0.8 },
+				color = { 120, 100, 80 },
+				material = "Concrete",
+			},
+			{
+				name = "arm_r",
+				shape = "Block",
+				position = { 1.5, 1.5, 0 },
+				size = { 0.8, 2, 0.8 },
+				color = { 120, 100, 80 },
+				material = "Concrete",
+			},
 		},
 	},
 	{
 		name = "Shadow",
-		hp = 18, atk = 14, speed = 16,
+		hp = 18,
+		atk = 14,
+		speed = 16,
 		attackType = "piercing" :: AttackType,
 		targetPriority = "weakest" :: TargetPriority,
 		defenseType = "dodge" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Block", position = { 0, 1, 0 }, size = { 1, 2.2, 0.6 }, color = { 40, 20, 60 }, material = "SmoothPlastic" },
-			{ name = "head", shape = "Ball", position = { 0, 2.5, 0 }, size = { 0.7, 0.7, 0.7 }, color = { 60, 30, 80 }, material = "SmoothPlastic" },
-			{ name = "eye", shape = "Ball", position = { 0, 2.5, -0.3 }, size = { 0.3, 0.15, 0.15 }, color = { 200, 50, 255 }, material = "Neon" },
+			{
+				name = "body",
+				shape = "Block",
+				position = { 0, 1, 0 },
+				size = { 1, 2.2, 0.6 },
+				color = { 40, 20, 60 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "head",
+				shape = "Ball",
+				position = { 0, 2.5, 0 },
+				size = { 0.7, 0.7, 0.7 },
+				color = { 60, 30, 80 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "eye",
+				shape = "Ball",
+				position = { 0, 2.5, -0.3 },
+				size = { 0.3, 0.15, 0.15 },
+				color = { 200, 50, 255 },
+				material = "Neon",
+			},
 		},
 	},
 	{
 		name = "Brute",
-		hp = 70, atk = 15, speed = 3,
+		hp = 70,
+		atk = 15,
+		speed = 3,
 		attackType = "splash" :: AttackType,
 		targetPriority = "strongest" :: TargetPriority,
 		defenseType = "armor" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Block", position = { 0, 1.5, 0 }, size = { 3, 3, 2 }, color = { 100, 60, 50 }, material = "Concrete" },
-			{ name = "head", shape = "Block", position = { 0, 3.5, 0 }, size = { 1.5, 1, 1.5 }, color = { 110, 70, 55 }, material = "Concrete" },
-			{ name = "arm_l", shape = "Block", position = { -2.2, 1.5, 0 }, size = { 1.2, 2.5, 1.2 }, color = { 90, 55, 45 }, material = "Concrete" },
-			{ name = "arm_r", shape = "Block", position = { 2.2, 1.5, 0 }, size = { 1.2, 2.5, 1.2 }, color = { 90, 55, 45 }, material = "Concrete" },
+			{
+				name = "body",
+				shape = "Block",
+				position = { 0, 1.5, 0 },
+				size = { 3, 3, 2 },
+				color = { 100, 60, 50 },
+				material = "Concrete",
+			},
+			{
+				name = "head",
+				shape = "Block",
+				position = { 0, 3.5, 0 },
+				size = { 1.5, 1, 1.5 },
+				color = { 110, 70, 55 },
+				material = "Concrete",
+			},
+			{
+				name = "arm_l",
+				shape = "Block",
+				position = { -2.2, 1.5, 0 },
+				size = { 1.2, 2.5, 1.2 },
+				color = { 90, 55, 45 },
+				material = "Concrete",
+			},
+			{
+				name = "arm_r",
+				shape = "Block",
+				position = { 2.2, 1.5, 0 },
+				size = { 1.2, 2.5, 1.2 },
+				color = { 90, 55, 45 },
+				material = "Concrete",
+			},
 		},
 	},
 	{
 		name = "Healer",
-		hp = 30, atk = 5, speed = 6,
+		hp = 30,
+		atk = 5,
+		speed = 6,
 		attackType = "single" :: AttackType,
 		targetPriority = "weakest" :: TargetPriority,
 		defenseType = "regen" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Block", position = { 0, 1, 0 }, size = { 1.2, 2, 1 }, color = { 220, 220, 240 }, material = "SmoothPlastic" },
-			{ name = "head", shape = "Ball", position = { 0, 2.5, 0 }, size = { 0.9, 0.9, 0.9 }, color = { 230, 230, 250 }, material = "SmoothPlastic" },
-			{ name = "halo", shape = "Cylinder", position = { 0, 3.2, 0 }, size = { 0.1, 1.4, 1.4 }, color = { 255, 255, 100 }, material = "Neon" },
+			{
+				name = "body",
+				shape = "Block",
+				position = { 0, 1, 0 },
+				size = { 1.2, 2, 1 },
+				color = { 220, 220, 240 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "head",
+				shape = "Ball",
+				position = { 0, 2.5, 0 },
+				size = { 0.9, 0.9, 0.9 },
+				color = { 230, 230, 250 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "halo",
+				shape = "Cylinder",
+				position = { 0, 3.2, 0 },
+				size = { 0.1, 1.4, 1.4 },
+				color = { 255, 255, 100 },
+				material = "Neon",
+			},
 		},
 	},
 	{
 		name = "Archer",
-		hp = 22, atk = 11, speed = 8,
+		hp = 22,
+		atk = 11,
+		speed = 8,
 		attackType = "rapid" :: AttackType,
 		targetPriority = "strongest" :: TargetPriority,
 		defenseType = "none" :: DefenseType,
 		parts = {
-			{ name = "body", shape = "Block", position = { 0, 1, 0 }, size = { 1, 2, 0.8 }, color = { 60, 140, 60 }, material = "SmoothPlastic" },
-			{ name = "head", shape = "Ball", position = { 0, 2.4, 0 }, size = { 0.8, 0.8, 0.8 }, color = { 60, 140, 60 }, material = "SmoothPlastic" },
-			{ name = "bow", shape = "Block", position = { 0.7, 1.2, 0 }, size = { 0.15, 1.8, 0.15 }, color = { 120, 80, 40 }, material = "Wood" },
+			{
+				name = "body",
+				shape = "Block",
+				position = { 0, 1, 0 },
+				size = { 1, 2, 0.8 },
+				color = { 60, 140, 60 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "head",
+				shape = "Ball",
+				position = { 0, 2.4, 0 },
+				size = { 0.8, 0.8, 0.8 },
+				color = { 60, 140, 60 },
+				material = "SmoothPlastic",
+			},
+			{
+				name = "bow",
+				shape = "Block",
+				position = { 0.7, 1.2, 0 },
+				size = { 0.15, 1.8, 0.15 },
+				color = { 120, 80, 40 },
+				material = "Wood",
+			},
 		},
 	},
 }
 
---------------------------------------------------------------------------------
 -- State
---------------------------------------------------------------------------------
 
 local _gui: ScreenGui = nil :: any
 local _active = false
@@ -265,9 +441,7 @@ local refreshDeckUI: () -> ()
 local refreshHandUI: () -> ()
 local spawnPlayerUnit: (card: CardData, pos: Vector3) -> ()
 
---------------------------------------------------------------------------------
 -- Helpers
---------------------------------------------------------------------------------
 
 local function setStatus(text: string, color: Color3?)
 	if _statusLabel then
@@ -350,24 +524,31 @@ local function shuffleArray<T>(arr: { T }): { T }
 end
 
 local VALID_ATTACK_TYPES: { [string]: boolean } = { single = true, splash = true, rapid = true, piercing = true }
-local VALID_TARGET_PRIORITIES: { [string]: boolean } = { nearest = true, weakest = true, strongest = true, fastest = true }
+local VALID_TARGET_PRIORITIES: { [string]: boolean } =
+	{ nearest = true, weakest = true, strongest = true, fastest = true }
 local VALID_DEFENSE_TYPES: { [string]: boolean } = { none = true, armor = true, dodge = true, regen = true }
 local RANDOM_ATTACK_TYPES: { AttackType } = { "single", "splash", "rapid", "piercing" }
 local RANDOM_TARGET_PRIORITIES: { TargetPriority } = { "nearest", "weakest", "strongest", "fastest" }
 local RANDOM_DEFENSE_TYPES: { DefenseType } = { "none", "armor", "dodge", "regen" }
 
 local function sanitizeAttackType(v: string?): AttackType
-	if v and VALID_ATTACK_TYPES[v] then return v :: AttackType end
+	if v and VALID_ATTACK_TYPES[v] then
+		return v :: AttackType
+	end
 	return RANDOM_ATTACK_TYPES[math.random(1, #RANDOM_ATTACK_TYPES)]
 end
 
 local function sanitizeTargetPriority(v: string?): TargetPriority
-	if v and VALID_TARGET_PRIORITIES[v] then return v :: TargetPriority end
+	if v and VALID_TARGET_PRIORITIES[v] then
+		return v :: TargetPriority
+	end
 	return RANDOM_TARGET_PRIORITIES[math.random(1, #RANDOM_TARGET_PRIORITIES)]
 end
 
 local function sanitizeDefenseType(v: string?): DefenseType
-	if v and VALID_DEFENSE_TYPES[v] then return v :: DefenseType end
+	if v and VALID_DEFENSE_TYPES[v] then
+		return v :: DefenseType
+	end
 	return RANDOM_DEFENSE_TYPES[math.random(1, #RANDOM_DEFENSE_TYPES)]
 end
 
@@ -378,14 +559,14 @@ local function abbreviateStrategy(at: string, tp: string, dt: string): string
 	return atAbbr .. "/" .. tpAbbr .. "/" .. dtAbbr
 end
 
---------------------------------------------------------------------------------
 -- ViewportFrame Card Preview
---------------------------------------------------------------------------------
 
 local function createViewportPreview(parent: Frame, modelData: { [string]: any })
 	-- Remove old viewport if any
 	local old = parent:FindFirstChild("CardViewport")
-	if old then old:Destroy() end
+	if old then
+		old:Destroy()
+	end
 
 	local vf = Instance.new("ViewportFrame")
 	vf.Name = "CardViewport"
@@ -409,10 +590,7 @@ local function createViewportPreview(parent: Frame, modelData: { [string]: any }
 
 	-- Camera
 	local cam = Instance.new("Camera")
-	cam.CFrame = CFrame.lookAt(
-		cf.Position + Vector3.new(dist * 0.5, dist * 0.4, dist * 0.7),
-		cf.Position
-	)
+	cam.CFrame = CFrame.lookAt(cf.Position + Vector3.new(dist * 0.5, dist * 0.4, dist * 0.7), cf.Position)
 	cam.FieldOfView = 40
 	cam.Parent = vf
 	vf.CurrentCamera = cam
@@ -425,9 +603,7 @@ local function createViewportPreview(parent: Frame, modelData: { [string]: any }
 	return vf
 end
 
---------------------------------------------------------------------------------
 -- HP Bar for Battle Units
---------------------------------------------------------------------------------
 
 local function createHpBar(unit: BattleUnit)
 	local bb = Instance.new("BillboardGui")
@@ -472,9 +648,7 @@ local function updateHpBar(unit: BattleUnit)
 	end
 end
 
---------------------------------------------------------------------------------
 -- UI Helpers
---------------------------------------------------------------------------------
 
 local function makeFrame(props: { [string]: any }): Frame
 	local f = Instance.new("Frame")
@@ -536,9 +710,7 @@ local function makeButton(props: { [string]: any }): TextButton
 	return b
 end
 
---------------------------------------------------------------------------------
 -- Deck Building UI
---------------------------------------------------------------------------------
 
 local function createDeckCardFrame(parent: Frame, index: number, card: CardData?): Frame
 	local cardFrame = makeFrame({
@@ -627,7 +799,9 @@ local function createDeckCardFrame(parent: Frame, index: number, card: CardData?
 end
 
 refreshDeckUI = function()
-	if not _deckFrame then return end
+	if not _deckFrame then
+		return
+	end
 
 	-- Clear children except layout
 	for _, child in ipairs(_deckFrame:GetChildren()) do
@@ -650,9 +824,7 @@ refreshDeckUI = function()
 	end
 end
 
---------------------------------------------------------------------------------
 -- Battle Hand UI
---------------------------------------------------------------------------------
 
 local function createHandCardFrame(parent: Frame, index: number, card: CardData): TextButton
 	local btn = Instance.new("TextButton")
@@ -731,7 +903,9 @@ local function createHandCardFrame(parent: Frame, index: number, card: CardData)
 end
 
 refreshHandUI = function()
-	if not _handFrame then return end
+	if not _handFrame then
+		return
+	end
 
 	for _, child in ipairs(_handFrame:GetChildren()) do
 		if child:IsA("TextButton") then
@@ -742,7 +916,9 @@ refreshHandUI = function()
 	for i, card in ipairs(_hand) do
 		local btn = createHandCardFrame(_handFrame, i, card)
 		btn.Activated:Connect(function()
-			if _gameOver then return end
+			if _gameOver then
+				return
+			end
 			if _selectedHandIndex == i then
 				_selectedHandIndex = nil
 			else
@@ -814,9 +990,7 @@ local function updateBaseHPUI()
 	end
 end
 
---------------------------------------------------------------------------------
 -- UI Creation
---------------------------------------------------------------------------------
 
 local function createUI()
 	_gui = Instance.new("ScreenGui")
@@ -929,12 +1103,16 @@ local function createUI()
 
 	-- Wire deck building buttons
 	_createBtn.Activated:Connect(function()
-		if _phase ~= "deck_building" then return end
+		if _phase ~= "deck_building" then
+			return
+		end
 		createCard()
 	end)
 
 	_battleBtn.Activated:Connect(function()
-		if _phase ~= "deck_building" then return end
+		if _phase ~= "deck_building" then
+			return
+		end
 		if #_deck >= MIN_DECK_FOR_BATTLE then
 			startBattle()
 		end
@@ -1053,9 +1231,7 @@ local function createUI()
 	_gameOverLabel.Visible = false
 end
 
---------------------------------------------------------------------------------
 -- Arena (3D)
---------------------------------------------------------------------------------
 
 local function createArena()
 	_arenaOrigin = getArenaOrigin()
@@ -1147,55 +1323,62 @@ local function createArena()
 
 	-- Place units via mouse click on arena
 	local mouse = getPlayer():GetMouse()
-	table.insert(_connections, mouse.Button1Down:Connect(function()
-		if _phase ~= "battle" or _gameOver then return end
-		if not _selectedHandIndex or not _hand[_selectedHandIndex] then return end
+	table.insert(
+		_connections,
+		mouse.Button1Down:Connect(function()
+			if _phase ~= "battle" or _gameOver then
+				return
+			end
+			if not _selectedHandIndex or not _hand[_selectedHandIndex] then
+				return
+			end
 
-		local card = _hand[_selectedHandIndex]
-		if _playerElixir < card.elixirCost then
-			setStatus("Not enough elixir!", COLORS.elixir)
-			return
-		end
+			local card = _hand[_selectedHandIndex]
+			if _playerElixir < card.elixirCost then
+				setStatus("Not enough elixir!", COLORS.elixir)
+				return
+			end
 
-		-- Check click is on player's half of arena
-		local target = mouse.Target
-		if not target then return end
+			-- Check click is on player's half of arena
+			local target = mouse.Target
+			if not target then
+				return
+			end
 
-		local hitPos = mouse.Hit.Position
-		local localX = hitPos.X - _arenaOrigin.X
+			local hitPos = mouse.Hit.Position
+			local localX = hitPos.X - _arenaOrigin.X
 
-		-- Player can only place on left half
-		if localX > 0 then
-			setStatus("Place on YOUR side!", COLORS.error)
-			return
-		end
+			-- Player can only place on left half
+			if localX > 0 then
+				setStatus("Place on YOUR side!", COLORS.error)
+				return
+			end
 
-		-- Spawn unit
-		_playerElixir -= card.elixirCost
-		updateElixirUI()
+			-- Spawn unit
+			_playerElixir -= card.elixirCost
+			updateElixirUI()
 
-		local spawnPos = Vector3.new(hitPos.X, _arenaOrigin.Y + 1.5, _arenaOrigin.Z)
-		spawnPlayerUnit(card, spawnPos)
+			local spawnPos = Vector3.new(hitPos.X, _arenaOrigin.Y + 1.5, _arenaOrigin.Z)
+			spawnPlayerUnit(card, spawnPos)
 
-		-- Remove from hand, draw next
-		table.remove(_hand, _selectedHandIndex)
-		_selectedHandIndex = nil
+			-- Remove from hand, draw next
+			table.remove(_hand, _selectedHandIndex)
+			_selectedHandIndex = nil
 
-		if _nextCard then
-			table.insert(_hand, _nextCard)
-			_nextCard = nil
-		end
-		if #_drawPile > 0 then
-			_nextCard = table.remove(_drawPile, 1)
-		end
+			if _nextCard then
+				table.insert(_hand, _nextCard)
+				_nextCard = nil
+			end
+			if #_drawPile > 0 then
+				_nextCard = table.remove(_drawPile, 1)
+			end
 
-		refreshHandUI()
-	end))
+			refreshHandUI()
+		end)
+	)
 end
 
---------------------------------------------------------------------------------
 -- Unit Spawning
---------------------------------------------------------------------------------
 
 local function spawnUnit(card: CardData, pos: Vector3, side: string): BattleUnit
 	local model = OrigamiBuilder.BuildModel(card.modelData)
@@ -1236,9 +1419,7 @@ spawnPlayerUnit = function(card: CardData, pos: Vector3)
 	spawnUnit(card, pos, "player")
 end
 
---------------------------------------------------------------------------------
 -- Combat System
---------------------------------------------------------------------------------
 
 local function findTarget(unit: BattleUnit, targets: { BattleUnit }): BattleUnit?
 	local unitPos = unit.position
@@ -1287,7 +1468,9 @@ local function killUnit(unit: BattleUnit)
 end
 
 local function dealDamage(attacker: BattleUnit, target: BattleUnit)
-	if not target.alive then return end
+	if not target.alive then
+		return
+	end
 
 	if target.card.defenseType == "dodge" then
 		if math.random() < DODGE_CHANCE then
@@ -1373,9 +1556,7 @@ local function applyRegen(units: { BattleUnit })
 	end
 end
 
---------------------------------------------------------------------------------
 -- Bot AI
---------------------------------------------------------------------------------
 
 local function buildBotDeck(): { CardData }
 	local deck: { CardData } = {}
@@ -1400,10 +1581,14 @@ local function buildBotDeck(): { CardData }
 end
 
 local function botTrySpawn()
-	if _gameOver or #_botDeck == 0 then return end
+	if _gameOver or #_botDeck == 0 then
+		return
+	end
 
 	local now = os.clock()
-	if now < _botNextSpawnTime then return end
+	if now < _botNextSpawnTime then
+		return
+	end
 
 	-- Pick a random affordable card from bot deck
 	local affordable = {}
@@ -1413,7 +1598,9 @@ local function botTrySpawn()
 		end
 	end
 
-	if #affordable == 0 then return end
+	if #affordable == 0 then
+		return
+	end
 
 	local pick = affordable[math.random(1, #affordable)]
 	_botElixir -= pick.card.elixirCost
@@ -1432,9 +1619,7 @@ local function botTrySpawn()
 	_botNextSpawnTime = now + math.random(BOT_SPAWN_MIN, BOT_SPAWN_MAX)
 end
 
---------------------------------------------------------------------------------
 -- Main Battle Loop
---------------------------------------------------------------------------------
 
 local function cleanDeadUnits(units: { BattleUnit }): { BattleUnit }
 	local alive = {}
@@ -1448,7 +1633,9 @@ end
 
 local function startBattleLoop()
 	local conn = RunService.Heartbeat:Connect(function(dt)
-		if not _active or _phase ~= "battle" or _gameOver then return end
+		if not _active or _phase ~= "battle" or _gameOver then
+			return
+		end
 
 		-- Elixir regen
 		_playerElixir = math.min(MAX_ELIXIR, _playerElixir + ELIXIR_REGEN_RATE * dt)
@@ -1466,7 +1653,9 @@ local function startBattleLoop()
 
 		-- Process player units
 		for _, unit in _playerUnits do
-			if not unit.alive then continue end
+			if not unit.alive then
+				continue
+			end
 
 			-- Find target enemy
 			local target = findTarget(unit, _botUnits)
@@ -1525,7 +1714,9 @@ local function startBattleLoop()
 
 		-- Process bot units
 		for _, unit in _botUnits do
-			if not unit.alive then continue end
+			if not unit.alive then
+				continue
+			end
 
 			local target = findTarget(unit, _playerUnits)
 			local inCombat = false
@@ -1591,9 +1782,7 @@ local function startBattleLoop()
 	table.insert(_connections, conn)
 end
 
---------------------------------------------------------------------------------
 -- Card Creation (Deck Building)
---------------------------------------------------------------------------------
 
 createCard = function()
 	local prompt = _promptBox.Text
@@ -1647,16 +1836,18 @@ createCard = function()
 	end)
 end
 
---------------------------------------------------------------------------------
 -- Phase Transition
---------------------------------------------------------------------------------
 
 startBattle = function()
 	_phase = "battle"
 
 	-- Hide deck building, show battle
-	if _deckBuildPanel then _deckBuildPanel.Visible = false end
-	if _battlePanel then _battlePanel.Visible = true end
+	if _deckBuildPanel then
+		_deckBuildPanel.Visible = false
+	end
+	if _battlePanel then
+		_battlePanel.Visible = true
+	end
 
 	-- Set up arena
 	createArena()
@@ -1688,7 +1879,9 @@ startBattle = function()
 	updateElixirUI()
 	updateBaseHPUI()
 	refreshHandUI()
-	if _gameOverLabel then _gameOverLabel.Visible = false end
+	if _gameOverLabel then
+		_gameOverLabel.Visible = false
+	end
 
 	setStatus("Battle started! Tap a card, then tap the arena!", COLORS.accent)
 
@@ -1696,12 +1889,12 @@ startBattle = function()
 	startBattleLoop()
 end
 
---------------------------------------------------------------------------------
 -- Activate / Cleanup
---------------------------------------------------------------------------------
 
 function CardBattlerController:Activate()
-	if _active then return end
+	if _active then
+		return
+	end
 	_active = true
 
 	-- Reset state
@@ -1729,7 +1922,9 @@ function CardBattlerController:Activate()
 end
 
 function CardBattlerController:Cleanup()
-	if not _active then return end
+	if not _active then
+		return
+	end
 	_active = false
 
 	-- Disconnect all connections
@@ -1777,9 +1972,7 @@ function CardBattlerController:Cleanup()
 	_botUnits = {}
 end
 
---------------------------------------------------------------------------------
 -- Knit Lifecycle
---------------------------------------------------------------------------------
 
 function CardBattlerController:KnitInit() end
 

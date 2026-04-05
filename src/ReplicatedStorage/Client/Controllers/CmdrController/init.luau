@@ -10,16 +10,7 @@ CmdrController.CmdrClient = nil
 function CmdrController:KnitInit() end
 
 function CmdrController:KnitStart()
-	CmdrController.CmdrClient = require(ReplicatedStorage:WaitForChild("CmdrClient"))
-	CmdrController.CmdrClient:SetActivationKeys({ Enum.KeyCode.F2 })
-
-	for _, module in script.Components:GetChildren() do
-		assert(module:IsA("ModuleScript"), "Expected ModuleScript")
-		require(module)
-	end
-
-	-- Cmdr toggle button — positioned directly above the inventory (📦) button
-	-- Inventory button: Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = (0, 0.5), Size = 44-48
+	-- Create button FIRST, before loading Cmdr (WaitForChild can block)
 	local isMobile = UserInputService.TouchEnabled
 	local btnSize = if isMobile then 48 else 44
 
@@ -30,11 +21,11 @@ function CmdrController:KnitStart()
 	gui.ResetOnSpawn = false
 	gui.Parent = PlayerGui
 
+	-- Position where the plot button used to be: below the inventory button
 	local btn = Instance.new("TextButton")
 	btn.Name = "CmdrToggle"
 	btn.Size = UDim2.fromOffset(btnSize, btnSize)
-	btn.Position = UDim2.new(0, 10, 0.5, -(btnSize + 6))
-	btn.AnchorPoint = Vector2.new(0, 0.5)
+	btn.Position = UDim2.new(0, 10, 0.5, 30)
 	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 	btn.Text = ">_"
 	btn.TextColor3 = Color3.fromRGB(220, 220, 220)
@@ -47,12 +38,33 @@ function CmdrController:KnitStart()
 	corner.CornerRadius = UDim.new(0, 10)
 	corner.Parent = btn
 
-	btn.Activated:Connect(function()
-		CmdrController.CmdrClient:Toggle()
+	-- Load Cmdr async so the button is visible immediately
+	task.spawn(function()
+		local cmdrModule = ReplicatedStorage:WaitForChild("CmdrClient", 30)
+		if not cmdrModule then
+			warn("[CmdrController] CmdrClient not found after 30s")
+			btn.TextColor3 = Color3.fromRGB(120, 120, 120)
+			return
+		end
+
+		CmdrController.CmdrClient = require(cmdrModule)
+		CmdrController.CmdrClient:SetActivationKeys({ Enum.KeyCode.F2 })
+
+		for _, module in script.Components:GetChildren() do
+			assert(module:IsA("ModuleScript"), "Expected ModuleScript")
+			require(module)
+		end
+
+		btn.Activated:Connect(function()
+			CmdrController.CmdrClient:Toggle()
+		end)
 	end)
 end
 
 function CmdrController:RegisterCmdrContent(container: Instance)
+	if not self.CmdrClient then
+		return
+	end
 	local CmdrHelper = require(ReplicatedStorage.Shared.CmdrHelper)
 	CmdrHelper.RegisterCmdrContent(self.CmdrClient.Registry, container)
 end

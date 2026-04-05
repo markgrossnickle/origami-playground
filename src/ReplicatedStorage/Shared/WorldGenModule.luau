@@ -1319,6 +1319,58 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		placeTreesInChunk(blocks, seed, cx, cy, cz)
 	end
 
+	-- DEBUG: Force mushroom cave below spawn (cx=0, cz=0, cy=-2 which is ~10 blocks below surface)
+	if cx == 0 and cz == 0 and cy == -2 then
+		-- Carve a big cave (8x6x8 air pocket)
+		for lx = 4, 11 do
+			for lz = 4, 11 do
+				for ly = 1, 6 do
+					local idx = ChunkUtil.flatIndex(lx, ly, lz)
+					buffer.writeu8(blocks, idx, BlockType.Air)
+				end
+			end
+		end
+		-- Place floor
+		for lx = 4, 11 do
+			for lz = 4, 11 do
+				local idx = ChunkUtil.flatIndex(lx, 0, lz)
+				buffer.writeu8(blocks, idx, BlockType.CompressedPulp)
+			end
+		end
+		-- Place one of each mushroom type on the floor
+		local stemBlock = BlockType.MushroomStem
+		local capBlock = BlockType.MushroomCap
+		local shelfBlock = BlockType.ShelfBracket
+		local floorY = chunkBlockYBottom + 1
+		local cbx, cbz = chunkBlockX, chunkBlockZ
+		local cbyBot, cbyTop = chunkBlockYBottom, chunkBlockYTop
+		-- Basic mushroom at (5,floor,5)
+		placeBlock(blocks, stemBlock, cbx+5, floorY, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, stemBlock, cbx+5, floorY+1, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+6, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+4, floorY+2, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+6, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+5, floorY+2, cbz+4, cbx, cbyBot, cbyTop, cbz)
+		-- Tall mushroom at (8,floor,5)
+		for ty = 0, 3 do
+			placeBlock(blocks, stemBlock, cbx+8, floorY+ty, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		end
+		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+9, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+7, floorY+4, cbz+5, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+6, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+8, floorY+4, cbz+4, cbx, cbyBot, cbyTop, cbz)
+		-- Shelf mushroom at (5,floor,9)
+		placeBlock(blocks, stemBlock, cbx+5, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, stemBlock, cbx+5, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, shelfBlock, cbx+6, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, shelfBlock, cbx+7, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		-- Cluster at (8,floor,9)
+		placeBlock(blocks, stemBlock, cbx+8, floorY, cbz+9, cbx, cbyBot, cbyTop, cbz)
+		placeBlock(blocks, capBlock, cbx+8, floorY+1, cbz+9, cbx, cbyBot, cbyTop, cbz)
+	end
+
 	return blocks
 end
 

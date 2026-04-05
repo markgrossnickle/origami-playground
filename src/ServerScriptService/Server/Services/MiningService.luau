@@ -384,18 +384,19 @@ function MiningService:KnitStart()
 		self.Client.ToolAcquired:Fire(player, toolId)
 	end)
 
-	-- Load equipped tool for existing players
-	for _, player in Players:GetPlayers() do
+	-- DEBUG: Force-equip prismatic_pick for all players
+	local DEBUG_TOOL = "prismatic_pick"
+
+	local function _loadPlayerTool(player: Player)
 		task.spawn(function()
 			PlayerDataService:WaitForProfile(player)
 				:andThen(function()
 					if not player.Parent then
 						return
 					end
-					local savedToolId = PlayerDataService:Read(player, { "EquippedTool" })
-					if savedToolId and type(savedToolId) == "string" and ToolRegistry.get(savedToolId) then
-						equippedTools[player] = savedToolId
-					end
+					-- Force-equip best tool for testing
+					equippedTools[player] = DEBUG_TOOL
+					PlayerDataService:Write(player, { "EquippedTool" }, DEBUG_TOOL)
 				end)
 				:catch(function(err)
 					warn("[MiningService] Failed to load tool:", err)
@@ -403,22 +404,12 @@ function MiningService:KnitStart()
 		end)
 	end
 
+	for _, player in Players:GetPlayers() do
+		_loadPlayerTool(player)
+	end
+
 	Players.PlayerAdded:Connect(function(player)
-		task.spawn(function()
-			PlayerDataService:WaitForProfile(player)
-				:andThen(function()
-					if not player.Parent then
-						return
-					end
-					local savedToolId = PlayerDataService:Read(player, { "EquippedTool" })
-					if savedToolId and type(savedToolId) == "string" and ToolRegistry.get(savedToolId) then
-						equippedTools[player] = savedToolId
-					end
-				end)
-				:catch(function(err)
-					warn("[MiningService] Failed to load tool:", err)
-				end)
-		end)
+		_loadPlayerTool(player)
 	end)
 end
 

@@ -671,17 +671,9 @@ local function placeBlock(blocks: buffer, blockType: number, bx: number, worldBl
 	buffer.writeu8(blocks, idx, blockType)
 end
 
--- Compute cumulative trunk sway: slight organic drift every 3 blocks of height
-local function getTrunkPos(seed: number, bx: number, bz: number, ty: number): (number, number)
-	local sx, sz = 0, 0
-	local step = 0
-	while step * 3 < ty do
-		step += 1
-		local h = hashSeed(seed + 11111, bx, bz, step)
-		sx = sx + ((h % 3) - 1) -- -1, 0, or 1
-		sz = sz + ((hashTwo(seed + 11112, bx + step, bz) % 3) - 1)
-	end
-	return bx + sx, bz + sz
+-- Trunk position helper (no sway — straight trunks on grid)
+local function getTrunkPos(_seed: number, bx: number, bz: number, _ty: number): (number, number)
+	return bx, bz
 end
 
 local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: number, cz: number)

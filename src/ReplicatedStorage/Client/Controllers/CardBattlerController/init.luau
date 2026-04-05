@@ -1012,7 +1012,7 @@ local function createUI()
 		parent = _gui,
 	})
 
-	---------- DECK BUILDING PANEL ----------
+	-- DECK BUILDING PANEL
 	_deckBuildPanel = makeFrame({
 		bg = Color3.fromRGB(0, 0, 0),
 		size = UDim2.new(1, 0, 1, 0),
@@ -1124,7 +1124,7 @@ local function createUI()
 		end
 	end)
 
-	---------- BATTLE PANEL ----------
+	-- BATTLE PANEL
 	_battlePanel = makeFrame({
 		bg = Color3.fromRGB(0, 0, 0),
 		size = UDim2.new(1, 0, 1, 0),

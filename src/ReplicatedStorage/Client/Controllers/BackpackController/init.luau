@@ -848,8 +848,19 @@ local function startEggTimers()
 				end
 			end
 
-			-- Update timer labels in UI
-			if _contentFrame then
+			-- Check if any egg just became ready (needs re-render to show Hatch button)
+			local needsRerender = false
+			for _, egg in ipairs(_pendingEggs) do
+				if egg.remainingSeconds == 0 then
+					needsRerender = true
+					break
+				end
+			end
+
+			if needsRerender then
+				renderEggsTab()
+			elseif _contentFrame then
+				-- Update timer labels in UI
 				for _, child in ipairs(_contentFrame:GetDescendants()) do
 					if child.Name == "EggTimerLabel" and child:IsA("TextLabel") then
 						local eggIdx = child:GetAttribute("EggIndex")

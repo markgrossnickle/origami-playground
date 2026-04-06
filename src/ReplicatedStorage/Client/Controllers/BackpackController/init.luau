@@ -914,7 +914,19 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 		local BreedingService = Knit.GetService("BreedingService")
 		local ok, result = BreedingService:HatchEgg(eggIndex):await()
 		if not ok then
+			warn("[hatchEgg] Service call failed — raw result:", result)
 			result = { success = false, error = "Service call failed" }
+		end
+
+		if not result or not result.success then
+			warn("[hatchEgg] Server returned failure — ok:", ok, "error:", result and result.error)
+			if result then
+				local info = {}
+				for k, v in pairs(result) do
+					table.insert(info, tostring(k) .. "=" .. tostring(v))
+				end
+				warn("[hatchEgg] Full result:", table.concat(info, ", "))
+			end
 		end
 
 		if result and result.success then

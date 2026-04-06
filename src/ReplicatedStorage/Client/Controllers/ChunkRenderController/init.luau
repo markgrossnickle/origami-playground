@@ -61,7 +61,7 @@ local MUSHROOM_FLASH_COLORS = {
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
-local BATCH_FLUSH_SIZE = 256
+local BATCH_FLUSH_SIZE = 128
 
 -- Trickle fill
 local TRICKLE_FILL_PER_FRAME = 4
@@ -920,6 +920,8 @@ local function _reevaluateLODs()
 	lastLODCheck = now
 
 	-- Check all rendered chunks for LOD changes (player moved)
+	-- Only queue — don't process synchronously (avoids blocking Heartbeat)
+	local queued = false
 	for chunkKey, currentLod in chunkLOD do
 		local blocks = chunkBlocks[chunkKey]
 		if not blocks then
@@ -929,11 +931,12 @@ local function _reevaluateLODs()
 		local newLod = _getChunkLOD(cx, cy, cz)
 		if newLod ~= currentLod then
 			table.insert(renderQueue, { key = chunkKey, blocks = blocks })
+			queued = true
 		end
 	end
 
-	if #renderQueue > 0 then
-		_processRenderQueue()
+	if queued and not isProcessingQueue then
+		task.spawn(_processRenderQueue)
 	end
 end
 

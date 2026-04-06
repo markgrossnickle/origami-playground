@@ -20,15 +20,46 @@ end
 
 function CmdrService:KnitInit()
 	local ServerPackages = ServerScriptService:FindFirstChild("ServerPackages")
-	if not ServerPackages or not ServerPackages:FindFirstChild("Cmdr") then
+	if not ServerPackages then
+		warn("[CmdrService] ServerPackages not found — run 'wally install' to enable Cmdr")
+		return
+	end
+
+	local cmdrRedirect = ServerPackages:FindFirstChild("Cmdr")
+	if not cmdrRedirect then
 		warn("[CmdrService] Cmdr package not found — run 'wally install' to enable Cmdr")
 		return
 	end
 
-	local ok, result = pcall(require, ServerPackages.Cmdr)
+	-- Try the wally redirect first
+	local ok, result = pcall(require, cmdrRedirect)
 	if not ok then
-		warn("[CmdrService] Failed to load Cmdr:", result)
-		return
+		-- Wally redirect fails when it points to a Folder instead of a ModuleScript.
+		-- Cmdr's package nests the real module inside cmdr/Cmdr/init.lua.
+		-- Search _Index for the actual Cmdr ModuleScript.
+		warn("[CmdrService] Wally redirect failed, searching _Index for Cmdr module:", result)
+		local index = ServerPackages:FindFirstChild("_Index")
+		if index then
+			for _, pkg in index:GetChildren() do
+				if pkg.Name:find("cmdr") then
+					for _, desc in pkg:GetDescendants() do
+						if desc:IsA("ModuleScript") and desc.Name == "Cmdr" then
+							ok, result = pcall(require, desc)
+							if ok then
+								break
+							end
+						end
+					end
+					if ok then
+						break
+					end
+				end
+			end
+		end
+		if not ok then
+			warn("[CmdrService] Failed to load Cmdr:", result)
+			return
+		end
 	end
 	Cmdr = result
 

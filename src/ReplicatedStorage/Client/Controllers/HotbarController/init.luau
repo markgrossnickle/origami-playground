@@ -61,6 +61,7 @@ local _ghostPart: Part? = nil
 local _handPart: Part? = nil
 local _heartbeatConn: RBXScriptConnection? = nil
 local _enabled: boolean = true
+local _placeButton: TextButton? = nil
 
 -- Services (set in KnitStart)
 local MiningService
@@ -381,6 +382,13 @@ _renderSlots = function()
 			keyLabel.TextColor3 = if isSelected then COLORS.count else COLORS.textDim
 		end
 	end
+
+	-- Hide mobile Place button when a tool (not a material) is selected
+	if _placeButton then
+		local selectedItem = _getSelectedItem()
+		local showPlace = selectedItem ~= nil and _isMaterialItem(selectedItem) and _getItemCount(selectedItem) > 0
+		_placeButton.Visible = showPlace
+	end
 end
 
 local function _buildUI()
@@ -524,6 +532,7 @@ local function _buildUI()
 		placeBtn.Activated:Connect(function()
 			_tryPlaceBlock()
 		end)
+		_placeButton = placeBtn
 	end
 
 	_renderSlots()

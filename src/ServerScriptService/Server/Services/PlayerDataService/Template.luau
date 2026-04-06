@@ -54,6 +54,12 @@ export type PlayerData = {
 		placedBlocks: { [string]: string }, -- "x,y,z" = materialItemId
 		assignedCreatures: { { creatureId: string, localX: number, localZ: number } },
 	},
+
+	-- Workshop Crafting
+	PendingCrafts: { any }, -- workshop craft queue (max 3)
+	CraftedItems: { any }, -- completed items collection (max 50)
+	Equipped: { accessory: string?, tool: string?, costume: string? },
+	PlacedProps: { { itemId: string, localX: number, localY: number, localZ: number } },
 }
 
 local playerDataTemplate: PlayerData = {
@@ -95,6 +101,11 @@ local playerDataTemplate: PlayerData = {
 		placedBlocks = {},
 		assignedCreatures = {},
 	},
+
+	PendingCrafts = {},
+	CraftedItems = {},
+	Equipped = {},
+	PlacedProps = {},
 }
 
 return playerDataTemplate

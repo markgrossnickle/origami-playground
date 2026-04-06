@@ -15,6 +15,7 @@ local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
+local WorkshopTab = require(script.WorkshopTab)
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
@@ -68,7 +69,7 @@ local MATERIAL_DEPTH_ORDER = {
 -- Auto-positioning for creature plot assignment
 local PLOT_CREATURE_POSITIONS = { { 4, 4 }, { 12, 4 }, { 20, 4 }, { 4, 12 }, { 12, 12 } }
 
-local TABS = { "Mats", "Tools", "Critters", "Eggs" }
+local TABS = { "Mats", "Tools", "Critters", "Eggs", "Workshop" }
 local isMobile = UserInputService.TouchEnabled
 
 -- State
@@ -100,6 +101,7 @@ local renderMaterialsTab: () -> ()
 local renderToolsTab: () -> ()
 local renderCreaturesTab: () -> ()
 local renderEggsTab: () -> ()
+local renderWorkshopTab: () -> ()
 
 -- Utility
 
@@ -156,7 +158,7 @@ end
 -- Data Fetching
 
 local function fetchAllData(callback: (() -> ())?)
-	local remaining = 6
+	local remaining = 7
 	local function onComplete()
 		remaining -= 1
 		if remaining <= 0 and callback then
@@ -220,6 +222,9 @@ local function fetchAllData(callback: (() -> ())?)
 		end
 		onComplete()
 	end)
+
+	-- Workshop data
+	WorkshopTab.fetchData(onComplete)
 end
 
 -- Materials Tab
@@ -962,7 +967,7 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 	end)
 end
 
-local function showPromptModal(recipeName: string, callback: (string?) -> ())
+local function showPromptModal(recipeName: string, callback: (string?) -> (), subtitleOverride: string?)
 	if not _screenGui then
 		callback(nil)
 		return
@@ -1002,7 +1007,7 @@ local function showPromptModal(recipeName: string, callback: (string?) -> ())
 	subtitle.Size = UDim2.new(1, -20, 0, 16)
 	subtitle.Position = UDim2.fromOffset(10, 38)
 	subtitle.BackgroundTransparency = 1
-	subtitle.Text = "Describe your creature (optional)"
+	subtitle.Text = subtitleOverride or "Describe your creature (optional)"
 	subtitle.TextColor3 = COLORS.textDim
 	subtitle.TextSize = 11
 	subtitle.Font = Enum.Font.Gotham
@@ -1423,6 +1428,11 @@ local function switchTab(tabName: string)
 		_eggTimerThread = nil
 	end
 
+	-- Stop workshop timers when leaving workshop tab
+	if tabName ~= "Workshop" then
+		WorkshopTab.stopTimers()
+	end
+
 	if tabName == "Mats" then
 		renderMaterialsTab()
 	elseif tabName == "Tools" then
@@ -1431,6 +1441,8 @@ local function switchTab(tabName: string)
 		renderCreaturesTab()
 	elseif tabName == "Eggs" then
 		renderEggsTab()
+	elseif tabName == "Workshop" then
+		renderWorkshopTab()
 	end
 end
 
@@ -1451,6 +1463,7 @@ local function togglePanel()
 			task.cancel(_eggTimerThread)
 			_eggTimerThread = nil
 		end
+		WorkshopTab.stopTimers()
 	end
 end
 
@@ -1589,7 +1602,20 @@ local function buildUI()
 			task.cancel(_eggTimerThread)
 			_eggTimerThread = nil
 		end
+		WorkshopTab.stopTimers()
 	end)
+end
+
+-- Workshop Tab
+
+renderWorkshopTab = function()
+	if not _contentFrame then
+		return
+	end
+	-- Update WorkshopTab's injected dependencies
+	WorkshopTab.contentFrame = _contentFrame
+	WorkshopTab.screenGui = _screenGui
+	WorkshopTab.render()
 end
 
 -- Lifecycle
@@ -1599,6 +1625,20 @@ local BackpackController = Knit.CreateController({ Name = "BackpackController" }
 function BackpackController:KnitInit() end
 
 function BackpackController:KnitStart()
+	-- Inject shared utilities into WorkshopTab
+	WorkshopTab.COLORS = COLORS
+	WorkshopTab.createCorner = createCorner
+	WorkshopTab.clearChildren = clearChildren
+	WorkshopTab.formatMaterialName = formatMaterialName
+	WorkshopTab.formatTime = formatTime
+	WorkshopTab.createEmptyState = createEmptyState
+	WorkshopTab.showPromptModal = showPromptModal
+	WorkshopTab.onRefreshNeeded = function()
+		if _visible and _activeTab == "Workshop" then
+			renderWorkshopTab()
+		end
+	end
+
 	task.delay(2, function()
 		buildUI()
 	end)
@@ -1682,6 +1722,9 @@ function BackpackController:KnitStart()
 			end)
 		end)
 	end)
+
+	-- Workshop live updates
+	WorkshopTab.connectLiveUpdates()
 end
 
 function BackpackController:DespawnActiveCreature()

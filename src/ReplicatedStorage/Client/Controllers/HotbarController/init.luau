@@ -654,6 +654,12 @@ local function _onHeartbeat()
 		return
 	end
 
+	-- Skip raycast update briefly after Place button tap — the touch position
+	-- is over the button, which would overwrite the cached ghost target.
+	if (os.clock() - _placeButtonTapTime) < 0.4 then
+		return
+	end
+
 	local chunkKey, flatIndex, blockCenter = _raycastForPlacement()
 	_lastGhostChunkKey = chunkKey
 	_lastGhostFlatIndex = flatIndex

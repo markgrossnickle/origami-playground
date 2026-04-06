@@ -47,14 +47,23 @@ function CmdrController:KnitStart()
 
 	-- Load Cmdr async so the button is visible immediately
 	task.spawn(function()
-		local cmdrModule = ReplicatedStorage:WaitForChild("CmdrClient", 30)
+		local cmdrModule = ReplicatedStorage:WaitForChild("CmdrClient", 60)
 		if not cmdrModule then
-			warn("[CmdrController] CmdrClient not found after 30s")
+			warn("[CmdrController] CmdrClient not found — Cmdr may not be installed")
 			btn.TextColor3 = Color3.fromRGB(120, 120, 120)
+			btn.Text = "x"
 			return
 		end
 
-		CmdrController.CmdrClient = require(cmdrModule)
+		local ok, result = pcall(require, cmdrModule)
+		if not ok then
+			warn("[CmdrController] Failed to require CmdrClient:", result)
+			btn.TextColor3 = Color3.fromRGB(120, 120, 120)
+			btn.Text = "x"
+			return
+		end
+
+		CmdrController.CmdrClient = result
 		CmdrController.CmdrClient:SetActivationKeys({ Enum.KeyCode.F2 })
 
 		for _, module in script.Components:GetChildren() do

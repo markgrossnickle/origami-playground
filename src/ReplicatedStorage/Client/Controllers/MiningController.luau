@@ -27,6 +27,7 @@ local MiningController = Knit.CreateController({
 local WorldService
 local MiningService
 local ChunkRenderController
+local HotbarController
 
 local LocalPlayer = Players.LocalPlayer
 local camera: Camera
@@ -351,10 +352,28 @@ end
 -- Mining logic
 
 local function _getCurrentToolConfig()
+	-- Use the tool selected in the hotbar if available
+	if HotbarController then
+		local hotbarToolId = HotbarController:GetSelectedToolId()
+		if hotbarToolId then
+			return ToolRegistry.get(hotbarToolId) or ToolRegistry.getDefault()
+		end
+	end
 	return ToolRegistry.get(equippedToolId) or ToolRegistry.getDefault()
 end
 
+local function _isToolSelectedInHotbar(): boolean
+	if HotbarController then
+		return HotbarController:IsToolSelected()
+	end
+	return true -- fallback: allow mining if hotbar not ready
+end
+
 local function _startMining()
+	-- Only allow mining when a tool is selected in the hotbar
+	if not _isToolSelectedInHotbar() then
+		return
+	end
 	isMining = true
 	miningProgress = 0
 end
@@ -369,6 +388,12 @@ end
 
 local function _updateHoverHighlight()
 	if isMining then
+		return
+	end
+
+	-- Only show mining highlight when a tool is selected
+	if not _isToolSelectedInHotbar() then
+		_hideHighlight()
 		return
 	end
 
@@ -389,6 +414,12 @@ end
 
 local function _updateMining(dt: number)
 	if not isMining then
+		return
+	end
+
+	-- Stop mining if tool was deselected (e.g. switched to material slot)
+	if not _isToolSelectedInHotbar() then
+		_stopMining()
 		return
 	end
 
@@ -502,6 +533,7 @@ function MiningController:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	MiningService = Knit.GetService("MiningService")
 	ChunkRenderController = Knit.GetController("ChunkRenderController")
+	HotbarController = Knit.GetController("HotbarController")
 
 	-- Input: left click to mine (immediate)
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)

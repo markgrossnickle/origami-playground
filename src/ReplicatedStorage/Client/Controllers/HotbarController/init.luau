@@ -17,6 +17,7 @@ local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
+local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
 
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
@@ -74,7 +75,25 @@ local _raycastParams: RaycastParams = RaycastParams.new()
 _raycastParams.FilterType = Enum.RaycastFilterType.Include
 local _cachedChunkFolder: Instance? = nil
 
+-- Tool tier colors for hotbar display
+local TOOL_TIER_COLORS = {
+	[0] = Color3.fromRGB(160, 160, 160), -- Paper Hands: gray
+	[1] = Color3.fromRGB(180, 140, 90), -- Cardboard: brown
+	[2] = Color3.fromRGB(140, 140, 160), -- Stone: slate
+	[3] = Color3.fromRGB(100, 200, 255), -- Crystal: cyan
+	[4] = Color3.fromRGB(120, 60, 180), -- Void: purple
+	[5] = Color3.fromRGB(255, 150, 255), -- Prismatic: pink
+}
+
 -- Helpers
+
+local function _isToolItem(itemId: string): boolean
+	return ToolRegistry.get(itemId) ~= nil
+end
+
+local function _isMaterialItem(itemId: string): boolean
+	return PlotConfig.PLACEABLE_BLOCKS[itemId] ~= nil
+end
 
 local function _getItemColor(itemId: string): Color3
 	local cfg = PlotConfig.PLACEABLE_BLOCKS[itemId]
@@ -113,6 +132,14 @@ end
 
 local function _getSelectedItem(): string?
 	return _hotbarItems[_selectedSlot]
+end
+
+-- Fire server equip when a tool is selected in the hotbar
+local function _onSlotChanged()
+	local itemId = _hotbarItems[_selectedSlot]
+	if itemId and _isToolItem(itemId) and MiningService then
+		MiningService.EquipTool:Fire(itemId)
+	end
 end
 
 local function createCorner(parent: GuiObject, radius: number?)
@@ -262,6 +289,10 @@ local function _tryPlaceBlock()
 	if not itemId then
 		return
 	end
+	-- Only materials can be placed, not tools
+	if not _isMaterialItem(itemId) then
+		return
+	end
 	if _getItemCount(itemId) < 1 then
 		return
 	end
@@ -301,9 +332,27 @@ _renderSlots = function()
 		local colorBlock = frame:FindFirstChild("ColorBlock") :: Frame?
 		local countLabel = frame:FindFirstChild("CountLabel") :: TextLabel?
 		local keyLabel = frame:FindFirstChild("KeyLabel") :: TextLabel?
+		local toolLabel = frame:FindFirstChild("ToolLabel") :: TextLabel?
 
 		local itemId = _hotbarItems[i]
-		if itemId and _getItemCount(itemId) > 0 then
+
+		if itemId and _isToolItem(itemId) then
+			-- Tool slot: show tier-colored block with tool name
+			local toolConfig = ToolRegistry.get(itemId)
+			if colorBlock then
+				colorBlock.BackgroundColor3 = TOOL_TIER_COLORS[toolConfig and toolConfig.tier or 0]
+					or TOOL_TIER_COLORS[0]
+				colorBlock.Visible = true
+			end
+			if countLabel then
+				countLabel.Visible = false
+			end
+			if toolLabel then
+				toolLabel.Text = toolConfig and toolConfig.name or itemId
+				toolLabel.Visible = true
+			end
+		elseif itemId and _isMaterialItem(itemId) and _getItemCount(itemId) > 0 then
+			-- Material slot: show block color + count
 			if colorBlock then
 				colorBlock.BackgroundColor3 = _getItemColor(itemId)
 				colorBlock.Visible = true
@@ -313,12 +362,18 @@ _renderSlots = function()
 				countLabel.Text = if count > 999 then "999+" else tostring(count)
 				countLabel.Visible = true
 			end
+			if toolLabel then
+				toolLabel.Visible = false
+			end
 		else
 			if colorBlock then
 				colorBlock.Visible = false
 			end
 			if countLabel then
 				countLabel.Visible = false
+			end
+			if toolLabel then
+				toolLabel.Visible = false
 			end
 		end
 
@@ -388,6 +443,22 @@ local function _buildUI()
 		colorBlock.Parent = slot
 		createCorner(colorBlock, 4)
 
+		-- Tool name label (centered, for tool slots)
+		local toolLabel = Instance.new("TextLabel")
+		toolLabel.Name = "ToolLabel"
+		toolLabel.Size = UDim2.new(1, -4, 0, FONT_SM + 2)
+		toolLabel.Position = UDim2.new(0, 2, 0.5, -(FONT_SM + 2) / 2)
+		toolLabel.BackgroundTransparency = 1
+		toolLabel.TextColor3 = COLORS.count
+		toolLabel.TextStrokeColor3 = COLORS.countBg
+		toolLabel.TextStrokeTransparency = 0.3
+		toolLabel.Font = Enum.Font.GothamBold
+		toolLabel.TextSize = FONT_SM
+		toolLabel.TextScaled = true
+		toolLabel.Text = ""
+		toolLabel.Visible = false
+		toolLabel.Parent = slot
+
 		-- Count label (bottom-right corner)
 		local countLabel = Instance.new("TextLabel")
 		countLabel.Name = "CountLabel"
@@ -427,6 +498,7 @@ local function _buildUI()
 		btn.Parent = slot
 		btn.Activated:Connect(function()
 			_selectedSlot = i
+			_onSlotChanged()
 			_renderSlots()
 		end)
 
@@ -483,6 +555,7 @@ local function _onInputBegan(input: InputObject, processed: boolean)
 	local slot = keyMap[input.KeyCode]
 	if slot then
 		_selectedSlot = slot
+		_onSlotChanged()
 		_renderSlots()
 		return
 	end
@@ -496,9 +569,11 @@ local function _onInputBegan(input: InputObject, processed: boolean)
 	-- Gamepad: D-pad left/right to cycle, ButtonR1 to place
 	if input.KeyCode == Enum.KeyCode.DPadRight then
 		_selectedSlot = if _selectedSlot >= HOTBAR_SLOTS then 1 else _selectedSlot + 1
+		_onSlotChanged()
 		_renderSlots()
 	elseif input.KeyCode == Enum.KeyCode.DPadLeft then
 		_selectedSlot = if _selectedSlot <= 1 then HOTBAR_SLOTS else _selectedSlot - 1
+		_onSlotChanged()
 		_renderSlots()
 	elseif input.KeyCode == Enum.KeyCode.ButtonR1 then
 		_tryPlaceBlock()
@@ -519,6 +594,7 @@ local function _onScroll(input: InputObject, processed: boolean)
 		else
 			_selectedSlot = if _selectedSlot >= HOTBAR_SLOTS then 1 else _selectedSlot + 1
 		end
+		_onSlotChanged()
 		_renderSlots()
 	end
 end
@@ -533,9 +609,12 @@ local function _onHeartbeat()
 	end
 
 	local itemId = _getSelectedItem()
-	_updateHandBlock(itemId)
 
-	if not itemId or _getItemCount(itemId) < 1 then
+	-- Only show hand block and ghost preview for materials, not tools
+	local isMaterial = itemId and _isMaterialItem(itemId)
+	_updateHandBlock(if isMaterial then itemId else nil)
+
+	if not isMaterial or not itemId or _getItemCount(itemId) < 1 then
 		_updateGhost(nil, nil)
 		return
 	end
@@ -555,6 +634,7 @@ function HotbarController:EquipToSlot(itemId: string, slot: number?)
 		for i = 1, HOTBAR_SLOTS do
 			if _hotbarItems[i] == itemId then
 				_selectedSlot = i
+				_onSlotChanged()
 				_renderSlots()
 				return
 			end
@@ -578,6 +658,7 @@ function HotbarController:EquipToSlot(itemId: string, slot: number?)
 
 	_hotbarItems[targetSlot] = itemId
 	_selectedSlot = targetSlot
+	_onSlotChanged()
 	_renderSlots()
 end
 
@@ -595,6 +676,24 @@ end
 
 function HotbarController:GetSelectedSlot(): number
 	return _selectedSlot
+end
+
+function HotbarController:IsToolSelected(): boolean
+	local itemId = _getSelectedItem()
+	return itemId ~= nil and _isToolItem(itemId)
+end
+
+function HotbarController:IsMaterialSelected(): boolean
+	local itemId = _getSelectedItem()
+	return itemId ~= nil and _isMaterialItem(itemId)
+end
+
+function HotbarController:GetSelectedToolId(): string?
+	local itemId = _getSelectedItem()
+	if itemId and _isToolItem(itemId) then
+		return itemId
+	end
+	return nil
 end
 
 function HotbarController:SetEnabled(enabled: boolean)
@@ -619,23 +718,30 @@ function HotbarController:KnitStart()
 	BlockPlacementService = Knit.GetService("BlockPlacementService")
 	ChunkRenderController = Knit.GetController("ChunkRenderController")
 
-	-- Load inventory
+	-- Load inventory + equipped tool
 	task.spawn(function()
 		local ok, inv = MiningService:GetMiningInventory():await()
 		if ok and type(inv) == "table" then
 			_inventory = inv
-
-			-- Auto-populate hotbar with first materials the player has
-			local slot = 1
-			for itemId, count in inv do
-				if count > 0 and PlotConfig.PLACEABLE_BLOCKS[itemId] and slot <= HOTBAR_SLOTS then
-					_hotbarItems[slot] = itemId
-					slot += 1
-				end
-			end
-
-			_renderSlots()
 		end
+
+		-- Get equipped tool from server
+		local toolOk, equippedId = MiningService:GetEquippedTool():await()
+		local equippedTool = if toolOk and type(equippedId) == "string" then equippedId else "paper_hands"
+
+		-- Auto-populate: equipped tool in slot 1, then materials
+		local slot = 1
+		_hotbarItems[slot] = equippedTool
+		slot += 1
+
+		for itemId, count in _inventory do
+			if count > 0 and PlotConfig.PLACEABLE_BLOCKS[itemId] and slot <= HOTBAR_SLOTS then
+				_hotbarItems[slot] = itemId
+				slot += 1
+			end
+		end
+
+		_renderSlots()
 	end)
 
 	-- Listen for inventory changes
@@ -644,6 +750,26 @@ function HotbarController:KnitStart()
 			_inventory[itemId] = (_inventory[itemId] or 0) + count
 			_renderSlots()
 		end
+	end)
+
+	-- Keep hotbar in sync when tool is equipped from BackpackController
+	MiningService.ToolEquipped:Connect(function(toolId: string)
+		-- Update or insert tool in slot 1 if not already in hotbar
+		for i = 1, HOTBAR_SLOTS do
+			if _hotbarItems[i] == toolId then
+				return -- already present
+			end
+		end
+		-- Replace the first tool slot (or slot 1) with the newly equipped tool
+		for i = 1, HOTBAR_SLOTS do
+			if _hotbarItems[i] and _isToolItem(_hotbarItems[i]) then
+				_hotbarItems[i] = toolId
+				_renderSlots()
+				return
+			end
+		end
+		_hotbarItems[1] = toolId
+		_renderSlots()
 	end)
 
 	-- Build UI

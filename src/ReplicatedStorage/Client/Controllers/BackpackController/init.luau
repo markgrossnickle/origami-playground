@@ -304,6 +304,19 @@ renderMaterialsTab = function()
 		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 		nameLabel.Parent = cell
 		createCorner(nameLabel, 4)
+
+		-- Tap/click to equip to hotbar
+		local equipBtn = Instance.new("TextButton")
+		equipBtn.Size = UDim2.fromScale(1, 1)
+		equipBtn.BackgroundTransparency = 1
+		equipBtn.Text = ""
+		equipBtn.Parent = cell
+		equipBtn.Activated:Connect(function()
+			local HotbarController = Knit.GetController("HotbarController")
+			if HotbarController then
+				HotbarController:EquipToSlot(mat.id)
+			end
+		end)
 	end
 end
 

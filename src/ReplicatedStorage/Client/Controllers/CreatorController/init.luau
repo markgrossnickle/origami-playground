@@ -601,10 +601,8 @@ local function createUI()
 	_statusLabel.Font = Enum.Font.Gotham
 	_statusLabel.Parent = container
 
-	-- Start minimized on mobile
-	if IS_MOBILE then
-		toggleMinimize()
-	end
+	-- Start minimized on all platforms — player opens via sidebar "Create" button
+	toggleMinimize()
 
 	-- Wire up submit
 	_createButton.Activated:Connect(function()
@@ -664,8 +662,10 @@ local function createUI()
 	local sidebar = Instance.new("Frame")
 	sidebar.Name = "Sidebar"
 	sidebar.Size = UDim2.new(0, SIDEBAR_SIZE + 8, 0, 0)
-	sidebar.Position = UDim2.new(0, 10, 0.5, 0)
-	sidebar.AnchorPoint = Vector2.new(0, 0.5)
+	-- Position above the BackpackController toggle button (which sits at 0.5, centered)
+	local backpackBtnHalf = if IS_MOBILE then 24 else 22 -- half of backpack toggle size
+	sidebar.Position = UDim2.new(0, 10, 0.5, -(backpackBtnHalf + 6))
+	sidebar.AnchorPoint = Vector2.new(0, 1)
 	sidebar.AutomaticSize = Enum.AutomaticSize.Y
 	sidebar.BackgroundColor3 = COLORS.bg
 	sidebar.BackgroundTransparency = 0.1
@@ -716,7 +716,7 @@ local function createUI()
 	_sidebarCreateBtn.Activated:Connect(function()
 		toggleMinimize()
 	end)
-	_sidebarCreateBtn.Visible = false
+	_sidebarCreateBtn.Visible = true
 
 	-- Browse button
 	_browseButton = Instance.new("TextButton")

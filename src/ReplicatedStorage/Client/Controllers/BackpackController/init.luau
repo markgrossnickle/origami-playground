@@ -949,7 +949,140 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 	end)
 end
 
-local function craftEgg(recipeId: string, button: TextButton?)
+local function showPromptModal(recipeName: string, callback: (string?) -> ())
+	if not _screenGui then
+		callback(nil)
+		return
+	end
+
+	local overlay = Instance.new("Frame")
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.BackgroundTransparency = 0.4
+	overlay.BorderSizePixel = 0
+	overlay.ZIndex = 20
+	overlay.Parent = _screenGui
+
+	local modal = Instance.new("Frame")
+	modal.Size = if isMobile then UDim2.new(0.9, 0, 0, 200) else UDim2.fromOffset(360, 200)
+	modal.Position = UDim2.fromScale(0.5, 0.5)
+	modal.AnchorPoint = Vector2.new(0.5, 0.5)
+	modal.BackgroundColor3 = COLORS.panel
+	modal.BorderSizePixel = 0
+	modal.ZIndex = 21
+	modal.Parent = overlay
+	createCorner(modal, 10)
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -20, 0, 28)
+	title.Position = UDim2.fromOffset(10, 10)
+	title.BackgroundTransparency = 1
+	title.Text = "Craft " .. recipeName
+	title.TextColor3 = COLORS.text
+	title.TextSize = 16
+	title.Font = Enum.Font.GothamBold
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 22
+	title.Parent = modal
+
+	local subtitle = Instance.new("TextLabel")
+	subtitle.Size = UDim2.new(1, -20, 0, 16)
+	subtitle.Position = UDim2.fromOffset(10, 38)
+	subtitle.BackgroundTransparency = 1
+	subtitle.Text = "Describe your creature (optional)"
+	subtitle.TextColor3 = COLORS.textDim
+	subtitle.TextSize = 11
+	subtitle.Font = Enum.Font.Gotham
+	subtitle.TextXAlignment = Enum.TextXAlignment.Left
+	subtitle.ZIndex = 22
+	subtitle.Parent = modal
+
+	local textBox = Instance.new("TextBox")
+	textBox.Size = UDim2.new(1, -20, 0, 60)
+	textBox.Position = UDim2.fromOffset(10, 60)
+	textBox.BackgroundColor3 = COLORS.card
+	textBox.TextColor3 = COLORS.text
+	textBox.PlaceholderText = "Describe your creature..."
+	textBox.PlaceholderColor3 = COLORS.textDim
+	textBox.Text = ""
+	textBox.TextSize = 13
+	textBox.Font = Enum.Font.Gotham
+	textBox.TextWrapped = true
+	textBox.TextXAlignment = Enum.TextXAlignment.Left
+	textBox.TextYAlignment = Enum.TextYAlignment.Top
+	textBox.ClearTextOnFocus = false
+	textBox.BorderSizePixel = 0
+	textBox.ZIndex = 22
+	textBox.Parent = modal
+	createCorner(textBox, 6)
+
+	local charLabel = Instance.new("TextLabel")
+	charLabel.Size = UDim2.new(1, -20, 0, 14)
+	charLabel.Position = UDim2.fromOffset(10, 122)
+	charLabel.BackgroundTransparency = 1
+	charLabel.Text = "0 / 500"
+	charLabel.TextColor3 = COLORS.textDim
+	charLabel.TextSize = 10
+	charLabel.Font = Enum.Font.Gotham
+	charLabel.TextXAlignment = Enum.TextXAlignment.Right
+	charLabel.ZIndex = 22
+	charLabel.Parent = modal
+
+	textBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local txt = textBox.Text
+		if #txt > 500 then
+			textBox.Text = txt:sub(1, 500)
+			return
+		end
+		charLabel.Text = #txt .. " / 500"
+	end)
+
+	local resolved = false
+	local function finish(promptText: string?)
+		if resolved then
+			return
+		end
+		resolved = true
+		overlay:Destroy()
+		callback(promptText)
+	end
+
+	local btnWidth = if isMobile then UDim2.new(0.44, 0, 0, 32) else UDim2.fromOffset(120, 32)
+
+	local cancelBtn = Instance.new("TextButton")
+	cancelBtn.Size = btnWidth
+	cancelBtn.Position = UDim2.new(0, 10, 1, -42)
+	cancelBtn.BackgroundColor3 = COLORS.notCraftable
+	cancelBtn.Text = "Cancel"
+	cancelBtn.TextColor3 = COLORS.text
+	cancelBtn.TextSize = 13
+	cancelBtn.Font = Enum.Font.GothamBold
+	cancelBtn.ZIndex = 22
+	cancelBtn.Parent = modal
+	createCorner(cancelBtn, 6)
+	cancelBtn.Activated:Connect(function()
+		finish(nil)
+	end)
+
+	local craftBtn = Instance.new("TextButton")
+	craftBtn.Size = btnWidth
+	craftBtn.AnchorPoint = Vector2.new(1, 0)
+	craftBtn.Position = UDim2.new(1, -10, 1, -42)
+	craftBtn.BackgroundColor3 = COLORS.craftable
+	craftBtn.Text = "Craft"
+	craftBtn.TextColor3 = COLORS.text
+	craftBtn.TextSize = 13
+	craftBtn.Font = Enum.Font.GothamBold
+	craftBtn.ZIndex = 22
+	craftBtn.Parent = modal
+	createCorner(craftBtn, 6)
+	craftBtn.Activated:Connect(function()
+		local txt = textBox.Text:match("^%s*(.-)%s*$") or ""
+		finish(if #txt > 0 then txt else "")
+	end)
+end
+
+local function craftEgg(recipeId: string, button: TextButton?, userPrompt: string?)
 	if _crafting then
 		return
 	end
@@ -961,7 +1094,7 @@ local function craftEgg(recipeId: string, button: TextButton?)
 
 	task.spawn(function()
 		local EggCraftingService = Knit.GetService("EggCraftingService")
-		local result = EggCraftingService:CraftEgg(recipeId):await()
+		local result = EggCraftingService:CraftEgg(recipeId, userPrompt or ""):await()
 
 		if result and result.success then
 			local character = Player.Character
@@ -1246,8 +1379,12 @@ renderEggsTab = function()
 			createCorner(craftBtn, 4)
 
 			if recipe.canCraft then
-				craftBtn.MouseButton1Click:Connect(function()
-					craftEgg(recipe.id, craftBtn)
+				craftBtn.Activated:Connect(function()
+					showPromptModal(recipe.displayName, function(promptText)
+						if promptText ~= nil then
+							craftEgg(recipe.id, craftBtn, promptText)
+						end
+					end)
 				end)
 			end
 		end

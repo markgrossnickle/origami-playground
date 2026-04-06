@@ -62,6 +62,9 @@ local _handPart: Part? = nil
 local _heartbeatConn: RBXScriptConnection? = nil
 local _enabled: boolean = true
 local _placeButton: TextButton? = nil
+local _placeButtonTapTime: number = 0
+local _lastGhostChunkKey: string? = nil
+local _lastGhostFlatIndex: number? = nil
 
 -- Services (set in KnitStart)
 local MiningService
@@ -530,7 +533,28 @@ local function _buildUI()
 		placeBtn.Parent = gui
 		createCorner(placeBtn, 28)
 		placeBtn.Activated:Connect(function()
-			_tryPlaceBlock()
+			_placeButtonTapTime = os.clock()
+			-- Use cached ghost position so the raycast doesn't fire from the button's
+			-- screen location (which would place the block at the wrong spot).
+			local itemId = _getSelectedItem()
+			if not itemId or not _isMaterialItem(itemId) or _getItemCount(itemId) < 1 then
+				return
+			end
+			local chunkKey = _lastGhostChunkKey
+			local flatIndex = _lastGhostFlatIndex
+			if not chunkKey or not flatIndex then
+				return
+			end
+			task.spawn(function()
+				local result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
+				if result and result.success then
+					_inventory[itemId] = (_inventory[itemId] or 1) - 1
+					if _inventory[itemId] < 0 then
+						_inventory[itemId] = 0
+					end
+					_renderSlots()
+				end
+			end)
 		end)
 		_placeButton = placeBtn
 	end
@@ -625,10 +649,14 @@ local function _onHeartbeat()
 
 	if not isMaterial or not itemId or _getItemCount(itemId) < 1 then
 		_updateGhost(nil, nil)
+		_lastGhostChunkKey = nil
+		_lastGhostFlatIndex = nil
 		return
 	end
 
-	local _, _, blockCenter = _raycastForPlacement()
+	local chunkKey, flatIndex, blockCenter = _raycastForPlacement()
+	_lastGhostChunkKey = chunkKey
+	_lastGhostFlatIndex = flatIndex
 	_updateGhost(blockCenter, itemId)
 end
 
@@ -703,6 +731,10 @@ function HotbarController:GetSelectedToolId(): string?
 		return itemId
 	end
 	return nil
+end
+
+function HotbarController:WasPlaceButtonTapped(): boolean
+	return (os.clock() - _placeButtonTapTime) < 0.3
 end
 
 function HotbarController:SetEnabled(enabled: boolean)

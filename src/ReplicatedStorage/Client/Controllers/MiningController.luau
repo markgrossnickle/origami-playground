@@ -543,6 +543,10 @@ function MiningController:KnitStart()
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			_startMining()
 		elseif input.UserInputType == Enum.UserInputType.Touch then
+			-- Skip if the Place button in HotbarController was just tapped
+			if HotbarController:WasPlaceButtonTapped() then
+				return
+			end
 			touchStartPos = Vector2.new(input.Position.X, input.Position.Y)
 			touchStartTime = os.clock()
 		end

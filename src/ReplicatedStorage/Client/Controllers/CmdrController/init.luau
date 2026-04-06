@@ -77,7 +77,7 @@ function CmdrController:KnitStart()
 		warn("[CmdrController] CmdrClient loaded successfully")
 		CmdrController.CmdrClient = result
 		-- selene: allow(incorrect_standard_library_use)
-		CmdrController.CmdrClient:SetActivationKeys({ Enum.KeyCode.Grave, Enum.KeyCode.F2 })
+		CmdrController.CmdrClient:SetActivationKeys({ Enum.KeyCode.Backquote, Enum.KeyCode.F2 })
 
 		local componentsFolder = script:FindFirstChild("Components")
 		if componentsFolder then

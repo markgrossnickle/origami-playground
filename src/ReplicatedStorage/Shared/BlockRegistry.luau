@@ -519,6 +519,17 @@ local blocks: { [number]: BlockConfig } = {
 		drops = { { itemId = "willow_vine", count = 1, chance = 1 } },
 		xp = 1,
 	},
+	[BlockType.WillowLeaves] = {
+		id = BlockType.WillowLeaves,
+		name = "Willow Leaves",
+		hardness = 0.3,
+		color = Color3.fromRGB(150, 190, 90),
+		material = Enum.Material.Grass,
+		mineable = true,
+		minTier = 0,
+		drops = { { itemId = "willow_vine", count = 1, chance = 1 } },
+		xp = 1,
+	},
 	[BlockType.PalmFrond] = {
 		id = BlockType.PalmFrond,
 		name = "Palm Frond",

@@ -98,12 +98,32 @@ local _activeCreatureData: { [string]: any }? = nil
 -- Egg timer
 local _eggTimerThread: thread? = nil
 
+-- Safely cancel the egg timer thread. Skips if the thread is the
+-- currently running thread (you can't cancel yourself) or already dead.
+local function _safeCancelEggTimer()
+	local t = _eggTimerThread
+	_eggTimerThread = nil
+	if not t then
+		return
+	end
+	if t == coroutine.running() then
+		-- Can't cancel self; clearing the handle above is enough —
+		-- the loop body will exit on its next iteration.
+		return
+	end
+	if coroutine.status(t) == "dead" then
+		return
+	end
+	pcall(task.cancel, t)
+end
+
 -- Forward declarations
 local renderMaterialsTab: () -> ()
 local renderToolsTab: () -> ()
 local renderCreaturesTab: () -> ()
 local renderEggsTab: () -> ()
 local renderWorkshopTab: () -> ()
+local switchTab: (tabName: string) -> ()
 
 -- Utility
 
@@ -911,10 +931,7 @@ end
 -- Eggs Tab
 
 local function startEggTimers()
-	if _eggTimerThread then
-		task.cancel(_eggTimerThread)
-		_eggTimerThread = nil
-	end
+	_safeCancelEggTimer()
 
 	_eggTimerThread = task.spawn(function()
 		local tickCount = 0
@@ -1489,7 +1506,7 @@ end
 
 -- Tab Switching & Panel Toggle
 
-local function switchTab(tabName: string)
+function switchTab(tabName: string)
 	_activeTab = tabName
 
 	for name, btn in pairs(_tabButtons) do
@@ -1498,9 +1515,8 @@ local function switchTab(tabName: string)
 	end
 
 	-- Stop egg timers when leaving eggs tab
-	if tabName ~= "Eggs" and _eggTimerThread then
-		task.cancel(_eggTimerThread)
-		_eggTimerThread = nil
+	if tabName ~= "Eggs" then
+		_safeCancelEggTimer()
 	end
 
 	-- Stop workshop timers when leaving workshop tab
@@ -1534,10 +1550,7 @@ local function togglePanel()
 			end
 		end)
 	else
-		if _eggTimerThread then
-			task.cancel(_eggTimerThread)
-			_eggTimerThread = nil
-		end
+		_safeCancelEggTimer()
 		WorkshopTab.stopTimers()
 	end
 end
@@ -1673,10 +1686,7 @@ local function buildUI()
 	closeBtn.MouseButton1Click:Connect(function()
 		_visible = false
 		_mainFrame.Visible = false
-		if _eggTimerThread then
-			task.cancel(_eggTimerThread)
-			_eggTimerThread = nil
-		end
+		_safeCancelEggTimer()
 		WorkshopTab.stopTimers()
 	end)
 end

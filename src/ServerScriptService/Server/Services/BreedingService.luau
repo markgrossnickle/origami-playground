@@ -319,21 +319,51 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 		return { success = false, error = string.format("Not ready yet: %dh %dm remaining", hours, mins) }
 	end
 
-	-- If offspring data wasn't generated earlier (LLM failure), try again now
+	-- If offspring data wasn't generated earlier (LLM failure), try again now.
+	-- Use a small retry loop with backoff for rate_limited, and shrink the
+	-- prompt to a minimal fallback on input_too_long.
 	if not egg.offspringData and egg.breedPrompt then
 		warn("[HatchEgg] No offspringData — retrying LLM with prompt:", string.sub(egg.breedPrompt, 1, 80))
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local result = OrigamiService.Client:RequestModel(player, egg.breedPrompt, "creature", egg.style or "origami")
-		warn(
-			"[HatchEgg] LLM retry result — success:",
-			result and result.success,
-			"hasModel:",
-			result and result.model ~= nil,
-			"error:",
-			result and result.error
-		)
-		if result and result.success and result.model then
-			egg.offspringData = result.model
+		local style = egg.style or "origami"
+		local prompt = egg.breedPrompt
+		local usedFallback = false
+
+		for attempt = 1, 4 do
+			local result = OrigamiService.Client:RequestModel(player, prompt, "creature", style)
+			local errStr = result and result.error or "nil"
+			warn(
+				"[HatchEgg] LLM attempt",
+				attempt,
+				"— success:",
+				result and result.success,
+				"hasModel:",
+				result and result.model ~= nil,
+				"error:",
+				errStr
+			)
+
+			if result and result.success and result.model then
+				egg.offspringData = result.model
+				break
+			end
+
+			-- Handle rate limit: parse "rate_limited: wait 0.9s" and sleep
+			local waitStr = string.match(errStr, "rate_limited:%s*wait%s*([%d%.]+)s?")
+			if waitStr then
+				local waitSecs = tonumber(waitStr) or 1
+				task.wait(math.min(waitSecs + 0.2, 5))
+				-- Retry the same prompt
+			elseif string.find(errStr, "input_too_long", 1, true) and not usedFallback then
+				-- Shrink to a minimal fallback prompt and try again
+				usedFallback = true
+				local rarityStr = egg.rarity or "Common"
+				prompt = string.format("Create a small %s creature. Category: creature.", string.lower(rarityStr))
+				warn("[HatchEgg] Using fallback prompt due to input_too_long:", prompt)
+			else
+				-- Other error: brief backoff then try once more
+				task.wait(0.5 * attempt)
+			end
 		end
 	elseif not egg.offspringData and not egg.breedPrompt then
 		warn("[HatchEgg] No offspringData AND no breedPrompt — cannot generate offspring")

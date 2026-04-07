@@ -153,13 +153,11 @@ function BreedingService.Client:RequestBreed(
 			end
 		end
 
+		-- Keep this short — the generator backend enforces an input-token limit.
 		local breedPrompt = string.format(
-			"Create a baby creature offspring that blends traits of two parents: '%s' (%s rarity) and '%s' (%s rarity). "
-				.. "Combine their body shapes, colors, and features into a cute smaller offspring. Category: creature.",
-			parent1Name,
-			parent1Rarity,
-			parent2Name,
-			parent2Rarity
+			"A baby creature blending '%s' and '%s'. Cute and small.",
+			string.sub(parent1Name, 1, 40),
+			string.sub(parent2Name, 1, 40)
 		)
 
 		-- Call LLM (server-side call to Client method with player)

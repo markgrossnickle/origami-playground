@@ -18,24 +18,45 @@ local SpawnService = Knit.CreateService({
 
 local WorldService
 
-function SpawnService:KnitInit()
-	-- Nothing to init
-end
+-- How high to float the spawn platform above terrain so trees/structures
+-- can't poke through it and players don't get stuck in foliage.
+local PLATFORM_LIFT = 12
+-- Platform footprint (big enough to catch a drifting spawn while chunks load)
+local PLATFORM_SIZE = Vector3.new(24, 2, 24)
+
+function SpawnService:KnitInit() end
 
 function SpawnService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 
 	local seed = WorldService:GetSeed()
-	local spawnPos = WorldGenModule.getSpawnPosition(seed)
+	local surfacePos = WorldGenModule.getSpawnPosition(seed)
+	-- Lift platform high above terrain so trees / structures can't poke
+	-- through it, and so the player lands on it even before nearby chunks
+	-- stream in.
+	local platformPos = Vector3.new(surfacePos.X, surfacePos.Y + PLATFORM_LIFT, surfacePos.Z)
+	-- Where the player's feet should end up — just above the platform top.
+	local standPos = platformPos + Vector3.new(0, PLATFORM_SIZE.Y * 0.5 + 3, 0)
 
-	-- Create a spawn platform at the terrain surface
+	-- Make sure falling to -inf doesn't insta-kill during chunk streaming.
+	-- Roblox's default FallenPartsDestroyHeight can wipe a character before
+	-- chunks load if the spawn briefly overlaps empty space.
+	-- selene: allow(incorrect_standard_library_use)
+	pcall(function()
+		(workspace :: any).FallenPartsDestroyHeight = -5000
+	end)
+
+	-- Create a large, elevated spawn platform at the terrain surface
 	local spawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
 	if spawnLocation then
-		spawnLocation.Position = Vector3.new(spawnPos.X, spawnPos.Y - 1, spawnPos.Z)
+		spawnLocation.Size = PLATFORM_SIZE
+		spawnLocation.Position = platformPos
+		spawnLocation.Anchored = true
+		spawnLocation.CanCollide = true
 	else
 		spawnLocation = Instance.new("SpawnLocation")
-		spawnLocation.Size = Vector3.new(8, 1, 8)
-		spawnLocation.Position = Vector3.new(spawnPos.X, spawnPos.Y - 1, spawnPos.Z)
+		spawnLocation.Size = PLATFORM_SIZE
+		spawnLocation.Position = platformPos
 		spawnLocation.Anchored = true
 		spawnLocation.Material = Enum.Material.SmoothPlastic
 		spawnLocation.Color = Color3.fromRGB(245, 235, 220) -- paper white
@@ -43,30 +64,40 @@ function SpawnService:KnitStart()
 		spawnLocation.CanCollide = true
 		spawnLocation.Parent = workspace
 	end
+	spawnLocation.Name = "SpawnPlatform"
 
-	-- Teleport players who spawn at default position to surface
-	Players.PlayerAdded:Connect(function(player)
-		player.CharacterAdded:Connect(function(character)
-			-- Wait for physics to settle
-			task.defer(function()
-				if not player.Parent then
-					return
-				end
-				local rootPart = character:WaitForChild("HumanoidRootPart", 5) :: BasePart?
-				if not rootPart then
-					return
-				end
-				-- If player is near default origin (0,0,0), teleport to spawn
-				if
-					rootPart.Position.Y < 5
-					and math.abs(rootPart.Position.X) < 20
-					and math.abs(rootPart.Position.Z) < 20
-				then
-					rootPart.CFrame = CFrame.new(spawnPos)
-				end
-			end)
+	-- Teleport every newly spawned character onto the platform. Using
+	-- CharacterAdded + an immediate CFrame snap beats any "spawned at 0,0,0
+	-- and fell through empty world" race before chunks stream in.
+	local function placeOnPlatform(character: Model)
+		local rootPart = character:WaitForChild("HumanoidRootPart", 5) :: BasePart?
+		if not rootPart then
+			return
+		end
+		rootPart.CFrame = CFrame.new(standPos)
+		-- Nudge once more on the next frame in case the default spawn
+		-- system repositions the character after ours.
+		task.defer(function()
+			if rootPart.Parent then
+				rootPart.CFrame = CFrame.new(standPos)
+			end
 		end)
+	end
+
+	Players.PlayerAdded:Connect(function(player)
+		player.CharacterAdded:Connect(placeOnPlatform)
+		if player.Character then
+			placeOnPlatform(player.Character)
+		end
 	end)
+
+	-- Handle any players already in the server
+	for _, player in ipairs(Players:GetPlayers()) do
+		player.CharacterAdded:Connect(placeOnPlatform)
+		if player.Character then
+			placeOnPlatform(player.Character)
+		end
+	end
 end
 
 return SpawnService

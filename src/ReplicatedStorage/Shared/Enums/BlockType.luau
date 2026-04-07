@@ -60,6 +60,7 @@ return {
 	FlyTrapMaw = 78,
 	PineNeedle = 88,
 	WillowVine = 89,
+	WillowLeaves = 93,
 	PalmFrond = 90,
 	GiantBark = 91,
 	BirchBark = 92,

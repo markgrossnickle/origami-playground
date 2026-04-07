@@ -516,6 +516,24 @@ end
 
 WorldService._onMineRequest = Signal.new()
 
+function WorldService:_clearAndReseed(newSeed: number)
+	-- Clear all in-memory chunks
+	table.clear(chunks)
+	table.clear(pendingChunks)
+
+	-- Clear deltas (unsaved modifications are lost intentionally)
+	table.clear(deltas)
+	table.clear(savedDeltas)
+	table.clear(dirtyRegions)
+
+	-- Clear subscription tracking
+	table.clear(chunkSubscribers)
+
+	-- Set new seed
+	seed = newSeed
+	print("[WorldService] World regenerated with seed:", seed)
+end
+
 function WorldService:GetSeed(): number
 	return seed
 end

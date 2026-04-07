@@ -73,7 +73,7 @@ function OrigamiService.Client:RequestModel(
 		return { success = false, error = "empty_prompt" }
 	end
 
-	if #prompt > 100 then
+	if #prompt > 500 then
 		return { success = false, error = "prompt_too_long" }
 	end
 

@@ -613,6 +613,7 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 end
 
 -- All available structure types for "mixed" mode
+-- NOTE: "fly_trap" structure builder exists below but is disabled from mixed rotation for now
 local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "cactus", "bonsai" }
 
 -- Per-structure block overrides (used in mixed mode for visual variety)
@@ -627,6 +628,7 @@ local STRUCTURE_BLOCKS = {
 	mushroom_cluster = { trunk = BlockType.MushroomStem, canopy = BlockType.MushroomCap },
 	mushroom_tall = { trunk = BlockType.MushroomStem, canopy = BlockType.MushroomCap },
 	mushroom_shelf = { trunk = BlockType.MushroomStem, canopy = BlockType.ShelfBracket },
+	fly_trap = { trunk = BlockType.FlyTrapStem, canopy = BlockType.FlyTrapMaw },
 }
 
 -- Structure label names for display
@@ -642,6 +644,7 @@ local STRUCTURE_LABELS = {
 	mushroom_cluster = "Mushroom Cluster",
 	mushroom_tall = "Tall Mushroom",
 	mushroom_shelf = "Shelf Mushroom",
+	fly_trap = "Venus Fly Trap",
 	spire = "Spire",
 	cluster = "Cluster",
 	column = "Column",
@@ -741,6 +744,8 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					trunkHeight = 8 + (hashTwo(seed + 5557, bx, bz) % 5) -- 8-12
 				elseif structureType == "tree_palm" then
 					trunkHeight = 7 + (hashTwo(seed + 5558, bx, bz) % 4) -- 7-10
+				elseif structureType == "fly_trap" then
+					trunkHeight = 6 + (hashTwo(seed + 5559, bx, bz) % 5) -- 6-10
 				end
 			end
 
@@ -1334,6 +1339,198 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 						chunkBlockZ,
 						true
 					)
+				end
+			elseif structureType == "fly_trap" then
+				-- Venus fly trap: thick 2x2 stem, branching trap heads (maw blocks), root tendrils
+				-- Thick stem (2x2 core)
+				for ty = 0, trunkHeight - 1 do
+					for dx = 0, 1 do
+						for dz = 0, 1 do
+							placeBlock(
+								blocks,
+								trunkBlock,
+								bx + dx,
+								surfaceBlockY + 1 + ty,
+								bz + dz,
+								chunkBlockX,
+								chunkBlockYBottom,
+								chunkBlockYTop,
+								chunkBlockZ
+							)
+						end
+					end
+				end
+				-- Main trap head at top: 3x3 maw layer + upper jaw row
+				local headY = surfaceBlockY + trunkHeight + 1
+				for dx = -1, 2 do
+					for dz = -1, 2 do
+						placeBlock(
+							blocks,
+							canopyBlock,
+							bx + dx,
+							headY,
+							bz + dz,
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ,
+							true
+						)
+					end
+				end
+				-- Upper jaw (narrower, one block higher)
+				for dx = 0, 1 do
+					for dz = -1, 2 do
+						placeBlock(
+							blocks,
+							canopyBlock,
+							bx + dx,
+							headY + 1,
+							bz + dz,
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ,
+							true
+						)
+					end
+				end
+				-- Teeth: single stem blocks on jaw edge
+				placeBlock(
+					blocks,
+					trunkBlock,
+					bx - 1,
+					headY + 1,
+					bz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
+				placeBlock(
+					blocks,
+					trunkBlock,
+					bx + 2,
+					headY + 1,
+					bz,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
+				placeBlock(
+					blocks,
+					trunkBlock,
+					bx - 1,
+					headY + 1,
+					bz + 1,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
+				placeBlock(
+					blocks,
+					trunkBlock,
+					bx + 2,
+					headY + 1,
+					bz + 1,
+					chunkBlockX,
+					chunkBlockYBottom,
+					chunkBlockYTop,
+					chunkBlockZ,
+					true
+				)
+				-- Side branch with small trap head (50% chance, hash-based direction)
+				if trunkHeight >= 7 and hashTwo(seed + 5570, bx, bz) % 2 == 0 then
+					local branchDir = hashTwo(seed + 5571, bx, bz) % 4
+					local bdx = if branchDir == 0 then 2 elseif branchDir == 1 then -1 else 0
+					local bdz = if branchDir == 2 then 2 elseif branchDir == 3 then -1 else 0
+					local branchY = surfaceBlockY + math.floor(trunkHeight * 0.6)
+					-- Branch arm (2 blocks out)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx + bdx,
+						branchY,
+						bz + bdz,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx + bdx * 2,
+						branchY,
+						bz + bdz * 2,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					placeBlock(
+						blocks,
+						trunkBlock,
+						bx + bdx * 2,
+						branchY + 1,
+						bz + bdz * 2,
+						chunkBlockX,
+						chunkBlockYBottom,
+						chunkBlockYTop,
+						chunkBlockZ
+					)
+					-- Small maw at branch end (2x2)
+					local smY = branchY + 2
+					for sdx = 0, 1 do
+						for sdz = 0, 1 do
+							placeBlock(
+								blocks,
+								canopyBlock,
+								bx + bdx * 2 + sdx,
+								smY,
+								bz + bdz * 2 + sdz,
+								chunkBlockX,
+								chunkBlockYBottom,
+								chunkBlockYTop,
+								chunkBlockZ,
+								true
+							)
+						end
+					end
+				end
+				-- Root tendrils at base (4 directions, descending)
+				for _, rdir in { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } } do
+					if hashTwo(seed + 5575 + rdir[1] * 3 + rdir[2] * 7, bx, bz) % 3 ~= 0 then
+						placeBlock(
+							blocks,
+							trunkBlock,
+							bx + rdir[1],
+							surfaceBlockY,
+							bz + rdir[2],
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ,
+							true
+						)
+						placeBlock(
+							blocks,
+							trunkBlock,
+							bx + rdir[1] * 2,
+							surfaceBlockY - 1,
+							bz + rdir[2] * 2,
+							chunkBlockX,
+							chunkBlockYBottom,
+							chunkBlockYTop,
+							chunkBlockZ,
+							true
+						)
+					end
 				end
 			elseif structureType == "spire" then
 				for ty = 0, trunkHeight - 1 do

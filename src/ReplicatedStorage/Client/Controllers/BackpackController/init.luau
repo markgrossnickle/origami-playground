@@ -16,6 +16,7 @@ local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local MountConfig = require(ReplicatedStorage.Shared.MountConfig)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
+local WorkshopTab = require(script.WorkshopTab)
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
@@ -69,7 +70,7 @@ local MATERIAL_DEPTH_ORDER = {
 -- Auto-positioning for creature plot assignment
 local PLOT_CREATURE_POSITIONS = { { 4, 4 }, { 12, 4 }, { 20, 4 }, { 4, 12 }, { 12, 12 } }
 
-local TABS = { "Mats", "Tools", "Critters", "Eggs" }
+local TABS = { "Mats", "Tools", "Critters", "Eggs", "Workshop" }
 local isMobile = UserInputService.TouchEnabled
 
 -- State
@@ -102,6 +103,7 @@ local renderMaterialsTab: () -> ()
 local renderToolsTab: () -> ()
 local renderCreaturesTab: () -> ()
 local renderEggsTab: () -> ()
+local renderWorkshopTab: () -> ()
 
 -- Utility
 
@@ -158,7 +160,7 @@ end
 -- Data Fetching
 
 local function fetchAllData(callback: (() -> ())?)
-	local remaining = 6
+	local remaining = 7
 	local function onComplete()
 		remaining -= 1
 		if remaining <= 0 and callback then
@@ -222,6 +224,9 @@ local function fetchAllData(callback: (() -> ())?)
 		end
 		onComplete()
 	end)
+
+	-- Workshop data
+	WorkshopTab.fetchData(onComplete)
 end
 
 -- Materials Tab
@@ -306,6 +311,19 @@ renderMaterialsTab = function()
 		nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 		nameLabel.Parent = cell
 		createCorner(nameLabel, 4)
+
+		-- Tap/click to equip to hotbar
+		local equipBtn = Instance.new("TextButton")
+		equipBtn.Size = UDim2.fromScale(1, 1)
+		equipBtn.BackgroundTransparency = 1
+		equipBtn.Text = ""
+		equipBtn.Parent = cell
+		equipBtn.Activated:Connect(function()
+			local HotbarController = Knit.GetController("HotbarController")
+			if HotbarController then
+				HotbarController:EquipToSlot(mat.id)
+			end
+		end)
 	end
 end
 
@@ -911,8 +929,19 @@ local function startEggTimers()
 				end
 			end
 
-			-- Update timer labels in UI
-			if _contentFrame then
+			-- Check if any egg just became ready (needs re-render to show Hatch button)
+			local needsRerender = false
+			for _, egg in ipairs(_pendingEggs) do
+				if egg.remainingSeconds == 0 then
+					needsRerender = true
+					break
+				end
+			end
+
+			if needsRerender then
+				renderEggsTab()
+			elseif _contentFrame then
+				-- Update timer labels in UI
 				for _, child in ipairs(_contentFrame:GetDescendants()) do
 					if child.Name == "EggTimerLabel" and child:IsA("TextLabel") then
 						local eggIdx = child:GetAttribute("EggIndex")
@@ -948,7 +977,19 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 		local BreedingService = Knit.GetService("BreedingService")
 		local ok, result = BreedingService:HatchEgg(eggIndex):await()
 		if not ok then
+			warn("[hatchEgg] Service call failed — raw result:", result)
 			result = { success = false, error = "Service call failed" }
+		end
+
+		if not result or not result.success then
+			warn("[hatchEgg] Server returned failure — ok:", ok, "error:", result and result.error)
+			if result then
+				local info = {}
+				for k, v in pairs(result) do
+					table.insert(info, tostring(k) .. "=" .. tostring(v))
+				end
+				warn("[hatchEgg] Full result:", table.concat(info, ", "))
+			end
 		end
 
 		if result and result.success then
@@ -1001,7 +1042,140 @@ local function hatchEgg(eggIndex: number, button: TextButton?)
 	end)
 end
 
-local function craftEgg(recipeId: string, button: TextButton?)
+local function showPromptModal(recipeName: string, callback: (string?) -> (), subtitleOverride: string?)
+	if not _screenGui then
+		callback(nil)
+		return
+	end
+
+	local overlay = Instance.new("Frame")
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	overlay.BackgroundTransparency = 0.4
+	overlay.BorderSizePixel = 0
+	overlay.ZIndex = 20
+	overlay.Parent = _screenGui
+
+	local modal = Instance.new("Frame")
+	modal.Size = if isMobile then UDim2.new(0.9, 0, 0, 200) else UDim2.fromOffset(360, 200)
+	modal.Position = UDim2.fromScale(0.5, 0.5)
+	modal.AnchorPoint = Vector2.new(0.5, 0.5)
+	modal.BackgroundColor3 = COLORS.panel
+	modal.BorderSizePixel = 0
+	modal.ZIndex = 21
+	modal.Parent = overlay
+	createCorner(modal, 10)
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -20, 0, 28)
+	title.Position = UDim2.fromOffset(10, 10)
+	title.BackgroundTransparency = 1
+	title.Text = "Craft " .. recipeName
+	title.TextColor3 = COLORS.text
+	title.TextSize = 16
+	title.Font = Enum.Font.GothamBold
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 22
+	title.Parent = modal
+
+	local subtitle = Instance.new("TextLabel")
+	subtitle.Size = UDim2.new(1, -20, 0, 16)
+	subtitle.Position = UDim2.fromOffset(10, 38)
+	subtitle.BackgroundTransparency = 1
+	subtitle.Text = subtitleOverride or "Describe your creature (optional)"
+	subtitle.TextColor3 = COLORS.textDim
+	subtitle.TextSize = 11
+	subtitle.Font = Enum.Font.Gotham
+	subtitle.TextXAlignment = Enum.TextXAlignment.Left
+	subtitle.ZIndex = 22
+	subtitle.Parent = modal
+
+	local textBox = Instance.new("TextBox")
+	textBox.Size = UDim2.new(1, -20, 0, 60)
+	textBox.Position = UDim2.fromOffset(10, 60)
+	textBox.BackgroundColor3 = COLORS.card
+	textBox.TextColor3 = COLORS.text
+	textBox.PlaceholderText = "Describe your creature..."
+	textBox.PlaceholderColor3 = COLORS.textDim
+	textBox.Text = ""
+	textBox.TextSize = 13
+	textBox.Font = Enum.Font.Gotham
+	textBox.TextWrapped = true
+	textBox.TextXAlignment = Enum.TextXAlignment.Left
+	textBox.TextYAlignment = Enum.TextYAlignment.Top
+	textBox.ClearTextOnFocus = false
+	textBox.BorderSizePixel = 0
+	textBox.ZIndex = 22
+	textBox.Parent = modal
+	createCorner(textBox, 6)
+
+	local charLabel = Instance.new("TextLabel")
+	charLabel.Size = UDim2.new(1, -20, 0, 14)
+	charLabel.Position = UDim2.fromOffset(10, 122)
+	charLabel.BackgroundTransparency = 1
+	charLabel.Text = "0 / 500"
+	charLabel.TextColor3 = COLORS.textDim
+	charLabel.TextSize = 10
+	charLabel.Font = Enum.Font.Gotham
+	charLabel.TextXAlignment = Enum.TextXAlignment.Right
+	charLabel.ZIndex = 22
+	charLabel.Parent = modal
+
+	textBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local txt = textBox.Text
+		if #txt > 500 then
+			textBox.Text = txt:sub(1, 500)
+			return
+		end
+		charLabel.Text = #txt .. " / 500"
+	end)
+
+	local resolved = false
+	local function finish(promptText: string?)
+		if resolved then
+			return
+		end
+		resolved = true
+		overlay:Destroy()
+		callback(promptText)
+	end
+
+	local btnWidth = if isMobile then UDim2.new(0.44, 0, 0, 32) else UDim2.fromOffset(120, 32)
+
+	local cancelBtn = Instance.new("TextButton")
+	cancelBtn.Size = btnWidth
+	cancelBtn.Position = UDim2.new(0, 10, 1, -42)
+	cancelBtn.BackgroundColor3 = COLORS.notCraftable
+	cancelBtn.Text = "Cancel"
+	cancelBtn.TextColor3 = COLORS.text
+	cancelBtn.TextSize = 13
+	cancelBtn.Font = Enum.Font.GothamBold
+	cancelBtn.ZIndex = 22
+	cancelBtn.Parent = modal
+	createCorner(cancelBtn, 6)
+	cancelBtn.Activated:Connect(function()
+		finish(nil)
+	end)
+
+	local craftBtn = Instance.new("TextButton")
+	craftBtn.Size = btnWidth
+	craftBtn.AnchorPoint = Vector2.new(1, 0)
+	craftBtn.Position = UDim2.new(1, -10, 1, -42)
+	craftBtn.BackgroundColor3 = COLORS.craftable
+	craftBtn.Text = "Craft"
+	craftBtn.TextColor3 = COLORS.text
+	craftBtn.TextSize = 13
+	craftBtn.Font = Enum.Font.GothamBold
+	craftBtn.ZIndex = 22
+	craftBtn.Parent = modal
+	createCorner(craftBtn, 6)
+	craftBtn.Activated:Connect(function()
+		local txt = textBox.Text:match("^%s*(.-)%s*$") or ""
+		finish(if #txt > 0 then txt else "")
+	end)
+end
+
+local function craftEgg(recipeId: string, button: TextButton?, userPrompt: string?)
 	if _crafting then
 		return
 	end
@@ -1013,7 +1187,7 @@ local function craftEgg(recipeId: string, button: TextButton?)
 
 	task.spawn(function()
 		local EggCraftingService = Knit.GetService("EggCraftingService")
-		local result = EggCraftingService:CraftEgg(recipeId):await()
+		local result = EggCraftingService:CraftEgg(recipeId, userPrompt or ""):await()
 
 		if result and result.success then
 			local character = Player.Character
@@ -1298,8 +1472,12 @@ renderEggsTab = function()
 			createCorner(craftBtn, 4)
 
 			if recipe.canCraft then
-				craftBtn.MouseButton1Click:Connect(function()
-					craftEgg(recipe.id, craftBtn)
+				craftBtn.Activated:Connect(function()
+					showPromptModal(recipe.displayName, function(promptText)
+						if promptText ~= nil then
+							craftEgg(recipe.id, craftBtn, promptText)
+						end
+					end)
 				end)
 			end
 		end
@@ -1325,6 +1503,11 @@ local function switchTab(tabName: string)
 		_eggTimerThread = nil
 	end
 
+	-- Stop workshop timers when leaving workshop tab
+	if tabName ~= "Workshop" then
+		WorkshopTab.stopTimers()
+	end
+
 	if tabName == "Mats" then
 		renderMaterialsTab()
 	elseif tabName == "Tools" then
@@ -1333,6 +1516,8 @@ local function switchTab(tabName: string)
 		renderCreaturesTab()
 	elseif tabName == "Eggs" then
 		renderEggsTab()
+	elseif tabName == "Workshop" then
+		renderWorkshopTab()
 	end
 end
 
@@ -1353,6 +1538,7 @@ local function togglePanel()
 			task.cancel(_eggTimerThread)
 			_eggTimerThread = nil
 		end
+		WorkshopTab.stopTimers()
 	end
 end
 
@@ -1491,7 +1677,20 @@ local function buildUI()
 			task.cancel(_eggTimerThread)
 			_eggTimerThread = nil
 		end
+		WorkshopTab.stopTimers()
 	end)
+end
+
+-- Workshop Tab
+
+renderWorkshopTab = function()
+	if not _contentFrame then
+		return
+	end
+	-- Update WorkshopTab's injected dependencies
+	WorkshopTab.contentFrame = _contentFrame
+	WorkshopTab.screenGui = _screenGui
+	WorkshopTab.render()
 end
 
 -- Lifecycle
@@ -1501,6 +1700,20 @@ local BackpackController = Knit.CreateController({ Name = "BackpackController" }
 function BackpackController:KnitInit() end
 
 function BackpackController:KnitStart()
+	-- Inject shared utilities into WorkshopTab
+	WorkshopTab.COLORS = COLORS
+	WorkshopTab.createCorner = createCorner
+	WorkshopTab.clearChildren = clearChildren
+	WorkshopTab.formatMaterialName = formatMaterialName
+	WorkshopTab.formatTime = formatTime
+	WorkshopTab.createEmptyState = createEmptyState
+	WorkshopTab.showPromptModal = showPromptModal
+	WorkshopTab.onRefreshNeeded = function()
+		if _visible and _activeTab == "Workshop" then
+			renderWorkshopTab()
+		end
+	end
+
 	task.delay(2, function()
 		buildUI()
 	end)
@@ -1584,6 +1797,9 @@ function BackpackController:KnitStart()
 			end)
 		end)
 	end)
+
+	-- Workshop live updates
+	WorkshopTab.connectLiveUpdates()
 end
 
 function BackpackController:DespawnActiveCreature()

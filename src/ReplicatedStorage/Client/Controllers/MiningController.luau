@@ -27,6 +27,7 @@ local MiningController = Knit.CreateController({
 local WorldService
 local MiningService
 local ChunkRenderController
+local HotbarController
 
 local LocalPlayer = Players.LocalPlayer
 local camera: Camera
@@ -351,12 +352,36 @@ end
 -- Mining logic
 
 local function _getCurrentToolConfig()
+	-- Use the tool selected in the hotbar if available
+	if HotbarController then
+		local hotbarToolId = HotbarController:GetSelectedToolId()
+		if hotbarToolId then
+			return ToolRegistry.get(hotbarToolId) or ToolRegistry.getDefault()
+		end
+	end
 	return ToolRegistry.get(equippedToolId) or ToolRegistry.getDefault()
 end
 
+local function _isToolSelectedInHotbar(): boolean
+	if HotbarController then
+		return HotbarController:IsToolSelected()
+	end
+	return true -- fallback: allow mining if hotbar not ready
+end
+
 local function _startMining()
+	-- Only allow mining when a tool is selected in the hotbar
+	if not _isToolSelectedInHotbar() then
+		return
+	end
 	isMining = true
 	miningProgress = 0
+	-- Acquire target immediately so first _updateMining frame has a valid target
+	local chunkKey, flatIndex, _ = _raycastToBlock()
+	if chunkKey and flatIndex then
+		targetChunkKey = chunkKey
+		targetFlatIndex = flatIndex
+	end
 end
 
 local function _stopMining()
@@ -369,6 +394,12 @@ end
 
 local function _updateHoverHighlight()
 	if isMining then
+		return
+	end
+
+	-- Only show mining highlight when a tool is selected
+	if not _isToolSelectedInHotbar() then
+		_hideHighlight()
 		return
 	end
 
@@ -392,17 +423,20 @@ local function _updateMining(dt: number)
 		return
 	end
 
-	local chunkKey, flatIndex, _ = _raycastToBlock()
+	-- Stop mining if tool was deselected (e.g. switched to material slot)
+	if not _isToolSelectedInHotbar() then
+		_stopMining()
+		return
+	end
 
-	if not chunkKey or not flatIndex then
+	-- Target is updated by the throttled raycast in Heartbeat — just validate here
+	if not targetChunkKey or not targetFlatIndex then
 		_hideHighlight()
-		targetChunkKey = nil
-		targetFlatIndex = nil
 		miningProgress = 0
 		return
 	end
 
-	local blockTypeId = ChunkRenderController:GetBlockAt(chunkKey, flatIndex)
+	local blockTypeId = ChunkRenderController:GetBlockAt(targetChunkKey, targetFlatIndex)
 	if blockTypeId == BlockType.Air then
 		_hideHighlight()
 		targetChunkKey = nil
@@ -415,20 +449,13 @@ local function _updateMining(dt: number)
 	local tool = _getCurrentToolConfig()
 	local blockConfig = BlockRegistry.get(blockTypeId)
 	if blockConfig and tool.tier < (blockConfig.minTier or 1) then
-		_updateHighlight(chunkKey, flatIndex, blockTypeId)
+		_updateHighlight(targetChunkKey, targetFlatIndex, blockTypeId)
 		_showTierBlocked(blockConfig.name, blockConfig.minTier or 1)
 		miningProgress = 0
 		return
 	end
 
-	-- If target changed, reset progress
-	if chunkKey ~= targetChunkKey or flatIndex ~= targetFlatIndex then
-		targetChunkKey = chunkKey
-		targetFlatIndex = flatIndex
-		miningProgress = 0
-	end
-
-	_updateHighlight(chunkKey, flatIndex, blockTypeId)
+	_updateHighlight(targetChunkKey, targetFlatIndex, blockTypeId)
 	local hardness = BlockRegistry.getHardness(blockTypeId)
 	if hardness > 0 and hardness < math.huge then
 		miningProgress += (tool.power / hardness) * dt
@@ -480,7 +507,7 @@ local function _updateMining(dt: number)
 	local sendInterval = 1 / tool.speed
 	if now - lastSendTime >= sendInterval then
 		lastSendTime = now
-		WorldService.RequestMine:Fire(chunkKey, flatIndex)
+		WorldService.RequestMine:Fire(targetChunkKey, targetFlatIndex)
 	end
 
 	-- Client prediction: if progress >= 1, assume break
@@ -502,6 +529,7 @@ function MiningController:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	MiningService = Knit.GetService("MiningService")
 	ChunkRenderController = Knit.GetController("ChunkRenderController")
+	HotbarController = Knit.GetController("HotbarController")
 
 	-- Input: left click to mine (immediate)
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -511,6 +539,10 @@ function MiningController:KnitStart()
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			_startMining()
 		elseif input.UserInputType == Enum.UserInputType.Touch then
+			-- Skip if the Place button in HotbarController was just tapped
+			if HotbarController:WasPlaceButtonTapped() then
+				return
+			end
 			touchStartPos = Vector2.new(input.Position.X, input.Position.Y)
 			touchStartTime = os.clock()
 		end
@@ -538,18 +570,29 @@ function MiningController:KnitStart()
 		end
 	end)
 
-	-- Update mining every frame (hover highlight throttled to ~20Hz)
-	local hoverFrameCounter = 0
+	-- Update mining (raycasts throttled to ~20Hz, mining progress every frame)
+	local raycastFrameCounter = 0
 	RunService.RenderStepped:Connect(function(dt)
 		-- Delayed touch mining: start only after TAP_DELAY if finger hasn't moved
 		if touchStartPos and not isMining and (os.clock() - touchStartTime) >= TAP_DELAY then
 			_startMining()
 		end
 
-		hoverFrameCounter += 1
-		if hoverFrameCounter >= 3 then
-			hoverFrameCounter = 0
+		raycastFrameCounter += 1
+		if raycastFrameCounter >= 3 then
+			raycastFrameCounter = 0
 			_updateHoverHighlight()
+			-- Refresh mining target at same throttled rate
+			if isMining then
+				local chunkKey, flatIndex, _ = _raycastToBlock()
+				if chunkKey and flatIndex then
+					if chunkKey ~= targetChunkKey or flatIndex ~= targetFlatIndex then
+						targetChunkKey = chunkKey
+						targetFlatIndex = flatIndex
+						miningProgress = 0
+					end
+				end
+			end
 		end
 		_updateMining(dt)
 		_updateTierBlockedUI()

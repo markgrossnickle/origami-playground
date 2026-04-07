@@ -52,7 +52,7 @@ function EggCraftingService.Client:GetRecipes(player: Player)
 end
 
 -- Craft an egg from a recipe.
-function EggCraftingService.Client:CraftEgg(player: Player, recipeId: string)
+function EggCraftingService.Client:CraftEgg(player: Player, recipeId: string, userPrompt: string?)
 	local recipe = EggCraftingConfig.getRecipeById(recipeId)
 	if not recipe then
 		return { success = false, error = "Invalid recipe" }
@@ -83,13 +83,30 @@ function EggCraftingService.Client:CraftEgg(player: Player, recipeId: string)
 		PlayerDataService:Write(player, { "MiningInventory", mat.itemId }, current - mat.count)
 	end
 
-	-- Build LLM prompt from recipe theme
-	local prompt = string.format(
-		"Create a %s-rarity creature: %s. "
-			.. "Make it unique with interesting features. It should be small to medium sized. Category: creature.",
-		recipe.rarity:lower(),
-		recipe.theme
-	)
+	-- Build LLM prompt from recipe theme, incorporating player description if provided
+	local cleanPrompt = ""
+	if userPrompt and type(userPrompt) == "string" then
+		cleanPrompt = userPrompt:sub(1, 500):match("^%s*(.-)%s*$") or ""
+	end
+
+	local prompt
+	if #cleanPrompt > 0 then
+		prompt = string.format(
+			"Create a %s-rarity creature based on this description: %s. "
+				.. "Style hints: %s. "
+				.. "Make it unique with interesting features. It should be small to medium sized. Category: creature.",
+			recipe.rarity:lower(),
+			cleanPrompt,
+			recipe.theme
+		)
+	else
+		prompt = string.format(
+			"Create a %s-rarity creature: %s. "
+				.. "Make it unique with interesting features. It should be small to medium sized. Category: creature.",
+			recipe.rarity:lower(),
+			recipe.theme
+		)
+	end
 
 	-- Call OrigamiService for creature model data
 	local OrigamiService = Knit.GetService("OrigamiService")

@@ -16,8 +16,7 @@ local ShopKeeperService = Knit.CreateService({
 function ShopKeeperService:KnitInit() end
 
 function ShopKeeperService:KnitStart()
-	local ShopKeepers = require(ReplicatedStorage.Shared.ShopKeepers)
-	ShopKeepers.Build(self)
+	-- Shopkeeper spawning disabled for now
 end
 
 return ShopKeeperService

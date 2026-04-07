@@ -61,7 +61,7 @@ local MUSHROOM_FLASH_COLORS = {
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
-local BATCH_FLUSH_SIZE = 256
+local BATCH_FLUSH_SIZE = 128
 
 -- Trickle fill
 local TRICKLE_FILL_PER_FRAME = 4
@@ -137,6 +137,12 @@ local chunkBlocks: { [string]: buffer } = {}
 local chunkLOD: { [string]: number } = {}
 
 local chunkContainer: Folder
+
+-- Track parts that have children (PointLights) to skip GetChildren on the 95%+ that don't
+local _partsWithChildren: { [BasePart]: boolean } = {}
+
+-- Deferred cleanup queue for returned parts (processed across frames)
+local _cleanupQueue: { BasePart } = {}
 
 -- Bouncy block tracking
 local bouncyConns: { [BasePart]: RBXScriptConnection } = {}
@@ -316,8 +322,11 @@ local function _returnPart(part: BasePart)
 	part.CanQuery = false
 	part.CanTouch = false
 	part.Transparency = 0
-	for _, child in part:GetChildren() do
-		child:Destroy()
+	if _partsWithChildren[part] then
+		for _, child in part:GetChildren() do
+			child:Destroy()
+		end
+		_partsWithChildren[part] = nil
 	end
 	activePartsCount -= 1
 	if #partPool < POOL_MAX then
@@ -343,6 +352,65 @@ local function _flushBatch()
 		workspace:BulkMoveTo(_batchParts, _batchCFrames, Enum.BulkMoveMode.FireCFrameChanged)
 		table.clear(_batchParts)
 		table.clear(_batchCFrames)
+	end
+end
+
+-- Bulk-hide all parts in a chunk via BulkMoveTo (single native call)
+local function _bulkHideChunkParts(chunkKey: string)
+	local parts = chunkParts[chunkKey]
+	if not parts then
+		return
+	end
+	for _, group in parts do
+		for _, part in group do
+			table.insert(_batchParts, part)
+			table.insert(_batchCFrames, FAR_AWAY)
+			if #_batchParts >= BATCH_FLUSH_SIZE then
+				_flushBatch()
+			end
+		end
+	end
+	_flushBatch()
+end
+
+-- Queue a part for deferred cleanup (property reset + child destroy + pool return)
+local function _queuePartForCleanup(part: BasePart)
+	_cleanupBounce(part)
+	activePartsCount -= 1
+	table.insert(_cleanupQueue, part)
+end
+
+-- Process deferred cleanup queue with frame budgeting
+local function _processCleanupQueue()
+	if #_cleanupQueue == 0 then
+		return
+	end
+	local start = os.clock()
+	local processed = 0
+	while #_cleanupQueue > 0 do
+		local part = table.remove(_cleanupQueue, #_cleanupQueue)
+		part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Transparency = 0
+		if _partsWithChildren[part] then
+			for _, child in part:GetChildren() do
+				child:Destroy()
+			end
+			_partsWithChildren[part] = nil
+		end
+		if #partPool < POOL_MAX then
+			table.insert(partPool, part)
+		else
+			part:Destroy()
+		end
+		processed += 1
+		if processed % YIELD_PART_INTERVAL == 0 then
+			if os.clock() - start > FRAME_BUDGET then
+				return
+			end
+		end
 	end
 end
 
@@ -429,6 +497,7 @@ local function _makeLayerParts(
 			light.Brightness = 1
 			light.Range = 15
 			light.Parent = part
+			_partsWithChildren[part] = true
 		end
 
 		table.insert(parts, part)
@@ -578,6 +647,7 @@ local function _makeSimplePart(
 		light.Brightness = 1
 		light.Range = 15
 		light.Parent = part
+		_partsWithChildren[part] = true
 	end
 
 	_setupBounce(part, blockTypeId)
@@ -655,8 +725,11 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 
 	local existing = chunkParts[chunkKey]
 	if existing then
+		_bulkHideChunkParts(chunkKey)
 		for _, group in existing do
-			_returnGroup(group)
+			for _, part in group do
+				_queuePartForCleanup(part)
+			end
 		end
 	end
 
@@ -702,8 +775,11 @@ local function _unrenderChunk(chunkKey: string)
 
 	local parts = chunkParts[chunkKey]
 	if parts then
+		_bulkHideChunkParts(chunkKey)
 		for _, group in parts do
-			_returnGroup(group)
+			for _, part in group do
+				_queuePartForCleanup(part)
+			end
 		end
 		chunkParts[chunkKey] = nil
 	end
@@ -844,6 +920,8 @@ local function _reevaluateLODs()
 	lastLODCheck = now
 
 	-- Check all rendered chunks for LOD changes (player moved)
+	-- Only queue — don't process synchronously (avoids blocking Heartbeat)
+	local queued = false
 	for chunkKey, currentLod in chunkLOD do
 		local blocks = chunkBlocks[chunkKey]
 		if not blocks then
@@ -853,11 +931,12 @@ local function _reevaluateLODs()
 		local newLod = _getChunkLOD(cx, cy, cz)
 		if newLod ~= currentLod then
 			table.insert(renderQueue, { key = chunkKey, blocks = blocks })
+			queued = true
 		end
 	end
 
-	if #renderQueue > 0 then
-		_processRenderQueue()
+	if queued and not isProcessingQueue then
+		task.spawn(_processRenderQueue)
 	end
 end
 
@@ -935,8 +1014,9 @@ function ChunkRenderController:KnitStart()
 		_handleBlockUpdate(chunkKey, flatIndex, blockTypeId)
 	end)
 
-	-- Heartbeat: trickle-fill pool and periodic LOD re-evaluation
+	-- Heartbeat: cleanup queue, trickle-fill pool, periodic LOD re-evaluation
 	RunService.Heartbeat:Connect(function(_dt: number)
+		_processCleanupQueue()
 		_trickleFillPool()
 		_reevaluateLODs()
 	end)

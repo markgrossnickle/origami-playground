@@ -280,18 +280,38 @@ end
 
 -- Hatch an egg that's ready.
 function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
+	warn("[HatchEgg] Called for player", player.Name, "eggIndex:", eggIndex)
 	local PlayerDataService = Knit.GetService("PlayerDataService")
 	local data = PlayerDataService:Read(player)
 	if not data then
+		warn("[HatchEgg] FAIL: Player data not loaded for", player.Name)
 		return { success = false, error = "Player data not loaded" }
 	end
 
 	local eggs = data.PendingEggs or {}
+	warn("[HatchEgg] Player has", #eggs, "pending eggs")
 	if eggIndex < 1 or eggIndex > #eggs then
+		warn("[HatchEgg] FAIL: Invalid egg index", eggIndex, "out of", #eggs)
 		return { success = false, error = "Invalid egg index" }
 	end
 
 	local egg = eggs[eggIndex]
+	warn(
+		"[HatchEgg] Egg data — source:",
+		egg.source,
+		"parent1:",
+		egg.parent1Name,
+		"parent2:",
+		egg.parent2Name,
+		"hasOffspringData:",
+		egg.offspringData ~= nil,
+		"hasBreedPrompt:",
+		egg.breedPrompt ~= nil,
+		"hatchTime:",
+		egg.hatchTime,
+		"now:",
+		os.time()
+	)
 	if os.time() < egg.hatchTime then
 		local remaining = egg.hatchTime - os.time()
 		local hours = math.floor(remaining / 3600)
@@ -301,14 +321,28 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 
 	-- If offspring data wasn't generated earlier (LLM failure), try again now
 	if not egg.offspringData and egg.breedPrompt then
+		warn("[HatchEgg] No offspringData — retrying LLM with prompt:", string.sub(egg.breedPrompt, 1, 80))
 		local OrigamiService = Knit.GetService("OrigamiService")
 		local result = OrigamiService.Client:RequestModel(player, egg.breedPrompt, "creature", egg.style or "origami")
+		warn(
+			"[HatchEgg] LLM retry result — success:",
+			result and result.success,
+			"hasModel:",
+			result and result.model ~= nil,
+			"error:",
+			result and result.error
+		)
 		if result and result.success and result.model then
 			egg.offspringData = result.model
 		end
+	elseif not egg.offspringData and not egg.breedPrompt then
+		warn("[HatchEgg] No offspringData AND no breedPrompt — cannot generate offspring")
+	else
+		warn("[HatchEgg] offspringData already present, skipping LLM call")
 	end
 
 	if not egg.offspringData then
+		warn("[HatchEgg] FAIL: offspringData is still nil after retry attempt")
 		return { success = false, error = "Offspring generation failed. Try again." }
 	end
 
@@ -351,16 +385,29 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 		end
 	end
 
-	local creature = CreatureService:AddCreature(player, {
-		name = offspring.name or ("Baby " .. egg.parent1Name),
-		modelData = offspring,
-		rarity = rarity,
-		stats = baseStats,
-		source = source,
-		parentRecipeId = egg.recipeId,
-		parent1Id = egg.parent1Id,
-		parent2Id = egg.parent2Id,
-	})
+	warn("[HatchEgg] Calling CreatureService:AddCreature for", offspring.name or ("Baby " .. egg.parent1Name))
+	local addOk, creature = pcall(function()
+		return CreatureService:AddCreature(player, {
+			name = offspring.name or ("Baby " .. egg.parent1Name),
+			modelData = offspring,
+			rarity = rarity,
+			stats = baseStats,
+			source = source,
+			parentRecipeId = egg.recipeId,
+			parent1Id = egg.parent1Id,
+			parent2Id = egg.parent2Id,
+		})
+	end)
+
+	if not addOk then
+		warn("[HatchEgg] FAIL: CreatureService:AddCreature errored:", creature)
+		return { success = false, error = "Failed to add creature: " .. tostring(creature) }
+	end
+	if not creature then
+		warn("[HatchEgg] FAIL: CreatureService:AddCreature returned nil")
+		return { success = false, error = "Failed to add creature (returned nil)" }
+	end
+	warn("[HatchEgg] AddCreature succeeded — id:", creature.id, "name:", creature.name)
 
 	local pendingEggs = data.PendingEggs or {}
 	table.remove(pendingEggs, eggIndex)
@@ -370,6 +417,7 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 	local paper = PlayerDataService:Read(player, { "Paper" }) or 0
 	PlayerDataService:Write(player, { "Paper" }, paper + 1)
 
+	warn("[HatchEgg] SUCCESS — returning hatched creature", creature.name, "rarity:", rarity)
 	return {
 		success = true,
 		offspringData = offspring,

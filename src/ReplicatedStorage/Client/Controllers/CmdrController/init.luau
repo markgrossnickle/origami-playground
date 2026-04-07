@@ -10,16 +10,9 @@ CmdrController.CmdrClient = nil
 function CmdrController:KnitInit() end
 
 function CmdrController:KnitStart()
-	CmdrController.CmdrClient = require(ReplicatedStorage:WaitForChild("CmdrClient"))
-	CmdrController.CmdrClient:SetActivationKeys({ Enum.KeyCode.F2 })
+	warn("[CmdrController] KnitStart: initializing")
 
-	for _, module in script.Components:GetChildren() do
-		assert(module:IsA("ModuleScript"), "Expected ModuleScript")
-		require(module)
-	end
-
-	-- Cmdr toggle button — positioned directly above the inventory (📦) button
-	-- Inventory button: Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = (0, 0.5), Size = 44-48
+	-- Create button FIRST, before loading Cmdr (WaitForChild can block)
 	local isMobile = UserInputService.TouchEnabled
 	local btnSize = if isMobile then 48 else 44
 
@@ -30,6 +23,7 @@ function CmdrController:KnitStart()
 	gui.ResetOnSpawn = false
 	gui.Parent = PlayerGui
 
+	-- Position where the plot button used to be: below the inventory button
 	local btn = Instance.new("TextButton")
 	btn.Name = "CmdrToggle"
 	btn.Size = UDim2.fromOffset(btnSize, btnSize)
@@ -47,12 +41,60 @@ function CmdrController:KnitStart()
 	corner.CornerRadius = UDim.new(0, 10)
 	corner.Parent = btn
 
+	-- Connect click handler immediately — toggles Cmdr if loaded
 	btn.Activated:Connect(function()
-		CmdrController.CmdrClient:Toggle()
+		if CmdrController.CmdrClient then
+			CmdrController.CmdrClient:Toggle()
+		else
+			warn("[CmdrController] Toggle pressed but CmdrClient not loaded yet")
+		end
+	end)
+
+	-- Load Cmdr async so the button is visible immediately
+	task.spawn(function()
+		warn("[CmdrController] Waiting for CmdrClient in ReplicatedStorage...")
+		local cmdrModule = ReplicatedStorage:WaitForChild("CmdrClient", 60)
+		if not cmdrModule then
+			warn("[CmdrController] CmdrClient not found after 60s timeout")
+			-- Dump ReplicatedStorage children for diagnostics
+			warn("[CmdrController] ReplicatedStorage children:")
+			for _, child in ReplicatedStorage:GetChildren() do
+				warn("[CmdrController]   ", child.Name, "(" .. child.ClassName .. ")")
+			end
+			btn.TextColor3 = Color3.fromRGB(120, 120, 120)
+			btn.Text = "x"
+			return
+		end
+
+		warn("[CmdrController] Found CmdrClient:", cmdrModule.ClassName, cmdrModule:GetFullName())
+		local ok, result = pcall(require, cmdrModule)
+		if not ok then
+			warn("[CmdrController] Failed to require CmdrClient:", result)
+			btn.TextColor3 = Color3.fromRGB(120, 120, 120)
+			btn.Text = "x"
+			return
+		end
+
+		warn("[CmdrController] CmdrClient loaded successfully")
+		CmdrController.CmdrClient = result
+		-- selene: allow(incorrect_standard_library_use)
+		CmdrController.CmdrClient:SetActivationKeys({ Enum.KeyCode.Backquote, Enum.KeyCode.F2 })
+
+		local componentsFolder = script:FindFirstChild("Components")
+		if componentsFolder then
+			for _, module in componentsFolder:GetChildren() do
+				if module:IsA("ModuleScript") then
+					require(module)
+				end
+			end
+		end
 	end)
 end
 
 function CmdrController:RegisterCmdrContent(container: Instance)
+	if not self.CmdrClient then
+		return
+	end
 	local CmdrHelper = require(ReplicatedStorage.Shared.CmdrHelper)
 	CmdrHelper.RegisterCmdrContent(self.CmdrClient.Registry, container)
 end

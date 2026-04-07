@@ -83,29 +83,27 @@ function EggCraftingService.Client:CraftEgg(player: Player, recipeId: string, us
 		PlayerDataService:Write(player, { "MiningInventory", mat.itemId }, current - mat.count)
 	end
 
-	-- Build LLM prompt from recipe theme, incorporating player description if provided
+	-- Build LLM prompt from recipe theme, incorporating player description if provided.
+	-- Keep this SHORT — the generator backend has a strict input-token limit and
+	-- long prompts (theme + description + boilerplate) have been hitting it.
 	local cleanPrompt = ""
 	if userPrompt and type(userPrompt) == "string" then
-		cleanPrompt = userPrompt:sub(1, 500):match("^%s*(.-)%s*$") or ""
+		cleanPrompt = userPrompt:sub(1, 120):match("^%s*(.-)%s*$") or ""
 	end
+
+	-- Use just the first clause of the theme (up to the em-dash) as a style hint.
+	local shortTheme = recipe.theme
+	local dashIdx = string.find(shortTheme, "—", 1, true)
+	if dashIdx then
+		shortTheme = string.sub(shortTheme, 1, dashIdx - 1):match("^%s*(.-)%s*$") or shortTheme
+	end
+	shortTheme = string.sub(shortTheme, 1, 80)
 
 	local prompt
 	if #cleanPrompt > 0 then
-		prompt = string.format(
-			"Create a %s-rarity creature based on this description: %s. "
-				.. "Style hints: %s. "
-				.. "Make it unique with interesting features. It should be small to medium sized. Category: creature.",
-			recipe.rarity:lower(),
-			cleanPrompt,
-			recipe.theme
-		)
+		prompt = string.format("A %s creature: %s. %s.", recipe.rarity:lower(), cleanPrompt, shortTheme)
 	else
-		prompt = string.format(
-			"Create a %s-rarity creature: %s. "
-				.. "Make it unique with interesting features. It should be small to medium sized. Category: creature.",
-			recipe.rarity:lower(),
-			recipe.theme
-		)
+		prompt = string.format("A %s creature: %s.", recipe.rarity:lower(), shortTheme)
 	end
 
 	-- Call OrigamiService for creature model data

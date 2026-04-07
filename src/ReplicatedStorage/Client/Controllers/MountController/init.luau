@@ -28,6 +28,16 @@ local _mountLocomotion: string? = nil
 local _driveConnection: RBXScriptConnection? = nil
 local _dismountConnection: RBXScriptConnection? = nil
 
+-- Humanoid jump-power restoration (so Space doesn't auto-unsit us)
+local _savedJumpPower: number? = nil
+local _savedJumpHeight: number? = nil
+local _savedUseJumpPower: boolean? = nil
+
+-- HUD
+local _hudGui: ScreenGui? = nil
+local _dismountButton: TextButton? = nil
+local _hudBuilt = false
+
 -- Lazy service reference
 local MountService
 
@@ -97,6 +107,118 @@ end
 -- INTERNAL: cleanup
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- HUD: dismount button + control hints
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_CONSOLE = pcall(function()
+	return game:GetService("GuiService"):IsTenFootInterface()
+end) and game:GetService("GuiService"):IsTenFootInterface()
+
+local _hintLabel: TextLabel? = nil
+
+local function _buildHud()
+	if _hudBuilt then
+		return
+	end
+	_hudBuilt = true
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "MountHud"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 20
+	gui.Enabled = false
+	gui.Parent = Player:WaitForChild("PlayerGui")
+	_hudGui = gui
+
+	-- Dismount button: top-right area, above any existing controls
+	local btnW, btnH
+	if IS_CONSOLE then
+		btnW, btnH = 220, 64
+	elseif IS_MOBILE then
+		btnW, btnH = 150, 52
+	else
+		btnW, btnH = 140, 42
+	end
+
+	local btn = Instance.new("TextButton")
+	btn.Name = "DismountButton"
+	btn.AnchorPoint = Vector2.new(1, 0)
+	btn.Position = UDim2.new(1, -20, 0, 20)
+	btn.Size = UDim2.fromOffset(btnW, btnH)
+	btn.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+	btn.BorderSizePixel = 0
+	btn.Text = if IS_CONSOLE then "Dismount (B)" elseif IS_MOBILE then "Dismount" else "Dismount (G)"
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = if IS_CONSOLE then 22 elseif IS_MOBILE then 18 else 16
+	btn.AutoButtonColor = true
+	btn.Parent = gui
+	_dismountButton = btn
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = btn
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(255, 255, 255)
+	stroke.Thickness = 2
+	stroke.Transparency = 0.3
+	stroke.Parent = btn
+
+	-- Control hint label below the dismount button
+	local hint = Instance.new("TextLabel")
+	hint.Name = "ControlHint"
+	hint.AnchorPoint = Vector2.new(1, 0)
+	hint.Position = UDim2.new(1, -20, 0, 20 + btnH + 8)
+	hint.Size = UDim2.fromOffset(btnW + 60, if IS_MOBILE then 40 else 32)
+	hint.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	hint.BackgroundTransparency = 0.4
+	hint.BorderSizePixel = 0
+	hint.Text = ""
+	hint.TextColor3 = Color3.fromRGB(240, 240, 240)
+	hint.Font = Enum.Font.Gotham
+	hint.TextSize = if IS_CONSOLE then 18 elseif IS_MOBILE then 14 else 13
+	hint.TextXAlignment = Enum.TextXAlignment.Right
+	hint.TextYAlignment = Enum.TextYAlignment.Center
+	hint.Parent = gui
+	_hintLabel = hint
+
+	local hintCorner = Instance.new("UICorner")
+	hintCorner.CornerRadius = UDim.new(0, 8)
+	hintCorner.Parent = hint
+
+	local hintPad = Instance.new("UIPadding")
+	hintPad.PaddingLeft = UDim.new(0, 10)
+	hintPad.PaddingRight = UDim.new(0, 10)
+	hintPad.Parent = hint
+end
+
+local function _showHud(locomotion: string)
+	_buildHud()
+	if _hudGui then
+		_hudGui.Enabled = true
+	end
+	if _hintLabel then
+		local canFly = locomotion == "fly" or locomotion == "float"
+		if canFly then
+			_hintLabel.Text = if IS_MOBILE
+				then "WASD move  •  Jump = up  •  Shift/◎ = down"
+				else "WASD move  •  Space = ascend  •  Shift = descend"
+		else
+			_hintLabel.Text = if IS_MOBILE then "WASD move  •  Jump = hop" else "WASD move  •  Space = jump"
+		end
+	end
+end
+
+local function _hideHud()
+	if _hudGui then
+		_hudGui.Enabled = false
+	end
+end
+
 local function cleanup()
 	if _driveConnection then
 		_driveConnection:Disconnect()
@@ -106,6 +228,27 @@ local function cleanup()
 		_dismountConnection:Disconnect()
 		_dismountConnection = nil
 	end
+
+	-- Restore humanoid jump settings
+	local character = Player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		if _savedJumpPower ~= nil then
+			humanoid.JumpPower = _savedJumpPower
+		end
+		if _savedJumpHeight ~= nil then
+			humanoid.JumpHeight = _savedJumpHeight
+		end
+		if _savedUseJumpPower ~= nil then
+			humanoid.UseJumpPower = _savedUseJumpPower
+		end
+	end
+	_savedJumpPower = nil
+	_savedJumpHeight = nil
+	_savedUseJumpPower = nil
+
+	_hideHud()
+
 	_mounted = false
 	_mountSeat = nil
 	_mountCreatureId = nil
@@ -468,9 +611,15 @@ function MountController:_attachToSeat(
 	-- Unanchor seat (tells server to release + set network owner)
 	MountService:ReadyMount(seat):await()
 
-	-- Sit player
+	-- Sit player + suppress built-in jump so Space becomes our contextual
+	-- control (jump for ground mounts, ascend for flying mounts)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
+		_savedJumpPower = humanoid.JumpPower
+		_savedJumpHeight = humanoid.JumpHeight
+		_savedUseJumpPower = humanoid.UseJumpPower
+		humanoid.JumpPower = 0
+		humanoid.JumpHeight = 0
 		seat:Sit(humanoid)
 	end
 
@@ -481,16 +630,19 @@ function MountController:_attachToSeat(
 	_mountCreatureId = creature.id
 	_mountLocomotion = locomotion
 
+	-- Show HUD (dismount button + control hints)
+	_showHud(locomotion)
+
 	-- Start drive loop
 	local spdStat = (creature.stats and creature.stats.spd) or 10
 	startDriveLoop(seat, locomotion, spdStat)
 
-	-- Bind dismount key
+	-- Bind dismount key (keyboard G + gamepad B)
 	_dismountConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then
 			return
 		end
-		if input.KeyCode == MountConfig.DISMOUNT_KEY then
+		if input.KeyCode == MountConfig.DISMOUNT_KEY or input.KeyCode == MountConfig.DISMOUNT_GAMEPAD_KEY then
 			self:dismount()
 		end
 	end)
@@ -556,6 +708,14 @@ function MountController:KnitInit() end
 
 function MountController:KnitStart()
 	MountService = Knit.GetService("MountService")
+
+	-- Build the HUD once so the dismount button exists and can be wired.
+	_buildHud()
+	if _dismountButton then
+		_dismountButton.Activated:Connect(function()
+			self:dismount()
+		end)
+	end
 
 	-- Listen for server-forced dismount (e.g. PlayerRemoving cleanup)
 	MountService.MountEnded:Connect(function(creatureId: string)

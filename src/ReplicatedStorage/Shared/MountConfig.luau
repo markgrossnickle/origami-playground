@@ -11,8 +11,10 @@ MountConfig.MIN_RIDE_HEIGHT = 4
 -- Max scale multiplier when auto-sizing small creatures
 MountConfig.MAX_SCALE = 3
 
--- Dismount keybind
-MountConfig.DISMOUNT_KEY = Enum.KeyCode.E
+-- Dismount keybinds — Space is reserved for jump/ascend while mounted,
+-- so dismount uses a different key to avoid the VehicleSeat auto-unsit.
+MountConfig.DISMOUNT_KEY = Enum.KeyCode.G
+MountConfig.DISMOUNT_GAMEPAD_KEY = Enum.KeyCode.ButtonB
 
 -- Map creature stats.spd [1..100] to speed multiplier [0.5..2.0]
 function MountConfig.speedMultiplier(spd: number): number

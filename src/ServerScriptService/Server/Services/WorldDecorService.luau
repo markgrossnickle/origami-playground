@@ -62,21 +62,7 @@ end
 function WorldDecorService:KnitInit() end
 
 function WorldDecorService:KnitStart()
-	task.spawn(function()
-		local spawnPos = getSpawnPosition()
-		if not spawnPos then
-			warn("[WorldDecor] Could not find spawn position, skipping decor placement")
-			return
-		end
-
-		-- Place small Venus fly trap creature: 15 studs to the right of spawn
-		local creaturePos = spawnPos + Vector3.new(15, 0, 5)
-		placeModel(WorldDecorModels.VenusFlyTrap, creaturePos, math.rad(-30))
-
-		-- Place giant Venus fly trap tree: 20 studs to the left of spawn
-		local treePos = spawnPos + Vector3.new(-20, 0, -8)
-		placeModel(WorldDecorModels.VenusFlyTrapTree, treePos, math.rad(15))
-	end)
+	-- Spawn-area decor intentionally left empty.
 end
 
 return WorldDecorService

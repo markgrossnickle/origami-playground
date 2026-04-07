@@ -662,9 +662,12 @@ local function createUI()
 	local sidebar = Instance.new("Frame")
 	sidebar.Name = "Sidebar"
 	sidebar.Size = UDim2.new(0, SIDEBAR_SIZE + 8, 0, 0)
-	-- Position above the BackpackController toggle button (which sits at 0.5, centered)
+	-- Position above the BackpackController toggle button AND the CmdrController toggle
+	-- Backpack is centered at 0.5, Cmdr toggle sits directly above it at -(cmdrSize + 6).
+	-- Sidebar anchors its bottom edge above both.
 	local backpackBtnHalf = if IS_MOBILE then 24 else 22 -- half of backpack toggle size
-	sidebar.Position = UDim2.new(0, 10, 0.5, -(backpackBtnHalf + 6))
+	local cmdrBtnSize = if IS_MOBILE then 48 else 44 -- matches CmdrController btnSize
+	sidebar.Position = UDim2.new(0, 10, 0.5, -(backpackBtnHalf + 6 + cmdrBtnSize + 6))
 	sidebar.AnchorPoint = Vector2.new(0, 1)
 	sidebar.AutomaticSize = Enum.AutomaticSize.Y
 	sidebar.BackgroundColor3 = COLORS.bg

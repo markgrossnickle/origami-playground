@@ -11,7 +11,6 @@ local Players = game:GetService("Players")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
-local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local MountConfig = require(ReplicatedStorage.Shared.MountConfig)
 
 local Player = Players.LocalPlayer
@@ -28,7 +27,6 @@ local _mountCreatureId: string? = nil
 local _mountLocomotion: string? = nil
 local _driveConnection: RBXScriptConnection? = nil
 local _dismountConnection: RBXScriptConnection? = nil
-local _animator: { apply: (number) -> () }? = nil
 
 -- Lazy service reference
 local MountService
@@ -112,7 +110,6 @@ local function cleanup()
 	_mountSeat = nil
 	_mountCreatureId = nil
 	_mountLocomotion = nil
-	_animator = nil
 	-- Model is NOT destroyed here — caller decides (keep in world or destroy)
 end
 
@@ -284,11 +281,8 @@ local function startDriveLoop(seat: VehicleSeat, locomotion: string, spdStat: nu
 		local pos = seat.CFrame.Position
 		seat.CFrame = CFrame.new(pos) * CFrame.Angles(0, currentYaw, bankZ)
 		seat.AssemblyAngularVelocity = Vector3.zero
-
-		-- ── Animate creature ──
-		if _animator then
-			_animator.apply(tick())
-		end
+		-- Creature parts are welded rigid to the seat — no per-part animation
+		-- while mounted (it fights the welds and causes jitter).
 	end)
 end
 
@@ -486,9 +480,6 @@ function MountController:_attachToSeat(
 	_mountSeat = seat
 	_mountCreatureId = creature.id
 	_mountLocomotion = locomotion
-
-	-- Create animator for creature parts
-	_animator = CreatureAI.CreateAnimator(model)
 
 	-- Start drive loop
 	local spdStat = (creature.stats and creature.stats.spd) or 10

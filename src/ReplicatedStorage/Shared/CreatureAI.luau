@@ -50,9 +50,17 @@ type AnimPartData = {
 	param2: number,
 }
 
+-- Which locomotions allow vertical body-segment bob (seg parts)?
+-- Ground locomotions (walk/hop/slither) keep the body steady so it doesn't clip into terrain.
+-- Airborne locomotions (fly/float) and stationary can bob freely.
+local function segBobAllowed(locomotion: string): boolean
+	return locomotion == "fly" or locomotion == "float" or locomotion == "stationary"
+end
+
 -- Apply per-part creature animation using pre-classified types
-local function applyCreatureAnimation(model: Model, animList: { AnimPartData }, t: number)
+local function applyCreatureAnimation(model: Model, animList: { AnimPartData }, t: number, locomotion: string)
 	local pivot = model:GetPivot()
+	local segBob = segBobAllowed(locomotion)
 
 	for _, data in animList do
 		if not data.part.Parent then
@@ -77,8 +85,11 @@ local function applyCreatureAnimation(model: Model, animList: { AnimPartData }, 
 			local walkAngle = math.sin(t * 5.0 + data.param1) * math.rad(25)
 			animOffset = CFrame.Angles(walkAngle, 0, 0)
 		elseif data.animType == ANIM_SEG then
-			local yOffset = math.sin(t * 2.5 + data.param1 * 1.0) * 0.25
-			animOffset = CFrame.new(0, yOffset, 0)
+			if segBob then
+				local yOffset = math.sin(t * 2.5 + data.param1 * 1.0) * 0.25
+				animOffset = CFrame.new(0, yOffset, 0)
+			end
+			-- Ground locomotion: no body bob. Legs/tail/wings still animate via other anim types.
 		end
 
 		data.part.CFrame = pivot * data.baseOffset * animOffset
@@ -170,7 +181,7 @@ function CreatureAI.Start(
 	if locomotion == "stationary" then
 		task.spawn(function()
 			while isAlive() do
-				applyCreatureAnimation(model, animList, tick())
+				applyCreatureAnimation(model, animList, tick(), locomotion)
 				task.wait(dt)
 			end
 		end)
@@ -268,7 +279,7 @@ function CreatureAI.Start(
 					end
 
 					model:PivotTo(CFrame.new(baseX, finalY, baseZ) * finalRot)
-					applyCreatureAnimation(model, animList, tick())
+					applyCreatureAnimation(model, animList, tick(), locomotion)
 					task.wait(dt)
 				end
 			end
@@ -288,13 +299,13 @@ function CreatureAI.Start(
 					targetY = math.max(targetY, curGroundY + pivotAboveBottom + 2)
 					local currentRot = model:GetPivot() - model:GetPivot().Position
 					model:PivotTo(CFrame.new(currentPos.X, targetY, currentPos.Z) * currentRot)
-					applyCreatureAnimation(model, animList, tick())
+					applyCreatureAnimation(model, animList, tick(), locomotion)
 					task.wait(dt)
 				end
 			else
 				local pauseStart = tick()
 				while isAlive() and (tick() - pauseStart) < pauseTime do
-					applyCreatureAnimation(model, animList, tick())
+					applyCreatureAnimation(model, animList, tick(), locomotion)
 					task.wait(dt)
 				end
 			end
@@ -312,7 +323,8 @@ end
 	Returns { apply = function(t: number) } that animates all parts relative to model pivot.
 	Caller is responsible for calling apply() every frame.
 ]]
-function CreatureAI.CreateAnimator(model: Model): { apply: (number) -> () }
+function CreatureAI.CreateAnimator(model: Model, locomotion: string?): { apply: (number) -> () }
+	local loco = locomotion or "walk"
 	local animList: { AnimPartData } = {}
 	local currentPivot = model:GetPivot()
 	for _, child in ipairs(model:GetChildren()) do
@@ -330,7 +342,7 @@ function CreatureAI.CreateAnimator(model: Model): { apply: (number) -> () }
 
 	return {
 		apply = function(t: number)
-			applyCreatureAnimation(model, animList, t)
+			applyCreatureAnimation(model, animList, t, loco)
 		end,
 	}
 end

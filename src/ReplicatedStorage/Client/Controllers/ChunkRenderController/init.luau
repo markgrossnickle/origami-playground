@@ -470,6 +470,11 @@ local function _makeLayerParts(
 			sx = BLOCK_SIZE * 0.92
 			sz = BLOCK_SIZE * 1.08
 		end
+		-- Willow vines render as thin viney strands (50% on X/Z)
+		if blockTypeId == BlockType.WillowVine then
+			sx = sx * 0.5
+			sz = sz * 0.5
+		end
 
 		local part = _getPart()
 		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])

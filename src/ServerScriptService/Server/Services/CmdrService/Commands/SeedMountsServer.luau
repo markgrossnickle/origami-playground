@@ -3,13 +3,17 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 
 -- Pre-built mountable creatures, one for each locomotion type.
 -- All sized ~5+ studs tall so they pass MountConfig.MIN_RIDE_HEIGHT without heavy scaling.
+-- IMPORTANT: OrigamiBuilder flips models 180° around Y at build time (LLM +Z → Roblox -Z).
+-- So in raw data, the HEAD must be at +Z (positive Z) and tail at -Z. Front legs at +Z, back at -Z.
+-- Animation field is "none" — locomotion drives per-part leg/tail animation via name prefixes,
+-- and idle_bob would override Position every frame and clip walking creatures into the ground.
 
 local function horse()
 	return {
 		name = "Paper Steed",
 		category = "creature",
 		locomotion = "walk",
-		animation = "idle_bob",
+		animation = "none",
 		parts = {
 			{
 				name = "seg_1",
@@ -22,16 +26,16 @@ local function horse()
 			{
 				name = "seg_2",
 				shape = "Block",
-				position = { 0, 5, -2.8 },
+				position = { 0, 5, 2.8 },
 				size = { 1.8, 2.5, 1.8 },
-				orientation = { -15, 0, 0 },
+				orientation = { 15, 0, 0 },
 				color = { 150, 100, 60 },
 				material = "SmoothPlastic",
 			},
 			{
 				name = "seg_3",
 				shape = "Block",
-				position = { 0, 6, -4 },
+				position = { 0, 6, 4 },
 				size = { 2, 1.8, 2.5 },
 				color = { 160, 110, 65 },
 				material = "SmoothPlastic",
@@ -39,7 +43,7 @@ local function horse()
 			{
 				name = "leg_FL_1",
 				shape = "Block",
-				position = { -1, 1.5, -2 },
+				position = { -1, 1.5, 2 },
 				size = { 0.9, 3, 0.9 },
 				color = { 120, 75, 40 },
 				material = "SmoothPlastic",
@@ -47,7 +51,7 @@ local function horse()
 			{
 				name = "leg_FR_1",
 				shape = "Block",
-				position = { 1, 1.5, -2 },
+				position = { 1, 1.5, 2 },
 				size = { 0.9, 3, 0.9 },
 				color = { 120, 75, 40 },
 				material = "SmoothPlastic",
@@ -55,7 +59,7 @@ local function horse()
 			{
 				name = "leg_BL_1",
 				shape = "Block",
-				position = { -1, 1.5, 2 },
+				position = { -1, 1.5, -2 },
 				size = { 0.9, 3, 0.9 },
 				color = { 120, 75, 40 },
 				material = "SmoothPlastic",
@@ -63,7 +67,7 @@ local function horse()
 			{
 				name = "leg_BR_1",
 				shape = "Block",
-				position = { 1, 1.5, 2 },
+				position = { 1, 1.5, -2 },
 				size = { 0.9, 3, 0.9 },
 				color = { 120, 75, 40 },
 				material = "SmoothPlastic",
@@ -71,7 +75,7 @@ local function horse()
 			{
 				name = "tail_1",
 				shape = "Block",
-				position = { 0, 4, 3.5 },
+				position = { 0, 4, -3.5 },
 				size = { 0.5, 0.5, 2.5 },
 				color = { 100, 60, 30 },
 				material = "SmoothPlastic",
@@ -85,7 +89,7 @@ local function dragon()
 		name = "Paper Dragon",
 		category = "creature",
 		locomotion = "fly",
-		animation = "idle_bob",
+		animation = "none",
 		parts = {
 			{
 				name = "seg_1",
@@ -98,16 +102,16 @@ local function dragon()
 			{
 				name = "seg_2",
 				shape = "Block",
-				position = { 0, 5, -3 },
+				position = { 0, 5, 3 },
 				size = { 1.6, 1.6, 2 },
-				orientation = { -20, 0, 0 },
+				orientation = { 20, 0, 0 },
 				color = { 215, 60, 70 },
 				material = "SmoothPlastic",
 			},
 			{
 				name = "seg_3",
 				shape = "Block",
-				position = { 0, 5.6, -4.3 },
+				position = { 0, 5.6, 4.3 },
 				size = { 2, 1.6, 2 },
 				color = { 230, 70, 75 },
 				material = "SmoothPlastic",
@@ -133,7 +137,7 @@ local function dragon()
 			{
 				name = "tail_1",
 				shape = "Block",
-				position = { 0, 4, 3.5 },
+				position = { 0, 4, -3.5 },
 				size = { 0.8, 0.8, 3 },
 				color = { 180, 40, 50 },
 				material = "SmoothPlastic",
@@ -141,7 +145,7 @@ local function dragon()
 			{
 				name = "leg_FL_1",
 				shape = "Block",
-				position = { -1, 2, -1.5 },
+				position = { -1, 2, 1.5 },
 				size = { 0.7, 2, 0.7 },
 				color = { 180, 40, 50 },
 				material = "SmoothPlastic",
@@ -149,7 +153,7 @@ local function dragon()
 			{
 				name = "leg_FR_1",
 				shape = "Block",
-				position = { 1, 2, -1.5 },
+				position = { 1, 2, 1.5 },
 				size = { 0.7, 2, 0.7 },
 				color = { 180, 40, 50 },
 				material = "SmoothPlastic",
@@ -157,7 +161,7 @@ local function dragon()
 			{
 				name = "leg_BL_1",
 				shape = "Block",
-				position = { -1, 2, 1.5 },
+				position = { -1, 2, -1.5 },
 				size = { 0.7, 2, 0.7 },
 				color = { 180, 40, 50 },
 				material = "SmoothPlastic",
@@ -165,7 +169,7 @@ local function dragon()
 			{
 				name = "leg_BR_1",
 				shape = "Block",
-				position = { 1, 2, 1.5 },
+				position = { 1, 2, -1.5 },
 				size = { 0.7, 2, 0.7 },
 				color = { 180, 40, 50 },
 				material = "SmoothPlastic",
@@ -179,7 +183,7 @@ local function rabbit()
 		name = "Paper Hopper",
 		category = "creature",
 		locomotion = "hop",
-		animation = "idle_bob",
+		animation = "none",
 		parts = {
 			{
 				name = "seg_1",
@@ -192,7 +196,7 @@ local function rabbit()
 			{
 				name = "seg_2",
 				shape = "Block",
-				position = { 0, 4.5, -1.8 },
+				position = { 0, 4.5, 1.8 },
 				size = { 2.2, 2, 2 },
 				color = { 250, 250, 245 },
 				material = "SmoothPlastic",
@@ -200,7 +204,7 @@ local function rabbit()
 			{
 				name = "seg_3",
 				shape = "Block",
-				position = { -0.7, 6.2, -1.8 },
+				position = { -0.7, 6.2, 1.8 },
 				size = { 0.5, 2, 0.6 },
 				orientation = { 0, 0, -8 },
 				color = { 255, 210, 200 },
@@ -209,7 +213,7 @@ local function rabbit()
 			{
 				name = "seg_4",
 				shape = "Block",
-				position = { 0.7, 6.2, -1.8 },
+				position = { 0.7, 6.2, 1.8 },
 				size = { 0.5, 2, 0.6 },
 				orientation = { 0, 0, 8 },
 				color = { 255, 210, 200 },
@@ -218,7 +222,7 @@ local function rabbit()
 			{
 				name = "leg_FL_1",
 				shape = "Block",
-				position = { -0.9, 1.2, -0.8 },
+				position = { -0.9, 1.2, 0.8 },
 				size = { 0.7, 1.5, 0.9 },
 				color = { 230, 230, 225 },
 				material = "SmoothPlastic",
@@ -226,7 +230,7 @@ local function rabbit()
 			{
 				name = "leg_FR_1",
 				shape = "Block",
-				position = { 0.9, 1.2, -0.8 },
+				position = { 0.9, 1.2, 0.8 },
 				size = { 0.7, 1.5, 0.9 },
 				color = { 230, 230, 225 },
 				material = "SmoothPlastic",
@@ -234,7 +238,7 @@ local function rabbit()
 			{
 				name = "leg_BL_1",
 				shape = "Block",
-				position = { -0.9, 1.6, 1 },
+				position = { -0.9, 1.6, -1 },
 				size = { 0.9, 2.3, 1.3 },
 				color = { 230, 230, 225 },
 				material = "SmoothPlastic",
@@ -242,7 +246,7 @@ local function rabbit()
 			{
 				name = "leg_BR_1",
 				shape = "Block",
-				position = { 0.9, 1.6, 1 },
+				position = { 0.9, 1.6, -1 },
 				size = { 0.9, 2.3, 1.3 },
 				color = { 230, 230, 225 },
 				material = "SmoothPlastic",
@@ -250,7 +254,7 @@ local function rabbit()
 			{
 				name = "tail_1",
 				shape = "Ball",
-				position = { 0, 3, 1.8 },
+				position = { 0, 3, -1.8 },
 				size = { 0.8, 0.8, 0.8 },
 				color = { 255, 255, 250 },
 				material = "SmoothPlastic",
@@ -264,12 +268,12 @@ local function snake()
 		name = "Paper Serpent",
 		category = "creature",
 		locomotion = "slither",
-		animation = "idle_bob",
+		animation = "none",
 		parts = {
 			{
 				name = "seg_1",
 				shape = "Block",
-				position = { 0, 2, -3 },
+				position = { 0, 2, 3 },
 				size = { 2, 1.8, 2.2 },
 				color = { 80, 170, 70 },
 				material = "SmoothPlastic",
@@ -277,7 +281,7 @@ local function snake()
 			{
 				name = "seg_2",
 				shape = "Block",
-				position = { 0, 2, -1 },
+				position = { 0, 2, 1 },
 				size = { 1.8, 1.8, 2 },
 				color = { 90, 180, 80 },
 				material = "SmoothPlastic",
@@ -285,7 +289,7 @@ local function snake()
 			{
 				name = "seg_3",
 				shape = "Block",
-				position = { 0, 2, 1 },
+				position = { 0, 2, -1 },
 				size = { 1.8, 1.8, 2 },
 				color = { 100, 190, 90 },
 				material = "SmoothPlastic",
@@ -293,7 +297,7 @@ local function snake()
 			{
 				name = "seg_4",
 				shape = "Block",
-				position = { 0, 2, 3 },
+				position = { 0, 2, -3 },
 				size = { 1.6, 1.6, 2 },
 				color = { 110, 200, 100 },
 				material = "SmoothPlastic",
@@ -301,7 +305,7 @@ local function snake()
 			{
 				name = "seg_5",
 				shape = "Block",
-				position = { 0, 2, 5 },
+				position = { 0, 2, -5 },
 				size = { 1.3, 1.3, 2 },
 				color = { 90, 180, 80 },
 				material = "SmoothPlastic",
@@ -309,7 +313,7 @@ local function snake()
 			{
 				name = "tail_1",
 				shape = "Block",
-				position = { 0, 2, 6.5 },
+				position = { 0, 2, -6.5 },
 				size = { 0.8, 0.8, 1.2 },
 				color = { 70, 160, 60 },
 				material = "SmoothPlastic",
@@ -317,7 +321,7 @@ local function snake()
 			{
 				name = "jaw_1",
 				shape = "Wedge",
-				position = { 0, 2.6, -4 },
+				position = { 0, 2.6, 4 },
 				size = { 1.6, 0.6, 1.3 },
 				color = { 60, 150, 50 },
 				material = "SmoothPlastic",
@@ -331,7 +335,7 @@ local function jellyfish()
 		name = "Paper Drifter",
 		category = "creature",
 		locomotion = "float",
-		animation = "idle_bob",
+		animation = "none",
 		parts = {
 			{
 				name = "seg_1",
@@ -354,7 +358,7 @@ local function jellyfish()
 			{
 				name = "tail_1",
 				shape = "Block",
-				position = { -1.5, 2.5, -1.5 },
+				position = { -1.5, 2.5, 1.5 },
 				size = { 0.4, 3, 0.4 },
 				color = { 160, 120, 220 },
 				material = "SmoothPlastic",
@@ -362,7 +366,7 @@ local function jellyfish()
 			{
 				name = "tail_2",
 				shape = "Block",
-				position = { 1.5, 2.5, -1.5 },
+				position = { 1.5, 2.5, 1.5 },
 				size = { 0.4, 3, 0.4 },
 				color = { 160, 120, 220 },
 				material = "SmoothPlastic",
@@ -370,7 +374,7 @@ local function jellyfish()
 			{
 				name = "tail_3",
 				shape = "Block",
-				position = { -1.5, 2.5, 1.5 },
+				position = { -1.5, 2.5, -1.5 },
 				size = { 0.4, 3, 0.4 },
 				color = { 160, 120, 220 },
 				material = "SmoothPlastic",
@@ -378,7 +382,7 @@ local function jellyfish()
 			{
 				name = "tail_4",
 				shape = "Block",
-				position = { 1.5, 2.5, 1.5 },
+				position = { 1.5, 2.5, -1.5 },
 				size = { 0.4, 3, 0.4 },
 				color = { 160, 120, 220 },
 				material = "SmoothPlastic",

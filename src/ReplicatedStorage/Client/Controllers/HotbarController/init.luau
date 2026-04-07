@@ -308,8 +308,8 @@ local function _tryPlaceBlock()
 
 	-- Fire placement request to server
 	task.spawn(function()
-		local result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
-		if result and result.success then
+		local ok, result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
+		if ok and result and result.success then
 			-- Optimistically deduct locally for immediate UI feedback
 			_inventory[itemId] = (_inventory[itemId] or 1) - 1
 			if _inventory[itemId] < 0 then

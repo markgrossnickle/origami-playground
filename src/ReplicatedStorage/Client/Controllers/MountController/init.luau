@@ -317,8 +317,8 @@ function MountController:mountCreature(creature: { [string]: any })
 	end
 
 	-- Validate with server
-	local result = MountService:RequestMount(creature.id, locomotion):await()
-	if not result or not result.success then
+	local ok, result = MountService:RequestMount(creature.id, locomotion):await()
+	if not ok or not result or not result.success then
 		return
 	end
 
@@ -365,8 +365,8 @@ function MountController:mountCreatureFromWorld(creature: { [string]: any }, mod
 		return
 	end
 
-	local result = MountService:RequestMount(creature.id, locomotion):await()
-	if not result or not result.success then
+	local ok, result = MountService:RequestMount(creature.id, locomotion):await()
+	if not ok or not result or not result.success then
 		return
 	end
 

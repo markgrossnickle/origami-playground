@@ -352,12 +352,16 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 				local waitSecs = tonumber(waitStr) or 1
 				task.wait(math.min(waitSecs + 0.2, 5))
 				-- Retry the same prompt
-			elseif string.find(errStr, "input_too_long", 1, true) and not usedFallback then
-				-- Shrink to a minimal fallback prompt and try again
+			elseif
+				(string.find(errStr, "input_too_long", 1, true) or string.find(errStr, "invalid_characters", 1, true))
+				and not usedFallback
+			then
+				-- Shrink to a plain-ASCII fallback prompt. Keep to
+				-- letters/digits/spaces only so invalid_characters clears too.
 				usedFallback = true
 				local rarityStr = egg.rarity or "Common"
-				prompt = string.format("Create a small %s creature. Category: creature.", string.lower(rarityStr))
-				warn("[HatchEgg] Using fallback prompt due to input_too_long:", prompt)
+				prompt = string.format("a small %s paper creature", string.lower(rarityStr))
+				warn("[HatchEgg] Using fallback prompt:", prompt)
 			else
 				-- Other error: brief backoff then try once more
 				task.wait(0.5 * attempt)

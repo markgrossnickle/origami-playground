@@ -58,6 +58,16 @@ local HEIGHTMAP_OFFSET = 128
 local globalHeightmap: buffer? = nil
 local heightmapSeed: number? = nil
 
+-- Cached spawn position (in blocks) per seed, used by tree placement to
+-- carve out a keep-clear zone so structures can't spawn on the spawn platform.
+local _spawnClearBlockX: number? = nil
+local _spawnClearBlockZ: number? = nil
+local _spawnClearSeed: number? = nil
+-- Block-radius around spawn where no tree / structure may root.
+-- Platform is 8 studs (≈1.6 blocks) wide and canopies can reach ~5 blocks,
+-- so 6 blocks (~30 studs) gives comfortable clearance in every direction.
+local SPAWN_CLEAR_RADIUS_BLOCKS = 6
+
 -- Hash & RNG (deterministic)
 
 local function hashSeed(seed: number, a: number, b: number, c: number): number
@@ -563,6 +573,16 @@ local function isTreeDensityPass(seed: number, bx: number, bz: number, density: 
 end
 
 local function isTreeRoot(seed: number, bx: number, bz: number): boolean
+	-- Keep a clear zone around spawn so trees/structures can't poke through
+	-- the spawn platform or trap the player.
+	if _spawnClearSeed == seed and _spawnClearBlockX and _spawnClearBlockZ then
+		local dx = bx - _spawnClearBlockX
+		local dz = bz - _spawnClearBlockZ
+		if dx * dx + dz * dz <= SPAWN_CLEAR_RADIUS_BLOCKS * SPAWN_CLEAR_RADIUS_BLOCKS then
+			return false
+		end
+	end
+
 	local wx = bx * BLOCK_SIZE
 	local wz = bz * BLOCK_SIZE
 	local surface = BiomeConfig.getBiome(wx, wz)
@@ -699,6 +719,13 @@ end
 local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: number, cz: number)
 	local chunkBlockYBottom = cy * CHUNK_SIZE
 	local chunkBlockYTop = chunkBlockYBottom + CHUNK_SIZE - 1
+
+	-- Make sure spawn keep-clear zone is populated for this seed before we
+	-- start placing trees, otherwise chunks generated early could spawn trees
+	-- on top of the spawn platform.
+	if _spawnClearSeed ~= seed then
+		WorldGenModule.getSpawnPosition(seed)
+	end
 
 	local checkRadius = Config.treeCheckRadius
 	local chunkBlockX = cx * CHUNK_SIZE
@@ -2413,6 +2440,12 @@ function WorldGenModule.getSpawnPosition(seed: number): Vector3
 
 	local surfaceBlockY = getSurfaceHeight(seed, bestX, bestZ)
 	local worldY = (surfaceBlockY + 1) * BLOCK_SIZE + BLOCK_SIZE
+
+	-- Cache in-blocks so tree placement can keep a clear zone around spawn.
+	_spawnClearBlockX = math.floor(bestX / BLOCK_SIZE + 0.5)
+	_spawnClearBlockZ = math.floor(bestZ / BLOCK_SIZE + 0.5)
+	_spawnClearSeed = seed
+
 	return Vector3.new(bestX, worldY, bestZ)
 end
 

@@ -20,7 +20,7 @@ local WorldService
 
 -- How high to float the spawn platform above terrain so trees/structures
 -- can't poke through it and players don't get stuck in foliage.
-local PLATFORM_LIFT = 12
+local PLATFORM_LIFT = 3
 -- Platform footprint (big enough to catch a drifting spawn while chunks load)
 local PLATFORM_SIZE = Vector3.new(24, 2, 24)
 

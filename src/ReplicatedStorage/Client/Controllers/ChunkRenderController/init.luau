@@ -421,9 +421,28 @@ local function _hash(a: number, b: number, c: number, d: number): number
 	return (h % 65521) / 65521
 end
 
+-- Willow vine taper: top block = full size, each block below loses 3% on X/Z
+local VINE_TAPER_PER_BLOCK = 0.03
+local VINE_TAPER_MIN = 0.4
+
+local function _vineTaperFactor(blocks: buffer, lx: number, ly: number, lz: number): number
+	local depth = 0
+	local y = ly + 1
+	while y < CHUNK_SIZE do
+		local id = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, y, lz))
+		if id ~= BlockType.WillowVine then
+			break
+		end
+		depth += 1
+		y += 1
+	end
+	return math.max(VINE_TAPER_MIN, 1 - depth * VINE_TAPER_PER_BLOCK)
+end
+
 -- LOD 0: Paper-crystal layers + collision part
 
 local function _makeLayerParts(
+	blocks: buffer,
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -469,6 +488,12 @@ local function _makeLayerParts(
 		else
 			sx = BLOCK_SIZE * 0.92
 			sz = BLOCK_SIZE * 1.08
+		end
+
+		if blockTypeId == BlockType.WillowVine then
+			local taper = _vineTaperFactor(blocks, lx, ly, lz)
+			sx = sx * taper
+			sz = sz * taper
 		end
 
 		local part = _getPart()
@@ -596,6 +621,7 @@ end
 -- LOD 1: Single full-size block (visual + collision)
 
 local function _makeSimplePart(
+	blocks: buffer,
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -621,10 +647,17 @@ local function _makeSimplePart(
 	local tint = 1.0 + (_hash(seed, 5, 0, 0) - 0.5) * 2 * SIMPLE_TINT_RANGE
 	local baseColor = _getColor(blockTypeId)
 
+	local sx, sz = BLOCK_SIZE, BLOCK_SIZE
+	if blockTypeId == BlockType.WillowVine then
+		local taper = _vineTaperFactor(blocks, lx, ly, lz)
+		sx = sx * taper
+		sz = sz * taper
+	end
+
 	local part = _getPart()
 	part.Color = _tintColor(baseColor, tint)
 	part.Material = _getMaterial(blockTypeId)
-	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	part.Size = Vector3.new(sx, BLOCK_SIZE, sz)
 	part.CanCollide = true
 	part.CanQuery = true
 	part.Transparency = 0
@@ -658,6 +691,7 @@ end
 -- Block creation dispatcher
 
 local function _makeBlockParts(
+	blocks: buffer,
 	blockTypeId: number,
 	cx: number,
 	cy: number,
@@ -669,9 +703,9 @@ local function _makeBlockParts(
 	batched: boolean?
 ): { BasePart }
 	if lod == 0 then
-		return _makeLayerParts(blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+		return _makeLayerParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
 	else
-		return _makeSimplePart(blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+		return _makeSimplePart(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
 	end
 end
 
@@ -749,7 +783,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 				local blockTypeId = buffer.readu8(blocks, idx)
 
 				if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-					local group = _makeBlockParts(blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
+					local group = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
 					parts[idx] = group
 				end
 
@@ -813,7 +847,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 	end
 
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		parts[flatIndex] = _makeBlockParts(blockTypeId, cx, cy, cz, lx, ly, lz, lod, false)
+		parts[flatIndex] = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, false)
 	end
 
 	for _, dir in NEIGHBOR_DIRS do
@@ -829,7 +863,7 @@ local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockType
 		local shouldRender = nBlockType ~= BlockType.Air and _isExposed(blocks, nx, ny, nz)
 
 		if shouldRender and not hasGroup then
-			parts[nIdx] = _makeBlockParts(nBlockType, cx, cy, cz, nx, ny, nz, lod, false)
+			parts[nIdx] = _makeBlockParts(blocks, nBlockType, cx, cy, cz, nx, ny, nz, lod, false)
 		elseif not shouldRender and hasGroup then
 			_returnGroup(parts[nIdx])
 			parts[nIdx] = nil

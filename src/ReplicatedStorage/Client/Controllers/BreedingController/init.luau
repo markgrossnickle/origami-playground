@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
+local OrigamiUnfold = require(ReplicatedStorage.Shared.OrigamiUnfold)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
@@ -234,13 +235,14 @@ function hatchEgg(eggIndex: number, eggModel: Model?)
 					builtModel:PivotTo(CFrame.new(pos.X, rootPart.Position.Y, pos.Z))
 				end
 
+				local spawnCenter = builtModel:GetPivot().Position
 				local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
-				CreatureAI.Start(
-					builtModel,
-					result.offspringData,
-					builtModel:GetPivot().Position,
-					{ builtModel, character }
-				)
+				OrigamiUnfold.Animate(builtModel, spawnCenter, function()
+					if not builtModel.Parent then
+						return
+					end
+					CreatureAI.Start(builtModel, result.offspringData, spawnCenter, { builtModel, character })
+				end)
 			end
 		end
 	end)

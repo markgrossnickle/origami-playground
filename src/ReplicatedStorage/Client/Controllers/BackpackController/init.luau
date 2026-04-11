@@ -13,6 +13,7 @@ local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
 local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
 local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
+local OrigamiUnfold = require(ReplicatedStorage.Shared.OrigamiUnfold)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 local WorkshopTab = require(script.WorkshopTab)
@@ -574,11 +575,17 @@ local function spawnCreatureInWorld(creature: { [string]: any })
 	model:SetAttribute("CreatureId", creature.id)
 	model.Parent = workspace
 
-	local spawnPos = rootPart.Position + rootPart.CFrame.LookVector * 8
-	model:PivotTo(CFrame.new(spawnPos.X, rootPart.Position.Y, spawnPos.Z))
+	local rawSpawn = rootPart.Position + rootPart.CFrame.LookVector * 8
+	local spawnPos = Vector3.new(rawSpawn.X, rootPart.Position.Y, rawSpawn.Z)
+	model:PivotTo(CFrame.new(spawnPos))
 
 	_activeCreatureModel = model
-	_activeCreatureCleanup = CreatureAI.Start(model, creature.modelData, spawnPos, { model, character })
+	OrigamiUnfold.Animate(model, spawnPos, function()
+		if _activeCreatureModel ~= model or not model.Parent then
+			return
+		end
+		_activeCreatureCleanup = CreatureAI.Start(model, creature.modelData, spawnPos, { model, character })
+	end)
 
 	local rarityColor = EggCraftingConfig.RARITY_COLORS[creature.rarity] or COLORS.success
 	VFXUtil.sparkle(spawnPos + Vector3.new(0, 2, 0), rarityColor, 15, 1.5)

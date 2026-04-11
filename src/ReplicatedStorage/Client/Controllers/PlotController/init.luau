@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
+local OrigamiUnfold = require(ReplicatedStorage.Shared.OrigamiUnfold)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 
@@ -38,7 +39,7 @@ local _buildMode = false
 local _plotData = nil -- { plotIndex, placedBlocks, assignedCreatures, origin }
 local _plotOrigin: Vector3? = nil
 local _renderedBlocks: { [string]: BasePart } = {} -- "x,y,z" → Part
-local _creatureModels: { [string]: { model: Model, cleanup: () -> () } } = {}
+local _creatureModels: { [string]: { model: Model, cleanup: (() -> ())? } } = {}
 local _selectedMaterial: string? = nil
 local _ghostBlock: BasePart? = nil
 local _plotFolder: Folder? = nil
@@ -121,8 +122,10 @@ end
 -- Creature Display
 
 local function clearCreatures()
-	for id, entry in pairs(_creatureModels) do
-		entry.cleanup()
+	for _, entry in pairs(_creatureModels) do
+		if entry.cleanup then
+			entry.cleanup()
+		end
 		if entry.model and entry.model.Parent then
 			entry.model:Destroy()
 		end
@@ -165,8 +168,14 @@ local function spawnPlotCreature(creatureId: string, localX: number, localZ: num
 		model:PivotTo(CFrame.new(worldPos))
 
 		local character = Player.Character
-		local cleanup = CreatureAI.Start(model, creature.modelData, worldPos, { model, character })
-		_creatureModels[creatureId] = { model = model, cleanup = cleanup }
+		local entry = { model = model, cleanup = nil :: (() -> ())? }
+		_creatureModels[creatureId] = entry
+		OrigamiUnfold.Animate(model, worldPos, function()
+			if not model.Parent or _creatureModels[creatureId] ~= entry then
+				return
+			end
+			entry.cleanup = CreatureAI.Start(model, creature.modelData, worldPos, { model, character })
+		end)
 	end)
 end
 

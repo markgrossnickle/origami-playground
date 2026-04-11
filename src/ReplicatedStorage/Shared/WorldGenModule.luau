@@ -1212,8 +1212,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				)
 			elseif structureType == "tree_willow" then
 				-- Weeping willow: trunk + wide flat canopy + dense long hanging vines
-				-- Top 3 rows = WillowLeaves (full-scale full blocks), hanging strands = WillowVine (thin)
-				local leavesBlock = BlockType.WillowLeaves
+				-- All canopy and vines use WillowVine — renderer tapers X/Z by depth
 				for ty = 0, trunkHeight - 1 do
 					placeBlock(
 						blocks,
@@ -1227,15 +1226,15 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 						chunkBlockZ
 					)
 				end
-				-- Wide flat canopy (r=4, 3 layers thick, full-scale WillowLeaves)
+				-- Wide flat canopy (r=4, 2 layers thick)
 				local canopyY = surfaceBlockY + trunkHeight + 1
 				for dx = -4, 4 do
 					for dz = -4, 4 do
 						if dx * dx + dz * dz <= 18 then
-							for layer = 0, 2 do
+							for layer = 0, 1 do
 								placeBlock(
 									blocks,
-									leavesBlock,
+									canopyBlock,
 									bx + dx,
 									canopyY + layer,
 									bz + dz,

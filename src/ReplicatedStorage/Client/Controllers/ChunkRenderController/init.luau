@@ -20,8 +20,8 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local POOL_MAX = 30000
 
 -- Frame budget
-local FRAME_BUDGET = 0.004
-local YIELD_PART_INTERVAL = 64 -- yield check every N blocks iterated
+local FRAME_BUDGET = 0.008
+local YIELD_PART_INTERVAL = 32 -- yield check every N blocks iterated
 
 -- Paper-crystal layer parameters (LOD 0 only)
 local LAYERS_PER_BLOCK = 2
@@ -61,7 +61,7 @@ local MUSHROOM_FLASH_COLORS = {
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
-local BATCH_FLUSH_SIZE = 128
+local BATCH_FLUSH_SIZE = 64
 
 -- Trickle fill
 local TRICKLE_FILL_PER_FRAME = 4

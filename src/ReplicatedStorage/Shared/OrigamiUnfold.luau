@@ -196,13 +196,14 @@ function OrigamiUnfold.Animate(
 	callback: (() -> ())?
 )
 	-- Backward compat: if style is a function, treat it as the callback
+	local STYLES = { "scale", "flip", "accordion" }
 	local resolvedStyle: string
 	local resolvedCallback: (() -> ())?
 	if typeof(style) == "function" then
 		resolvedCallback = style :: any
-		resolvedStyle = "scale"
+		resolvedStyle = STYLES[math.random(#STYLES)]
 	else
-		resolvedStyle = (style :: string?) or "scale"
+		resolvedStyle = (style :: string?) or STYLES[math.random(#STYLES)]
 		resolvedCallback = callback
 	end
 

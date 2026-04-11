@@ -421,9 +421,9 @@ local function _hash(a: number, b: number, c: number, d: number): number
 	return (h % 65521) / 65521
 end
 
--- Willow vine taper: top block = full size, each block below loses 3% on X/Z
-local VINE_TAPER_PER_BLOCK = 0.03
-local VINE_TAPER_MIN = 0.4
+-- Willow vine taper: top block = full size, each block below loses 6% on X/Z
+local VINE_TAPER_PER_BLOCK = 0.06
+local VINE_TAPER_MIN = 0.2
 
 local function _vineTaperFactor(blocks: buffer, lx: number, ly: number, lz: number): number
 	local depth = 0

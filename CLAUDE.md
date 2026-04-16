@@ -408,6 +408,78 @@ selene src/                       # Check for lint errors
 ### Selene rules to watch:
 - `if_same_then_else` — don't have `if A then X elseif B then X end` where both branches do the same thing. Combine conditions: `if A or B then X end`.
 
+## Networking & Replication (CRITICAL)
+
+**Never move many objects server-side every frame.** Server-side `PivotTo` / `CFrame =` on anchored parts replicates every property change to every client. With 100 enemies × 25 parts each, that's ~150,000 property updates/second — smooth on WiFi, unplayable on mobile data.
+
+### The Pattern: "Server Brain, Client Body"
+
+| Layer | Runs On | Responsibility |
+|---|---|---|
+| **AI decisions** | Server | Who to target, where to move, when to attack |
+| **State snapshots** | Server → Client | Compressed position/rotation at **10Hz** (not 60Hz) |
+| **Visual rendering** | Client | Interpolate between snapshots, animate body parts locally |
+| **Hit validation** | Server | Verify damage claims from clients |
+
+### Implementation Rules
+
+1. **Server AI loop** (Heartbeat) computes positions in a data table — does NOT call `PivotTo` or set `CFrame` directly
+2. **Every ~6 Heartbeats** (10Hz), server fires a single batched RemoteEvent with compressed position data:
+   - `Vector2int16` for XZ position (~4 bytes vs 24 for two floats)
+   - `int16` for Y-rotation (multiply radians × 10, divide on client)
+   - Arrays, not dictionaries (dictionaries add ~8 bytes/key overhead)
+3. **Client interpolates** between snapshots using `CFrame:Lerp()` or `TweenService` — creates smooth movement despite infrequent updates
+4. **Client runs animations locally** (walk cycles, wing flaps, particles) — never replicate per-part animation from server
+5. **Use `workspace:BulkMoveTo()`** on the client for batch CFrame updates instead of per-model PivotTo loops (C++-optimized, avoids unnecessary Changed events)
+6. **Render-throttle on low-end devices**: split creature rendering across 2-3 frames instead of updating all in one frame
+
+### Projectiles
+
+- **Client-side prediction**: client fires + animates bullet locally for instant feedback
+- **Server validates**: server reconstructs trajectory mathematically, verifies hit position is within tolerance
+- **One remote call per hit**, not per frame — minimal network traffic
+
+### Purely Visual Modes (Viewers, Parades, Lobbies)
+
+For modes with no gameplay consequence:
+- Server spawns models and sends initial state via RemoteEvent
+- **Client owns all movement and animation** — zero network traffic
+
+### Anti-Patterns (DO NOT DO)
+
+```lua
+-- BAD: Server moves every enemy every frame via PivotTo
+RunService.Heartbeat:Connect(function(dt)
+    for _, enemy in enemies do
+        enemy.Model:PivotTo(newCFrame)  -- bandwidth explosion
+    end
+end)
+```
+
+### Correct Pattern
+
+```lua
+-- SERVER: compute positions in data table, broadcast at 10Hz
+local _tickCounter = 0
+RunService.Heartbeat:Connect(function(dt)
+    for _, enemy in enemies do
+        enemy.Position = computeNewPos(enemy, dt)  -- data only, no PivotTo
+    end
+    _tickCounter += 1
+    if _tickCounter % 6 == 0 then
+        local packed = packPositions(enemies)
+        EnemyService.Client.PositionUpdate:FireAll(packed)
+    end
+end)
+
+-- CLIENT: interpolate + animate locally
+RunService.RenderStepped:Connect(function(dt)
+    for model, target in enemyTargets do
+        model:PivotTo(model:GetPivot():Lerp(target, math.min(1, dt * 15)))
+    end
+end)
+```
+
 ## Conventions
 
 - Services in `Services/` (folder with `init.luau` or single `.luau` file)

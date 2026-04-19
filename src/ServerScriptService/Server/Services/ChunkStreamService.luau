@@ -24,7 +24,7 @@ local ChunkStreamService = Knit.CreateService({
 
 local WorldService
 
-local playerRequiredChunks: { [Player]: { [string]: boolean } } = {}
+local playerRequiredChunks: { [Player]: { [number]: boolean } } = {}
 local playerUpdateInFlight: { [Player]: boolean } = {}
 
 local function _getRequiredChunks(player: Player): { { cx: number, cy: number, cz: number, dist: number } }
@@ -77,7 +77,7 @@ local function _updatePlayerChunks(player: Player)
 
 	local required = _getRequiredChunks(player)
 
-	local requiredSet: { [string]: boolean } = {}
+	local requiredSet: { [number]: boolean } = {}
 	for _, chunk in required do
 		local key = ChunkUtil.chunkKey(chunk.cx, chunk.cy, chunk.cz)
 		requiredSet[key] = true
@@ -107,6 +107,9 @@ local function _updatePlayerChunks(player: Player)
 	playerRequiredChunks[player] = requiredSet
 	playerUpdateInFlight[player] = nil
 end
+
+-- Note: _getRequiredChunks above already uses ChunkUtil.chunkKey internally
+-- (the `dist` field is a local sort key, not the chunkKey).
 
 function ChunkStreamService:KnitInit()
 	Players.PlayerRemoving:Connect(function(player)

@@ -9,7 +9,6 @@ local GameMode = {}
 GameMode.MODES = {
 	{ key = "expedition", display = "Expedition" },
 	{ key = "sandbox", display = "Sandbox" },
-	{ key = "auto_battler", display = "Auto Battler" },
 	{ key = "animate", display = "Animate" },
 	{ key = "demo", display = "Demo" },
 }

@@ -59,9 +59,9 @@ local PlayerDataService
 local _lastPlaceTime: { [Player]: number } = {}
 local PLACE_COOLDOWN = 0.15
 
-function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: string, flatIndex: number, itemId: string)
+function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: number, flatIndex: number, itemId: string)
 	-- Type validation
-	if type(chunkKey) ~= "string" or type(flatIndex) ~= "number" or type(itemId) ~= "string" then
+	if type(chunkKey) ~= "number" or type(flatIndex) ~= "number" or type(itemId) ~= "string" then
 		return { success = false, error = "invalid_args" }
 	end
 
@@ -70,9 +70,8 @@ function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: strin
 		return { success = false, error = "invalid_index" }
 	end
 
-	-- Validate chunkKey format
-	local parts = string.split(chunkKey, ",")
-	if #parts ~= 3 or not tonumber(parts[1]) or not tonumber(parts[2]) or not tonumber(parts[3]) then
+	-- Validate chunkKey is a non-negative integer (packed key space)
+	if chunkKey ~= math.floor(chunkKey) or chunkKey < 0 then
 		return { success = false, error = "invalid_chunk" }
 	end
 
@@ -99,9 +98,7 @@ function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: strin
 		return { success = false, error = "no_character" }
 	end
 
-	local cx = tonumber(parts[1]) :: number
-	local cy = tonumber(parts[2]) :: number
-	local cz = tonumber(parts[3]) :: number
+	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local blockPos = ChunkUtil.blockWorldPosition(cx, cy, cz, lx, ly, lz)
 	local dist = (rootPart.Position - blockPos).Magnitude

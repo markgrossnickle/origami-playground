@@ -15,13 +15,22 @@ local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local SAVE_INTERVAL = 60
-local CHUNK_EVICT_TIME = 120
+-- Evict chunks that haven't been touched in this many seconds. Tight enough
+-- that an exploring player doesn't accumulate hundreds of chunks worth of
+-- buffers + deltas in memory (GC pressure → periodic atomic pauses).
+local CHUNK_EVICT_TIME = 30
+local EVICT_INTERVAL = 15
 
 type ChunkData = {
 	cx: number,
 	cy: number,
 	cz: number,
 	blocks: buffer,
+	-- Cached RLE-compressed view of `blocks`. Computed lazily on first
+	-- Subscribe; invalidated (set to nil) whenever SetBlock mutates `blocks`.
+	-- Avoids redundant re-compression when multiple players subscribe to the
+	-- same chunk or when a player re-subscribes after wandering away.
+	compressed: buffer?,
 	dirty: boolean,
 	refCount: number,
 	lastAccess: number,
@@ -47,16 +56,16 @@ local WorldService = Knit.CreateService({
 })
 
 local seed: number = 0
-local chunks: { [string]: ChunkData } = {}
-local deltas: { [string]: ChunkDelta } = {}
-local savedDeltas: { [string]: ChunkDelta } = {}
+local chunks: { [number]: ChunkData } = {}
+local deltas: { [number]: ChunkDelta } = {}
+local savedDeltas: { [number]: ChunkDelta } = {}
 local dirtyRegions: { [string]: boolean } = {}
-local playerSubscriptions: { [Player]: { [string]: boolean } } = {}
-local chunkSubscribers: { [string]: { [Player]: boolean } } = {}
+local playerSubscriptions: { [Player]: { [number]: boolean } } = {}
+local chunkSubscribers: { [number]: { [Player]: boolean } } = {}
 
 local WorldStore: DataStore?
 local SeedStore: DataStore?
-local pendingChunks: { [string]: boolean } = {}
+local pendingChunks: { [number]: boolean } = {}
 
 -- Internal helpers
 
@@ -117,7 +126,7 @@ local function _saveRegionDeltas(regionKey: string, regionData: { [string]: { [s
 	end
 end
 
-local function _markDirty(chunkKey: string, cx: number, cy: number, cz: number)
+local function _markDirty(chunkKey: number, cx: number, cy: number, cz: number)
 	local regionKey = ChunkUtil.regionKey(cx, cy, cz)
 	dirtyRegions[regionKey] = true
 
@@ -133,7 +142,7 @@ end
 
 -- Chunk lifecycle
 
-function WorldService:_loadDeltasForChunk(chunkKey: string, cx: number, cy: number, cz: number)
+function WorldService:_loadDeltasForChunk(chunkKey: number, cx: number, cy: number, cz: number)
 	if savedDeltas[chunkKey] then
 		return
 	end
@@ -144,9 +153,11 @@ function WorldService:_loadDeltasForChunk(chunkKey: string, cx: number, cy: numb
 		return
 	end
 
-	for storedChunkKey, serializedDelta in regionData do
-		if not savedDeltas[storedChunkKey] then
-			savedDeltas[storedChunkKey] = ChunkSerializer.deserializeDelta(serializedDelta)
+	-- DataStore keys are strings ("cx,cy,cz") — convert back to packed number.
+	for storedChunkKeyStr, serializedDelta in regionData do
+		local storedKey = ChunkUtil.chunkKeyFromString(storedChunkKeyStr)
+		if storedKey and not savedDeltas[storedKey] then
+			savedDeltas[storedKey] = ChunkSerializer.deserializeDelta(serializedDelta)
 		end
 	end
 end
@@ -202,6 +213,7 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 		cy = cy,
 		cz = cz,
 		blocks = blockBuffer,
+		compressed = nil,
 		dirty = false,
 		refCount = 0,
 		lastAccess = os.clock(),
@@ -213,7 +225,7 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 	return chunkData
 end
 
-function WorldService:GetBlock(chunkKey: string, flatIndex: number): number
+function WorldService:GetBlock(chunkKey: number, flatIndex: number): number
 	local chunk = chunks[chunkKey]
 	if not chunk then
 		return BlockType.Air
@@ -224,7 +236,7 @@ function WorldService:GetBlock(chunkKey: string, flatIndex: number): number
 	return buffer.readu8(chunk.blocks, flatIndex)
 end
 
-function WorldService:SetBlock(chunkKey: string, flatIndex: number, blockTypeId: number)
+function WorldService:SetBlock(chunkKey: number, flatIndex: number, blockTypeId: number)
 	local chunk = chunks[chunkKey]
 	if not chunk then
 		warn("[WorldService] SetBlock on unloaded chunk:", chunkKey)
@@ -240,6 +252,8 @@ function WorldService:SetBlock(chunkKey: string, flatIndex: number, blockTypeId:
 	end
 
 	buffer.writeu8(chunk.blocks, flatIndex, blockTypeId)
+	-- Invalidate cached compressed view — blocks just changed.
+	chunk.compressed = nil
 
 	if not deltas[chunkKey] then
 		deltas[chunkKey] = {}
@@ -260,7 +274,7 @@ function WorldService:SetBlock(chunkKey: string, flatIndex: number, blockTypeId:
 	end
 end
 
-function WorldService:BreakBlock(chunkKey: string, flatIndex: number): number
+function WorldService:BreakBlock(chunkKey: number, flatIndex: number): number
 	local oldBlock = self:GetBlock(chunkKey, flatIndex)
 	if oldBlock == BlockType.Air then
 		return BlockType.Air
@@ -271,7 +285,7 @@ end
 
 -- Subscription management
 
-function WorldService:Subscribe(player: Player, chunkKey: string)
+function WorldService:Subscribe(player: Player, chunkKey: number)
 	if not playerSubscriptions[player] then
 		playerSubscriptions[player] = {}
 	end
@@ -289,11 +303,17 @@ function WorldService:Subscribe(player: Player, chunkKey: string)
 	local chunk = self:GetOrCreateChunk(cx, cy, cz)
 	chunk.refCount += 1
 
-	local compressed = ChunkSerializer.compress(chunk.blocks)
+	-- Lazily compute + cache the RLE-compressed buffer. Invalidated by
+	-- SetBlock, so this recomputes only when the chunk has actually changed.
+	local compressed = chunk.compressed
+	if not compressed then
+		compressed = ChunkSerializer.compress(chunk.blocks)
+		chunk.compressed = compressed
+	end
 	self.Client.ChunkData:Fire(player, chunkKey, compressed)
 end
 
-function WorldService:Unsubscribe(player: Player, chunkKey: string)
+function WorldService:Unsubscribe(player: Player, chunkKey: number)
 	if not playerSubscriptions[player] or not playerSubscriptions[player][chunkKey] then
 		return
 	end
@@ -337,11 +357,11 @@ function WorldService:UnsubscribeAll(player: Player)
 	playerSubscriptions[player] = nil
 end
 
-function WorldService:GetPlayerSubscriptions(player: Player): { [string]: boolean }?
+function WorldService:GetPlayerSubscriptions(player: Player): { [number]: boolean }?
 	return playerSubscriptions[player]
 end
 
-function WorldService:IsSubscribed(player: Player, chunkKey: string): boolean
+function WorldService:IsSubscribed(player: Player, chunkKey: number): boolean
 	local subs = playerSubscriptions[player]
 	return subs ~= nil and subs[chunkKey] == true
 end
@@ -349,9 +369,17 @@ end
 -- Persistence
 
 function WorldService:_saveAllDirtyRegions()
+	-- Snapshot + clear: subsequent SetBlock calls go to a fresh `deltas` table
+	-- while this cycle operates on its own copy. Avoids mutation races with
+	-- gameplay and lets us move the merge to a background task safely.
+	local deltasSnapshot = deltas
+	local dirtyRegionsSnapshot = dirtyRegions
+	deltas = {}
+	dirtyRegions = {}
+
 	-- Pre-group deltas by region to avoid O(n*m) scanning in _saveRegion
-	local deltasByRegion: { [string]: { [string]: ChunkDelta } } = {}
-	for chunkKey, chunkDelta in deltas do
+	local deltasByRegion: { [string]: { [number]: ChunkDelta } } = {}
+	for chunkKey, chunkDelta in deltasSnapshot do
 		local cx2, cy2, cz2 = ChunkUtil.parseChunkKey(chunkKey)
 		local rk = ChunkUtil.regionKey(cx2, cy2, cz2)
 		if not deltasByRegion[rk] then
@@ -360,29 +388,35 @@ function WorldService:_saveAllDirtyRegions()
 		deltasByRegion[rk][chunkKey] = chunkDelta
 	end
 
-	for regionKey in dirtyRegions do
+	for regionKey in dirtyRegionsSnapshot do
 		self:_saveRegion(regionKey, deltasByRegion[regionKey])
 		task.wait()
 	end
-	dirtyRegions = {}
 
-	local mergeCount = 0
-	for chunkKey, chunkDelta in deltas do
-		if not savedDeltas[chunkKey] then
-			savedDeltas[chunkKey] = {}
+	-- Merge into savedDeltas in the background, frame-budgeted. The snapshot
+	-- is owned by this closure so nothing else can observe a half-merged
+	-- state; _saveRegion on the next cycle only reads savedDeltas that are
+	-- fully committed.
+	task.spawn(function()
+		local start = os.clock()
+		for chunkKey, chunkDelta in deltasSnapshot do
+			if not savedDeltas[chunkKey] then
+				savedDeltas[chunkKey] = {}
+			end
+			local target = savedDeltas[chunkKey]
+			for flatIndex, blockTypeId in chunkDelta do
+				target[flatIndex] = blockTypeId
+			end
+			if os.clock() - start > 0.004 then
+				task.wait()
+				start = os.clock()
+			end
 		end
-		for flatIndex, blockTypeId in chunkDelta do
-			savedDeltas[chunkKey][flatIndex] = blockTypeId
-		end
-		mergeCount += 1
-		if mergeCount % 10 == 0 then
-			task.wait()
-		end
-	end
-	deltas = {}
+	end)
 end
 
-function WorldService:_saveRegion(regionKey: string, regionDeltas: { [string]: ChunkDelta }?)
+function WorldService:_saveRegion(regionKey: string, regionDeltas: { [number]: ChunkDelta }?)
+	-- DataStore key format is string "cx,cy,cz" for backward compatibility.
 	local regionData: { [string]: { [string]: number } } = {}
 
 	-- Process pre-grouped deltas for this region (O(k) instead of O(n))
@@ -400,7 +434,7 @@ function WorldService:_saveRegion(regionKey: string, regionDeltas: { [string]: C
 			end
 
 			if next(merged) then
-				regionData[chunkKey] = ChunkSerializer.serializeDelta(merged)
+				regionData[ChunkUtil.chunkKeyToString(chunkKey)] = ChunkSerializer.serializeDelta(merged)
 			end
 		end
 	end
@@ -408,11 +442,12 @@ function WorldService:_saveRegion(regionKey: string, regionDeltas: { [string]: C
 	-- Include savedDeltas for this region that have no new in-memory deltas
 	local savedCount = 0
 	for chunkKey, saved in savedDeltas do
-		if not regionData[chunkKey] then
+		local chunkKeyStr = ChunkUtil.chunkKeyToString(chunkKey)
+		if not regionData[chunkKeyStr] then
 			local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 			local chunkRegionKey = ChunkUtil.regionKey(cx, cy, cz)
 			if chunkRegionKey == regionKey and next(saved) then
-				regionData[chunkKey] = ChunkSerializer.serializeDelta(saved)
+				regionData[chunkKeyStr] = ChunkSerializer.serializeDelta(saved)
 			end
 		end
 		savedCount += 1
@@ -457,15 +492,14 @@ end
 
 function WorldService:KnitStart()
 	-- Forward mine requests (MiningService connects to this)
-	self.Client.RequestMine:Connect(function(player: Player, chunkKey: string, flatIndex: number)
-		if type(chunkKey) ~= "string" or type(flatIndex) ~= "number" then
+	self.Client.RequestMine:Connect(function(player: Player, chunkKey: number, flatIndex: number)
+		if type(chunkKey) ~= "number" or type(flatIndex) ~= "number" then
+			return
+		end
+		if chunkKey ~= math.floor(chunkKey) or chunkKey < 0 then
 			return
 		end
 		if flatIndex < 0 or flatIndex >= BLOCKS_PER_CHUNK or flatIndex ~= math.floor(flatIndex) then
-			return
-		end
-		local parts = string.split(chunkKey, ",")
-		if #parts ~= 3 or not tonumber(parts[1]) or not tonumber(parts[2]) or not tonumber(parts[3]) then
 			return
 		end
 		if not self:IsSubscribed(player, chunkKey) then
@@ -487,25 +521,21 @@ function WorldService:KnitStart()
 			self:_saveAllDirtyRegions()
 			local saveElapsed = os.clock() - cycleStart
 
-			local evictStart = os.clock()
-			local evictedCount = self:_evictUnusedChunks()
-			local evictElapsed = os.clock() - evictStart
-
 			local chunkCount = 0
 			for _ in chunks do
 				chunkCount += 1
 			end
 
-			print(
-				string.format(
-					"[WorldService] Save/Evict: %.1fms (save=%.1fms, evict=%.1fms) | evicted=%d | loaded=%d",
-					(saveElapsed + evictElapsed) * 1000,
-					saveElapsed * 1000,
-					evictElapsed * 1000,
-					evictedCount,
-					chunkCount
-				)
-			)
+			print(string.format("[WorldService] Save: %.1fms | loaded=%d", saveElapsed * 1000, chunkCount))
+		end
+	end)
+
+	-- Independent, faster eviction loop so unused chunks don't pile up for up
+	-- to 2x SAVE_INTERVAL. Eviction itself is cheap (one pass over `chunks`).
+	task.spawn(function()
+		while true do
+			task.wait(EVICT_INTERVAL)
+			self:_evictUnusedChunks()
 		end
 	end)
 

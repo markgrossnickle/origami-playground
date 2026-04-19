@@ -50,13 +50,47 @@ function ChunkUtil.fromFlatIndex(index: number): (number, number, number)
 	return lx, ly, lz
 end
 
-function ChunkUtil.chunkKey(cx: number, cy: number, cz: number): string
-	return string.format("%d,%d,%d", cx, cy, cz)
+-- Chunk keys are packed as a single number for cheap hashtable lookups and to
+-- avoid per-call string allocations in hot paths (mining raycast, chunk stream
+-- polling, LOD re-eval). Biased so the full signed range is non-negative.
+-- Axis range: ±32768 chunks, enough for any conceivable world size.
+local CHUNK_KEY_BIAS = 32768
+local CHUNK_KEY_AXIS = 65536 -- 2^16
+local CHUNK_KEY_SCALE_Y = CHUNK_KEY_AXIS
+local CHUNK_KEY_SCALE_X = CHUNK_KEY_AXIS * CHUNK_KEY_AXIS -- 2^32, safely under 2^53
+
+function ChunkUtil.chunkKey(cx: number, cy: number, cz: number): number
+	return (cx + CHUNK_KEY_BIAS) * CHUNK_KEY_SCALE_X + (cy + CHUNK_KEY_BIAS) * CHUNK_KEY_SCALE_Y + (cz + CHUNK_KEY_BIAS)
 end
 
-function ChunkUtil.parseChunkKey(key: string): (number, number, number)
-	local parts = string.split(key, ",")
-	return tonumber(parts[1]) :: number, tonumber(parts[2]) :: number, tonumber(parts[3]) :: number
+function ChunkUtil.parseChunkKey(key: number): (number, number, number)
+	local biasedZ = key % CHUNK_KEY_AXIS
+	local key2 = (key - biasedZ) / CHUNK_KEY_AXIS
+	local biasedY = key2 % CHUNK_KEY_AXIS
+	local biasedX = (key2 - biasedY) / CHUNK_KEY_AXIS
+	return biasedX - CHUNK_KEY_BIAS, biasedY - CHUNK_KEY_BIAS, biasedZ - CHUNK_KEY_BIAS
+end
+
+-- Convert a legacy "cx,cy,cz" string (as stored in DataStore) to a packed key.
+-- Returns nil if the string is malformed.
+function ChunkUtil.chunkKeyFromString(s: string): number?
+	local parts = string.split(s, ",")
+	if #parts ~= 3 then
+		return nil
+	end
+	local cx = tonumber(parts[1])
+	local cy = tonumber(parts[2])
+	local cz = tonumber(parts[3])
+	if not cx or not cy or not cz then
+		return nil
+	end
+	return ChunkUtil.chunkKey(cx, cy, cz)
+end
+
+-- Convert a packed key back to "cx,cy,cz" string for DataStore persistence.
+function ChunkUtil.chunkKeyToString(key: number): string
+	local cx, cy, cz = ChunkUtil.parseChunkKey(key)
+	return string.format("%d,%d,%d", cx, cy, cz)
 end
 
 function ChunkUtil.worldToFlatIndex(worldX: number, worldY: number, worldZ: number): number

@@ -94,9 +94,11 @@ local ROTATABLE_LEAVES: { [number]: boolean } = {
 	[BlockType.PinataLeaves] = true,
 }
 
--- Small startup pool to reduce initial Instance.new calls
-local POOL_STARTUP = 1000
-local POOL_STARTUP_BATCH = 100
+-- Small startup pool to reduce initial Instance.new calls. Kept small so the
+-- join-time stall is brief; the trickle-fill pool (_trickleFillPool) grows the
+-- pool up to TRICKLE_FILL_TARGET during idle frames post-join.
+local POOL_STARTUP = 200
+local POOL_STARTUP_BATCH = 50
 
 -- LOD re-evaluation interval
 local LOD_CHECK_INTERVAL = 2.0
@@ -131,10 +133,10 @@ local ChunkRenderController = Knit.CreateController({
 local partPool: { BasePart } = {}
 local activePartsCount = 0
 
-local renderedChunks: { [string]: boolean } = {}
-local chunkParts: { [string]: { [number]: { BasePart } } } = {}
-local chunkBlocks: { [string]: buffer } = {}
-local chunkLOD: { [string]: number } = {}
+local renderedChunks: { [number]: boolean } = {}
+local chunkParts: { [number]: { [number]: { BasePart } } } = {}
+local chunkBlocks: { [number]: buffer } = {}
+local chunkLOD: { [number]: number } = {}
 
 local chunkContainer: Folder
 
@@ -227,15 +229,18 @@ local function _cleanupBounce(part: BasePart)
 	bouncyOrigColor[part] = nil
 end
 
-local renderQueue: { { key: string, blocks: buffer } } = {}
+local renderQueue: { { key: number, blocks: buffer } } = {}
 local isProcessingQueue = false
 
 -- Character-ready gate
 local characterReady = false
-local pendingChunkData: { { key: string, blocks: buffer } } = {}
+local pendingChunkData: { { key: number, blocks: buffer } } = {}
 
 -- LOD re-evaluation timer
 local lastLODCheck = 0
+local _lastLODPlayerCx: number? = nil
+local _lastLODPlayerCy: number? = nil
+local _lastLODPlayerCz: number? = nil
 
 -- LOD helper
 
@@ -356,7 +361,7 @@ local function _flushBatch()
 end
 
 -- Bulk-hide all parts in a chunk via BulkMoveTo (single native call)
-local function _bulkHideChunkParts(chunkKey: string)
+local function _bulkHideChunkParts(chunkKey: number)
 	local parts = chunkParts[chunkKey]
 	if not parts then
 		return
@@ -743,7 +748,7 @@ end
 
 -- Chunk rendering
 
-local function _renderChunk(chunkKey: string, blocks: buffer)
+local function _renderChunk(chunkKey: number, blocks: buffer)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 	local lod = _getChunkLOD(cx, cy, cz)
 
@@ -803,7 +808,7 @@ local function _renderChunk(chunkKey: string, blocks: buffer)
 	_flushBatch()
 end
 
-local function _unrenderChunk(chunkKey: string)
+local function _unrenderChunk(chunkKey: number)
 	renderedChunks[chunkKey] = nil
 	chunkLOD[chunkKey] = nil
 
@@ -823,7 +828,7 @@ end
 
 -- Block update (surgical per-block)
 
-local function _handleBlockUpdate(chunkKey: string, flatIndex: number, blockTypeId: number)
+local function _handleBlockUpdate(chunkKey: number, flatIndex: number, blockTypeId: number)
 	local blocks = chunkBlocks[chunkKey]
 	if not blocks then
 		return
@@ -873,7 +878,7 @@ end
 
 -- Public API
 
-function ChunkRenderController:GetBlockAt(chunkKey: string, flatIndex: number): number
+function ChunkRenderController:GetBlockAt(chunkKey: number, flatIndex: number): number
 	local blocks = chunkBlocks[chunkKey]
 	if not blocks then
 		return BlockType.Air
@@ -884,7 +889,7 @@ function ChunkRenderController:GetBlockAt(chunkKey: string, flatIndex: number): 
 	return buffer.readu8(blocks, flatIndex)
 end
 
-function ChunkRenderController:GetChunkBlocks(chunkKey: string): buffer?
+function ChunkRenderController:GetChunkBlocks(chunkKey: number): buffer?
 	return chunkBlocks[chunkKey]
 end
 
@@ -921,20 +926,24 @@ local function _processRenderQueue()
 			end)
 		end
 
-		-- Deduplicate: keep last occurrence of each chunkKey
-		local seen: { [string]: boolean } = {}
-		local deduped = {}
+		-- Deduplicate in-place: walk backwards marking last occurrence, then
+		-- forward-pass emitting only kept entries. O(n) instead of O(n²) from
+		-- the previous table.insert(deduped, 1, ...) pattern.
+		local seen: { [number]: boolean } = {}
+		local keep: { [number]: boolean } = {}
 		for i = #batch, 1, -1 do
 			local key = batch[i].key
 			if not seen[key] then
 				seen[key] = true
-				table.insert(deduped, 1, batch[i])
+				keep[i] = true
 			end
 		end
 
-		for _, item in deduped do
-			_renderChunk(item.key, item.blocks)
-			task.wait()
+		for i = 1, #batch do
+			if keep[i] then
+				_renderChunk(batch[i].key, batch[i].blocks)
+				task.wait()
+			end
 		end
 	end
 
@@ -951,6 +960,22 @@ local function _reevaluateLODs()
 	if now - lastLODCheck < LOD_CHECK_INTERVAL then
 		return
 	end
+
+	-- Skip the scan entirely if the player hasn't moved to a new chunk since
+	-- the last check — LOD bands only change across chunk boundaries, so
+	-- intra-chunk movement can never trigger a transition.
+	local pcx, pcy, pcz = _getPlayerChunkPos()
+	if not pcx or not pcy or not pcz then
+		return
+	end
+	if pcx == _lastLODPlayerCx and pcy == _lastLODPlayerCy and pcz == _lastLODPlayerCz then
+		lastLODCheck = now
+		return
+	end
+	_lastLODPlayerCx = pcx
+	_lastLODPlayerCy = pcy
+	_lastLODPlayerCz = pcz
+
 	lastLODCheck = now
 
 	-- Check all rendered chunks for LOD changes (player moved)
@@ -1028,7 +1053,7 @@ function ChunkRenderController:KnitStart()
 		end
 	end
 
-	WorldService.ChunkData:Connect(function(chunkKey: string, compressedBuffer: buffer)
+	WorldService.ChunkData:Connect(function(chunkKey: number, compressedBuffer: buffer)
 		local blocks = ChunkSerializer.decompress(compressedBuffer)
 
 		if not characterReady then
@@ -1040,11 +1065,11 @@ function ChunkRenderController:KnitStart()
 		_processRenderQueue()
 	end)
 
-	WorldService.ChunkUnload:Connect(function(chunkKey: string)
+	WorldService.ChunkUnload:Connect(function(chunkKey: number)
 		_unrenderChunk(chunkKey)
 	end)
 
-	WorldService.BlockUpdate:Connect(function(chunkKey: string, flatIndex: number, blockTypeId: number)
+	WorldService.BlockUpdate:Connect(function(chunkKey: number, flatIndex: number, blockTypeId: number)
 		_handleBlockUpdate(chunkKey, flatIndex, blockTypeId)
 	end)
 

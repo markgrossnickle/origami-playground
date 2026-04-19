@@ -16,7 +16,7 @@ local REACH_TOLERANCE = 10
 local RATE_TOLERANCE = 0.8
 
 type MiningState = {
-	chunkKey: string,
+	chunkKey: number?,
 	flatIndex: number,
 	damage: number,
 	lastRequestTime: number,
@@ -54,7 +54,7 @@ local function _getPlayerTool(player: Player)
 	return ToolRegistry.get(toolId) or ToolRegistry.getDefault()
 end
 
-local function _getPlayerDistance(player: Player, chunkKey: string, flatIndex: number): number?
+local function _getPlayerDistance(player: Player, chunkKey: number, flatIndex: number): number?
 	local character = player.Character
 	if not character then
 		return nil
@@ -72,7 +72,7 @@ local function _getPlayerDistance(player: Player, chunkKey: string, flatIndex: n
 	return (rootPart.Position - blockPos).Magnitude
 end
 
-local function _awardDrops(player: Player, blockTypeId: number, chunkKey: string, flatIndex: number)
+local function _awardDrops(player: Player, blockTypeId: number, chunkKey: number, flatIndex: number)
 	if not player.Parent then
 		return
 	end
@@ -144,7 +144,7 @@ local function _getBlockAtWorld(worldX: number, worldY: number, worldZ: number):
 	return WorldService:GetBlock(tKey, tFlatIndex)
 end
 
-local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: number)
+local function _tryTreeCollapse(player: Player, chunkKey: number, flatIndex: number)
 	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local blockPos = ChunkUtil.blockWorldPosition(cx, cy, cz, lx, ly, lz)
@@ -164,8 +164,20 @@ local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: num
 	local trunkZ = blockPos.Z
 	local maxLateralStuds = TREE_MAX_LATERAL * blockSize
 
+	-- Pack world-space block coordinates into a single number for visited
+	-- tracking, avoiding the string allocations the previous string.format
+	-- pattern produced (up to ~1200 strings per tree collapse BFS).
+	local VISIT_BIAS = 32768
+	local VISIT_SCALE = 65536
+	local function _visitKey(x: number, y: number, z: number): number
+		local bx = math.floor(x / blockSize) + VISIT_BIAS
+		local by = math.floor(y / blockSize) + VISIT_BIAS
+		local bz = math.floor(z / blockSize) + VISIT_BIAS
+		return bx * VISIT_SCALE * VISIT_SCALE + by * VISIT_SCALE + bz
+	end
+
 	local treeBlocks: { { x: number, y: number, z: number } } = {}
-	local visited: { [string]: boolean } = {}
+	local visited: { [number]: boolean } = {}
 
 	local queue: { { x: number, y: number, z: number } } = {}
 	local queueHead = 1
@@ -176,7 +188,7 @@ local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: num
 		iterations += 1
 		local pos = queue[queueHead]
 		queueHead += 1
-		local key = string.format("%d,%d,%d", pos.x, pos.y, pos.z)
+		local key = _visitKey(pos.x, pos.y, pos.z)
 		if visited[key] then
 			continue
 		end
@@ -199,7 +211,7 @@ local function _tryTreeCollapse(player: Player, chunkKey: string, flatIndex: num
 			local nx = pos.x + offset[1] * blockSize
 			local ny = pos.y + offset[2] * blockSize
 			local nz = pos.z + offset[3] * blockSize
-			local nKey = string.format("%d,%d,%d", nx, ny, nz)
+			local nKey = _visitKey(nx, ny, nz)
 			if not visited[nKey] then
 				table.insert(queue, { x = nx, y = ny, z = nz })
 			end
@@ -231,7 +243,7 @@ end
 
 -- Mine request handler
 
-local function _handleMineRequest(player: Player, chunkKey: string, flatIndex: number)
+local function _handleMineRequest(player: Player, chunkKey: number, flatIndex: number)
 	if flatIndex < 0 or flatIndex >= BLOCKS_PER_CHUNK then
 		return
 	end
@@ -299,7 +311,7 @@ local function _handleMineRequest(player: Player, chunkKey: string, flatIndex: n
 		end
 
 		state.damage = 0
-		state.chunkKey = ""
+		state.chunkKey = nil
 		state.flatIndex = -1
 
 		MiningService.BlockMined:Fire(player, chunkKey, flatIndex, blockConfig)
@@ -319,7 +331,7 @@ function MiningService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
 
-	WorldService._onMineRequest:Connect(function(player: Player, chunkKey: string, flatIndex: number)
+	WorldService._onMineRequest:Connect(function(player: Player, chunkKey: number, flatIndex: number)
 		_handleMineRequest(player, chunkKey, flatIndex)
 	end)
 

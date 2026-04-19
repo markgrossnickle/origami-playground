@@ -38,10 +38,6 @@ export type PlayerData = {
 	-- Prosocial: Emotes
 	SavedEmotes: { any },
 
-	-- Prosocial: Co-op TD
-	CoopTDWins: number,
-	CoopTDHighestWave: number,
-
 	-- Mining / Expedition
 	MiningInventory: { [string]: number },
 	EquippedTool: string,
@@ -87,9 +83,6 @@ local playerDataTemplate: PlayerData = {
 	HatchedCreatures = {},
 
 	SavedEmotes = {},
-
-	CoopTDWins = 0,
-	CoopTDHighestWave = 0,
 
 	MiningInventory = {},
 	EquippedTool = "prismatic_pick", -- DEBUG: best tool for testing

@@ -63,7 +63,7 @@ local _heartbeatConn: RBXScriptConnection? = nil
 local _enabled: boolean = true
 local _placeButton: TextButton? = nil
 local _placeButtonTapTime: number = 0
-local _lastGhostChunkKey: string? = nil
+local _lastGhostChunkKey: number? = nil
 local _lastGhostFlatIndex: number? = nil
 
 -- Services (set in KnitStart)

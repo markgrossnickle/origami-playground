@@ -4,6 +4,24 @@ local ChunkUtil = require(script.Parent.ChunkUtil)
 local BlockType = require(script.Parent.Enums.BlockType)
 local BiomeConfig = require(script.Parent.BiomeConfig)
 
+-- Frame-budget helper: yields only when the current slice has exceeded the
+-- budget, instead of yielding at fixed iteration intervals. This eliminates
+-- both "yield too often on small chunks" (wasted time) and "yield too rarely
+-- on heavy chunks" (multi-ms stutters).
+local FRAME_BUDGET = 0.004 -- ~4ms — leaves headroom for other server work
+local _budgetStart = os.clock()
+
+local function _yieldIfBudgetExceeded()
+	if os.clock() - _budgetStart > FRAME_BUDGET then
+		task.wait()
+		_budgetStart = os.clock()
+	end
+end
+
+local function _resetBudget()
+	_budgetStart = os.clock()
+end
+
 local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
@@ -209,6 +227,7 @@ local function _initializeGlobalHeightmap(seed: number)
 	local seaLevel = Config.seaLevelBlock
 
 	-- Pass 1a: Raw noise heights (biome-aware)
+	_resetBudget()
 	local rawHm = buffer.create(total)
 	for bz = 0, size - 1 do
 		for bx = 0, size - 1 do
@@ -218,9 +237,7 @@ local function _initializeGlobalHeightmap(seed: number)
 			local h = getSurfaceHeightRaw(seed, wx, wz, biome)
 			buffer.writeu8(rawHm, bz * size + bx, math.clamp(h + HEIGHTMAP_OFFSET, 0, 255))
 		end
-		if bz % 8 == 0 then
-			task.wait()
-		end
+		_yieldIfBudgetExceeded()
 	end
 
 	-- Pass 1b: Smooth
@@ -243,6 +260,7 @@ local function _initializeGlobalHeightmap(seed: number)
 				local h = math.floor(sum / kernelSize + 0.5)
 				buffer.writeu8(hm, bz * size + bx, math.clamp(h + HEIGHTMAP_OFFSET, 0, 255))
 			end
+			_yieldIfBudgetExceeded()
 		end
 	end
 
@@ -255,8 +273,10 @@ local function _initializeGlobalHeightmap(seed: number)
 			h = seaLevel + math.floor((h - seaLevel) * (1 - flattenStrength) + 0.5)
 			buffer.writeu8(hm, i, math.clamp(h + HEIGHTMAP_OFFSET, 0, 255))
 		end
+		if i % 4096 == 0 then
+			_yieldIfBudgetExceeded()
+		end
 	end
-	task.wait()
 
 	-- Pass 3: Height quantization
 	local bandSize = Config.plateauBandSize
@@ -266,8 +286,10 @@ local function _initializeGlobalHeightmap(seed: number)
 			h = seaLevel + math.floor((h - seaLevel) / bandSize + 0.5) * bandSize
 			buffer.writeu8(hm, i, math.clamp(h + HEIGHTMAP_OFFSET, 0, 255))
 		end
+		if i % 4096 == 0 then
+			_yieldIfBudgetExceeded()
+		end
 	end
-	task.wait()
 
 	-- Pass 4: Plateau enforcement (connected components + merge small regions)
 	local minCells = Config.minPlateauCells
@@ -421,8 +443,11 @@ local function _initializeGlobalHeightmap(seed: number)
 					buffer.writeu8(hm, i, math.clamp(targetH + HEIGHTMAP_OFFSET, 0, 255))
 				end
 			end
+			if i % 4096 == 0 then
+				_yieldIfBudgetExceeded()
+			end
 		end
-		task.wait()
+		_yieldIfBudgetExceeded()
 	end
 
 	-- Pass 5: Global slope clamping
@@ -466,8 +491,8 @@ local function _initializeGlobalHeightmap(seed: number)
 				end
 				buffer.writeu8(hm, idx, math.clamp(h + HEIGHTMAP_OFFSET, 0, 255))
 			end
+			_yieldIfBudgetExceeded()
 		end
-		task.wait()
 	end
 
 	globalHeightmap = hm
@@ -732,6 +757,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 	local chunkBlockZ = cz * CHUNK_SIZE
 
 	for bx = chunkBlockX - checkRadius, chunkBlockX + CHUNK_SIZE - 1 + checkRadius do
+		_yieldIfBudgetExceeded()
 		for bz = chunkBlockZ - checkRadius, chunkBlockZ + CHUNK_SIZE - 1 + checkRadius do
 			if not isTreeRoot(seed, bx, bz) then
 				continue
@@ -1965,6 +1991,7 @@ local function placeCaveMushrooms(blocks: buffer, seed: number, cx: number, cy: 
 	local chunkBlockZ = cz * CHUNK_SIZE
 
 	for lz = 0, CHUNK_SIZE - 1 do
+		_yieldIfBudgetExceeded()
 		for lx = 0, CHUNK_SIZE - 1 do
 			for ly = 1, CHUNK_SIZE - 1 do
 				local below = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly - 1, lz))
@@ -2323,9 +2350,7 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 				end
 			end
 		end
-		if lz % 4 == 3 then
-			task.wait()
-		end
+		_yieldIfBudgetExceeded()
 	end
 
 	-- Cave carving for underground chunks (yield periodically)
@@ -2358,9 +2383,7 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 					end
 				end
 			end
-			if ly % 4 == 3 then
-				task.wait()
-			end
+			_yieldIfBudgetExceeded()
 		end
 	end
 

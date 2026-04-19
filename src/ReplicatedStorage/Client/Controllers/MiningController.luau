@@ -34,7 +34,7 @@ local camera: Camera
 
 -- Mining state
 local isMining = false
-local targetChunkKey: string? = nil
+local targetChunkKey: number? = nil
 local targetFlatIndex: number? = nil
 local miningProgress = 0
 local lastSendTime = 0
@@ -83,7 +83,7 @@ local function _getMouseRay(): Ray?
 	return Ray.new(unitRay.Origin, unitRay.Direction * MAX_RAYCAST_DISTANCE)
 end
 
-local function _raycastToBlock(): (string?, number?, Vector3?, Vector3?)
+local function _raycastToBlock(): (number?, number?, Vector3?, Vector3?)
 	local ray = _getMouseRay()
 	if not ray then
 		return nil, nil, nil, nil
@@ -230,7 +230,7 @@ local function _createHighlight()
 	progressFillCorner.Parent = miningProgressFill
 end
 
-local function _updateHighlight(chunkKey: string, flatIndex: number, blockTypeId: number?)
+local function _updateHighlight(chunkKey: number, flatIndex: number, blockTypeId: number?)
 	if not highlightPart then
 		return
 	end

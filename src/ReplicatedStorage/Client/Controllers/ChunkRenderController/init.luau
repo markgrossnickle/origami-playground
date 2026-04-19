@@ -225,6 +225,10 @@ local function _cleanupBounce(part: BasePart)
 	if conn then
 		conn:Disconnect()
 		bouncyConns[part] = nil
+		-- CanTouch is only ever set to true by bouncy-block setup, so reset
+		-- it here instead of in every cleanup-queue/pool-return path. Avoids
+		-- a property write on every returned part when ~99% aren't bouncy.
+		part.CanTouch = false
 	end
 	bouncyOrigColor[part] = nil
 end
@@ -320,13 +324,12 @@ local function _getPart(): BasePart
 end
 
 local function _returnPart(part: BasePart)
+	-- Checkout paths (_makeLayerParts, _makeSimplePart) always re-assign
+	-- Size, CanCollide, CanQuery, Transparency, Color, Material, and CFrame,
+	-- so we don't reset those here. CanTouch is reset inside _cleanupBounce
+	-- only when the part was actually bouncy (rare).
 	_cleanupBounce(part)
 	part.CFrame = FAR_AWAY
-	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.Transparency = 0
 	if _partsWithChildren[part] then
 		for _, child in part:GetChildren() do
 			child:Destroy()
@@ -385,7 +388,12 @@ local function _queuePartForCleanup(part: BasePart)
 	table.insert(_cleanupQueue, part)
 end
 
--- Process deferred cleanup queue with frame budgeting
+-- Process deferred cleanup queue with frame budgeting.
+-- Note: checkout paths reassign Size/CanCollide/CanQuery/Color/Material/
+-- Transparency/CFrame, so we skip resetting those here. CanTouch was already
+-- handled inside _cleanupBounce at enqueue time. The only work left is
+-- destroying attached children (PointLights on EggNodes) and returning to
+-- pool or destroying if over cap.
 local function _processCleanupQueue()
 	if #_cleanupQueue == 0 then
 		return
@@ -394,11 +402,6 @@ local function _processCleanupQueue()
 	local processed = 0
 	while #_cleanupQueue > 0 do
 		local part = table.remove(_cleanupQueue, #_cleanupQueue)
-		part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-		part.CanCollide = false
-		part.CanQuery = false
-		part.CanTouch = false
-		part.Transparency = 0
 		if _partsWithChildren[part] then
 			for _, child in part:GetChildren() do
 				child:Destroy()
@@ -664,7 +667,11 @@ local function _makeSimplePart(
 	part.Material = _getMaterial(blockTypeId)
 	part.Size = Vector3.new(sx, BLOCK_SIZE, sz)
 	part.CanCollide = true
-	part.CanQuery = true
+	-- LOD 1 (far) blocks are beyond mining reach (~113 studs vs 30-stud
+	-- raycast). Disabling CanQuery hides them from Roblox's camera popper,
+	-- which was the dominant client-frame cost (Popper → queryViewport →
+	-- queryPoint → WorldRoot.Raycast) at high part counts.
+	part.CanQuery = false
 	part.Transparency = 0
 
 	local targetCFrame = CFrame.new(px + ox, py, pz + oz) * CFrame.Angles(tiltX, rotY, tiltZ)

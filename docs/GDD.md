@@ -1,7 +1,11 @@
 # Origami Expedition — Game Design Document
 
+> **Status: WIP.** This document describes the intended design. Scaffolding for most of the systems below exists in code, but nearly everything is actively in-progress and subject to change. Phases are generally worked on in parallel, not strictly sequentially.
+
 ## Overview
 Origami Expedition is a mining + creature + breeding game built on origami-playground. Players mine through 7 depth layers of origami-themed terrain, find materials to craft items and eggs that hatch LLM-generated creatures, breed creatures socially, and build on surface plots.
+
+The project grew out of the origami-playground text-to-model sandbox (`CreatorController`), where players type prompts and an LLM returns JSON that builds creatures, vehicles, buildings, tools, hats, and props in-world. That sandbox remains the foundation for creature generation; the expedition layer adds a persistent voxel world, mining progression, and crafting on top.
 
 ## Core Loop
 1. **Mine** — Dig through layered terrain, collect materials
@@ -16,8 +20,8 @@ Origami Expedition is a mining + creature + breeding game built on origami-playg
 
 ### Island
 - Procedural island floating in void
-- Surface: gentle origami paper hills (FBM heightmap, max ~20 studs elevation)
-- Underground: 7 depth layers extending to Y=-400
+- Surface: gentle origami paper hills (FBM heightmap, max ~20 studs elevation). Early experiments with varied surface biomes (sunset mesa, forest, etc.) mostly didn't work out and aren't in play.
+- Underground: 7 depth layers extending to Y=-2000. Caves feature occasional neon mushroom decorations — the one biome flourish that survived.
 
 ### Depth Layers
 
@@ -34,7 +38,7 @@ Origami Expedition is a mining + creature + breeding game built on origami-playg
 ### Chunk System
 - Block size: 5 studs
 - Chunk size: 16x16x16 blocks (80 studs per chunk edge)
-- Streaming radius: 3 horizontal, 1 up, 2 down
+- Streaming radius: 3 horizontal, 1 up, 4 down
 - RLE compression for network transfer and DataStore persistence
 - Delta-only saves for modified blocks
 
@@ -90,7 +94,7 @@ Materials are tiered by depth layer:
 
 ---
 
-## Creature System (Future Phase)
+## Creature System (WIP)
 
 ### Egg Crafting
 - Combine materials of specific tiers to craft eggs
@@ -110,9 +114,17 @@ Materials are tiered by depth layer:
 - Abilities: derived from material tier + LLM creativity
 - Rarity: Common → Uncommon → Rare → Epic → Legendary → Mythic
 
+### Combat Strategy Fields (WIP)
+Creature JSON may include optional strategy fields that influence combat behavior:
+- `attackType`: `single`, `splash`, `rapid`, `piercing`
+- `targetPriority`: `nearest`, `weakest`, `strongest`, `fastest`
+- `defenseType`: `none`, `armor`, `dodge`, `regen`
+
+The LLM picks these based on creature description (e.g. "giant turtle" → armor + splash). How and where combat actually shows up in the game is still being figured out.
+
 ---
 
-## Breeding System (Future Phase)
+## Breeding System (WIP)
 
 ### Social Mechanics
 - Two players place their creatures at a breeding station
@@ -127,7 +139,7 @@ Materials are tiered by depth layer:
 
 ---
 
-## Surface Plots (Future Phase)
+## Surface Plots (WIP)
 
 ### Plot System
 - Each player can claim one surface plot
@@ -192,7 +204,7 @@ Materials are tiered by depth layer:
 ### Client Controllers
 - **ChunkRenderController**: Terrain rendering, part pooling
 - **MiningController**: Input handling, raycasting, visual feedback
-- **GameModeController**: Mode switching (expedition mode)
+- **CreatorController**: Origami-playground text-to-model sandbox UI (foundation)
 
 ### Shared Modules
 - **BlockType**: Block ID enum
@@ -203,27 +215,38 @@ Materials are tiered by depth layer:
 - **ToolRegistry**: Tool tier definitions
 - **WorldGenModule**: Procedural terrain generation
 
+### Additional Services (WIP, beyond Phase 1)
+- **OrigamiService**: LLM text-to-model endpoint (foundation, shared with sandbox)
+- **EggCraftingService**: Craft eggs from materials, request LLM creature generation
+- **BreedingService**: Breeding stations and inheritance
+- **PlotService**: Surface plot claiming and building
+- **WorkshopService**: Crafting recipes and UI
+- **CreatureService** / **CreatureAI**: Creature behavior and AI
+- **BlockPlacementService**: Placing blocks from inventory (plots)
+
 ---
 
 ## Phase Plan
 
-### Phase 1 (Current): Voxel World + Mining
-- Port chunk system from forgefire
+These phases are not strictly sequential — scaffolding for most of them already exists in code, and they're being iterated on in parallel as WIP.
+
+### Phase 1: Voxel World + Mining (WIP, primary focus)
+- Chunk system ported from forgefire
 - 7 depth layers with origami-themed blocks
 - Tool tier progression
 - Basic mining with drops
 
-### Phase 2: Creatures + Eggs
+### Phase 2: Creatures + Eggs (WIP)
 - Egg crafting from materials
-- LLM creature generation
+- LLM creature generation (leverages existing origami-playground text-to-model)
 - Creature display and basic AI
 
-### Phase 3: Breeding + Social
+### Phase 3: Breeding + Social (WIP)
 - Breeding stations
 - Creature inheritance
 - Trading system
 
-### Phase 4: Surface Plots
+### Phase 4: Surface Plots (WIP)
 - Plot claiming and building
 - Creature placement on plots
 - Plot visiting and rating

@@ -23,6 +23,7 @@ OrigamiConfig.CATEGORIES = {
 	{ key = "tool", display = "Tool", icon = "🔧" },
 	{ key = "accessory", display = "Accessory", icon = "🎩" },
 	{ key = "prop", display = "Prop", icon = "🎭" },
+	{ key = "voxel", display = "Voxel", icon = "🧊" },
 	{ key = "animation", display = "Animate", icon = "🎬" },
 }
 

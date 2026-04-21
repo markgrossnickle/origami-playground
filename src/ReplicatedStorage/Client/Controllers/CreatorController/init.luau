@@ -725,17 +725,18 @@ local function createUI()
 	end)
 	_sidebarCreateBtn.Visible = true
 
-	-- "Build" sidebar button — hard-force opens the sandbox prompt UI.
-	-- Always switches to sandbox mode and shows the prompt/style/category/model panel,
-	-- regardless of current state. Separate from Create so both remain available.
+	-- "Build" sidebar button — opens the sandbox prompt UI. Clicking again collapses it.
+	-- Switches to sandbox mode if not already there so the UI is visible at all.
 	local buildBtn = makeSidebarButton("BuildBtn", "Build", COLORS.folds, 2)
 	buildBtn.Activated:Connect(function()
 		if GameMode.Current ~= "sandbox" then
 			GameMode.SetMode("sandbox")
+			_gui.Enabled = true
+			_uiMinimized = false
+			container.Visible = true
+		else
+			toggleMinimize()
 		end
-		_gui.Enabled = true
-		_uiMinimized = false
-		container.Visible = true
 	end)
 	buildBtn.Visible = true
 
@@ -1136,11 +1137,32 @@ function submitSingleRequest(
 	local queueId = addQueueEntry(prompt .. (if labelOverride then " [" .. labelOverride .. "]" else ""), category)
 
 	task.spawn(function()
+		local requestStart = os.clock()
+		print(
+			string.format(
+				"[OrigamiCreator] REQUEST start — category=%s style=%s model=%s prompt=%q",
+				category,
+				style,
+				model,
+				prompt:sub(1, 60)
+			)
+		)
+
 		local OrigamiService = Knit.GetService("OrigamiService")
 		local ok, result = OrigamiService:RequestModel(prompt, category, style, model, category):await()
 
+		local duration = os.clock() - requestStart
+
 		if ok and result and result.success and result.model then
 			local modelData = result.model
+			print(
+				string.format(
+					"[OrigamiCreator] REQUEST done in %.2fs — name=%s parts=%d",
+					duration,
+					tostring(modelData.name),
+					modelData.parts and #modelData.parts or 0
+				)
+			)
 			-- Use the user's selected category for routing — LLM category only as fallback for "raw"
 			local cat = if category == "raw" then (modelData.category or "prop") else category
 
@@ -1216,11 +1238,21 @@ function submitSingleRequest(
 			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
 			local errReason = ok and result and result.error_reason
 			if errReason then
-				warn("[OrigamiCreator] Request blocked as unsafe — reason:", errReason, "| prompt:", prompt)
+				warn(
+					string.format(
+						"[OrigamiCreator] Request failed in %.2fs — error=%s reason=%s prompt=%q category=%s model=%s",
+						duration,
+						tostring(errMsg),
+						tostring(errReason),
+						prompt,
+						category,
+						model
+					)
+				)
 				updateQueueEntry(queueId, "Blocked: " .. errReason, COLORS.error)
 				setStatus("Content blocked: " .. errReason, COLORS.error)
 			else
-				warn("[OrigamiCreator] Request failed:", errMsg)
+				warn(string.format("[OrigamiCreator] Request failed in %.2fs — %s", duration, tostring(errMsg)))
 				updateQueueEntry(queueId, "Failed: " .. errMsg:sub(1, 60), COLORS.error)
 				setStatus(errMsg:sub(1, 80), COLORS.error)
 			end

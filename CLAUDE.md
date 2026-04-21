@@ -4,6 +4,10 @@ AI-powered 3D model generator for Roblox. Players type text prompts, an external
 
 Built on the MindTrust Roblox template using the Knit framework.
 
+## Working Style (IMPORTANT)
+
+**Never guess. Never take the shortcut.** Always read the relevant files and do the work, even when it costs more tokens. Do not write "the usual X is…" / "typically Y works" / "I'd need to check" / "want me to inspect?" — just open the files and inspect. No speculative recommendations before reading the code. No offering to investigate — investigate. This applies to every task, including performance questions, bug hunts, architecture suggestions, and UI changes.
+
 ## Game-Specific Architecture
 
 ### Core Modules

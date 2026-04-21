@@ -711,10 +711,17 @@ local function createUI()
 		return btn
 	end
 
-	-- "Create" sidebar button — always visible, toggles creator panel
+	-- "Create" sidebar button — always visible, opens creator panel.
+	-- Creator UI is sandbox-gated (see GameMode.Changed handler), so switch modes if needed.
 	_sidebarCreateBtn = makeSidebarButton("CreateBtn", "Create", COLORS.accent, 1)
 	_sidebarCreateBtn.Activated:Connect(function()
-		toggleMinimize()
+		if GameMode.Current ~= "sandbox" then
+			GameMode.SetMode("sandbox")
+			_uiMinimized = false
+			container.Visible = true
+		else
+			toggleMinimize()
+		end
 	end)
 	_sidebarCreateBtn.Visible = true
 

@@ -1,4 +1,5 @@
 --!strict
+--!native
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -31,6 +32,13 @@ local MAX_OFFSET = 0.15
 local MAX_TILT = math.rad(8)
 local LAYER_BRIGHTNESS = { 0.93, 1.07 }
 
+-- Precomputed Vector3 sizes — reused across all non-WillowVine blocks so the
+-- per-block hot loop avoids Vector3.new allocations.
+local LAYER_SIZE_A = Vector3.new(BLOCK_SIZE * 1.08, LAYER_HEIGHT, BLOCK_SIZE * 0.92)
+local LAYER_SIZE_B = Vector3.new(BLOCK_SIZE * 0.92, LAYER_HEIGHT, BLOCK_SIZE * 1.08)
+local COLLISION_SIZE = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+local SIMPLE_SIZE_DEFAULT = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+
 -- Simple block parameters (LOD 1)
 local SIMPLE_MAX_OFFSET = 0.08
 local SIMPLE_MAX_TILT = math.rad(3)
@@ -61,7 +69,7 @@ local MUSHROOM_FLASH_COLORS = {
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
-local BATCH_FLUSH_SIZE = 64
+local BATCH_FLUSH_SIZE = 256
 
 -- Trickle fill
 local TRICKLE_FILL_PER_FRAME = 4
@@ -118,6 +126,23 @@ local function _tintColor(color: Color3, brightness: number): Color3
 	local g = math.clamp(color.G * brightness, 0, 1)
 	local b = math.clamp(color.B * brightness, 0, 1)
 	return Color3.new(r, g, b)
+end
+
+-- LOD 0 layer tints are deterministic per (blockTypeId, layerIdx) since both
+-- baseColor and LAYER_BRIGHTNESS are static. Cache lazily to avoid re-computing
+-- and re-allocating Color3 on every block render.
+local _layerTintCache1: { [number]: Color3 } = {}
+local _layerTintCache2: { [number]: Color3 } = {}
+
+local function _getLayerTint(blockTypeId: number, layerIdx: number): Color3
+	local cache = if layerIdx == 1 then _layerTintCache1 else _layerTintCache2
+	local cached = cache[blockTypeId]
+	if cached then
+		return cached
+	end
+	local tinted = _tintColor(BlockRegistry.getColor(blockTypeId), LAYER_BRIGHTNESS[layerIdx])
+	cache[blockTypeId] = tinted
+	return tinted
 end
 
 --[=[
@@ -469,7 +494,6 @@ local function _makeLayerParts(
 	local blockBottom = baseY + ly * BLOCK_SIZE
 	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
 
-	local baseColor = _getColor(blockTypeId)
 	local mat = _getMaterial(blockTypeId)
 
 	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
@@ -489,25 +513,18 @@ local function _makeLayerParts(
 		local rotY = if ROTATABLE_LEAVES[blockTypeId] then _hash(layerSeed, 6, 0, 0) * math.pi * 2 else 0
 
 		local stretchAxis = layerSeed % 2
-		local sx, sz
-		if stretchAxis == 0 then
-			sx = BLOCK_SIZE * 1.08
-			sz = BLOCK_SIZE * 0.92
-		else
-			sx = BLOCK_SIZE * 0.92
-			sz = BLOCK_SIZE * 1.08
-		end
-
-		if blockTypeId == BlockType.WillowVine then
-			local taper = _vineTaperFactor(blocks, lx, ly, lz)
-			sx = sx * taper
-			sz = sz * taper
-		end
 
 		local part = _getPart()
-		part.Color = _tintColor(baseColor, LAYER_BRIGHTNESS[i])
+		part.Color = _getLayerTint(blockTypeId, i)
 		part.Material = mat
-		part.Size = Vector3.new(sx, LAYER_HEIGHT, sz)
+		if blockTypeId == BlockType.WillowVine then
+			local taper = _vineTaperFactor(blocks, lx, ly, lz)
+			local baseSx = if stretchAxis == 0 then BLOCK_SIZE * 1.08 else BLOCK_SIZE * 0.92
+			local baseSz = if stretchAxis == 0 then BLOCK_SIZE * 0.92 else BLOCK_SIZE * 1.08
+			part.Size = Vector3.new(baseSx * taper, LAYER_HEIGHT, baseSz * taper)
+		else
+			part.Size = if stretchAxis == 0 then LAYER_SIZE_A else LAYER_SIZE_B
+		end
 		part.CanCollide = false
 		part.CanQuery = false
 		part.Transparency = 0
@@ -538,7 +555,7 @@ local function _makeLayerParts(
 
 	-- Invisible collision part (full block size)
 	local collisionPart = _getPart()
-	collisionPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
+	collisionPart.Size = COLLISION_SIZE
 	collisionPart.Transparency = 1
 	collisionPart.CanCollide = true
 	collisionPart.CanQuery = true
@@ -558,7 +575,7 @@ local function _makeLayerParts(
 	-- Bouncy mushroom caps: setup on collision part, flash visual layers
 	if BOUNCY_BLOCKS[blockTypeId] then
 		collisionPart.CanTouch = true
-		bouncyOrigColor[collisionPart] = baseColor
+		bouncyOrigColor[collisionPart] = _getColor(blockTypeId)
 
 		local visualParts = {}
 		for i = 1, #parts - 1 do
@@ -655,17 +672,15 @@ local function _makeSimplePart(
 	local tint = 1.0 + (_hash(seed, 5, 0, 0) - 0.5) * 2 * SIMPLE_TINT_RANGE
 	local baseColor = _getColor(blockTypeId)
 
-	local sx, sz = BLOCK_SIZE, BLOCK_SIZE
-	if blockTypeId == BlockType.WillowVine then
-		local taper = _vineTaperFactor(blocks, lx, ly, lz)
-		sx = sx * taper
-		sz = sz * taper
-	end
-
 	local part = _getPart()
 	part.Color = _tintColor(baseColor, tint)
 	part.Material = _getMaterial(blockTypeId)
-	part.Size = Vector3.new(sx, BLOCK_SIZE, sz)
+	if blockTypeId == BlockType.WillowVine then
+		local taper = _vineTaperFactor(blocks, lx, ly, lz)
+		part.Size = Vector3.new(BLOCK_SIZE * taper, BLOCK_SIZE, BLOCK_SIZE * taper)
+	else
+		part.Size = SIMPLE_SIZE_DEFAULT
+	end
 	part.CanCollide = true
 	-- LOD 1 (far) blocks are beyond mining reach (~113 studs vs 30-stud
 	-- raycast). Disabling CanQuery hides them from Roblox's camera popper,

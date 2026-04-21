@@ -725,6 +725,20 @@ local function createUI()
 	end)
 	_sidebarCreateBtn.Visible = true
 
+	-- "Build" sidebar button — hard-force opens the sandbox prompt UI.
+	-- Always switches to sandbox mode and shows the prompt/style/category/model panel,
+	-- regardless of current state. Separate from Create so both remain available.
+	local buildBtn = makeSidebarButton("BuildBtn", "Build", COLORS.folds, 2)
+	buildBtn.Activated:Connect(function()
+		if GameMode.Current ~= "sandbox" then
+			GameMode.SetMode("sandbox")
+		end
+		_gui.Enabled = true
+		_uiMinimized = false
+		container.Visible = true
+	end)
+	buildBtn.Visible = true
+
 	-- Browse button
 	_browseButton = Instance.new("TextButton")
 	_browseButton.Name = "BrowseToggle"

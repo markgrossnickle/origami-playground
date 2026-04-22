@@ -1,5 +1,19 @@
 --!strict
---!native
+--[=[
+	@class ChunkRenderController
+
+	EditableMesh-based chunk renderer. One MeshPart per (chunk, material)
+	bucket replaces the old 1–3 Parts/block approach.
+
+	See `docs/EDITABLE_MESH_DESIGN.md` for the design rationale and
+	`MeshBuilder` / `ChunkMeshPool` submodules for the implementation.
+
+	Public API (preserved from the previous renderer):
+	  GetBlockAt(chunkKey, flatIndex) → blockTypeId
+	  GetChunkBlocks(chunkKey) → buffer?
+	  GetActivePartCount() → number (now: active draw units = MeshParts + bouncy parts)
+	  GetPoolSize() → number (kept for compatibility — reports 0; no pool in the mesh renderer)
+]=]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -12,43 +26,24 @@ local ChunkSerializer = require(ReplicatedStorage.Shared.ChunkSerializer)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 
+local MeshBuilder = require(script.MeshBuilder)
+local ChunkMeshPool = require(script.ChunkMeshPool)
+
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
-local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 
--- Pool
-local POOL_MAX = 30000
+-- LOD thresholds (chunk-space squared distance)
+local LOD_NEAR_DIST2 = 2
+local RENDER_MAX_DIST2 = 18
 
--- Frame budget
-local FRAME_BUDGET = 0.008
-local YIELD_PART_INTERVAL = 32 -- yield check every N blocks iterated
+-- Render frame budget: don't spend more than this per heartbeat building chunks.
+local BUILD_FRAME_BUDGET = 0.006
 
--- Paper-crystal layer parameters (LOD 0 only)
-local LAYERS_PER_BLOCK = 2
-local LAYER_HEIGHT = BLOCK_SIZE / 2 * 0.9
-local LAYER_GAP = BLOCK_SIZE / 2
-local MAX_OFFSET = 0.15
-local MAX_TILT = math.rad(8)
-local LAYER_BRIGHTNESS = { 0.93, 1.07 }
+-- LOD re-evaluation interval (seconds)
+local LOD_CHECK_INTERVAL = 2.0
 
--- Precomputed Vector3 sizes — reused across all non-WillowVine blocks so the
--- per-block hot loop avoids Vector3.new allocations.
-local LAYER_SIZE_A = Vector3.new(BLOCK_SIZE * 1.08, LAYER_HEIGHT, BLOCK_SIZE * 0.92)
-local LAYER_SIZE_B = Vector3.new(BLOCK_SIZE * 0.92, LAYER_HEIGHT, BLOCK_SIZE * 1.08)
-local COLLISION_SIZE = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-local SIMPLE_SIZE_DEFAULT = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-
--- Simple block parameters (LOD 1)
-local SIMPLE_MAX_OFFSET = 0.08
-local SIMPLE_MAX_TILT = math.rad(3)
-local SIMPLE_TINT_RANGE = 0.08
-
--- LOD: squared chunk distance threshold
-local LOD_NEAR_DIST2 = 2 -- dist <= 2 chunk = paper layers (~19 chunks)
-local RENDER_MAX_DIST2 = 18 -- skip rendering chunks beyond this
-
--- Bouncy block config
+-- Bouncy block configuration (preserved from the old renderer)
 local BOUNCY_BLOCKS: { [number]: boolean } = {
 	[BlockType.MushroomCap] = true,
 	[BlockType.ShelfBracket] = true,
@@ -66,212 +61,45 @@ local MUSHROOM_FLASH_COLORS = {
 	Color3.fromRGB(255, 140, 0),
 }
 
--- CFrame-to-infinity
-local FAR_AWAY = CFrame.new(0, -1e6, 0)
+-- Tiny thin collision part size for bouncy blocks. They sit at the block
+-- center and pick up .Touched for the bounce physics — the main chunk mesh
+-- renders their visual.
+local BOUNCY_PART_SIZE = Vector3.new(BLOCK_SIZE * 0.9, BLOCK_SIZE * 0.35, BLOCK_SIZE * 0.9)
 
-local BATCH_FLUSH_SIZE = 256
-
--- Trickle fill
-local TRICKLE_FILL_PER_FRAME = 4
-local TRICKLE_FILL_TARGET = 500
-
--- Leaf blocks that get random Y-rotation for organic look (not vines, not platform/shelf)
-local ROTATABLE_LEAVES: { [number]: boolean } = {
-	[BlockType.Leaves] = true,
-	[BlockType.CherryBlossom] = true,
-	[BlockType.PineNeedle] = true,
-	[BlockType.PalmFrond] = true,
-	[BlockType.GladeCanopy] = true,
-	[BlockType.FairyCanopy] = true,
-	[BlockType.HollowCanopy] = true,
-	[BlockType.BrassLeaf] = true,
-	[BlockType.CoralCanopy] = true,
-	[BlockType.AquamarineCanopy] = true,
-	[BlockType.WarmPinkTop] = true,
-	[BlockType.AuroraVioletCanopy] = true,
-	[BlockType.InkSplatterLeaf] = true,
-	[BlockType.PasteDripLeaf] = true,
-	[BlockType.BalloonTop] = true,
-	[BlockType.MoltenCap] = true,
-	[BlockType.CyanCanopy] = true,
-	[BlockType.CobaltDome] = true,
-	[BlockType.BambooTop] = true,
-	[BlockType.DustyCanopy] = true,
-	[BlockType.CrayonCanopy] = true,
-	[BlockType.RosePinkCanopy] = true,
-	[BlockType.PinataLeaves] = true,
-}
-
--- Small startup pool to reduce initial Instance.new calls. Kept small so the
--- join-time stall is brief; the trickle-fill pool (_trickleFillPool) grows the
--- pool up to TRICKLE_FILL_TARGET during idle frames post-join.
-local POOL_STARTUP = 200
-local POOL_STARTUP_BATCH = 50
-
--- LOD re-evaluation interval
-local LOD_CHECK_INTERVAL = 2.0
-
-local NEIGHBOR_DIRS = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
-
-local function _getColor(blockTypeId: number): Color3
-	return BlockRegistry.getColor(blockTypeId)
-end
-
-local function _getMaterial(blockTypeId: number): Enum.Material
-	return BlockRegistry.getMaterial(blockTypeId)
-end
-
-local function _tintColor(color: Color3, brightness: number): Color3
-	local r = math.clamp(color.R * brightness, 0, 1)
-	local g = math.clamp(color.G * brightness, 0, 1)
-	local b = math.clamp(color.B * brightness, 0, 1)
-	return Color3.new(r, g, b)
-end
-
--- LOD 0 layer tints are deterministic per (blockTypeId, layerIdx) since both
--- baseColor and LAYER_BRIGHTNESS are static. Cache lazily to avoid re-computing
--- and re-allocating Color3 on every block render.
-local _layerTintCache1: { [number]: Color3 } = {}
-local _layerTintCache2: { [number]: Color3 } = {}
-
-local function _getLayerTint(blockTypeId: number, layerIdx: number): Color3
-	local cache = if layerIdx == 1 then _layerTintCache1 else _layerTintCache2
-	local cached = cache[blockTypeId]
-	if cached then
-		return cached
-	end
-	local tinted = _tintColor(BlockRegistry.getColor(blockTypeId), LAYER_BRIGHTNESS[layerIdx])
-	cache[blockTypeId] = tinted
-	return tinted
-end
-
---[=[
-	@class ChunkRenderController
-	LOD renderer:
-	  LOD 0 (near): 2 paper-crystal layers + invisible collision part
-	  LOD 1 (far):  1 full-size block with tilt/tint (visual + collision)
-]=]
 local ChunkRenderController = Knit.CreateController({
 	Name = "ChunkRenderController",
 })
 
-local partPool: { BasePart } = {}
-local activePartsCount = 0
+-- State ----------------------------------------------------------------------
 
-local renderedChunks: { [number]: boolean } = {}
-local chunkParts: { [number]: { [number]: { BasePart } } } = {}
+-- chunkKey → decompressed block buffer (kept for mining/block-update even when
+-- the chunk is too far to render)
 local chunkBlocks: { [number]: buffer } = {}
+
+-- chunkKey → current LOD (0 or 1). Missing entry means unrendered.
 local chunkLOD: { [number]: number } = {}
 
+-- Dirty set — chunk keys awaiting (re)build. Heartbeat processes these within
+-- the frame budget.
+local dirtyChunks: { [number]: boolean } = {}
+
+-- Folder parent for all chunk mesh parts and bouncy parts.
 local chunkContainer: Folder
 
--- Track parts that have children (PointLights) to skip GetChildren on the 95%+ that don't
-local _partsWithChildren: { [BasePart]: boolean } = {}
-
--- Deferred cleanup queue for returned parts (processed across frames)
-local _cleanupQueue: { BasePart } = {}
-
--- Bouncy block tracking
-local bouncyConns: { [BasePart]: RBXScriptConnection } = {}
-local bouncyOrigColor: { [BasePart]: Color3 } = {}
+-- Bouncy block bookkeeping (per-player debounce)
 local lastBounceTime: { [Player]: number } = {}
 
-local function _setupBounce(part: BasePart, blockTypeId: number)
-	if not BOUNCY_BLOCKS[blockTypeId] then
-		return
-	end
-
-	part.CanTouch = true
-	bouncyOrigColor[part] = part.Color
-
-	local conn = part.Touched:Connect(function(hit: BasePart)
-		local character = hit.Parent
-		if not character then
-			return
-		end
-		local humanoid = character:FindFirstChildOfClass("Humanoid")
-		if not humanoid then
-			return
-		end
-		local rootPart = humanoid.RootPart
-		if not rootPart then
-			return
-		end
-
-		local player = Players:GetPlayerFromCharacter(character)
-		if not player then
-			return
-		end
-
-		-- Only bounce when falling
-		local vel = rootPart.AssemblyLinearVelocity
-		if vel.Y > -5 then
-			return
-		end
-
-		-- Debounce per player
-		local now = os.clock()
-		if lastBounceTime[player] and now - lastBounceTime[player] < BOUNCE_DEBOUNCE then
-			return
-		end
-		lastBounceTime[player] = now
-
-		-- Spring bounce
-		local bounceY = math.min(BOUNCE_VEL_MAX, math.max(BOUNCE_VEL_MIN, -vel.Y * BOUNCE_MULTIPLIER))
-		rootPart.AssemblyLinearVelocity = Vector3.new(vel.X, bounceY, vel.Z)
-
-		-- Color flash on all visual parts in the group
-		local flashColor = MUSHROOM_FLASH_COLORS[math.random(1, #MUSHROOM_FLASH_COLORS)]
-		local origColor = bouncyOrigColor[part]
-		part.Color = flashColor
-		task.delay(FLASH_DURATION, function()
-			if bouncyOrigColor[part] then
-				part.Color = origColor
-			end
-		end)
-
-		-- Bounce sound
-		local sound = Instance.new("Sound")
-		sound.SoundId = "rbxasset://sounds/action_footsteps_plastic.mp3"
-		sound.Volume = 0.5
-		sound.PlayOnRemove = false
-		sound.Parent = part
-		sound:Play()
-		task.delay(1, function()
-			sound:Destroy()
-		end)
-	end)
-
-	bouncyConns[part] = conn
-end
-
-local function _cleanupBounce(part: BasePart)
-	local conn = bouncyConns[part]
-	if conn then
-		conn:Disconnect()
-		bouncyConns[part] = nil
-		-- CanTouch is only ever set to true by bouncy-block setup, so reset
-		-- it here instead of in every cleanup-queue/pool-return path. Avoids
-		-- a property write on every returned part when ~99% aren't bouncy.
-		part.CanTouch = false
-	end
-	bouncyOrigColor[part] = nil
-end
-
-local renderQueue: { { key: number, blocks: buffer } } = {}
-local isProcessingQueue = false
-
--- Character-ready gate
-local characterReady = false
-local pendingChunkData: { { key: number, blocks: buffer } } = {}
-
--- LOD re-evaluation timer
+-- LOD re-evaluation throttling
 local lastLODCheck = 0
 local _lastLODPlayerCx: number? = nil
 local _lastLODPlayerCy: number? = nil
 local _lastLODPlayerCz: number? = nil
 
--- LOD helper
+-- Character-ready gate
+local characterReady = false
+local pendingChunkData: { { key: number, blocks: buffer } } = {}
+
+-- Player position helpers ----------------------------------------------------
 
 local function _getPlayerChunkPos(): (number?, number?, number?)
 	local player = Players.LocalPlayer
@@ -296,7 +124,7 @@ local function _getChunkLOD(cx: number, cy: number, cz: number): number
 	local dz = cz - pcz
 	local dist2 = dx * dx + dy * dy + dz * dz
 	if dist2 > RENDER_MAX_DIST2 then
-		return -1 -- too far, skip rendering
+		return -1
 	end
 	if dist2 <= LOD_NEAR_DIST2 then
 		return 0
@@ -304,551 +132,198 @@ local function _getChunkLOD(cx: number, cy: number, cz: number): number
 	return 1
 end
 
--- Part pool
+-- Bouncy block handling ------------------------------------------------------
 
-local function _createPart(): BasePart
+local function _setupBouncyConnection(part: BasePart, blockTypeId: number)
+	part.Touched:Connect(function(hit: BasePart)
+		local character = hit.Parent
+		if not character then
+			return
+		end
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if not humanoid then
+			return
+		end
+		local rootPart = humanoid.RootPart
+		if not rootPart then
+			return
+		end
+		local player = Players:GetPlayerFromCharacter(character)
+		if not player then
+			return
+		end
+
+		local vel = rootPart.AssemblyLinearVelocity
+		if vel.Y > -5 then
+			return
+		end
+
+		local now = os.clock()
+		if lastBounceTime[player] and now - lastBounceTime[player] < BOUNCE_DEBOUNCE then
+			return
+		end
+		lastBounceTime[player] = now
+
+		local bounceY = math.min(BOUNCE_VEL_MAX, math.max(BOUNCE_VEL_MIN, -vel.Y * BOUNCE_MULTIPLIER))
+		rootPart.AssemblyLinearVelocity = Vector3.new(vel.X, bounceY, vel.Z)
+
+		-- Flash the collision part (visual on the mesh is static — this at
+		-- least signals hit to players looking at the bouncy block directly).
+		local flashColor = MUSHROOM_FLASH_COLORS[math.random(1, #MUSHROOM_FLASH_COLORS)]
+		local origColor = part.Color
+		local origTransparency = part.Transparency
+		part.Color = flashColor
+		part.Transparency = 0.5
+		task.delay(FLASH_DURATION, function()
+			if part.Parent then
+				part.Color = origColor
+				part.Transparency = origTransparency
+			end
+		end)
+
+		local sound = Instance.new("Sound")
+		sound.SoundId = "rbxasset://sounds/action_footsteps_plastic.mp3"
+		sound.Volume = 0.5
+		sound.Parent = part
+		sound:Play()
+		task.delay(1, function()
+			sound:Destroy()
+		end)
+	end)
+	-- Silence the unused-variable warning on blockTypeId; we ignore it but
+	-- keep the signature so future per-type bounce tuning is easy.
+	local _ = blockTypeId
+end
+
+local function _createBouncyPart(blockTypeId: number, position: Vector3): BasePart
 	local part = Instance.new("Part")
+	part.Name = string.format("Bouncy_%d", blockTypeId)
 	part.Anchored = true
 	part.CanCollide = false
-	part.CanTouch = false
+	part.CanTouch = true
+	part.CanQuery = false
 	part.CastShadow = false
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-	part.CFrame = FAR_AWAY
+	part.Transparency = 1 -- invisible; the chunk mesh renders the visual
+	part.Size = BOUNCY_PART_SIZE
+	part.Color = BlockRegistry.getColor(blockTypeId)
+	part.Material = BlockRegistry.getMaterial(blockTypeId)
+	part.Position = position
 	if chunkContainer then
 		part.Parent = chunkContainer
 	end
+	_setupBouncyConnection(part, blockTypeId)
 	return part
 end
 
-local function _trickleFillPool()
-	if isProcessingQueue then
+-- Chunk rendering ------------------------------------------------------------
+
+local function _buildChunkNow(chunkKey: number)
+	local blocks = chunkBlocks[chunkKey]
+	if not blocks then
 		return
 	end
-	if #partPool >= TRICKLE_FILL_TARGET then
+
+	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+	local lod = _getChunkLOD(cx, cy, cz)
+	chunkLOD[chunkKey] = lod
+
+	if lod == -1 then
+		-- Too far to render — just make sure any old mesh is gone.
+		ChunkMeshPool.unrender(chunkKey)
 		return
 	end
-	for _ = 1, TRICKLE_FILL_PER_FRAME do
-		if #partPool >= TRICKLE_FILL_TARGET then
-			break
-		end
-		table.insert(partPool, _createPart())
+
+	local meshData = MeshBuilder.buildChunkMesh(blocks, cx, cy, cz, lod)
+	local bouncy = MeshBuilder.findBouncyBlocks(blocks, cx, cy, cz, BOUNCY_BLOCKS)
+
+	ChunkMeshPool.render(chunkKey, meshData, bouncy, _createBouncyPart)
+
+	local materialCount = 0
+	for _ in meshData.buckets do
+		materialCount += 1
 	end
+
+	print(
+		string.format(
+			"[ChunkRenderer] built chunk %d (LOD %d): %d vertices, %d triangles, %d exposed faces, %d materials, %d bouncy",
+			chunkKey,
+			lod,
+			meshData.vertexCount,
+			meshData.triangleCount,
+			meshData.exposedFaceCount,
+			materialCount,
+			#bouncy
+		)
+	)
 end
 
-local function _getPart(): BasePart
-	local part: BasePart
-	if #partPool > 0 then
-		part = table.remove(partPool, #partPool) :: BasePart
-	else
-		part = _createPart()
-	end
-	activePartsCount += 1
-	return part
+local function _markDirty(chunkKey: number)
+	dirtyChunks[chunkKey] = true
 end
 
-local function _returnPart(part: BasePart)
-	-- Checkout paths (_makeLayerParts, _makeSimplePart) always re-assign
-	-- Size, CanCollide, CanQuery, Transparency, Color, Material, and CFrame,
-	-- so we don't reset those here. CanTouch is reset inside _cleanupBounce
-	-- only when the part was actually bouncy (rare).
-	_cleanupBounce(part)
-	part.CFrame = FAR_AWAY
-	if _partsWithChildren[part] then
-		for _, child in part:GetChildren() do
-			child:Destroy()
-		end
-		_partsWithChildren[part] = nil
-	end
-	activePartsCount -= 1
-	if #partPool < POOL_MAX then
-		table.insert(partPool, part)
-	else
-		part:Destroy()
-	end
-end
-
-local function _returnGroup(group: { BasePart })
-	for _, part in group do
-		_returnPart(part)
-	end
-end
-
--- BulkMoveTo batch
-
-local _batchParts: { BasePart } = {}
-local _batchCFrames: { CFrame } = {}
-
-local function _flushBatch()
-	if #_batchParts > 0 then
-		workspace:BulkMoveTo(_batchParts, _batchCFrames, Enum.BulkMoveMode.FireCFrameChanged)
-		table.clear(_batchParts)
-		table.clear(_batchCFrames)
-	end
-end
-
--- Bulk-hide all parts in a chunk via BulkMoveTo (single native call)
-local function _bulkHideChunkParts(chunkKey: number)
-	local parts = chunkParts[chunkKey]
-	if not parts then
-		return
-	end
-	for _, group in parts do
-		for _, part in group do
-			table.insert(_batchParts, part)
-			table.insert(_batchCFrames, FAR_AWAY)
-			if #_batchParts >= BATCH_FLUSH_SIZE then
-				_flushBatch()
-			end
-		end
-	end
-	_flushBatch()
-end
-
--- Queue a part for deferred cleanup (property reset + child destroy + pool return)
-local function _queuePartForCleanup(part: BasePart)
-	_cleanupBounce(part)
-	activePartsCount -= 1
-	table.insert(_cleanupQueue, part)
-end
-
--- Process deferred cleanup queue with frame budgeting.
--- Note: checkout paths reassign Size/CanCollide/CanQuery/Color/Material/
--- Transparency/CFrame, so we skip resetting those here. CanTouch was already
--- handled inside _cleanupBounce at enqueue time. The only work left is
--- destroying attached children (PointLights on EggNodes) and returning to
--- pool or destroying if over cap.
-local function _processCleanupQueue()
-	if #_cleanupQueue == 0 then
+local function _processDirtyChunks()
+	if not next(dirtyChunks) then
 		return
 	end
 	local start = os.clock()
-	local processed = 0
-	while #_cleanupQueue > 0 do
-		local part = table.remove(_cleanupQueue, #_cleanupQueue)
-		if _partsWithChildren[part] then
-			for _, child in part:GetChildren() do
-				child:Destroy()
-			end
-			_partsWithChildren[part] = nil
-		end
-		if #partPool < POOL_MAX then
-			table.insert(partPool, part)
-		else
-			part:Destroy()
-		end
-		processed += 1
-		if processed % YIELD_PART_INTERVAL == 0 then
-			if os.clock() - start > FRAME_BUDGET then
-				return
-			end
-		end
+
+	-- Sort dirty keys by distance to player (closest first) so the player sees
+	-- updates to chunks nearest them within the frame budget.
+	local pcx, pcy, pcz = _getPlayerChunkPos()
+
+	local keys: { number } = {}
+	for k in dirtyChunks do
+		table.insert(keys, k)
 	end
-end
+	if pcx and pcy and pcz then
+		table.sort(keys, function(a, b)
+			local acx, acy, acz = ChunkUtil.parseChunkKey(a)
+			local bcx, bcy, bcz = ChunkUtil.parseChunkKey(b)
+			local aDist = (acx - pcx) ^ 2 + (acy - pcy) ^ 2 + (acz - pcz) ^ 2
+			local bDist = (bcx - pcx) ^ 2 + (bcy - pcy) ^ 2 + (bcz - pcz) ^ 2
+			return aDist < bDist
+		end)
+	end
 
--- Deterministic hash
-
-local function _hash(a: number, b: number, c: number, d: number): number
-	local h = a * 7919 + b * 6271 + c * 4153 + d * 1009
-	return (h % 65521) / 65521
-end
-
--- Willow vine taper: top block = full size, each block below loses 6% on X/Z
-local VINE_TAPER_PER_BLOCK = 0.06
-local VINE_TAPER_MIN = 0.2
-
-local function _vineTaperFactor(blocks: buffer, lx: number, ly: number, lz: number): number
-	local depth = 0
-	local y = ly + 1
-	while y < CHUNK_SIZE do
-		local id = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, y, lz))
-		if id ~= BlockType.WillowVine then
+	for _, key in keys do
+		dirtyChunks[key] = nil
+		_buildChunkNow(key)
+		if os.clock() - start > BUILD_FRAME_BUDGET then
 			break
 		end
-		depth += 1
-		y += 1
 	end
-	return math.max(VINE_TAPER_MIN, 1 - depth * VINE_TAPER_PER_BLOCK)
-end
-
--- LOD 0: Paper-crystal layers + collision part
-
-local function _makeLayerParts(
-	blocks: buffer,
-	blockTypeId: number,
-	cx: number,
-	cy: number,
-	cz: number,
-	lx: number,
-	ly: number,
-	lz: number,
-	batched: boolean?
-): { BasePart }
-	local halfBlock = BLOCK_SIZE / 2
-	local baseX = cx * CHUNK_STUDS
-	local baseY = cy * CHUNK_STUDS
-	local baseZ = cz * CHUNK_STUDS
-
-	local px = baseX + lx * BLOCK_SIZE + halfBlock
-	local blockBottom = baseY + ly * BLOCK_SIZE
-	local pz = baseZ + lz * BLOCK_SIZE + halfBlock
-
-	local mat = _getMaterial(blockTypeId)
-
-	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
-
-	local parts: { BasePart } = {}
-
-	-- 2 visual layers (no collision)
-	for i = 1, LAYERS_PER_BLOCK do
-		local layerSeed = seed + i * 1009
-
-		local ox = (_hash(layerSeed, 1, 0, 0) - 0.5) * 2 * MAX_OFFSET
-		local oz = (_hash(layerSeed, 2, 0, 0) - 0.5) * 2 * MAX_OFFSET
-		local layerY = blockBottom + (i - 0.5) * LAYER_GAP
-
-		local tiltX = (_hash(layerSeed, 3, 0, 0) - 0.5) * 2 * MAX_TILT
-		local tiltZ = (_hash(layerSeed, 4, 0, 0) - 0.5) * 2 * MAX_TILT
-		local rotY = if ROTATABLE_LEAVES[blockTypeId] then _hash(layerSeed, 6, 0, 0) * math.pi * 2 else 0
-
-		local stretchAxis = layerSeed % 2
-
-		local part = _getPart()
-		part.Color = _getLayerTint(blockTypeId, i)
-		part.Material = mat
-		if blockTypeId == BlockType.WillowVine then
-			local taper = _vineTaperFactor(blocks, lx, ly, lz)
-			local baseSx = if stretchAxis == 0 then BLOCK_SIZE * 1.08 else BLOCK_SIZE * 0.92
-			local baseSz = if stretchAxis == 0 then BLOCK_SIZE * 0.92 else BLOCK_SIZE * 1.08
-			part.Size = Vector3.new(baseSx * taper, LAYER_HEIGHT, baseSz * taper)
-		else
-			part.Size = if stretchAxis == 0 then LAYER_SIZE_A else LAYER_SIZE_B
-		end
-		part.CanCollide = false
-		part.CanQuery = false
-		part.Transparency = 0
-
-		local targetCFrame = CFrame.new(px + ox, layerY, pz + oz) * CFrame.Angles(tiltX, rotY, tiltZ)
-
-		if batched then
-			table.insert(_batchParts, part)
-			table.insert(_batchCFrames, targetCFrame)
-			if #_batchParts >= BATCH_FLUSH_SIZE then
-				_flushBatch()
-			end
-		else
-			part.CFrame = targetCFrame
-		end
-
-		if blockTypeId == BlockType.EggNode and i == 2 then
-			local light = Instance.new("PointLight")
-			light.Color = Color3.fromRGB(255, 230, 180)
-			light.Brightness = 1
-			light.Range = 15
-			light.Parent = part
-			_partsWithChildren[part] = true
-		end
-
-		table.insert(parts, part)
-	end
-
-	-- Invisible collision part (full block size)
-	local collisionPart = _getPart()
-	collisionPart.Size = COLLISION_SIZE
-	collisionPart.Transparency = 1
-	collisionPart.CanCollide = true
-	collisionPart.CanQuery = true
-
-	local collisionCFrame = CFrame.new(px, baseY + ly * BLOCK_SIZE + halfBlock, pz)
-	if batched then
-		table.insert(_batchParts, collisionPart)
-		table.insert(_batchCFrames, collisionCFrame)
-		if #_batchParts >= BATCH_FLUSH_SIZE then
-			_flushBatch()
-		end
-	else
-		collisionPart.CFrame = collisionCFrame
-	end
-	table.insert(parts, collisionPart)
-
-	-- Bouncy mushroom caps: setup on collision part, flash visual layers
-	if BOUNCY_BLOCKS[blockTypeId] then
-		collisionPart.CanTouch = true
-		bouncyOrigColor[collisionPart] = _getColor(blockTypeId)
-
-		local visualParts = {}
-		for i = 1, #parts - 1 do
-			table.insert(visualParts, parts[i])
-		end
-
-		local conn = collisionPart.Touched:Connect(function(hit: BasePart)
-			local character = hit.Parent
-			if not character then
-				return
-			end
-			local humanoid = character:FindFirstChildOfClass("Humanoid")
-			if not humanoid or not humanoid.RootPart then
-				return
-			end
-			local rootPart = humanoid.RootPart
-
-			local player = Players:GetPlayerFromCharacter(character)
-			if not player then
-				return
-			end
-
-			local vel = rootPart.AssemblyLinearVelocity
-			if vel.Y > -5 then
-				return
-			end
-
-			local now = os.clock()
-			if lastBounceTime[player] and now - lastBounceTime[player] < BOUNCE_DEBOUNCE then
-				return
-			end
-			lastBounceTime[player] = now
-
-			local bounceY = math.min(BOUNCE_VEL_MAX, math.max(BOUNCE_VEL_MIN, -vel.Y * BOUNCE_MULTIPLIER))
-			rootPart.AssemblyLinearVelocity = Vector3.new(vel.X, bounceY, vel.Z)
-
-			-- Flash visual layers
-			local flashColor = MUSHROOM_FLASH_COLORS[math.random(1, #MUSHROOM_FLASH_COLORS)]
-			local savedColors = {}
-			for _, vp in visualParts do
-				table.insert(savedColors, vp.Color)
-				vp.Color = flashColor
-			end
-			task.delay(FLASH_DURATION, function()
-				for idx, vp in visualParts do
-					if bouncyConns[collisionPart] then
-						vp.Color = savedColors[idx]
-					end
-				end
-			end)
-
-			local sound = Instance.new("Sound")
-			sound.SoundId = "rbxasset://sounds/action_footsteps_plastic.mp3"
-			sound.Volume = 0.5
-			sound.Parent = collisionPart
-			sound:Play()
-			task.delay(1, function()
-				sound:Destroy()
-			end)
-		end)
-
-		bouncyConns[collisionPart] = conn
-	end
-
-	return parts
-end
-
--- LOD 1: Single full-size block (visual + collision)
-
-local function _makeSimplePart(
-	blocks: buffer,
-	blockTypeId: number,
-	cx: number,
-	cy: number,
-	cz: number,
-	lx: number,
-	ly: number,
-	lz: number,
-	batched: boolean?
-): { BasePart }
-	local halfBlock = BLOCK_SIZE / 2
-	local px = cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock
-	local py = cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock
-	local pz = cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
-
-	local seed = lx * 7919 + ly * 6271 + lz * 4153 + cx * 31 + cy * 13 + cz * 17
-
-	local ox = (_hash(seed, 1, 0, 0) - 0.5) * 2 * SIMPLE_MAX_OFFSET
-	local oz = (_hash(seed, 2, 0, 0) - 0.5) * 2 * SIMPLE_MAX_OFFSET
-	local tiltX = (_hash(seed, 3, 0, 0) - 0.5) * 2 * SIMPLE_MAX_TILT
-	local tiltZ = (_hash(seed, 4, 0, 0) - 0.5) * 2 * SIMPLE_MAX_TILT
-	local rotY = if ROTATABLE_LEAVES[blockTypeId] then _hash(seed, 6, 0, 0) * math.pi * 2 else 0
-
-	local tint = 1.0 + (_hash(seed, 5, 0, 0) - 0.5) * 2 * SIMPLE_TINT_RANGE
-	local baseColor = _getColor(blockTypeId)
-
-	local part = _getPart()
-	part.Color = _tintColor(baseColor, tint)
-	part.Material = _getMaterial(blockTypeId)
-	if blockTypeId == BlockType.WillowVine then
-		local taper = _vineTaperFactor(blocks, lx, ly, lz)
-		part.Size = Vector3.new(BLOCK_SIZE * taper, BLOCK_SIZE, BLOCK_SIZE * taper)
-	else
-		part.Size = SIMPLE_SIZE_DEFAULT
-	end
-	part.CanCollide = true
-	-- LOD 1 (far) blocks are beyond mining reach (~113 studs vs 30-stud
-	-- raycast). Disabling CanQuery hides them from Roblox's camera popper,
-	-- which was the dominant client-frame cost (Popper → queryViewport →
-	-- queryPoint → WorldRoot.Raycast) at high part counts.
-	part.CanQuery = false
-	part.Transparency = 0
-
-	local targetCFrame = CFrame.new(px + ox, py, pz + oz) * CFrame.Angles(tiltX, rotY, tiltZ)
-
-	if batched then
-		table.insert(_batchParts, part)
-		table.insert(_batchCFrames, targetCFrame)
-		if #_batchParts >= BATCH_FLUSH_SIZE then
-			_flushBatch()
-		end
-	else
-		part.CFrame = targetCFrame
-	end
-
-	if blockTypeId == BlockType.EggNode then
-		local light = Instance.new("PointLight")
-		light.Color = Color3.fromRGB(255, 230, 180)
-		light.Brightness = 1
-		light.Range = 15
-		light.Parent = part
-		_partsWithChildren[part] = true
-	end
-
-	_setupBounce(part, blockTypeId)
-
-	return { part }
-end
-
--- Block creation dispatcher
-
-local function _makeBlockParts(
-	blocks: buffer,
-	blockTypeId: number,
-	cx: number,
-	cy: number,
-	cz: number,
-	lx: number,
-	ly: number,
-	lz: number,
-	lod: number,
-	batched: boolean?
-): { BasePart }
-	if lod == 0 then
-		return _makeLayerParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
-	else
-		return _makeSimplePart(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
-	end
-end
-
--- Visibility checks
-
-local function _isTransparent(blockId: number): boolean
-	return blockId == BlockType.Air
-end
-
-local function _isExposed(blocks: buffer, lx: number, ly: number, lz: number): boolean
-	local blockId = buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly, lz))
-	if blockId == BlockType.Air then
-		return false
-	end
-	if lx <= 0 or _isTransparent(buffer.readu8(blocks, ChunkUtil.flatIndex(lx - 1, ly, lz))) then
-		return true
-	end
-	if lx >= CHUNK_SIZE - 1 or _isTransparent(buffer.readu8(blocks, ChunkUtil.flatIndex(lx + 1, ly, lz))) then
-		return true
-	end
-	if ly <= 0 or _isTransparent(buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly - 1, lz))) then
-		return true
-	end
-	if ly >= CHUNK_SIZE - 1 or _isTransparent(buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly + 1, lz))) then
-		return true
-	end
-	if lz <= 0 or _isTransparent(buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly, lz - 1))) then
-		return true
-	end
-	if lz >= CHUNK_SIZE - 1 or _isTransparent(buffer.readu8(blocks, ChunkUtil.flatIndex(lx, ly, lz + 1))) then
-		return true
-	end
-	return false
-end
-
--- Chunk rendering
-
-local function _renderChunk(chunkKey: number, blocks: buffer)
-	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local lod = _getChunkLOD(cx, cy, cz)
-
-	-- Store block data even for unrendered chunks (needed for mining/block updates)
-	chunkBlocks[chunkKey] = blocks
-
-	if lod == -1 then
-		-- Too far to render, just keep data
-		renderedChunks[chunkKey] = false
-		chunkLOD[chunkKey] = lod
-		return
-	end
-
-	local existing = chunkParts[chunkKey]
-	if existing then
-		_bulkHideChunkParts(chunkKey)
-		for _, group in existing do
-			for _, part in group do
-				_queuePartForCleanup(part)
-			end
-		end
-	end
-
-	renderedChunks[chunkKey] = true
-	chunkLOD[chunkKey] = lod
-
-	local parts: { [number]: { BasePart } } = {}
-	chunkParts[chunkKey] = parts
-
-	local renderStart = os.clock()
-	local blockCount = 0
-
-	for ly = 0, CHUNK_SIZE - 1 do
-		for lz = 0, CHUNK_SIZE - 1 do
-			for lx = 0, CHUNK_SIZE - 1 do
-				local idx = ChunkUtil.flatIndex(lx, ly, lz)
-				local blockTypeId = buffer.readu8(blocks, idx)
-
-				if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-					local group = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
-					parts[idx] = group
-				end
-
-				blockCount += 1
-				if blockCount >= YIELD_PART_INTERVAL then
-					blockCount = 0
-					if os.clock() - renderStart > FRAME_BUDGET then
-						_flushBatch()
-						task.wait()
-						renderStart = os.clock()
-					end
-				end
-			end
-		end
-	end
-
-	_flushBatch()
 end
 
 local function _unrenderChunk(chunkKey: number)
-	renderedChunks[chunkKey] = nil
+	ChunkMeshPool.unrender(chunkKey)
 	chunkLOD[chunkKey] = nil
-
-	local parts = chunkParts[chunkKey]
-	if parts then
-		_bulkHideChunkParts(chunkKey)
-		for _, group in parts do
-			for _, part in group do
-				_queuePartForCleanup(part)
-			end
-		end
-		chunkParts[chunkKey] = nil
-	end
-
 	chunkBlocks[chunkKey] = nil
+	dirtyChunks[chunkKey] = nil
 end
 
--- Block update (surgical per-block)
+-- Block update handler -------------------------------------------------------
+-- When a single block changes we rebuild the owning chunk. If the block is on
+-- a chunk boundary, we also rebuild the adjacent chunk(s) because their face
+-- exposure on that boundary depends on this chunk's data.
+local BOUNDARY_DX = { 1, -1, 0, 0, 0, 0 }
+local BOUNDARY_DY = { 0, 0, 1, -1, 0, 0 }
+local BOUNDARY_DZ = { 0, 0, 0, 0, 1, -1 }
+
+local function _markBoundaryNeighbors(chunkKey: number, lx: number, ly: number, lz: number)
+	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+	-- For each axis, if the block is on a boundary, the neighbor chunk in that
+	-- direction might be affected.
+	for f = 1, 6 do
+		local dx, dy, dz = BOUNDARY_DX[f], BOUNDARY_DY[f], BOUNDARY_DZ[f]
+		local nlx, nly, nlz = lx + dx, ly + dy, lz + dz
+		if nlx < 0 or nlx >= CHUNK_SIZE or nly < 0 or nly >= CHUNK_SIZE or nlz < 0 or nlz >= CHUNK_SIZE then
+			local neighborKey = ChunkUtil.chunkKey(cx + dx, cy + dy, cz + dz)
+			if chunkBlocks[neighborKey] then
+				_markDirty(neighborKey)
+			end
+		end
+	end
+end
 
 local function _handleBlockUpdate(chunkKey: number, flatIndex: number, blockTypeId: number)
 	local blocks = chunkBlocks[chunkKey]
@@ -858,47 +333,57 @@ local function _handleBlockUpdate(chunkKey: number, flatIndex: number, blockType
 
 	buffer.writeu8(blocks, flatIndex, blockTypeId)
 
+	-- Mark this chunk dirty; Heartbeat will rebuild.
+	_markDirty(chunkKey)
+
+	-- Boundary neighbors too.
 	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
-	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local lod = chunkLOD[chunkKey] or 1
+	_markBoundaryNeighbors(chunkKey, lx, ly, lz)
 
-	local parts = chunkParts[chunkKey]
-	if not parts then
-		parts = {}
-		chunkParts[chunkKey] = parts
+	print(
+		string.format(
+			"[ChunkRenderer] block updated chunk=%d idx=%d type=%d -> scheduled rebuild",
+			chunkKey,
+			flatIndex,
+			blockTypeId
+		)
+	)
+end
+
+-- LOD re-evaluation ----------------------------------------------------------
+
+local function _reevaluateLODs()
+	if not characterReady then
+		return
+	end
+	local now = os.clock()
+	if now - lastLODCheck < LOD_CHECK_INTERVAL then
+		return
 	end
 
-	if parts[flatIndex] then
-		_returnGroup(parts[flatIndex])
-		parts[flatIndex] = nil
+	local pcx, pcy, pcz = _getPlayerChunkPos()
+	if not pcx or not pcy or not pcz then
+		return
 	end
-
-	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		parts[flatIndex] = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, false)
+	if pcx == _lastLODPlayerCx and pcy == _lastLODPlayerCy and pcz == _lastLODPlayerCz then
+		lastLODCheck = now
+		return
 	end
+	_lastLODPlayerCx = pcx
+	_lastLODPlayerCy = pcy
+	_lastLODPlayerCz = pcz
+	lastLODCheck = now
 
-	for _, dir in NEIGHBOR_DIRS do
-		local nx, ny, nz = lx + dir[1], ly + dir[2], lz + dir[3]
-		if nx < 0 or nx >= CHUNK_SIZE or ny < 0 or ny >= CHUNK_SIZE or nz < 0 or nz >= CHUNK_SIZE then
-			continue
-		end
-
-		local nIdx = ChunkUtil.flatIndex(nx, ny, nz)
-		local nBlockType = buffer.readu8(blocks, nIdx)
-
-		local hasGroup = parts[nIdx] ~= nil
-		local shouldRender = nBlockType ~= BlockType.Air and _isExposed(blocks, nx, ny, nz)
-
-		if shouldRender and not hasGroup then
-			parts[nIdx] = _makeBlockParts(blocks, nBlockType, cx, cy, cz, nx, ny, nz, lod, false)
-		elseif not shouldRender and hasGroup then
-			_returnGroup(parts[nIdx])
-			parts[nIdx] = nil
+	for chunkKey, currentLod in chunkLOD do
+		local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+		local newLod = _getChunkLOD(cx, cy, cz)
+		if newLod ~= currentLod then
+			_markDirty(chunkKey)
 		end
 	end
 end
 
--- Public API
+-- Public API -----------------------------------------------------------------
 
 function ChunkRenderController:GetBlockAt(chunkKey: number, flatIndex: number): number
 	local blocks = chunkBlocks[chunkKey]
@@ -916,147 +401,42 @@ function ChunkRenderController:GetChunkBlocks(chunkKey: number): buffer?
 end
 
 function ChunkRenderController:GetActivePartCount(): number
-	return activePartsCount
+	return ChunkMeshPool.getActiveDrawUnitCount()
 end
 
 function ChunkRenderController:GetPoolSize(): number
-	return #partPool
+	-- No Part pool exists in the mesh renderer. Kept for API compatibility.
+	return 0
 end
 
--- Render queue processing
-
-local function _processRenderQueue()
-	if isProcessingQueue then
-		return
-	end
-	isProcessingQueue = true
-
-	-- Process in batches: swap out the queue so new arrivals go to a fresh table
-	while #renderQueue > 0 do
-		local batch = renderQueue
-		renderQueue = {} -- new chunks arriving during rendering go here
-
-		-- Sort: closest chunks first
-		local pcx, pcy, pcz = _getPlayerChunkPos()
-		if pcx and pcy and pcz then
-			table.sort(batch, function(a, b)
-				local acx, acy, acz = ChunkUtil.parseChunkKey(a.key)
-				local bcx, bcy, bcz = ChunkUtil.parseChunkKey(b.key)
-				local aDist = (acx - pcx) ^ 2 + (acy - pcy) ^ 2 + (acz - pcz) ^ 2
-				local bDist = (bcx - pcx) ^ 2 + (bcy - pcy) ^ 2 + (bcz - pcz) ^ 2
-				return aDist < bDist
-			end)
-		end
-
-		-- Deduplicate in-place: walk backwards marking last occurrence, then
-		-- forward-pass emitting only kept entries. O(n) instead of O(n²) from
-		-- the previous table.insert(deduped, 1, ...) pattern.
-		local seen: { [number]: boolean } = {}
-		local keep: { [number]: boolean } = {}
-		for i = #batch, 1, -1 do
-			local key = batch[i].key
-			if not seen[key] then
-				seen[key] = true
-				keep[i] = true
-			end
-		end
-
-		for i = 1, #batch do
-			if keep[i] then
-				_renderChunk(batch[i].key, batch[i].blocks)
-				task.wait()
-			end
-		end
-	end
-
-	isProcessingQueue = false
-end
-
--- LOD re-evaluation
-
-local function _reevaluateLODs()
-	if not characterReady then
-		return
-	end
-	local now = os.clock()
-	if now - lastLODCheck < LOD_CHECK_INTERVAL then
-		return
-	end
-
-	-- Skip the scan entirely if the player hasn't moved to a new chunk since
-	-- the last check — LOD bands only change across chunk boundaries, so
-	-- intra-chunk movement can never trigger a transition.
-	local pcx, pcy, pcz = _getPlayerChunkPos()
-	if not pcx or not pcy or not pcz then
-		return
-	end
-	if pcx == _lastLODPlayerCx and pcy == _lastLODPlayerCy and pcz == _lastLODPlayerCz then
-		lastLODCheck = now
-		return
-	end
-	_lastLODPlayerCx = pcx
-	_lastLODPlayerCy = pcy
-	_lastLODPlayerCz = pcz
-
-	lastLODCheck = now
-
-	-- Check all rendered chunks for LOD changes (player moved)
-	-- Only queue — don't process synchronously (avoids blocking Heartbeat)
-	local queued = false
-	for chunkKey, currentLod in chunkLOD do
-		local blocks = chunkBlocks[chunkKey]
-		if not blocks then
-			continue
-		end
-		local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-		local newLod = _getChunkLOD(cx, cy, cz)
-		if newLod ~= currentLod then
-			table.insert(renderQueue, { key = chunkKey, blocks = blocks })
-			queued = true
-		end
-	end
-
-	if queued and not isProcessingQueue then
-		task.spawn(_processRenderQueue)
-	end
-end
-
--- Knit lifecycle
+-- Knit lifecycle -------------------------------------------------------------
 
 function ChunkRenderController:KnitInit()
 	chunkContainer = Instance.new("Folder")
 	chunkContainer.Name = "ChunkRender"
 	chunkContainer.Parent = workspace
 
-	-- Small startup pool, spread across frames
-	for i = 1, POOL_STARTUP do
-		table.insert(partPool, _createPart())
-		if i % POOL_STARTUP_BATCH == 0 then
-			task.wait()
-		end
-	end
+	ChunkMeshPool.setContainer(chunkContainer)
+
+	print("[ChunkRenderer] initialized EditableMesh renderer")
 end
 
 function ChunkRenderController:KnitStart()
 	local WorldService = Knit.GetService("WorldService")
 	local player = Players.LocalPlayer
 
-	-- Character-ready detection
 	local function _onCharacterReady()
 		if characterReady then
 			return
 		end
 		characterReady = true
 
-		-- Flush pending chunk data into render queue
+		-- Flush pending chunks into the dirty set so Heartbeat builds them.
 		for _, item in pendingChunkData do
-			table.insert(renderQueue, item)
+			chunkBlocks[item.key] = item.blocks
+			_markDirty(item.key)
 		end
 		table.clear(pendingChunkData)
-
-		if #renderQueue > 0 then
-			_processRenderQueue()
-		end
 	end
 
 	if player then
@@ -1064,7 +444,6 @@ function ChunkRenderController:KnitStart()
 		if character and character:FindFirstChild("HumanoidRootPart") then
 			_onCharacterReady()
 		end
-
 		if not characterReady then
 			player.CharacterAdded:Connect(function(char: Model)
 				local hrp = char:WaitForChild("HumanoidRootPart", 10)
@@ -1083,8 +462,8 @@ function ChunkRenderController:KnitStart()
 			return
 		end
 
-		table.insert(renderQueue, { key = chunkKey, blocks = blocks })
-		_processRenderQueue()
+		chunkBlocks[chunkKey] = blocks
+		_markDirty(chunkKey)
 	end)
 
 	WorldService.ChunkUnload:Connect(function(chunkKey: number)
@@ -1095,10 +474,9 @@ function ChunkRenderController:KnitStart()
 		_handleBlockUpdate(chunkKey, flatIndex, blockTypeId)
 	end)
 
-	-- Heartbeat: cleanup queue, trickle-fill pool, periodic LOD re-evaluation
+	-- Heartbeat: drain dirty chunks within the frame budget, then re-eval LOD.
 	RunService.Heartbeat:Connect(function(_dt: number)
-		_processCleanupQueue()
-		_trickleFillPool()
+		_processDirtyChunks()
 		_reevaluateLODs()
 	end)
 end

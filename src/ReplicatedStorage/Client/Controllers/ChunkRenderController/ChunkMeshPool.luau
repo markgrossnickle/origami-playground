@@ -92,13 +92,43 @@ end
 
 -- Build a single MeshPart from a material bucket. Returns nil if the bucket is
 -- empty (no vertices). This yields because CreateMeshPartAsync is async.
+--
+-- Memory note: EditableMesh instances share a per-experience memory budget
+-- (~100MB client-side). Each CreateEditableMesh allocates against that budget.
+-- We MUST call :Destroy() on the source EditableMesh once the MeshPart is
+-- created — otherwise budget exhausts within seconds of chunk streaming and
+-- every subsequent CreateEditableMesh returns nil ("attempt to index nil with
+-- 'AddVertex'" on the next line).
 local function _buildMeshPartForBucket(bucket: MaterialBucket, chunkKey: number): MeshPart?
 	if #bucket.positions == 0 then
 		return nil
 	end
 
 	local em = AssetService:CreateEditableMesh()
-	_uploadBucketToEditableMesh(bucket, em)
+	if not em then
+		warn(
+			string.format(
+				"[ChunkRenderer] CreateEditableMesh returned nil for chunk %d (%s) — likely EditableMesh memory budget exhausted",
+				chunkKey,
+				tostring(bucket.material)
+			)
+		)
+		return nil
+	end
+
+	local uploadOk, uploadErr = pcall(_uploadBucketToEditableMesh, bucket, em)
+	if not uploadOk then
+		em:Destroy()
+		warn(
+			string.format(
+				"[ChunkRenderer] mesh upload failed for chunk %d (%s): %s",
+				chunkKey,
+				tostring(bucket.material),
+				tostring(uploadErr)
+			)
+		)
+		return nil
+	end
 
 	-- Wrap the editable mesh in content-addressable form and create a MeshPart.
 	-- CollisionFidelity = PreciseConvexDecomposition gives accurate voxel
@@ -111,6 +141,11 @@ local function _buildMeshPartForBucket(bucket: MaterialBucket, chunkKey: number)
 			CollisionFidelity = Enum.CollisionFidelity.PreciseConvexDecomposition,
 		})
 	end)
+
+	-- Free the EditableMesh's slot in the memory budget. The MeshPart has its
+	-- own internal copy of the geometry by this point, so this is safe.
+	em:Destroy()
+
 	if not ok or not meshPart then
 		warn(
 			string.format(

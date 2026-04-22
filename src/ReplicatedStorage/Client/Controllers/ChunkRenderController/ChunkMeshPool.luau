@@ -31,8 +31,16 @@ function ChunkMeshPool.setContainer(folder: Folder)
 	container = folder
 end
 
--- Convert our flat triangle index list (1-based into positions[]) into the
--- EditableMesh vertex IDs (which are assigned when AddVertex is called).
+-- Convert our flat SoA bucket into EditableMesh geometry. The current (2025+)
+-- EditableMesh API stores normals/colors/UVs in separate attribute pools and
+-- binds them to faces (per-face-vertex), NOT to vertices directly. The old
+-- SetVertexNormal / SetVertexColor / SetVertexUV methods were removed.
+--
+-- Flow:
+--   1. AddVertex / AddNormal / AddColor / AddUV → one ID each, keyed by our
+--      1-based bucket index.
+--   2. AddTriangle → face ID, then SetFaceNormals/Colors/UVs with the three
+--      per-corner attribute IDs.
 local function _uploadBucketToEditableMesh(bucket: MaterialBucket, em: EditableMesh): ()
 	local positions = bucket.positions
 	local colors = bucket.colors
@@ -42,24 +50,42 @@ local function _uploadBucketToEditableMesh(bucket: MaterialBucket, em: EditableM
 
 	local vertexCount = #positions
 
-	-- Map our 1-based array index → EditableMesh vertex ID.
 	local vertexIds: { number } = table.create(vertexCount)
+	local normalIds: { number } = table.create(vertexCount)
+	local colorIds: { number } = table.create(vertexCount)
+	local uvIds: { number } = table.create(vertexCount)
 
 	for i = 1, vertexCount do
-		local vid = em:AddVertex(positions[i])
-		vertexIds[i] = vid
-		em:SetVertexNormal(vid, normals[i])
-		em:SetVertexColor(vid, colors[i])
-		em:SetVertexUV(vid, uvs[i])
+		vertexIds[i] = em:AddVertex(positions[i])
+		normalIds[i] = em:AddNormal(normals[i])
+		colorIds[i] = em:AddColor(colors[i], 1)
+		uvIds[i] = em:AddUV(uvs[i])
 	end
 
 	local triCount = #triangles
 	local t = 1
+	-- Reused tuples so we don't allocate a fresh array per triangle. Roblox
+	-- copies the value immediately on Set*, so reusing is safe.
+	local nTriple = table.create(3)
+	local cTriple = table.create(3)
+	local uTriple = table.create(3)
 	while t <= triCount do
-		local a = vertexIds[triangles[t]]
-		local b = vertexIds[triangles[t + 1]]
-		local c = vertexIds[triangles[t + 2]]
-		em:AddTriangle(a, b, c)
+		local i1 = triangles[t]
+		local i2 = triangles[t + 1]
+		local i3 = triangles[t + 2]
+		local faceId = em:AddTriangle(vertexIds[i1], vertexIds[i2], vertexIds[i3])
+		nTriple[1] = normalIds[i1]
+		nTriple[2] = normalIds[i2]
+		nTriple[3] = normalIds[i3]
+		em:SetFaceNormals(faceId, nTriple)
+		cTriple[1] = colorIds[i1]
+		cTriple[2] = colorIds[i2]
+		cTriple[3] = colorIds[i3]
+		em:SetFaceColors(faceId, cTriple)
+		uTriple[1] = uvIds[i1]
+		uTriple[2] = uvIds[i2]
+		uTriple[3] = uvIds[i3]
+		em:SetFaceUVs(faceId, uTriple)
 		t += 3
 	end
 end

@@ -71,7 +71,7 @@ Classic voxel neighbor check: a face is emitted only when the adjacent block (in
 
 **Rationale**:
 - Raycast resolution is already world-space, not part-space.
-- MeshPart collision via `CollisionFidelity = Default` / `PreciseConvexDecomposition` is fine for voxel geometry; we'll try `Default` (box/hull) first since every voxel is axis-aligned.
+- MeshPart collision via `CollisionFidelity = PreciseConvexDecomposition` preserves per-block surface normals so raycasts land on the right face. A simpler `Default` fidelity would merge adjacent cubes into convex hulls and lose that fidelity.
 - The walk-toward-camera loop in `_raycastToBlock` (up to 5 steps) already handles the case where the first hit is a visual face but the "real" block is behind it — this works unchanged.
 
 **Trade-off**: the entire chunk mesh becomes a single collidable entity. Good for raycasts; character physics still slides correctly on voxel surfaces.
@@ -106,11 +106,12 @@ Classic voxel neighbor check: a face is emitted only when the adjacent block (in
 
 ### 5. Block edits: rebuild owning chunk's mesh
 
-**Choice**: when `BlockUpdate` fires, mark the chunk dirty. On Heartbeat, rebuild up to N dirty chunks per frame within a 6ms budget.
+**Choice**: when `BlockUpdate` fires, mark the chunk dirty. On Heartbeat, build **one** dirty chunk at a time via `task.spawn` — because `CreateMeshPartAsync` yields internally, stacking multiple builds per frame starves the render thread.
 
 **Rationale**:
-- EditableMesh does support incremental editing (per-vertex removal), but rebuilding 1–6 affected faces in a chunk already needs to update neighbor block faces too (mining a block exposes new faces on the 6 neighbors). A full chunk rebuild is simpler and, at 16³ = 4096 blocks, completes in well under a frame.
+- EditableMesh does support incremental editing (per-vertex removal), but rebuilding 1–6 affected faces in a chunk already needs to update neighbor block faces too (mining a block exposes new faces on the 6 neighbors). A full chunk rebuild is simpler and, at 16³ = 4096 blocks, completes in well under a frame for the CPU portion — the async mesh upload is the only slow step.
 - Neighbor chunks only need rebuild if the edit is on the boundary face pointing toward them. We include this in the dirty-set (mark the 0–3 neighbor chunks that share the boundary with the edited block).
+- The closest dirty chunk (by chunk-space distance to the player) is picked first each frame so mining feedback feels immediate.
 
 ### 6. Bouncy blocks: separate thin collision parts
 

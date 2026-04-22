@@ -83,7 +83,11 @@ local MUSHROOM_FLASH_COLORS = {
 -- CFrame-to-infinity
 local FAR_AWAY = CFrame.new(0, -1e6, 0)
 
-local BATCH_FLUSH_SIZE = 256
+-- BulkMoveTo batch size. Larger batches amortize the fixed per-call cost
+-- (event fire, broadphase update) across more parts, so fewer flushes per
+-- chunk build = less total CPU in WorldRoot.BulkMoveTo. 1024 covers most
+-- chunk builds in 1-2 flushes instead of 4-6 at 256.
+local BATCH_FLUSH_SIZE = 1024
 
 -- Trickle fill
 local TRICKLE_FILL_PER_FRAME = 4

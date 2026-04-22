@@ -115,9 +115,9 @@ local LOD_CHECK_INTERVAL = 2.0
 local NEIGHBOR_DIRS = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
 
 -- Logging: print a one-liner per chunk with region/part counts so perf impact
--- is visible in the Output pane. Disabled by default to avoid spam once
--- everything is verified.
-local LOG_CHUNK_RENDER = false
+-- is visible in the Output pane. Flip to false once the greedy renderer is
+-- verified in production to avoid spam.
+local LOG_CHUNK_RENDER = true
 
 local function _getColor(blockTypeId: number): Color3
 	return BlockRegistry.getColor(blockTypeId)

@@ -134,14 +134,21 @@ local function _emitFace(
 	uvs[base + 3] = UV_11
 	uvs[base + 4] = UV_01
 
-	-- Two triangles forming the quad (c1,c2,c3) and (c1,c3,c4), 1-based indices.
+	-- Two triangles forming the quad. Winding is (c1, c3, c2) and (c1, c4, c3)
+	-- so that the computed normal (edge1 × edge2) points the same direction as
+	-- the face's logical outward normal — otherwise every face ends up a back
+	-- face and the entire chunk is culled invisible. Verified for +Y top face:
+	--   c1=(x0,y1,z0), c3=(x1,y1,z1), c2=(x1,y1,z0)
+	--   edge1 = c3 - c1 = (dx, 0, dz)
+	--   edge2 = c2 - c1 = (dx, 0, 0)
+	--   edge1 × edge2 = (0, dx·dz, 0)  →  +Y ✓
 	local triBase = #triangles
 	triangles[triBase + 1] = base + 1
-	triangles[triBase + 2] = base + 2
-	triangles[triBase + 3] = base + 3
+	triangles[triBase + 2] = base + 3
+	triangles[triBase + 3] = base + 2
 	triangles[triBase + 4] = base + 1
-	triangles[triBase + 5] = base + 3
-	triangles[triBase + 6] = base + 4
+	triangles[triBase + 5] = base + 4
+	triangles[triBase + 6] = base + 3
 end
 
 -- Emit all 6 cube faces for a single block at world-position (wx, wy, wz) with

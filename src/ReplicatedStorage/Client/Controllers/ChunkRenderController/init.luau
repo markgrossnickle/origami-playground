@@ -11,6 +11,7 @@ local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local ChunkSerializer = require(ReplicatedStorage.Shared.ChunkSerializer)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
+local GreedyMesher = require(ReplicatedStorage.Shared.GreedyMesher)
 
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
@@ -44,9 +45,22 @@ local SIMPLE_MAX_OFFSET = 0.08
 local SIMPLE_MAX_TILT = math.rad(3)
 local SIMPLE_TINT_RANGE = 0.08
 
--- LOD: squared chunk distance threshold
-local LOD_NEAR_DIST2 = 2 -- dist <= 2 chunk = paper layers (~19 chunks)
-local RENDER_MAX_DIST2 = 18 -- skip rendering chunks beyond this
+-- LOD: squared chunk distance threshold.
+-- Tier 0 (≤ LOD_NEAR_DIST2)            → per-block paper-crystal layers + collision.
+--                                         Full character. Mining reach (30 studs)
+--                                         always stays inside this tier so mining
+--                                         never triggers a greedy-mesh rebuild.
+-- Tier 1 (> LOD_NEAR_DIST2, ≤ LOD_MID_DIST2) → per-block simple part w/ tilt + tint.
+--                                         Partial character, smooths the visual
+--                                         transition between tier 0 and tier 2.
+-- Tier 2 (> LOD_MID_DIST2, ≤ RENDER_MAX_DIST2) → greedy-merged solid slabs. No per-
+--                                         block character. Far enough that the
+--                                         merge is imperceptible, cuts part count
+--                                         by ~10-20x in this band.
+-- Tier -1 (> RENDER_MAX_DIST2)          → unrendered (data only).
+local LOD_NEAR_DIST2 = 2
+local LOD_MID_DIST2 = 6
+local RENDER_MAX_DIST2 = 18
 
 -- Bouncy block config
 local BOUNCY_BLOCKS: { [number]: boolean } = {
@@ -159,7 +173,13 @@ local partPool: { BasePart } = {}
 local activePartsCount = 0
 
 local renderedChunks: { [number]: boolean } = {}
+-- chunkParts holds LOD 0/1 per-block parts keyed by flat block index.
 local chunkParts: { [number]: { [number]: { BasePart } } } = {}
+-- greedyParts holds LOD 2 merged-region parts as a flat list per chunk. A
+-- chunk is rendered in exactly one of these tables depending on its LOD —
+-- LOD transitions move ownership by clearing the old side and populating the
+-- other.
+local greedyParts: { [number]: { BasePart } } = {}
 local chunkBlocks: { [number]: buffer } = {}
 local chunkLOD: { [number]: number } = {}
 
@@ -296,12 +316,15 @@ local function _getChunkLOD(cx: number, cy: number, cz: number): number
 	local dz = cz - pcz
 	local dist2 = dx * dx + dy * dy + dz * dz
 	if dist2 > RENDER_MAX_DIST2 then
-		return -1 -- too far, skip rendering
+		return -1
 	end
 	if dist2 <= LOD_NEAR_DIST2 then
 		return 0
 	end
-	return 1
+	if dist2 <= LOD_MID_DIST2 then
+		return 1
+	end
+	return 2
 end
 
 -- Part pool
@@ -391,11 +414,20 @@ end
 -- Bulk-hide all parts in a chunk via BulkMoveTo (single native call)
 local function _bulkHideChunkParts(chunkKey: number)
 	local parts = chunkParts[chunkKey]
-	if not parts then
-		return
+	if parts then
+		for _, group in parts do
+			for _, part in group do
+				table.insert(_batchParts, part)
+				table.insert(_batchCFrames, FAR_AWAY)
+				if #_batchParts >= BATCH_FLUSH_SIZE then
+					_flushBatch()
+				end
+			end
+		end
 	end
-	for _, group in parts do
-		for _, part in group do
+	local gparts = greedyParts[chunkKey]
+	if gparts then
+		for _, part in gparts do
 			table.insert(_batchParts, part)
 			table.insert(_batchCFrames, FAR_AWAY)
 			if #_batchParts >= BATCH_FLUSH_SIZE then
@@ -715,6 +747,53 @@ local function _makeSimplePart(
 	return { part }
 end
 
+-- LOD 2: one Part per greedy-merged region. No per-block character (tilt,
+-- tint, paper layers) — this tier only renders at ~226+ studs where jitter is
+-- imperceptible anyway. CanQuery=false because mining reach never touches
+-- LOD 2 chunks, so hiding these from the camera popper is a free win.
+local function _makeGreedyRegionPart(
+	region: GreedyMesher.Region,
+	cx: number,
+	cy: number,
+	cz: number,
+	batched: boolean?
+): BasePart
+	local blockTypeId = region.blockTypeId
+	local minLx, maxLx = region.minLx, region.maxLx
+	local minLy, maxLy = region.minLy, region.maxLy
+	local minLz, maxLz = region.minLz, region.maxLz
+
+	local spanX = maxLx - minLx + 1
+	local spanY = maxLy - minLy + 1
+	local spanZ = maxLz - minLz + 1
+
+	-- Region center in world space.
+	local px = cx * CHUNK_STUDS + (minLx + spanX * 0.5) * BLOCK_SIZE
+	local py = cy * CHUNK_STUDS + (minLy + spanY * 0.5) * BLOCK_SIZE
+	local pz = cz * CHUNK_STUDS + (minLz + spanZ * 0.5) * BLOCK_SIZE
+
+	local part = _getPart()
+	part.Color = _getColor(blockTypeId)
+	part.Material = _getMaterial(blockTypeId)
+	part.Size = Vector3.new(spanX * BLOCK_SIZE, spanY * BLOCK_SIZE, spanZ * BLOCK_SIZE)
+	part.CanCollide = true
+	part.CanQuery = false
+	part.Transparency = 0
+
+	local targetCFrame = CFrame.new(px, py, pz)
+	if batched then
+		table.insert(_batchParts, part)
+		table.insert(_batchCFrames, targetCFrame)
+		if #_batchParts >= BATCH_FLUSH_SIZE then
+			_flushBatch()
+		end
+	else
+		part.CFrame = targetCFrame
+	end
+
+	return part
+end
+
 -- Block creation dispatcher
 
 local function _makeBlockParts(
@@ -732,6 +811,8 @@ local function _makeBlockParts(
 	if lod == 0 then
 		return _makeLayerParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
 	else
+		-- LOD 1 simple per-block. (LOD 2 doesn't call this path — it goes
+		-- through _renderChunkGreedy which emits merged-region parts instead.)
 		return _makeSimplePart(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
 	end
 end
@@ -770,33 +851,35 @@ end
 
 -- Chunk rendering
 
-local function _renderChunk(chunkKey: number, blocks: buffer)
-	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
-	local lod = _getChunkLOD(cx, cy, cz)
-
-	-- Store block data even for unrendered chunks (needed for mining/block updates)
-	chunkBlocks[chunkKey] = blocks
-
-	if lod == -1 then
-		-- Too far to render, just keep data
-		renderedChunks[chunkKey] = false
-		chunkLOD[chunkKey] = lod
-		return
-	end
+-- Recycle all currently-rendered parts for this chunk (both per-block and
+-- greedy). Called at the start of every _renderChunk so a LOD transition
+-- cleans up the previous tier's geometry before building the new one.
+local function _recycleChunkParts(chunkKey: number)
+	_bulkHideChunkParts(chunkKey)
 
 	local existing = chunkParts[chunkKey]
 	if existing then
-		_bulkHideChunkParts(chunkKey)
 		for _, group in existing do
 			for _, part in group do
 				_queuePartForCleanup(part)
 			end
 		end
+		chunkParts[chunkKey] = nil
 	end
 
-	renderedChunks[chunkKey] = true
-	chunkLOD[chunkKey] = lod
+	local gparts = greedyParts[chunkKey]
+	if gparts then
+		for _, part in gparts do
+			_queuePartForCleanup(part)
+		end
+		greedyParts[chunkKey] = nil
+	end
+end
 
+-- LOD 0/1 per-block render. Iterates the chunk, emits parts for every
+-- exposed non-air block, keyed by flat index so _handleBlockUpdate can do
+-- surgical single-block updates.
+local function _renderChunkPerBlock(chunkKey: number, blocks: buffer, cx: number, cy: number, cz: number, lod: number)
 	local parts: { [number]: { BasePart } } = {}
 	chunkParts[chunkKey] = parts
 
@@ -830,26 +913,74 @@ local function _renderChunk(chunkKey: number, blocks: buffer)
 	_flushBatch()
 end
 
+-- LOD 2 greedy render. One Part per merged region from GreedyMesher. Stored
+-- as a flat list — no per-block indexing because multiple blocks collapse
+-- into one part.
+local function _renderChunkGreedy(chunkKey: number, blocks: buffer, cx: number, cy: number, cz: number)
+	local regions = GreedyMesher.meshChunk(blocks)
+
+	local parts: { BasePart } = table.create(#regions)
+	greedyParts[chunkKey] = parts
+
+	local renderStart = os.clock()
+	for i, region in regions do
+		parts[i] = _makeGreedyRegionPart(region, cx, cy, cz, true)
+		if i % YIELD_PART_INTERVAL == 0 then
+			if os.clock() - renderStart > FRAME_BUDGET then
+				_flushBatch()
+				task.wait()
+				renderStart = os.clock()
+			end
+		end
+	end
+
+	_flushBatch()
+end
+
+local function _renderChunk(chunkKey: number, blocks: buffer)
+	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+	local lod = _getChunkLOD(cx, cy, cz)
+
+	-- Store block data even for unrendered chunks (needed for mining/block updates)
+	chunkBlocks[chunkKey] = blocks
+
+	if lod == -1 then
+		-- Too far to render — clean up any existing parts from a previous LOD
+		-- tier but keep the data around for mining / block updates.
+		_recycleChunkParts(chunkKey)
+		renderedChunks[chunkKey] = false
+		chunkLOD[chunkKey] = lod
+		return
+	end
+
+	_recycleChunkParts(chunkKey)
+
+	renderedChunks[chunkKey] = true
+	chunkLOD[chunkKey] = lod
+
+	if lod == 2 then
+		_renderChunkGreedy(chunkKey, blocks, cx, cy, cz)
+	else
+		_renderChunkPerBlock(chunkKey, blocks, cx, cy, cz, lod)
+	end
+end
+
 local function _unrenderChunk(chunkKey: number)
 	renderedChunks[chunkKey] = nil
 	chunkLOD[chunkKey] = nil
 
-	local parts = chunkParts[chunkKey]
-	if parts then
-		_bulkHideChunkParts(chunkKey)
-		for _, group in parts do
-			for _, part in group do
-				_queuePartForCleanup(part)
-			end
-		end
-		chunkParts[chunkKey] = nil
-	end
+	_recycleChunkParts(chunkKey)
 
 	chunkBlocks[chunkKey] = nil
 end
 
--- Block update (surgical per-block)
-
+-- Block update.
+-- LOD 0/1: surgical — only re-render the changed block and its 6 neighbors
+-- (their exposure may have flipped). Leaves the rest of the chunk untouched.
+-- LOD 2:   full greedy re-mesh of the chunk. The mined block may split a
+-- merged region into multiple smaller ones, so partial updates aren't
+-- correct. In practice LOD 2 chunks are ≥ ~140 studs away so the rebuild is
+-- invisible to the player, and the cost is bounded by chunk size (~0.5 ms).
 local function _handleBlockUpdate(chunkKey: number, flatIndex: number, blockTypeId: number)
 	local blocks = chunkBlocks[chunkKey]
 	if not blocks then
@@ -858,10 +989,36 @@ local function _handleBlockUpdate(chunkKey: number, flatIndex: number, blockType
 
 	buffer.writeu8(blocks, flatIndex, blockTypeId)
 
-	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
-	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
 	local lod = chunkLOD[chunkKey] or 1
 
+	if lod == -1 then
+		-- Chunk isn't rendered; block data is up to date, nothing else to do.
+		return
+	end
+
+	local cx, cy, cz = ChunkUtil.parseChunkKey(chunkKey)
+
+	if lod == 2 then
+		-- Full greedy re-mesh. Recycle old greedy parts, rebuild from scratch.
+		local oldParts = greedyParts[chunkKey]
+		if oldParts then
+			for _, part in oldParts do
+				table.insert(_batchParts, part)
+				table.insert(_batchCFrames, FAR_AWAY)
+				if #_batchParts >= BATCH_FLUSH_SIZE then
+					_flushBatch()
+				end
+				_queuePartForCleanup(part)
+			end
+			_flushBatch()
+			greedyParts[chunkKey] = nil
+		end
+		_renderChunkGreedy(chunkKey, blocks, cx, cy, cz)
+		return
+	end
+
+	-- LOD 0/1: per-block surgical update.
+	local lx, ly, lz = ChunkUtil.fromFlatIndex(flatIndex)
 	local parts = chunkParts[chunkKey]
 	if not parts then
 		parts = {}

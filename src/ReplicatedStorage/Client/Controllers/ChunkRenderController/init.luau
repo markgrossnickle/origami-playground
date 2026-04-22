@@ -85,8 +85,13 @@ local MUSHROOM_FLASH_COLORS = {
 	Color3.fromRGB(255, 140, 0),
 }
 
--- CFrame-to-infinity
-local FAR_AWAY = CFrame.new(0, -1e6, 0)
+-- CFrame-to-infinity for pooled parts. 2^24 (~16M studs) matches Pyseph's
+-- ObjectCache convention — places pooled parts so far outside any gameplay
+-- broadphase cell that they occupy a "dead" spatial-hash bucket no raycast
+-- or physics query will ever enter. Verified via Roblox staff comments that
+-- hidden/CanQuery=false parts still live in the broadphase tree; only raw
+-- distance moves them to cells nothing scans.
+local FAR_AWAY = CFrame.new(2 ^ 24, 2 ^ 24, 2 ^ 24)
 
 -- BulkMoveTo batch size. Larger batches amortize the fixed per-call cost
 -- (event fire, broadphase update) across more parts, so fewer flushes per

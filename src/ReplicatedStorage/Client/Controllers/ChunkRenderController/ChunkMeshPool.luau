@@ -75,9 +75,15 @@ local function _buildMeshPartForBucket(bucket: MaterialBucket, chunkKey: number)
 	_uploadBucketToEditableMesh(bucket, em)
 
 	-- Wrap the editable mesh in content-addressable form and create a MeshPart.
+	-- CollisionFidelity = PreciseConvexDecomposition gives accurate voxel
+	-- raycast hits; Default can merge cube faces into hulls that lose per-block
+	-- fidelity. TODO(verify-in-studio): may need to fall back to Default if the
+	-- async build time for precise fidelity is too slow.
 	local content = Content.fromObject(em)
 	local ok, meshPart = pcall(function()
-		return AssetService:CreateMeshPartAsync(content)
+		return AssetService:CreateMeshPartAsync(content, {
+			CollisionFidelity = Enum.CollisionFidelity.PreciseConvexDecomposition,
+		})
 	end)
 	if not ok or not meshPart then
 		warn(

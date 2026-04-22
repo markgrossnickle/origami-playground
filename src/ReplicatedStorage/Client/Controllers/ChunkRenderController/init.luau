@@ -37,9 +37,6 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local LOD_NEAR_DIST2 = 2
 local RENDER_MAX_DIST2 = 18
 
--- Render frame budget: don't spend more than this per heartbeat building chunks.
-local BUILD_FRAME_BUDGET = 0.006
-
 -- LOD re-evaluation interval (seconds)
 local LOD_CHECK_INTERVAL = 2.0
 
@@ -261,37 +258,49 @@ local function _markDirty(chunkKey: number)
 	dirtyChunks[chunkKey] = true
 end
 
+-- Flag so only one chunk is built per frame — CreateMeshPartAsync yields, and
+-- stacking multiple builds per Heartbeat starves the rendering thread.
+local _buildInFlight = false
+
 local function _processDirtyChunks()
+	if _buildInFlight then
+		return
+	end
 	if not next(dirtyChunks) then
 		return
 	end
-	local start = os.clock()
 
-	-- Sort dirty keys by distance to player (closest first) so the player sees
-	-- updates to chunks nearest them within the frame budget.
+	-- Pick the closest dirty chunk to the player so the player sees updates
+	-- nearest them first. Falls back to an arbitrary dirty chunk if the player
+	-- position isn't available.
 	local pcx, pcy, pcz = _getPlayerChunkPos()
-
-	local keys: { number } = {}
-	for k in dirtyChunks do
-		table.insert(keys, k)
-	end
+	local chosenKey: number? = nil
 	if pcx and pcy and pcz then
-		table.sort(keys, function(a, b)
-			local acx, acy, acz = ChunkUtil.parseChunkKey(a)
-			local bcx, bcy, bcz = ChunkUtil.parseChunkKey(b)
-			local aDist = (acx - pcx) ^ 2 + (acy - pcy) ^ 2 + (acz - pcz) ^ 2
-			local bDist = (bcx - pcx) ^ 2 + (bcy - pcy) ^ 2 + (bcz - pcz) ^ 2
-			return aDist < bDist
-		end)
+		local chosenDist = math.huge
+		for k in dirtyChunks do
+			local acx, acy, acz = ChunkUtil.parseChunkKey(k)
+			local d = (acx - pcx) ^ 2 + (acy - pcy) ^ 2 + (acz - pcz) ^ 2
+			if d < chosenDist then
+				chosenDist = d
+				chosenKey = k
+			end
+		end
+	else
+		chosenKey = next(dirtyChunks)
+	end
+	if not chosenKey then
+		return
 	end
 
-	for _, key in keys do
-		dirtyChunks[key] = nil
-		_buildChunkNow(key)
-		if os.clock() - start > BUILD_FRAME_BUDGET then
-			break
+	dirtyChunks[chosenKey] = nil
+	_buildInFlight = true
+	task.spawn(function()
+		local ok, err = pcall(_buildChunkNow, chosenKey)
+		if not ok then
+			warn(string.format("[ChunkRenderer] build failed for chunk %d: %s", chosenKey, tostring(err)))
 		end
-	end
+		_buildInFlight = false
+	end)
 end
 
 local function _unrenderChunk(chunkKey: number)

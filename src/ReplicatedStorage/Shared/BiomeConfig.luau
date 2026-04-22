@@ -28,7 +28,11 @@ BiomeConfig.Biomes = {
 	paper_fields = {
 		name = "Paper Fields",
 		surfaceBlock = BlockType.Paper,
-		subsurfaceBlock = BlockType.Cardboard,
+		-- Paper spans the top ~4 rows (1 surface + 3 subsurface). Everything
+		-- below that is the Layer 1 primaryBlock (Cardboard). Previously this
+		-- was Cardboard, which meant only row 0 was Paper and the "paper
+		-- layer" feel was basically invisible when you started digging.
+		subsurfaceBlock = BlockType.Paper,
 		fillerBlock = BlockType.Cardboard,
 		structureType = "mixed",
 		treeDensity = 0.05,
@@ -115,12 +119,18 @@ end
 -- 7 depth layers (depth measured in studs below surface, positive = deeper)
 BiomeConfig.DepthLayers = {
 	-- Layer 1: Paper Fields
+	-- Paper is intentionally NOT in this layer — the biome surface + subsurface
+	-- already places Paper in the top 4 rows. Everything deeper is Cardboard
+	-- with DriedPulp ore veins. Previously primaryBlock was Paper with
+	-- Cardboard secondary, which caused random Paper patches to reappear all
+	-- the way down to -80 studs. (Reported as "dug through paper, hit
+	-- cardboard, then a big chunk of paper again.")
 	{
 		name = "Paper Fields",
 		minDepth = 0,
 		maxDepth = 80,
-		primaryBlock = BlockType.Paper,
-		secondaryBlock = BlockType.Cardboard,
+		primaryBlock = BlockType.Cardboard,
+		secondaryBlock = nil,
 		surfaceBlock = BlockType.PaperGrass,
 		subsurfaceBlock = BlockType.Paper,
 		ores = {

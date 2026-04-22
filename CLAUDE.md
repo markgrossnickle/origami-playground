@@ -405,9 +405,38 @@ Attempted on branch `editable-mesh-renderer` (April 2026) — **abandoned**. If 
 - **MeshPart.Size ↔ EditableMesh bounds mismatch** silently hides the mesh via frustum culling. Must manually `meshPart.Size = newMesh.Size` after every `ApplyMesh`.
 - **EditableMesh must be parented via `Content.fromObject` + `CreateMeshPartAsync`** per the 2024 API restructure. The older `Instance.new("EditableMesh")` path renders nothing.
 
-**Production reality:** zero public Roblox voxel games use EditableMesh. Every shipped Roblox voxel engine uses the canonical pattern: **pooled Parts + greedy meshing + `workspace:BulkMoveTo` + CFrame-to-infinity pooling**. This is what the `greedy-parts-renderer` branch (`GreedyMesher` + `ChunkMeshPool` + `ChunkRenderController`) implements, and what should be used for any future voxel work.
+**Production reality:** zero public Roblox voxel games use EditableMesh. Every shipped Roblox voxel engine uses pooled Parts. The standard vanilla-voxel optimization on top of that is greedy meshing — but see the next section for why even that doesn't fit this project's art style.
 
 If evaluating EditableMesh for a different use case (e.g. one-off dynamic models, not streaming voxels), the above blockers still apply — re-read this section before committing to it.
+
+### Do NOT use greedy meshing for the chunk renderer
+
+Attempted on branch `greedy-parts-renderer` (PR #8, April 2026) — **abandoned**. Greedy meshing is the textbook optimization for voxel games and it does work from a pure-performance standpoint. But it's **fundamentally incompatible with this project's art direction**, which gives every block unique per-instance character that disappears the moment blocks merge:
+
+- Paper-crystal double-layer geometry per block (LOD 0)
+- Random per-block X/Z position offset (up to 0.15 studs)
+- Random per-block Y-rotation on leaves, canopies, vines
+- Random per-block X/Z tilt (up to 8° on visual layers)
+- Per-block color-brightness tint variation (±7%)
+- Per-block size jitter (0.92× or 1.08× on one axis)
+- Willow-vine depth-based taper
+- PointLight spawn on EggNode blocks
+- Bouncy-block `Touched` handlers on mushroom caps / shelf brackets
+
+When greedy meshing merges a run of same-type blocks, all of the above collapses into a single flat quad — the origami "handmade paper" feel becomes a single smooth tile. **Additionally**, mining edits cause merged regions to split and re-merge, producing visible re-tiling flicker on the surface as the mesh structure shifts across the face.
+
+**The correct optimization path for this project is per-block visual parts with targeted mitigations elsewhere:**
+
+- Pooled Parts with CFrame-to-infinity returns (never `Parent = nil`)
+- `workspace:BulkMoveTo` for batched CFrame updates
+- **Camera popper avoidance**: `CanQuery = false` on chunk parts, replace `workspace:Raycast` in mining/placement with voxel DDA traversal against the chunk buffer
+- Frame-budgeted chunk generation, LOD re-eval, cleanup queue
+- Skip redundant property resets in pool-return and cleanup-queue (checkout always reassigns them)
+- Pre-cache `Color3` and `Material` lookups by block type
+- LOD 1 (far) parts: `CanQuery = false` to hide from camera popper
+- Conditional `CanTouch` reset (only for previously-bouncy parts)
+
+Greedy meshing would be appropriate **only if** this project ever adopts a uniform-quad aesthetic (pure flat cubes, no per-block jitter or tint). Until then, don't re-attempt — the perf wins are real but they eat the art direction.
 
 ## CI & Linting Rules (IMPORTANT)
 

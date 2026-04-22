@@ -104,6 +104,38 @@ local function _buildMeshPartForBucket(bucket: MaterialBucket, chunkKey: number)
 		return nil
 	end
 
+	-- Compute the authored bounding-box center. CreateMeshPartAsync normalizes
+	-- the mesh so its center sits at the MeshPart's CFrame origin, so we need
+	-- this center in world space to position the MeshPart correctly.
+	local positions = bucket.positions
+	local minX, minY, minZ = math.huge, math.huge, math.huge
+	local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
+	for i = 1, #positions do
+		local p = positions[i]
+		local px, py, pz = p.X, p.Y, p.Z
+		if px < minX then
+			minX = px
+		end
+		if py < minY then
+			minY = py
+		end
+		if pz < minZ then
+			minZ = pz
+		end
+		if px > maxX then
+			maxX = px
+		end
+		if py > maxY then
+			maxY = py
+		end
+		if pz > maxZ then
+			maxZ = pz
+		end
+	end
+	local centerX = (minX + maxX) * 0.5
+	local centerY = (minY + maxY) * 0.5
+	local centerZ = (minZ + maxZ) * 0.5
+
 	local em = AssetService:CreateEditableMesh()
 	if not em then
 		warn(
@@ -164,8 +196,10 @@ local function _buildMeshPartForBucket(bucket: MaterialBucket, chunkKey: number)
 	meshPart.CastShadow = false
 	meshPart.Material = bucket.material
 	meshPart.Name = string.format("Chunk_%d_%s", chunkKey, tostring(bucket.material.Name))
-	-- Mesh vertices already live in world space, so the MeshPart sits at origin.
-	meshPart.CFrame = CFrame.new(0, 0, 0)
+	-- CreateMeshPartAsync stores the mesh so its bounding-box center sits at
+	-- local (0,0,0). Position the MeshPart at that center (computed above in
+	-- world space) so the mesh renders back at its authored world location.
+	meshPart.CFrame = CFrame.new(centerX, centerY, centerZ)
 	if container then
 		meshPart.Parent = container
 	end

@@ -1,6 +1,7 @@
 --[[
 	HotbarController — 9-slot toolbar for block holding and placement.
-	Number keys 1-9 select slots, scroll wheel cycles, right-click / tap places.
+	Number keys 1-9 select slots, gamepad D-pad cycles, right-click / tap places.
+	Mouse wheel is intentionally NOT bound — it stays reserved for camera zoom.
 	Shows ghost preview at target position and held block near character hand.
 ]]
 
@@ -616,24 +617,10 @@ local function _onInputBegan(input: InputObject, processed: boolean)
 	end
 end
 
-local function _onScroll(input: InputObject, processed: boolean)
-	if processed then
-		return
-	end
-	if not _enabled then
-		return
-	end
-
-	if input.UserInputType == Enum.UserInputType.MouseWheel then
-		if input.Position.Z > 0 then
-			_selectedSlot = if _selectedSlot <= 1 then HOTBAR_SLOTS else _selectedSlot - 1
-		else
-			_selectedSlot = if _selectedSlot >= HOTBAR_SLOTS then 1 else _selectedSlot + 1
-		end
-		_onSlotChanged()
-		_renderSlots()
-	end
-end
+-- Note: mouse wheel is intentionally NOT bound to hotbar cycling. The scroll
+-- wheel is the primary way players zoom the camera in Roblox, so hijacking it
+-- would break a core interaction. Slots are selected via number-key hotkeys
+-- (1-9) and direct slot clicks only.
 
 -- Heartbeat: update ghost and hand block
 
@@ -826,9 +813,8 @@ function HotbarController:KnitStart()
 	task.delay(1, function()
 		_buildUI()
 
-		-- Input
+		-- Input (scroll wheel left alone so it keeps controlling camera zoom)
 		UserInputService.InputBegan:Connect(_onInputBegan)
-		UserInputService.InputChanged:Connect(_onScroll)
 
 		-- Heartbeat for ghost/hand preview (throttled to ~20Hz)
 		local accum = 0

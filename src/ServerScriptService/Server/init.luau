@@ -26,7 +26,11 @@ function Server:_setupWorld()
 	end
 
 	-- Lighting — warm afternoon for multi-biome
-	local GLOBAL_SHADOWS = true
+	-- GlobalShadows disabled: 10-20% client FPS win on stylized games per the
+	-- CLAUDE.md perf notes; the paper/origami aesthetic doesn't depend on
+	-- per-part dynamic shadows. To re-enable for visual A/B comparison, flip
+	-- this back to true.
+	local GLOBAL_SHADOWS = false
 	Lighting.GlobalShadows = GLOBAL_SHADOWS
 	Lighting.ClockTime = 15
 	Lighting.Brightness = 1.3

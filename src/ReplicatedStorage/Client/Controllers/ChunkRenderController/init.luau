@@ -58,7 +58,12 @@ local SIMPLE_TINT_RANGE = 0.08
 --                                         merge is imperceptible, cuts part count
 --                                         by ~10-20x in this band.
 -- Tier -1 (> RENDER_MAX_DIST2)          → unrendered (data only).
-local LOD_NEAR_DIST2 = 2
+-- Tightened from 2 → 1: only the 7 chunks immediately surrounding the
+-- player get the expensive 3-part paper-crystal renderer, instead of all 19
+-- chunks within √2 chunk distance. Recovers ~63% of LOD 0 part count for a
+-- visible-character bubble that's still ~80 studs wide — wider than the
+-- camera typically frames.
+local LOD_NEAR_DIST2 = 1
 local LOD_MID_DIST2 = 6
 local RENDER_MAX_DIST2 = 18
 

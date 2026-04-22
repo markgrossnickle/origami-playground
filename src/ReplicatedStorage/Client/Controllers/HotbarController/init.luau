@@ -308,8 +308,10 @@ local function _tryPlaceBlock()
 
 	-- Fire placement request to server
 	task.spawn(function()
-		local result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
-		if result and result.success then
+		-- Promise:await() returns (ok, valueOrError), not the resolved value
+		-- directly — destructure both so we don't index a boolean.
+		local ok, result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
+		if ok and type(result) == "table" and result.success then
 			-- Optimistically deduct locally for immediate UI feedback
 			_inventory[itemId] = (_inventory[itemId] or 1) - 1
 			if _inventory[itemId] < 0 then
@@ -546,8 +548,9 @@ local function _buildUI()
 				return
 			end
 			task.spawn(function()
-				local result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
-				if result and result.success then
+				-- Promise:await() returns (ok, valueOrError); destructure both.
+				local ok, result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
+				if ok and type(result) == "table" and result.success then
 					_inventory[itemId] = (_inventory[itemId] or 1) - 1
 					if _inventory[itemId] < 0 then
 						_inventory[itemId] = 0

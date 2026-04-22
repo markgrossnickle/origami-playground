@@ -388,6 +388,27 @@ Things we got wrong and must not repeat:
 - **Throttle per-frame raycasts.** Mining highlight only needs ~20Hz, not 60Hz. Cache results and skip frames.
 - **Pre-classify creature animation parts at spawn, not per-frame.** string:match per part per tick creates GC pressure. Classify once into a lookup table.
 
+### Do NOT use EditableMesh for streaming voxel chunks
+
+Attempted on branch `editable-mesh-renderer` (April 2026) — **abandoned**. If a future session is tempted to "just use EditableMesh for the mining world," re-read this before spending a day on it. The API is architecturally wrong for streaming voxel chunks, not just buggy.
+
+**Hard blockers:**
+
+- **Per-client memory budget is device-dependent and tiny on mobile.** Roblox staff (Penpen0u0) have stated low-end devices are capped at "less than 8" unfixed EditableMeshes *total*. The budget reserves worst-case space (~2.8MB per mesh regardless of actual usage). 84 streaming chunks = budget exhaustion and `CreateEditableMesh()` returns `nil` after a few dozen. A fix is "planned but requires reworking how the data is stored" with no ETA.
+- **`AssetService:CreateMeshPartAsync` ≈ 0.25 seconds per call, yields synchronously.** Benchmarked on DevForum. Even serialized one-at-a-time, that's ~4 chunks/sec maximum throughput — useless for 84 chunks on spawn plus continuous streaming. The community workaround (pre-create + clone, 780× faster) doesn't apply to procedural per-chunk geometry.
+- **Rate-limited, network-backed creation.** Each `CreateEditableMesh` call hits a Roblox server. ~100 rapid calls exhausts the per-client allowance; recovery is slow. `:Destroy()` frees C++ memory but NOT the rate-limit budget.
+- **Shipping blocker:** published experiences require each player to be ID-verified and 13+ for the "Allow Mesh & Image APIs" toggle. Un-verified players fail at runtime.
+
+**Known active rendering bugs** matching the "invisible chunks" symptom we hit:
+
+- **Coplanar geometry renders invisible.** Every voxel face is coplanar by definition. Documented workaround: "move one vertex by 0.001." Unusable at scale.
+- **MeshPart.Size ↔ EditableMesh bounds mismatch** silently hides the mesh via frustum culling. Must manually `meshPart.Size = newMesh.Size` after every `ApplyMesh`.
+- **EditableMesh must be parented via `Content.fromObject` + `CreateMeshPartAsync`** per the 2024 API restructure. The older `Instance.new("EditableMesh")` path renders nothing.
+
+**Production reality:** zero public Roblox voxel games use EditableMesh. Every shipped Roblox voxel engine uses the canonical pattern: **pooled Parts + greedy meshing + `workspace:BulkMoveTo` + CFrame-to-infinity pooling**. This is what the `greedy-parts-renderer` branch (`GreedyMesher` + `ChunkMeshPool` + `ChunkRenderController`) implements, and what should be used for any future voxel work.
+
+If evaluating EditableMesh for a different use case (e.g. one-off dynamic models, not streaming voxels), the above blockers still apply — re-read this section before committing to it.
+
 ## CI & Linting Rules (IMPORTANT)
 
 Three GitHub Actions workflows run on every push:

@@ -89,6 +89,90 @@ local BATCH_FLUSH_SIZE = 256
 local TRICKLE_FILL_PER_FRAME = 4
 local TRICKLE_FILL_TARGET = 500
 
+-- Bulk-rendered block types. These get a single flat axis-aligned cube per
+-- block with no rotation, tilt, position jitter, or paper-crystal layering,
+-- regardless of LOD tier. Covers underground geology (stone/ore/gem/void
+-- layers 1-7) and biome subsurface fillers — everything the player sees
+-- once they've dug past the surface grass + paper layer.
+--
+-- Decorative blocks (anything NOT in this set) keep the full per-block
+-- character treatment: paper-crystal layers at LOD 0, simple part at LOD 1.
+-- Surface toppers (PaperGrass, FairyMoss, …), tree trunks, leaves/canopies,
+-- mushrooms, accents, EggNode lights, bouncy blocks, and WillowVine taper
+-- all live in the decorative path because their special-case handling
+-- (bounce, light, taper) is wired into _makeLayerParts / _makeSimplePart.
+local BULK_BLOCKS: { [number]: boolean } = {
+	[BlockType.Bedrock] = true,
+
+	-- Paper Fields bulk (cardboard + below; Paper + PaperGrass stay decorative)
+	[BlockType.Cardboard] = true,
+	[BlockType.DriedPulp] = true,
+
+	-- Pulp Caverns
+	[BlockType.CompressedPulp] = true,
+	[BlockType.Clay] = true,
+	[BlockType.RecycledFiber] = true,
+	[BlockType.PulpOre] = true,
+
+	-- Fold Tunnels
+	[BlockType.FoldedStone] = true,
+	[BlockType.PaperQuartz] = true,
+	[BlockType.PaperCrystal] = true,
+	[BlockType.InkStone] = true,
+
+	-- Origami Depths
+	[BlockType.OrigamiRock] = true,
+	[BlockType.GemFragment] = true,
+	[BlockType.FoilOre] = true,
+	[BlockType.RubyPaper] = true,
+
+	-- Crystal Lattice
+	[BlockType.CrystalBlock] = true,
+	[BlockType.FoilSheet] = true,
+	[BlockType.MetalOrigami] = true,
+	[BlockType.SapphireCrystal] = true,
+
+	-- Void Seams
+	[BlockType.VoidStone] = true,
+	[BlockType.DarkPaper] = true,
+	[BlockType.ShadowFold] = true,
+	[BlockType.VoidCrystal] = true,
+
+	-- The Core
+	[BlockType.PrismaticBlock] = true,
+	[BlockType.CoreFragment] = true,
+	[BlockType.RainbowPaper] = true,
+
+	-- Biome subsurface fillers (bulk dirt/rock under the surface topper)
+	[BlockType.EnchantedSoil] = true,
+	[BlockType.FairyFiller] = true,
+	[BlockType.GladeSoil] = true,
+	[BlockType.HollowSoil] = true,
+	[BlockType.ReefRock] = true,
+	[BlockType.CoralFiller] = true,
+	[BlockType.RoseQuartz] = true,
+	[BlockType.RedClay] = true,
+	[BlockType.MintFrost] = true,
+	[BlockType.ConfettiFiller] = true,
+	[BlockType.AgedPaper] = true,
+	[BlockType.NewspaperGray] = true,
+	[BlockType.NewspaperLayer] = true,
+	[BlockType.AshStone] = true,
+	[BlockType.ScorchedBase] = true,
+	[BlockType.StellarDust] = true,
+	[BlockType.NebulaFiller] = true,
+	[BlockType.TerracottaClay] = true,
+	[BlockType.MosaicSandstone] = true,
+	[BlockType.CoralPaper] = true,
+	[BlockType.SteamFiller] = true,
+	[BlockType.InkSubsurface] = true,
+	[BlockType.CrayonSubsurface] = true,
+	[BlockType.LavenderSubsurface] = true,
+	[BlockType.BoulderGray] = true,
+	[BlockType.CorrugatedCardboard] = true,
+	[BlockType.DarkCardboard] = true,
+}
+
 -- Leaf blocks that get random Y-rotation for organic look (not vines, not platform/shelf)
 local ROTATABLE_LEAVES: { [number]: boolean } = {
 	[BlockType.Leaves] = true,
@@ -747,6 +831,49 @@ local function _makeSimplePart(
 	return { part }
 end
 
+-- Bulk block renderer: one axis-aligned cube per block. No jitter, no tilt,
+-- no rotation, no paper-crystal layers. Used for underground geology +
+-- subsurface biome filler (BULK_BLOCKS). Saves two parts per block vs
+-- _makeLayerParts and skips the hash/CFrame.Angles math per block vs
+-- _makeSimplePart. Active at both LOD 0 and LOD 1 since bulk blocks look
+-- identical at any near-ish viewing distance.
+local function _makeBulkPart(
+	blockTypeId: number,
+	cx: number,
+	cy: number,
+	cz: number,
+	lx: number,
+	ly: number,
+	lz: number,
+	batched: boolean?
+): { BasePart }
+	local halfBlock = BLOCK_SIZE / 2
+	local px = cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock
+	local py = cy * CHUNK_STUDS + ly * BLOCK_SIZE + halfBlock
+	local pz = cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
+
+	local part = _getPart()
+	part.Color = _getColor(blockTypeId)
+	part.Material = _getMaterial(blockTypeId)
+	part.Size = SIMPLE_SIZE_DEFAULT
+	part.CanCollide = true
+	part.CanQuery = true
+	part.Transparency = 0
+
+	local targetCFrame = CFrame.new(px, py, pz)
+	if batched then
+		table.insert(_batchParts, part)
+		table.insert(_batchCFrames, targetCFrame)
+		if #_batchParts >= BATCH_FLUSH_SIZE then
+			_flushBatch()
+		end
+	else
+		part.CFrame = targetCFrame
+	end
+
+	return { part }
+end
+
 -- LOD 2: one Part per greedy-merged region. No per-block character (tilt,
 -- tint, paper layers) — this tier only renders at ~226+ studs where jitter is
 -- imperceptible anyway. CanQuery=false because mining reach never touches
@@ -795,7 +922,18 @@ local function _makeGreedyRegionPart(
 end
 
 -- Block creation dispatcher
-
+--
+-- Matrix:
+--                   | Decorative block       | Bulk block (BULK_BLOCKS)
+--   LOD 0 (near)    | _makeLayerParts (3 pt) | _makeBulkPart (1 pt)
+--   LOD 1 (mid)     | _makeSimplePart (1 pt) | _makeBulkPart (1 pt)
+--   LOD 2 (far)     | Not called — _renderChunkGreedy emits merged regions.
+--
+-- Bulk blocks always render as a flat axis-aligned cube regardless of LOD
+-- tier. At ~500 exposed blocks per chunk with underground being ~80% bulk,
+-- this saves roughly 800 parts per LOD 0 chunk vs the old 3-part path —
+-- pool pressure, property writes, and physics broadphase all drop
+-- proportionally.
 local function _makeBlockParts(
 	blocks: buffer,
 	blockTypeId: number,
@@ -808,11 +946,12 @@ local function _makeBlockParts(
 	lod: number,
 	batched: boolean?
 ): { BasePart }
+	if BULK_BLOCKS[blockTypeId] then
+		return _makeBulkPart(blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+	end
 	if lod == 0 then
 		return _makeLayerParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
 	else
-		-- LOD 1 simple per-block. (LOD 2 doesn't call this path — it goes
-		-- through _renderChunkGreedy which emits merged-region parts instead.)
 		return _makeSimplePart(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
 	end
 end

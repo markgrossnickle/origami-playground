@@ -222,7 +222,6 @@ end
 -- Heightmap Initialization (5-pass pipeline)
 
 local function _initializeGlobalHeightmap(seed: number)
-	debug.profilebegin("worldgen.heightmap_init")
 	local size = WORLD_SIZE_BLOCKS
 	local total = size * size
 	local hm = buffer.create(total)
@@ -499,7 +498,6 @@ local function _initializeGlobalHeightmap(seed: number)
 
 	globalHeightmap = hm
 	heightmapSeed = seed
-	debug.profileend() -- worldgen.heightmap_init
 end
 
 local heightmapInitializing = false
@@ -2268,7 +2266,10 @@ end
 -- Main Chunk Generation
 
 function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: number): buffer
-	debug.profilebegin("worldgen.chunk")
+	-- NOTE: do NOT wrap this function in `debug.profilebegin/end` — Roblox's
+	-- profile stack is not yield-safe and the worldgen phases all yield
+	-- internally via _yieldIfBudgetExceeded(). ScriptProfiler will show
+	-- per-function attribution automatically; rely on that for phase timing.
 
 	-- Acquire from pool instead of allocating fresh — WorldService releases
 	-- chunk buffers back when it evicts them, eliminating ~4 KB GC churn per
@@ -2281,7 +2282,6 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 	local chunkBlockZ = cz * CHUNK_SIZE
 
 	-- Pre-compute per-column data
-	debug.profilebegin("worldgen.heightmap")
 	local columnSurface = table.create(256, 0)
 
 	local maxSurface = -math.huge
@@ -2303,12 +2303,10 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 			end
 		end
 	end
-	debug.profileend()
 
 	-- Quick rejection: chunk entirely above max surface + tree height
 	local maxTreeTop = maxSurface + 10
 	if chunkBlockYBottom > maxTreeTop then
-		debug.profileend() -- worldgen.chunk
 		return blocks -- all air
 	end
 
@@ -2316,12 +2314,10 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 	local bedrockLevel = minSurface - Config.maxDepthBlocks
 	if chunkBlockYTop < bedrockLevel then
 		buffer.fill(blocks, 0, BlockType.Bedrock)
-		debug.profileend() -- worldgen.chunk
 		return blocks
 	end
 
 	-- Fill terrain column by column (yield periodically to prevent freezes)
-	debug.profilebegin("worldgen.terrain")
 	for lz = 0, CHUNK_SIZE - 1 do
 		for lx = 0, CHUNK_SIZE - 1 do
 			local colIdx = lz * 16 + lx
@@ -2370,11 +2366,9 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		end
 		_yieldIfBudgetExceeded()
 	end
-	debug.profileend() -- worldgen.terrain
 
 	-- Cave carving for underground chunks (yield periodically)
 	if chunkBlockYTop < minSurface then
-		debug.profilebegin("worldgen.caves")
 		for ly = 0, CHUNK_SIZE - 1 do
 			for lz = 0, CHUNK_SIZE - 1 do
 				for lx = 0, CHUNK_SIZE - 1 do
@@ -2405,12 +2399,10 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 			end
 			_yieldIfBudgetExceeded()
 		end
-		debug.profileend() -- worldgen.caves
 	end
 
 	-- Place ore veins in underground chunks
 	if chunkBlockYTop < minSurface then
-		debug.profilebegin("worldgen.ores")
 		local chunkHash = hashSeed(seed, cx, cy, cz)
 		local rng = createRNG(chunkHash)
 
@@ -2425,24 +2417,18 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 
 		-- Place egg nodes
 		placeEggNodes(blocks, rng, depthLayer.eggChance)
-		debug.profileend() -- worldgen.ores
 	end
 
 	-- Place cave mushrooms in underground chunks (after cave carving)
 	if chunkBlockYTop < minSurface then
-		debug.profilebegin("worldgen.mushrooms")
 		placeCaveMushrooms(blocks, seed, cx, cy, cz)
-		debug.profileend() -- worldgen.mushrooms
 	end
 
 	-- Place trees on chunks near the surface
 	if maxSurface + 10 >= chunkBlockYBottom and minSurface <= chunkBlockYTop then
-		debug.profilebegin("worldgen.trees")
 		placeTreesInChunk(blocks, seed, cx, cy, cz)
-		debug.profileend() -- worldgen.trees
 	end
 
-	debug.profileend() -- worldgen.chunk
 	return blocks
 end
 

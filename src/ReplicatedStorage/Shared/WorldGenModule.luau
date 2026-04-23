@@ -221,6 +221,7 @@ end
 -- Heightmap Initialization (5-pass pipeline)
 
 local function _initializeGlobalHeightmap(seed: number)
+	debug.profilebegin("worldgen.heightmap_init")
 	local size = WORLD_SIZE_BLOCKS
 	local total = size * size
 	local hm = buffer.create(total)
@@ -497,6 +498,7 @@ local function _initializeGlobalHeightmap(seed: number)
 
 	globalHeightmap = hm
 	heightmapSeed = seed
+	debug.profileend() -- worldgen.heightmap_init
 end
 
 local heightmapInitializing = false
@@ -656,6 +658,16 @@ local function getTreeHeight(seed: number, bx: number, bz: number): number
 	local range = surface.trunkHeightMax - surface.trunkHeightMin + 1
 	return surface.trunkHeightMin + (h % range)
 end
+
+-- Hoisted constant tables. Previously these were `local foo = { ... }` inside
+-- per-structure loops, allocating a fresh table on every tree/mushroom placed
+-- (CLAUDE.md "Hoist constant tables out of hot loops"). Kept as separate
+-- constants because the modulo-indexing into them is order-sensitive — merging
+-- BRANCH_DIRS_2D and SHELF_DIRS_2D would change which direction each branch /
+-- shelf picks via hash, regenerating every existing world differently.
+local BRANCH_DIRS_2D = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } } -- E, W, N, S
+local SHELF_DIRS_2D = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } } -- E, N, W, S
+local MUSHROOM_CLUSTER_OFFSETS = { { 0, 0 }, { 1, 1 }, { -1, 1 } }
 
 -- All available structure types for "mixed" mode
 -- NOTE: "fly_trap" structure builder exists below but is disabled from mixed rotation for now
@@ -997,10 +1009,9 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					topX, topZ = sx, sz
 				end
 				-- 3 branches like fork tines: connected to trunk, each with its own canopy cluster
-				local branchDirs = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
 				local branchCount = 2 + (hashTwo(seed + 6101, bx, bz) % 2)
 				for bi = 1, branchCount do
-					local dir = branchDirs[(hashTwo(seed + 6102 + bi, bx, bz) % #branchDirs) + 1]
+					local dir = BRANCH_DIRS_2D[(hashTwo(seed + 6102 + bi, bx, bz) % #BRANCH_DIRS_2D) + 1]
 					local branchStartY = surfaceBlockY + 2 + (bi - 1) * 2
 					local bsx, bsz = getTrunkPos(seed, bx, bz, 1 + (bi - 1) * 2)
 					-- Branch: connector → extends 3 blocks outward, angling up
@@ -1116,12 +1127,11 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					)
 				end
 				-- Stubby branches every 6 blocks with flat canopy pads
-				local branchDirs = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
 				local branchInterval = 6
 				for bi = 1, math.floor(trunkHeight / branchInterval) do
 					local branchY = surfaceBlockY + bi * branchInterval
-					local dirIdx = (hashTwo(seed + 7000 + bi, bx, bz) % #branchDirs) + 1
-					local dir = branchDirs[dirIdx]
+					local dirIdx = (hashTwo(seed + 7000 + bi, bx, bz) % #BRANCH_DIRS_2D) + 1
+					local dir = BRANCH_DIRS_2D[dirIdx]
 					placeBlock(
 						blocks,
 						trunkBlock,
@@ -1664,8 +1674,7 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 				end
 			elseif structureType == "mushroom_cluster" then
 				-- Group of 3 small mushrooms at slightly different heights
-				local offsets = { { 0, 0 }, { 1, 1 }, { -1, 1 } }
-				for i, off in offsets do
+				for i, off in MUSHROOM_CLUSTER_OFFSETS do
 					local mh = 1 + (i - 1) -- heights 1, 2, 3
 					local mx, mz = bx + off[1], bz + off[2]
 					for ty = 0, mh - 1 do
@@ -1805,11 +1814,10 @@ local function placeTreesInChunk(blocks: buffer, seed: number, cx: number, cy: n
 					topX, topZ = sx, sz
 				end
 				-- Shelf brackets at different heights, following trunk sway
-				local dirs = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } }
 				for shelf = 0, 2 do
 					local shelfY = surfaceBlockY + 2 + shelf * 2
 					local shelfSx, shelfSz = getTrunkPos(seed, bx, bz, 1 + shelf * 2)
-					local dir = dirs[(shelf % 4) + 1]
+					local dir = SHELF_DIRS_2D[(shelf % 4) + 1]
 					placeBlock(
 						blocks,
 						canopyBlock,
@@ -2137,8 +2145,7 @@ local function placeCaveMushrooms(blocks: buffer, seed: number, cx: number, cy: 
 									chunkBlockZ,
 									true
 								)
-								local dir = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } }
-								local d = dir[(h % 4) + 1]
+								local d = SHELF_DIRS_2D[(h % 4) + 1]
 								placeBlock(
 									blocks,
 									capBlock,
@@ -2260,6 +2267,8 @@ end
 -- Main Chunk Generation
 
 function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: number): buffer
+	debug.profilebegin("worldgen.chunk")
+
 	local blocks = buffer.create(BLOCKS_PER_CHUNK)
 
 	local chunkBlockYBottom = cy * CHUNK_SIZE
@@ -2268,6 +2277,7 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 	local chunkBlockZ = cz * CHUNK_SIZE
 
 	-- Pre-compute per-column data
+	debug.profilebegin("worldgen.heightmap")
 	local columnSurface = table.create(256, 0)
 
 	local maxSurface = -math.huge
@@ -2289,10 +2299,12 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 			end
 		end
 	end
+	debug.profileend()
 
 	-- Quick rejection: chunk entirely above max surface + tree height
 	local maxTreeTop = maxSurface + 10
 	if chunkBlockYBottom > maxTreeTop then
+		debug.profileend() -- worldgen.chunk
 		return blocks -- all air
 	end
 
@@ -2300,10 +2312,12 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 	local bedrockLevel = minSurface - Config.maxDepthBlocks
 	if chunkBlockYTop < bedrockLevel then
 		buffer.fill(blocks, 0, BlockType.Bedrock)
+		debug.profileend() -- worldgen.chunk
 		return blocks
 	end
 
 	-- Fill terrain column by column (yield periodically to prevent freezes)
+	debug.profilebegin("worldgen.terrain")
 	for lz = 0, CHUNK_SIZE - 1 do
 		for lx = 0, CHUNK_SIZE - 1 do
 			local colIdx = lz * 16 + lx
@@ -2352,9 +2366,11 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		end
 		_yieldIfBudgetExceeded()
 	end
+	debug.profileend() -- worldgen.terrain
 
 	-- Cave carving for underground chunks (yield periodically)
 	if chunkBlockYTop < minSurface then
+		debug.profilebegin("worldgen.caves")
 		for ly = 0, CHUNK_SIZE - 1 do
 			for lz = 0, CHUNK_SIZE - 1 do
 				for lx = 0, CHUNK_SIZE - 1 do
@@ -2385,10 +2401,12 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 			end
 			_yieldIfBudgetExceeded()
 		end
+		debug.profileend() -- worldgen.caves
 	end
 
 	-- Place ore veins in underground chunks
 	if chunkBlockYTop < minSurface then
+		debug.profilebegin("worldgen.ores")
 		local chunkHash = hashSeed(seed, cx, cy, cz)
 		local rng = createRNG(chunkHash)
 
@@ -2403,18 +2421,24 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 
 		-- Place egg nodes
 		placeEggNodes(blocks, rng, depthLayer.eggChance)
+		debug.profileend() -- worldgen.ores
 	end
 
 	-- Place cave mushrooms in underground chunks (after cave carving)
 	if chunkBlockYTop < minSurface then
+		debug.profilebegin("worldgen.mushrooms")
 		placeCaveMushrooms(blocks, seed, cx, cy, cz)
+		debug.profileend() -- worldgen.mushrooms
 	end
 
 	-- Place trees on chunks near the surface
 	if maxSurface + 10 >= chunkBlockYBottom and minSurface <= chunkBlockYTop then
+		debug.profilebegin("worldgen.trees")
 		placeTreesInChunk(blocks, seed, cx, cy, cz)
+		debug.profileend() -- worldgen.trees
 	end
 
+	debug.profileend() -- worldgen.chunk
 	return blocks
 end
 

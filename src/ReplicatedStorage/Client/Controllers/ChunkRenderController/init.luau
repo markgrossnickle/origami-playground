@@ -1401,8 +1401,14 @@ function ChunkRenderController:KnitStart()
 		_unrenderChunk(chunkKey)
 	end)
 
-	WorldService.BlockUpdate:Connect(function(chunkKey: number, flatIndex: number, blockTypeId: number)
-		_handleBlockUpdate(chunkKey, flatIndex, blockTypeId)
+	-- WorldService.BlockUpdate fires a flat array at 10Hz, batching all block
+	-- changes the player observed during that 100ms window. Each entry is
+	-- 3 consecutive numbers: chunkKey, flatIndex, blockTypeId. Replaces the
+	-- old 1-event-per-block pattern that storm-replicated mining bursts.
+	WorldService.BlockUpdate:Connect(function(batch: { number })
+		for i = 1, #batch, 3 do
+			_handleBlockUpdate(batch[i], batch[i + 1], batch[i + 2])
+		end
 	end)
 
 	-- Heartbeat: cleanup queue, trickle-fill pool, periodic LOD re-evaluation

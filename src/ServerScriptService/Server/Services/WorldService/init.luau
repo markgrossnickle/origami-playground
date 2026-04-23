@@ -11,6 +11,7 @@ local Signal = require(ReplicatedStorage.Packages.Signal)
 local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local ChunkSerializer = require(ReplicatedStorage.Shared.ChunkSerializer)
 local WorldGenModule = require(ReplicatedStorage.Shared.WorldGenModule)
+local ChunkBufferPool = require(ReplicatedStorage.Shared.ChunkBufferPool)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
@@ -62,6 +63,14 @@ local savedDeltas: { [number]: ChunkDelta } = {}
 local dirtyRegions: { [string]: boolean } = {}
 local playerSubscriptions: { [Player]: { [number]: boolean } } = {}
 local chunkSubscribers: { [number]: { [Player]: boolean } } = {}
+
+-- Per-player pending block updates, drained at BLOCK_UPDATE_FLUSH_HZ.
+-- Shape: pendingBlockUpdates[player][chunkKey][flatIndex] = blockTypeId.
+-- Using nested dicts collapses repeat-edits in the flush window to the latest
+-- value, so a player rapidly mining + replacing the same block only sends one
+-- update per flush instead of two.
+local pendingBlockUpdates: { [Player]: { [number]: { [number]: number } } } = {}
+local BLOCK_UPDATE_FLUSH_HZ = 10
 
 local WorldStore: DataStore?
 local SeedStore: DataStore?
@@ -160,6 +169,47 @@ function WorldService:_loadDeltasForChunk(chunkKey: number, cx: number, cy: numb
 			savedDeltas[storedKey] = ChunkSerializer.deserializeDelta(serializedDelta)
 		end
 	end
+end
+
+-- Pre-warm savedDeltas for the regions surrounding (cx, cy, cz) by issuing
+-- background DataStore reads. Each Subscribe normally yields on the first
+-- chunk in a region (DataStore GetAsync, ~50-500ms). Pre-fetching means the
+-- player's chunk subscribes hit savedDeltas instantly when they walk in.
+--
+-- Spawned as a background task so the caller never waits. Calls are spaced
+-- with task.wait(0.05) to avoid bursting the DataStore request budget
+-- (60 + 10·players per minute).
+--
+-- Region size is 8 chunks each axis; prefetch radius 1 = 27 regions covering
+-- ±8 chunks (±640 studs) of player movement before the next prefetch is
+-- needed.
+function WorldService:PrefetchRegionsAround(cx: number, cy: number, cz: number)
+	task.spawn(function()
+		local seenRegions: { [string]: boolean } = {}
+		for drx = -1, 1 do
+			for dry = -1, 1 do
+				for drz = -1, 1 do
+					-- Pick any chunk inside this neighboring region — regionKey
+					-- is computed by floor-dividing chunk coords by 8.
+					local sampleCx = cx + drx * 8
+					local sampleCy = cy + dry * 8
+					local sampleCz = cz + drz * 8
+					local regionKey = ChunkUtil.regionKey(sampleCx, sampleCy, sampleCz)
+					if seenRegions[regionKey] then
+						continue
+					end
+					seenRegions[regionKey] = true
+
+					-- Reuse the existing per-chunk loader; it's a no-op if the
+					-- region is already cached and otherwise issues one
+					-- GetAsync per region.
+					local sampleChunkKey = ChunkUtil.chunkKey(sampleCx, sampleCy, sampleCz)
+					self:_loadDeltasForChunk(sampleChunkKey, sampleCx, sampleCy, sampleCz)
+					task.wait(0.05)
+				end
+			end
+		end
+	end)
 end
 
 function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): ChunkData
@@ -262,16 +312,58 @@ function WorldService:SetBlock(chunkKey: number, flatIndex: number, blockTypeId:
 
 	_markDirty(chunkKey, chunk.cx, chunk.cy, chunk.cz)
 
+	-- Queue the update for each subscriber. The 10Hz flush loop in KnitStart
+	-- coalesces a burst of mining edits into one batched fire per player —
+	-- replaces firing N events when a player breaks N blocks in a 100ms
+	-- window with a single event carrying all N. Reduces chunk-handover and
+	-- mining-burst replication storms.
 	local subscribers = chunkSubscribers[chunkKey]
 	if subscribers then
 		for player in subscribers do
-			self.Client.BlockUpdate:Fire(player, chunkKey, flatIndex, blockTypeId)
+			local perPlayer = pendingBlockUpdates[player]
+			if not perPlayer then
+				perPlayer = {}
+				pendingBlockUpdates[player] = perPlayer
+			end
+			local perChunk = perPlayer[chunkKey]
+			if not perChunk then
+				perChunk = {}
+				perPlayer[chunkKey] = perChunk
+			end
+			perChunk[flatIndex] = blockTypeId
 		end
 	end
 
 	if oldBlock ~= BlockType.Air and blockTypeId == BlockType.Air then
 		self.BlockBroken:Fire(chunkKey, flatIndex, oldBlock)
 	end
+end
+
+-- Drain pendingBlockUpdates and fire one batched event per player. Each
+-- entry in the wire array is 3 consecutive numbers: chunkKey, flatIndex,
+-- blockTypeId. Flat array beats a dict-of-dicts on the wire (Roblox's
+-- serializer pays per-key overhead for tables).
+local function _flushPendingBlockUpdates(self)
+	for player, perPlayer in pendingBlockUpdates do
+		if not player.Parent then
+			continue
+		end
+		local flat: { number } = {}
+		local i = 0
+		for chunkKey, perChunk in perPlayer do
+			for flatIndex, blockTypeId in perChunk do
+				flat[i + 1] = chunkKey
+				flat[i + 2] = flatIndex
+				flat[i + 3] = blockTypeId
+				i += 3
+			end
+		end
+		if i > 0 then
+			self.Client.BlockUpdate:Fire(player, flat)
+		end
+	end
+	-- Single allocation cleanup — fresh table for the next batch window.
+	pendingBlockUpdates = {}
 end
 
 function WorldService:BreakBlock(chunkKey: number, flatIndex: number): number
@@ -471,6 +563,13 @@ function WorldService:_evictUnusedChunks(): number
 		end
 	end
 	for _, chunkKey in evictList do
+		-- Return the block buffer to the pool before dropping the chunk —
+		-- WorldGenModule's next acquire() will reuse it instead of allocating
+		-- a fresh 4 KB buffer.
+		local chunk = chunks[chunkKey]
+		if chunk then
+			ChunkBufferPool.release(chunk.blocks)
+		end
 		chunks[chunkKey] = nil
 	end
 	return #evictList
@@ -487,6 +586,7 @@ function WorldService:KnitInit()
 
 	Players.PlayerRemoving:Connect(function(player)
 		self:UnsubscribeAll(player)
+		pendingBlockUpdates[player] = nil
 	end)
 end
 
@@ -536,6 +636,16 @@ function WorldService:KnitStart()
 		while true do
 			task.wait(EVICT_INTERVAL)
 			self:_evictUnusedChunks()
+		end
+	end)
+
+	-- 10Hz BlockUpdate batch flush. Drains pendingBlockUpdates and fires one
+	-- combined event per player. See _flushPendingBlockUpdates.
+	task.spawn(function()
+		local interval = 1 / BLOCK_UPDATE_FLUSH_HZ
+		while true do
+			task.wait(interval)
+			_flushPendingBlockUpdates(self)
 		end
 	end)
 

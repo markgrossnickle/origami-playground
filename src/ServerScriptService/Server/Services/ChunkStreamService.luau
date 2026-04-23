@@ -122,11 +122,23 @@ function ChunkStreamService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 
 	local function onPlayerAdded(player: Player)
-		local function onCharacterAdded(_character: Model)
+		local function onCharacterAdded(character: Model)
 			task.defer(function()
-				if player.Parent then
-					_updatePlayerChunks(player)
+				if not player.Parent then
+					return
 				end
+
+				-- Pre-warm the regions around the player's spawn position so
+				-- the first batch of chunk subscribes don't each yield on a
+				-- cold DataStore GetAsync. Background, fire-and-forget.
+				local rootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if rootPart then
+					local pos = rootPart.Position
+					local pcx, pcy, pcz = ChunkUtil.worldToChunk(pos.X, pos.Y, pos.Z)
+					WorldService:PrefetchRegionsAround(pcx, pcy, pcz)
+				end
+
+				_updatePlayerChunks(player)
 			end)
 		end
 

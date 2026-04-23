@@ -3,6 +3,7 @@
 local ChunkUtil = require(script.Parent.ChunkUtil)
 local BlockType = require(script.Parent.Enums.BlockType)
 local BiomeConfig = require(script.Parent.BiomeConfig)
+local ChunkBufferPool = require(script.Parent.ChunkBufferPool)
 
 -- Frame-budget helper: yields only when the current slice has exceeded the
 -- budget, instead of yielding at fixed iteration intervals. This eliminates
@@ -2269,7 +2270,10 @@ end
 function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: number): buffer
 	debug.profilebegin("worldgen.chunk")
 
-	local blocks = buffer.create(BLOCKS_PER_CHUNK)
+	-- Acquire from pool instead of allocating fresh — WorldService releases
+	-- chunk buffers back when it evicts them, eliminating ~4 KB GC churn per
+	-- chunk during heavy exploration.
+	local blocks = ChunkBufferPool.acquire()
 
 	local chunkBlockYBottom = cy * CHUNK_SIZE
 	local chunkBlockYTop = chunkBlockYBottom + CHUNK_SIZE - 1

@@ -5,7 +5,7 @@
 ## Overview
 Origami Expedition is a mining + creature + breeding game built on origami-playground. Players mine through 7 depth layers of origami-themed terrain, find materials to craft items and eggs that hatch LLM-generated creatures, breed creatures socially, and build on surface plots.
 
-The project grew out of the origami-playground text-to-model sandbox (`CreatorController`), where players type prompts and an LLM returns JSON that builds creatures, vehicles, buildings, tools, hats, and props in-world. That sandbox remains the foundation for creature generation; the expedition layer adds a persistent voxel world, mining progression, and crafting on top.
+The project grew out of the origami-playground text-to-model sandbox (`CreatorController`), where players type prompts and an LLM returns JSON that builds creatures, vehicles, tools, accessories, and props in-world. That sandbox remains the foundation for creature generation; the expedition layer adds a persistent voxel world, mining progression, and crafting on top. See **Aesthetic Rule** below for how LLM-generated origami and player-placed blocks divide the world.
 
 ## Core Loop
 1. **Mine** — Dig through layered terrain, collect materials
@@ -13,6 +13,48 @@ The project grew out of the origami-playground text-to-model sandbox (`CreatorCo
 3. **Hatch** — Eggs produce unique LLM-generated creatures
 4. **Breed** — Combine creatures with other players for new species
 5. **Build** — Develop surface plots with materials and creatures
+
+---
+
+## Aesthetic Rule (IMPORTANT)
+
+The game uses **two visual languages**, and they have strictly separate jobs:
+
+- **Blocks = architecture + terrain.** Houses, walls, floors, roofs, bridges, tunnels, rooms, towers, gates, plot construction of any kind. Built manually by players from mined materials, tile by tile. Minecraft-style.
+- **Origami (LLM-generated) = contents.** Props, creatures, vehicles, tools, accessories. Soft, folded, expressive. Generated from prompts.
+
+This rule exists because the two languages each have a proper job and mix badly:
+- Players *want* to build structures themselves — it's the skill and mastery loop.
+- Players *don't want* to hand-craft every chair, pet, and sword — that's what the LLM is for.
+- Freeform LLM output placed *as* architecture never matches a block grid and looks like a foreign object. Freeform LLM output placed *inside* a block interior looks like a tasteful prop.
+
+**No LLM category outputs buildings, walls, rooms, or structural elements.** The `building` category is retired and the LLM must refuse structural prompts (see **Prop Subcategories** below for prompt guardrails).
+
+---
+
+## Prop Subcategories (WIP)
+
+"Prop" is too broad — the LLM will happily return a castle if asked. To keep props scoped and stylistically tight, the prop category splits into subcategories, each with a bounding-box cap enforced server-side. If the LLM output exceeds the cap, the request is rejected.
+
+| Subcategory | Max bounding box | Anchor | Example prompts |
+|---|---|---|---|
+| **Furniture** | 8 studs any axis | Floor (flat bottom) | chair, table, bed, shelf, wardrobe |
+| **Tabletop** | 2 studs any axis | Floor (flat bottom) | teacup, book, candle, figurine, trophy |
+| **Wall art** | 4 studs, depth ≤ 0.5 | Back (mounts to wall) | painting, mirror, sconce, mask, flag |
+| **Hanging** | 4 studs | Top (suspends from ceiling) | chandelier, banner, wind chime, mobile |
+| **Floor decor** | 6 studs any axis | Floor (flat bottom) | plant, vase, rug, statue, mushroom |
+| **Light source** | 4 studs any axis | Floor or top | lamp, torch, lantern, glow orb |
+| **Container** | 6 studs any axis | Floor (flat bottom) | chest, barrel, bowl, basket |
+
+**Subcategory-specific LLM prompt:** each subcategory ships its own prompt fragment (appended to the voxel/style layer) describing the size cap, expected anchor, and a few good examples. The LLM is explicitly told it's generating a *decorative prop inside a player-built space*, not a structure.
+
+**Structural prompt guardrails:** prompts containing words like `castle`, `house`, `building`, `tower`, `wall`, `room`, `bridge`, `gate`, `fortress`, `temple`, `ruin`, `dungeon`, `cathedral` are rejected before hitting the LLM with a friendly error ("Those are built with blocks — try a chair, a chest, or a lantern instead"). The rejection list lives in a shared module so client UI can surface it pre-send and server enforces post-send; both paths stay in sync.
+
+**Post-generation bounding-box check:** after the LLM returns, compute the bounding box of `parts` and reject if it exceeds the subcategory's cap. A retry may be attempted once with a stricter prompt; if that also fails, the request surfaces an error.
+
+**Clouds as props:** clouds generate well as `floor_decor` or `hanging` props (see tests: balloon-style fluffy clouds, freestyle thunderheads with Neon lightning bolts). Not a structural element — treat as decor.
+
+**Retired categories:** the `building` category is retired — structures are player-built from blocks. `accessory` remains for wearable gear (hats, capes, crowns, armor) — it overlaps with the legacy `hat` category, which can be folded into `accessory` or kept as a convenience alias (pending decision). `voxel` category was a failed experiment (produced flat untextured cubes) — retained in code for now but not exposed; no plans to build on it.
 
 ---
 

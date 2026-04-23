@@ -46,11 +46,11 @@ This rule exists because the two languages each have a proper job and mix badly:
 | **Light source** | 4 studs any axis | Floor or top | lamp, torch, lantern, glow orb |
 | **Container** | 6 studs any axis | Floor (flat bottom) | chest, barrel, bowl, basket |
 
-**Subcategory-specific LLM prompt:** each subcategory ships its own prompt fragment (appended to the voxel/style layer) describing the size cap, expected anchor, and a few good examples. The LLM is explicitly told it's generating a *decorative prop inside a player-built space*, not a structure.
+**Subcategory-specific LLM prompt:** each subcategory ships its own prompt fragment (appended to the style layer) describing the size cap, expected anchor, and a few good examples. The LLM is explicitly told it's generating a *decorative prop inside a player-built space*, not a structure.
 
-**Structural prompt guardrails:** prompts containing words like `castle`, `house`, `building`, `tower`, `wall`, `room`, `bridge`, `gate`, `fortress`, `temple`, `ruin`, `dungeon`, `cathedral` are rejected before hitting the LLM with a friendly error ("Those are built with blocks — try a chair, a chest, or a lantern instead"). The rejection list lives in a shared module so client UI can surface it pre-send and server enforces post-send; both paths stay in sync.
+**Category selection *is* the guardrail.** Players must pick a subcategory before generating — no free-form un-categorized prompts. If a player types "castle" into `floor_decor`, they get a 6-stud toy castle figurine, which is a legitimate (and interesting) output. The category's bounding-box cap + prompt fragment do the scoping work; there is no prompt word blacklist. This keeps creative freedom intact while preventing architectural-scale outputs.
 
-**Post-generation bounding-box check:** after the LLM returns, compute the bounding box of `parts` and reject if it exceeds the subcategory's cap. A retry may be attempted once with a stricter prompt; if that also fails, the request surfaces an error.
+**Post-generation bounding-box check:** after the LLM returns, compute the bounding box of `parts` and reject if it exceeds the subcategory's cap. One silent retry may be attempted with a stricter "smaller please" directive; if that also fails, the request surfaces an error to the player.
 
 **Clouds as props:** clouds generate well as `floor_decor` or `hanging` props (see tests: balloon-style fluffy clouds, freestyle thunderheads with Neon lightning bolts). Not a structural element — treat as decor.
 

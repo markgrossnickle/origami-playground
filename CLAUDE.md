@@ -8,6 +8,10 @@ Built on the MindTrust Roblox template using the Knit framework.
 
 **Never guess. Never take the shortcut.** Always read the relevant files and do the work, even when it costs more tokens. Do not write "the usual X is…" / "typically Y works" / "I'd need to check" / "want me to inspect?" — just open the files and inspect. No speculative recommendations before reading the code. No offering to investigate — investigate. This applies to every task, including performance questions, bug hunts, architecture suggestions, and UI changes.
 
+## Don't Edit the GDD Without Approval
+
+`docs/GDD.md` is a *locked design document*. It only changes when the user explicitly says to update it (e.g. "update the GDD with this," "write that into the GDD"). When the user is in design discussion — proposing changes, brainstorming, asking for opinions, or correcting a previous decision — do NOT preemptively edit the GDD. Talk through implications, surface trade-offs, and wait for explicit approval before opening the file. If a previous GDD edit becomes stale because the user changed their mind, leave the file as-is and note in the conversation that it's out of date until they say to update it.
+
 ## Game-Specific Architecture
 
 ### Core Modules

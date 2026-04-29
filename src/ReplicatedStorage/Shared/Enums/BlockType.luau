@@ -8,44 +8,57 @@ return {
 	Bedrock = 255,
 
 	-- Paper Fields (Layer 1: 0 to -80 studs depth)
+	-- DEPRECATED: PaperGrass — retained for legacy chunk data; drops route to "paper" bulk.
 	PaperGrass = 1,
 	Paper = 2,
+	-- DEPRECATED: Cardboard — retained for legacy chunk data; drops route to "paper" bulk.
 	Cardboard = 3,
-	DriedPulp = 4,
+	InkdropOre = 4,
 
 	-- Pulp Caverns (Layer 2: -80 to -240)
-	CompressedPulp = 10,
-	Clay = 11,
+	Pulp = 10,
+	ClayBeadOre = 11,
+	-- DEPRECATED: RecycledFiber — retained for legacy chunk data; drops route to "pulp" bulk.
 	RecycledFiber = 12,
+	-- DEPRECATED: PulpOre — retained for legacy chunk data; drops route to "pulp" bulk.
 	PulpOre = 13,
 
 	-- Fold Tunnels (Layer 3: -240 to -480)
 	FoldedStone = 20,
-	PaperQuartz = 21,
+	QuartzOre = 21,
+	-- DEPRECATED: PaperCrystal — retained for legacy chunk data; drops route to "folded_stone" bulk.
 	PaperCrystal = 22,
+	-- DEPRECATED: InkStone — retained for legacy chunk data; drops route to "folded_stone" bulk.
 	InkStone = 23,
 
 	-- Origami Depths (Layer 4: -480 to -800)
 	OrigamiRock = 30,
-	GemFragment = 31,
+	GemFragmentOre = 31,
+	-- DEPRECATED: FoilOre — retained for legacy chunk data; drops route to "origami_rock" bulk.
 	FoilOre = 32,
+	-- DEPRECATED: RubyPaper — retained for legacy chunk data; drops route to "origami_rock" bulk.
 	RubyPaper = 33,
 
 	-- Crystal Lattice (Layer 5: -800 to -1200)
-	CrystalBlock = 40,
-	FoilSheet = 41,
+	Crystal = 40,
+	FoilShardOre = 41,
+	-- DEPRECATED: MetalOrigami — retained for legacy chunk data; drops route to "crystal" bulk.
 	MetalOrigami = 42,
+	-- DEPRECATED: SapphireCrystal — retained for legacy chunk data; drops route to "crystal" bulk.
 	SapphireCrystal = 43,
 
 	-- Void Seams (Layer 6: -1200 to -1600)
 	VoidStone = 50,
+	-- DEPRECATED: DarkPaper — retained for legacy chunk data; drops route to "void_stone" bulk.
 	DarkPaper = 51,
-	ShadowFold = 52,
+	ShadowWispOre = 52,
+	-- DEPRECATED: VoidCrystal — retained for legacy chunk data; drops route to "void_stone" bulk.
 	VoidCrystal = 53,
 
 	-- The Core (Layer 7: -1600 to -2000)
 	PrismaticBlock = 60,
-	CoreFragment = 61,
+	PrismCoreOre = 61,
+	-- DEPRECATED: RainbowPaper — retained for legacy chunk data; drops route to "prismatic_block" bulk.
 	RainbowPaper = 62,
 
 	-- Structure-specific blocks (mixed mode)

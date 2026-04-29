@@ -63,8 +63,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Paper Hat",
 		theme = "a simple folded paper hat — lightweight, papery texture, soft white or cream colors",
 		materials = {
-			{ itemId = "paper_scrap", count = 8 },
-			{ itemId = "cardboard", count = 4 },
+			{ itemId = "paper", count = 8 },
+			{ itemId = "inkdrop", count = 2 },
 		},
 		craftTime = 20 * 60, -- 20 minutes
 		attachPoint = "Head",
@@ -76,8 +76,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Pulp Shoulder Pad",
 		theme = "a sturdy shoulder pad made from compressed pulp — earthy tones, layered fibrous texture",
 		materials = {
-			{ itemId = "compressed_pulp", count = 8 },
-			{ itemId = "clay_chunk", count = 4 },
+			{ itemId = "pulp", count = 8 },
+			{ itemId = "clay_bead", count = 4 },
 		},
 		craftTime = 45 * 60, -- 45 minutes
 		attachPoint = "RightUpperArm",
@@ -90,7 +90,7 @@ WorkshopConfig.RECIPES = {
 		theme = "an elegant circlet with crystalline gems — blue and white shimmer, geometric facets",
 		materials = {
 			{ itemId = "folded_stone", count = 8 },
-			{ itemId = "quartz_shard", count = 5 },
+			{ itemId = "quartz", count = 5 },
 		},
 		craftTime = 90 * 60, -- 1.5 hours
 		attachPoint = "Head",
@@ -102,7 +102,7 @@ WorkshopConfig.RECIPES = {
 		displayName = "Gem-Studded Belt",
 		theme = "an ornate belt studded with glowing gems — purple and gold accents, intricate origami folds",
 		materials = {
-			{ itemId = "crystal_shard", count = 8 },
+			{ itemId = "crystal", count = 8 },
 			{ itemId = "gem_fragment", count = 5 },
 		},
 		craftTime = 3 * 60 * 60, -- 3 hours
@@ -116,7 +116,7 @@ WorkshopConfig.RECIPES = {
 		theme = "a floating dark halo with void energy cracks — shadowy with glowing purple fissures, ominous aura",
 		materials = {
 			{ itemId = "void_stone", count = 8 },
-			{ itemId = "shadow_fold", count = 5 },
+			{ itemId = "shadow_wisp", count = 5 },
 		},
 		craftTime = 6 * 60 * 60, -- 6 hours
 		attachPoint = "Head",
@@ -128,8 +128,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Prismatic Wings",
 		theme = "radiant wings that shift through rainbow colors — prismatic crystal feathers, ethereal glow",
 		materials = {
-			{ itemId = "prismatic_shard", count = 5 },
-			{ itemId = "core_fragment", count = 3 },
+			{ itemId = "prismatic_block", count = 5 },
+			{ itemId = "prism_core", count = 3 },
 		},
 		craftTime = 10 * 60 * 60, -- 10 hours
 		attachPoint = "UpperTorso",
@@ -145,8 +145,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Paper Wand",
 		theme = "a simple rolled-paper wand — light, papery, slightly bent tip with faint glow",
 		materials = {
-			{ itemId = "paper_scrap", count = 10 },
-			{ itemId = "cardboard", count = 6 },
+			{ itemId = "paper", count = 10 },
+			{ itemId = "inkdrop", count = 3 },
 		},
 		craftTime = 25 * 60, -- 25 minutes
 		toolStats = { damage = 5, speed = 1.2, range = 8 },
@@ -158,8 +158,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Pulp Mace",
 		theme = "a dense mace made from hardened pulp and clay — earthy brown, heavy spiked head",
 		materials = {
-			{ itemId = "compressed_pulp", count = 10 },
-			{ itemId = "clay_chunk", count = 6 },
+			{ itemId = "pulp", count = 10 },
+			{ itemId = "clay_bead", count = 6 },
 		},
 		craftTime = 50 * 60, -- 50 minutes
 		toolStats = { damage = 10, speed = 0.9, range = 6 },
@@ -172,7 +172,7 @@ WorkshopConfig.RECIPES = {
 		theme = "a sharp blade folded from stone and quartz — geometric edges, crystalline blue sheen",
 		materials = {
 			{ itemId = "folded_stone", count = 10 },
-			{ itemId = "quartz_shard", count = 6 },
+			{ itemId = "quartz", count = 6 },
 		},
 		craftTime = 2 * 60 * 60, -- 2 hours
 		toolStats = { damage = 18, speed = 1.1, range = 7 },
@@ -184,7 +184,7 @@ WorkshopConfig.RECIPES = {
 		displayName = "Crystal Staff",
 		theme = "an elegant staff topped with a glowing crystal orb — purple energy tendrils, intricate handle",
 		materials = {
-			{ itemId = "crystal_shard", count = 10 },
+			{ itemId = "crystal", count = 10 },
 			{ itemId = "gem_fragment", count = 6 },
 		},
 		craftTime = 5 * 60 * 60, -- 5 hours
@@ -198,7 +198,7 @@ WorkshopConfig.RECIPES = {
 		theme = "a fearsome scythe dripping with void energy — dark blade, glowing purple edge, shadow wisps",
 		materials = {
 			{ itemId = "void_stone", count = 10 },
-			{ itemId = "shadow_fold", count = 6 },
+			{ itemId = "shadow_wisp", count = 6 },
 		},
 		craftTime = 8 * 60 * 60, -- 8 hours
 		toolStats = { damage = 40, speed = 0.8, range = 10 },
@@ -210,8 +210,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Prismatic Scepter",
 		theme = "a legendary scepter radiating rainbow energy — shifting prismatic crystal head, golden handle",
 		materials = {
-			{ itemId = "prismatic_shard", count = 5 },
-			{ itemId = "core_fragment", count = 5 },
+			{ itemId = "prismatic_block", count = 5 },
+			{ itemId = "prism_core", count = 5 },
 		},
 		craftTime = 12 * 60 * 60, -- 12 hours
 		toolStats = { damage = 55, speed = 1.0, range = 14 },
@@ -227,8 +227,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Pulp Outfit",
 		theme = "a full-body outfit made from layered compressed pulp — earthy explorer look, fibrous texture",
 		materials = {
-			{ itemId = "compressed_pulp", count = 15 },
-			{ itemId = "clay_chunk", count = 8 },
+			{ itemId = "pulp", count = 15 },
+			{ itemId = "clay_bead", count = 8 },
 		},
 		craftTime = 30 * 60, -- 30 minutes
 	},
@@ -240,7 +240,7 @@ WorkshopConfig.RECIPES = {
 		theme = "crystalline body armor with quartz plating — blue shimmer, geometric faceted plates",
 		materials = {
 			{ itemId = "folded_stone", count = 15 },
-			{ itemId = "quartz_shard", count = 8 },
+			{ itemId = "quartz", count = 8 },
 		},
 		craftTime = 2 * 60 * 60, -- 2 hours
 	},
@@ -251,7 +251,7 @@ WorkshopConfig.RECIPES = {
 		displayName = "Gem Knight Suit",
 		theme = "a full knight suit studded with glowing gems — purple and gold plates, regal origami patterns",
 		materials = {
-			{ itemId = "crystal_shard", count = 15 },
+			{ itemId = "crystal", count = 15 },
 			{ itemId = "gem_fragment", count = 8 },
 		},
 		craftTime = 6 * 60 * 60, -- 6 hours
@@ -264,7 +264,7 @@ WorkshopConfig.RECIPES = {
 		theme = "a shadowy wraith costume with void energy — dark flowing robes, glowing void cracks, ethereal",
 		materials = {
 			{ itemId = "void_stone", count = 15 },
-			{ itemId = "shadow_fold", count = 8 },
+			{ itemId = "shadow_wisp", count = 8 },
 		},
 		craftTime = 10 * 60 * 60, -- 10 hours
 	},
@@ -275,8 +275,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Prismatic Avatar",
 		theme = "a legendary full-body transformation — rainbow shifting energy form, radiant prismatic glow",
 		materials = {
-			{ itemId = "prismatic_shard", count = 8 },
-			{ itemId = "core_fragment", count = 5 },
+			{ itemId = "prismatic_block", count = 8 },
+			{ itemId = "prism_core", count = 5 },
 		},
 		craftTime = 14 * 60 * 60, -- 14 hours
 	},
@@ -291,8 +291,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Paper Decoration",
 		theme = "a small folded paper decoration — origami flower or simple shape, white and pastel colors",
 		materials = {
-			{ itemId = "paper_scrap", count = 6 },
-			{ itemId = "cardboard", count = 3 },
+			{ itemId = "paper", count = 6 },
+			{ itemId = "inkdrop", count = 2 },
 		},
 		craftTime = 15 * 60, -- 15 minutes
 		placementSize = { x = 3, y = 3, z = 3 },
@@ -304,8 +304,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Clay Statue",
 		theme = "a small clay and pulp statue — earthy tones, hand-sculpted look, rustic charm",
 		materials = {
-			{ itemId = "compressed_pulp", count = 8 },
-			{ itemId = "clay_chunk", count = 5 },
+			{ itemId = "pulp", count = 8 },
+			{ itemId = "clay_bead", count = 5 },
 		},
 		craftTime = 40 * 60, -- 40 minutes
 		placementSize = { x = 4, y = 6, z = 4 },
@@ -318,7 +318,7 @@ WorkshopConfig.RECIPES = {
 		theme = "a decorative fountain with crystal water effects — blue quartz basin, shimmering water",
 		materials = {
 			{ itemId = "folded_stone", count = 10 },
-			{ itemId = "quartz_shard", count = 6 },
+			{ itemId = "quartz", count = 6 },
 		},
 		craftTime = 2 * 60 * 60, -- 2 hours
 		placementSize = { x = 6, y = 5, z = 6 },
@@ -330,7 +330,7 @@ WorkshopConfig.RECIPES = {
 		displayName = "Gem Totem",
 		theme = "a glowing totem pillar with embedded gems — purple energy veins, ancient origami carvings",
 		materials = {
-			{ itemId = "crystal_shard", count = 10 },
+			{ itemId = "crystal", count = 10 },
 			{ itemId = "gem_fragment", count = 6 },
 		},
 		craftTime = 5 * 60 * 60, -- 5 hours
@@ -343,8 +343,8 @@ WorkshopConfig.RECIPES = {
 		displayName = "Prismatic Shrine",
 		theme = "a radiant shrine pulsing with prismatic energy — rainbow crystal spires, ethereal glow",
 		materials = {
-			{ itemId = "prismatic_shard", count = 4 },
-			{ itemId = "core_fragment", count = 3 },
+			{ itemId = "prismatic_block", count = 4 },
+			{ itemId = "prism_core", count = 3 },
 		},
 		craftTime = 10 * 60 * 60, -- 10 hours
 		placementSize = { x = 8, y = 8, z = 8 },
@@ -371,13 +371,26 @@ function WorkshopConfig.getRecipesByType(itemType: ItemType): { WorkshopRecipe }
 	return _recipesByType[itemType] or {}
 end
 
-function WorkshopConfig.canCraft(recipeId: string, miningInventory: { [string]: number }): boolean
+local function _resolveCount(miningInventory: any, itemId: string): number
+	if type(miningInventory) ~= "table" then
+		return 0
+	end
+	if miningInventory.bulk or miningInventory.ore or miningInventory.misc or miningInventory.tools then
+		local bulk = (miningInventory.bulk and miningInventory.bulk[itemId]) or 0
+		local ore = (miningInventory.ore and miningInventory.ore[itemId]) or 0
+		local misc = (miningInventory.misc and miningInventory.misc[itemId]) or 0
+		return bulk + ore + misc
+	end
+	return miningInventory[itemId] or 0
+end
+
+function WorkshopConfig.canCraft(recipeId: string, miningInventory: any): boolean
 	local recipe = _recipeMap[recipeId]
 	if not recipe then
 		return false
 	end
 	for _, mat in ipairs(recipe.materials) do
-		if (miningInventory[mat.itemId] or 0) < mat.count then
+		if _resolveCount(miningInventory, mat.itemId) < mat.count then
 			return false
 		end
 	end

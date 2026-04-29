@@ -29,31 +29,14 @@ PlotConfig.GROUND_Y = 5
 -- Placeable blocks: mining material itemId → visual config
 -- Players can place blocks using materials from their MiningInventory
 PlotConfig.PLACEABLE_BLOCKS = {
-	paper_scrap = { color = { 245, 240, 230 }, material = "SmoothPlastic", name = "Paper" },
-	cardboard = { color = { 180, 140, 90 }, material = "SmoothPlastic", name = "Cardboard" },
+	paper = { color = { 255, 250, 235 }, material = "SmoothPlastic", name = "Paper" },
+	pulp = { color = { 160, 140, 110 }, material = "Ground", name = "Pulp" },
+	folded_stone = { color = { 140, 145, 155 }, material = "Slate", name = "Folded Stone" },
+	origami_rock = { color = { 120, 100, 130 }, material = "Granite", name = "Origami Rock" },
+	crystal = { color = { 150, 200, 255 }, material = "Glass", name = "Crystal" },
+	void_stone = { color = { 25, 15, 40 }, material = "Basalt", name = "Void Stone" },
+	prismatic_block = { color = { 255, 200, 255 }, material = "Neon", name = "Prismatic Block" },
 	wood = { color = { 140, 100, 60 }, material = "Wood", name = "Wood" },
-	dried_pulp = { color = { 200, 180, 150 }, material = "SmoothPlastic", name = "Dried Pulp" },
-	compressed_pulp = { color = { 160, 140, 110 }, material = "SmoothPlastic", name = "Compressed Pulp" },
-	clay_chunk = { color = { 180, 160, 140 }, material = "Slate", name = "Clay" },
-	folded_stone = { color = { 140, 140, 160 }, material = "Slate", name = "Folded Stone" },
-	quartz_shard = { color = { 220, 220, 240 }, material = "Glass", name = "Quartz" },
-	paper_crystal = { color = { 200, 230, 255 }, material = "Neon", name = "Paper Crystal" },
-	ink_stone = { color = { 40, 40, 60 }, material = "Slate", name = "Ink Stone" },
-	origami_rock = { color = { 100, 120, 100 }, material = "Slate", name = "Origami Rock" },
-	gem_fragment = { color = { 180, 80, 255 }, material = "Neon", name = "Gem" },
-	foil_ore = { color = { 200, 200, 210 }, material = "Metal", name = "Foil" },
-	ruby_paper = { color = { 220, 50, 50 }, material = "Neon", name = "Ruby Paper" },
-	crystal_shard = { color = { 100, 200, 255 }, material = "Glass", name = "Crystal" },
-	foil_sheet = { color = { 210, 210, 220 }, material = "Metal", name = "Foil Sheet" },
-	metal_origami = { color = { 170, 170, 180 }, material = "Metal", name = "Metal Origami" },
-	sapphire_crystal = { color = { 60, 100, 255 }, material = "Neon", name = "Sapphire" },
-	void_stone = { color = { 30, 20, 50 }, material = "Slate", name = "Void Stone" },
-	dark_paper = { color = { 50, 40, 60 }, material = "SmoothPlastic", name = "Dark Paper" },
-	shadow_fold = { color = { 40, 30, 70 }, material = "SmoothPlastic", name = "Shadow Fold" },
-	void_crystal = { color = { 80, 40, 120 }, material = "Neon", name = "Void Crystal" },
-	prismatic_shard = { color = { 255, 200, 255 }, material = "Neon", name = "Prismatic" },
-	core_fragment = { color = { 255, 160, 60 }, material = "Neon", name = "Core Fragment" },
-	rainbow_paper = { color = { 255, 180, 200 }, material = "Neon", name = "Rainbow Paper" },
 }
 
 -- Compute the world origin of a plot from its grid index (0-based).

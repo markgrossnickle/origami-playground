@@ -19,6 +19,7 @@ local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
 local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
+local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
 
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
@@ -55,7 +56,24 @@ local HotbarController = Knit.CreateController({
 -- State
 local _selectedSlot: number = 1
 local _hotbarItems: { [number]: string? } = {} -- slot → itemId or nil
-local _inventory: { [string]: number } = {} -- cached inventory counts
+local _inventory: {
+	bulk: { [string]: number },
+	ore: { [string]: number },
+	tools: { [string]: number },
+	misc: { [string]: number },
+} =
+	{ bulk = {}, ore = {}, tools = {}, misc = {} }
+
+local function _materialNamespace(itemId: string): string
+	local role = MaterialTiers.getRole(itemId)
+	if role == "bulk" or role == "ore" then
+		return role
+	end
+	if ToolRegistry.get(itemId) then
+		return "tools"
+	end
+	return "misc"
+end
 local _screenGui: ScreenGui? = nil
 local _slotFrames: { [number]: Frame } = {}
 local _ghostPart: Part? = nil
@@ -132,7 +150,12 @@ local function _getItemName(itemId: string): string
 end
 
 local function _getItemCount(itemId: string): number
-	return _inventory[itemId] or 0
+	local namespace = _materialNamespace(itemId)
+	local bucket = _inventory[namespace]
+	if bucket then
+		return bucket[itemId] or 0
+	end
+	return 0
 end
 
 local function _getSelectedItem(): string?
@@ -314,9 +337,10 @@ local function _tryPlaceBlock()
 		local ok, result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
 		if ok and type(result) == "table" and result.success then
 			-- Optimistically deduct locally for immediate UI feedback
-			_inventory[itemId] = (_inventory[itemId] or 1) - 1
-			if _inventory[itemId] < 0 then
-				_inventory[itemId] = 0
+			local namespace = _materialNamespace(itemId)
+			local bucket = _inventory[namespace]
+			if bucket then
+				bucket[itemId] = math.max(0, (bucket[itemId] or 1) - 1)
 			end
 			_renderSlots()
 		end
@@ -552,9 +576,10 @@ local function _buildUI()
 				-- Promise:await() returns (ok, valueOrError); destructure both.
 				local ok, result = BlockPlacementService:PlaceBlock(chunkKey, flatIndex, itemId):await()
 				if ok and type(result) == "table" and result.success then
-					_inventory[itemId] = (_inventory[itemId] or 1) - 1
-					if _inventory[itemId] < 0 then
-						_inventory[itemId] = 0
+					local namespace = _materialNamespace(itemId)
+					local bucket = _inventory[namespace]
+					if bucket then
+						bucket[itemId] = math.max(0, (bucket[itemId] or 1) - 1)
 					end
 					_renderSlots()
 				end
@@ -741,8 +766,14 @@ function HotbarController:SetEnabled(enabled: boolean)
 	end
 end
 
-function HotbarController:RefreshInventory(inv: { [string]: number })
-	_inventory = inv
+function HotbarController:RefreshInventory(inv: any)
+	if type(inv) ~= "table" then
+		return
+	end
+	_inventory.bulk = inv.bulk or {}
+	_inventory.ore = inv.ore or {}
+	_inventory.tools = inv.tools or {}
+	_inventory.misc = inv.misc or {}
 	_renderSlots()
 end
 
@@ -759,22 +790,27 @@ function HotbarController:KnitStart()
 	task.spawn(function()
 		local ok, inv = MiningService:GetMiningInventory():await()
 		if ok and type(inv) == "table" then
-			_inventory = inv
+			_inventory.bulk = (inv :: any).bulk or {}
+			_inventory.ore = (inv :: any).ore or {}
+			_inventory.tools = (inv :: any).tools or {}
+			_inventory.misc = (inv :: any).misc or {}
 		end
 
 		-- Get equipped tool from server
 		local toolOk, equippedId = MiningService:GetEquippedTool():await()
 		local equippedTool = if toolOk and type(equippedId) == "string" then equippedId else "paper_hands"
 
-		-- Auto-populate: equipped tool in slot 1, then materials
+		-- Auto-populate: equipped tool in slot 1, then placeable bulk + misc materials
 		local slot = 1
 		_hotbarItems[slot] = equippedTool
 		slot += 1
 
-		for itemId, count in _inventory do
-			if count > 0 and PlotConfig.PLACEABLE_BLOCKS[itemId] and slot <= HOTBAR_SLOTS then
-				_hotbarItems[slot] = itemId
-				slot += 1
+		for _, namespace in { "bulk", "misc" } do
+			for itemId, count in pairs(_inventory[namespace] or {}) do
+				if count > 0 and PlotConfig.PLACEABLE_BLOCKS[itemId] and slot <= HOTBAR_SLOTS then
+					_hotbarItems[slot] = itemId
+					slot += 1
+				end
 			end
 		end
 
@@ -782,12 +818,21 @@ function HotbarController:KnitStart()
 	end)
 
 	-- Listen for inventory changes
-	MiningService.MiningResult:Connect(function(success: boolean, itemId: string, count: number)
-		if success and itemId then
-			_inventory[itemId] = (_inventory[itemId] or 0) + count
-			_renderSlots()
+	MiningService.MiningResult:Connect(
+		function(success: boolean, itemId: string, count: number, _xp: any, role: string?)
+			if success and itemId then
+				local namespace = role or _materialNamespace(itemId)
+				if namespace ~= "bulk" and namespace ~= "ore" and namespace ~= "tools" and namespace ~= "misc" then
+					namespace = "misc"
+				end
+				local bucket = _inventory[namespace]
+				if bucket then
+					bucket[itemId] = (bucket[itemId] or 0) + count
+				end
+				_renderSlots()
+			end
 		end
-	end)
+	)
 
 	-- Keep hotbar in sync when tool is equipped from BackpackController
 	MiningService.ToolEquipped:Connect(function(toolId: string)

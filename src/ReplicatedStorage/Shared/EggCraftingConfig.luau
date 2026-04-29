@@ -47,8 +47,12 @@ EggCraftingConfig.RECIPES = {
 		displayName = "Paper Egg",
 		theme = "a small, simple paper creature from shallow fields — papery texture, light colors, gentle demeanor",
 		materials = {
-			{ itemId = "paper_scrap", count = 10 },
-			{ itemId = "cardboard", count = 5 },
+			-- GDD ore-gate: every recipe needs the layer's ore. Common = Inkdrop.
+			-- Original recipe was 10 paper_scrap + 5 cardboard (both bulk); promoted
+			-- the second material to ore at half count to match the bulk+ore pattern
+			-- used by every other tier and by the Workshop common recipes.
+			{ itemId = "paper", count = 10 },
+			{ itemId = "inkdrop", count = 3 },
 		},
 		hatchTime = 30 * 60, -- 30 minutes
 		baseStats = { hp = 50, atk = 8, def = 5, spd = 10 },
@@ -60,8 +64,8 @@ EggCraftingConfig.RECIPES = {
 		displayName = "Pulp Egg",
 		theme = "a sturdy creature from underground pulp caverns — dense fibrous body, earthy tones, burrowing abilities",
 		materials = {
-			{ itemId = "compressed_pulp", count = 10 },
-			{ itemId = "clay_chunk", count = 5 },
+			{ itemId = "pulp", count = 10 },
+			{ itemId = "clay_bead", count = 5 },
 		},
 		hatchTime = 60 * 60, -- 1 hour
 		baseStats = { hp = 70, atk = 12, def = 10, spd = 8 },
@@ -74,7 +78,7 @@ EggCraftingConfig.RECIPES = {
 		theme = "an elegant creature from deep fold tunnels — intricate folded geometry, crystalline accents, agile",
 		materials = {
 			{ itemId = "folded_stone", count = 10 },
-			{ itemId = "quartz_shard", count = 5 },
+			{ itemId = "quartz", count = 5 },
 		},
 		hatchTime = 2 * 60 * 60, -- 2 hours
 		baseStats = { hp = 90, atk = 18, def = 15, spd = 14 },
@@ -86,7 +90,7 @@ EggCraftingConfig.RECIPES = {
 		displayName = "Crystal Egg",
 		theme = "a powerful creature from the crystal lattice depths — glowing crystalline body, neon accents, fierce",
 		materials = {
-			{ itemId = "crystal_shard", count = 10 },
+			{ itemId = "crystal", count = 10 },
 			{ itemId = "gem_fragment", count = 5 },
 		},
 		hatchTime = 4 * 60 * 60, -- 4 hours
@@ -100,7 +104,7 @@ EggCraftingConfig.RECIPES = {
 		theme = "a fearsome creature from the void seams — dark shadowy body with glowing void cracks, intimidating aura",
 		materials = {
 			{ itemId = "void_stone", count = 10 },
-			{ itemId = "shadow_fold", count = 5 },
+			{ itemId = "shadow_wisp", count = 5 },
 		},
 		hatchTime = 8 * 60 * 60, -- 8 hours
 		baseStats = { hp = 160, atk = 35, def = 28, spd = 22 },
@@ -112,8 +116,8 @@ EggCraftingConfig.RECIPES = {
 		displayName = "Prismatic Egg",
 		theme = "a legendary prismatic creature from the core — rainbow shifting colors, radiant energy, awe-inspiring",
 		materials = {
-			{ itemId = "prismatic_shard", count = 5 },
-			{ itemId = "core_fragment", count = 5 },
+			{ itemId = "prismatic_block", count = 5 },
+			{ itemId = "prism_core", count = 5 },
 		},
 		hatchTime = 12 * 60 * 60, -- 12 hours
 		baseStats = { hp = 200, atk = 45, def = 35, spd = 28 },
@@ -130,13 +134,28 @@ function EggCraftingConfig.getRecipeById(recipeId: string): EggRecipe?
 	return _recipeMap[recipeId]
 end
 
-function EggCraftingConfig.canCraft(recipeId: string, miningInventory: { [string]: number }): boolean
+local function _resolveCount(miningInventory: any, itemId: string): number
+	-- Namespaced shape: { bulk = {...}, ore = {...}, misc = {...}, tools = {...} }
+	if type(miningInventory) ~= "table" then
+		return 0
+	end
+	if miningInventory.bulk or miningInventory.ore or miningInventory.misc or miningInventory.tools then
+		local bulk = (miningInventory.bulk and miningInventory.bulk[itemId]) or 0
+		local ore = (miningInventory.ore and miningInventory.ore[itemId]) or 0
+		local misc = (miningInventory.misc and miningInventory.misc[itemId]) or 0
+		return bulk + ore + misc
+	end
+	-- Legacy flat shape
+	return miningInventory[itemId] or 0
+end
+
+function EggCraftingConfig.canCraft(recipeId: string, miningInventory: any): boolean
 	local recipe = _recipeMap[recipeId]
 	if not recipe then
 		return false
 	end
 	for _, mat in ipairs(recipe.materials) do
-		if (miningInventory[mat.itemId] or 0) < mat.count then
+		if _resolveCount(miningInventory, mat.itemId) < mat.count then
 			return false
 		end
 	end

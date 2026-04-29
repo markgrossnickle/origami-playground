@@ -16,6 +16,7 @@ local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiUnfold = require(ReplicatedStorage.Shared.OrigamiUnfold)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
+local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
 local WorkshopTab = require(script.WorkshopTab)
 
 local Player = Players.LocalPlayer
@@ -38,34 +39,22 @@ local COLORS = {
 	tabInactive = Color3.fromRGB(35, 35, 50),
 }
 
--- Material depth ordering for sort (shallow → deep)
-local MATERIAL_DEPTH_ORDER = {
-	paper_scrap = 1,
-	cardboard = 2,
-	wood = 3,
-	dried_pulp = 4,
-	compressed_pulp = 5,
-	clay_chunk = 6,
-	folded_stone = 7,
-	quartz_shard = 8,
-	paper_crystal = 9,
-	ink_stone = 10,
-	origami_rock = 11,
-	gem_fragment = 12,
-	foil_ore = 13,
-	ruby_paper = 14,
-	crystal_shard = 15,
-	foil_sheet = 16,
-	metal_origami = 17,
-	sapphire_crystal = 18,
-	void_stone = 19,
-	dark_paper = 20,
-	shadow_fold = 21,
-	void_crystal = 22,
-	prismatic_shard = 23,
-	core_fragment = 24,
-	rainbow_paper = 25,
-}
+-- Material depth ordering for sort (shallow → deep). Built from MaterialTiers
+-- so the layer mapping is the single source of truth. Bulk first, then ore by
+-- layer, then wood as the trailing surface item.
+local MATERIAL_DEPTH_ORDER: { [string]: number } = {}
+do
+	local idx = 1
+	for _, itemId in MaterialTiers.BulkOrder do
+		MATERIAL_DEPTH_ORDER[itemId] = idx
+		idx += 1
+	end
+	for _, itemId in MaterialTiers.OreOrder do
+		MATERIAL_DEPTH_ORDER[itemId] = idx
+		idx += 1
+	end
+	MATERIAL_DEPTH_ORDER.wood = idx
+end
 
 -- Auto-positioning for creature plot assignment
 local PLOT_CREATURE_POSITIONS = { { 4, 4 }, { 12, 4 }, { 20, 4 }, { 4, 12 }, { 12, 12 } }
@@ -82,9 +71,26 @@ local _activeTab = "Mats"
 local _visible = false
 local _crafting = false
 
--- Cached data
-local _inventory: { [string]: number } = {}
+-- Cached data — namespaced { bulk = {...}, ore = {...}, tools = {...}, misc = {...} }
+local _inventory: {
+	bulk: { [string]: number },
+	ore: { [string]: number },
+	tools: { [string]: number },
+	misc: { [string]: number },
+} =
+	{ bulk = {}, ore = {}, tools = {}, misc = {} }
 local _equippedTool = "paper_hands"
+
+local function _materialNamespace(itemId: string): string
+	local role = MaterialTiers.getRole(itemId)
+	if role == "bulk" or role == "ore" then
+		return role
+	end
+	if ToolRegistry.get(itemId) then
+		return "tools"
+	end
+	return "misc"
+end
 local _creatures: { { [string]: any } } = {}
 local _pendingEggs: { { [string]: any } } = {}
 local _recipes: { { [string]: any } } = {}
@@ -171,7 +177,10 @@ local function fetchAllData(callback: (() -> ())?)
 		local MiningService = Knit.GetService("MiningService")
 		local ok, inv = MiningService:GetMiningInventory():await()
 		if ok and type(inv) == "table" then
-			_inventory = inv
+			_inventory.bulk = (inv :: any).bulk or {}
+			_inventory.ore = (inv :: any).ore or {}
+			_inventory.tools = (inv :: any).tools or {}
+			_inventory.misc = (inv :: any).misc or {}
 		end
 		onComplete()
 	end)
@@ -230,17 +239,31 @@ end
 
 -- Materials Tab
 
+local function _formatMaterialName(itemId: string): string
+	local out = itemId:gsub("_", " ")
+	out = out:gsub("(%a)([%w_']*)", function(first, rest)
+		return first:upper() .. rest:lower()
+	end)
+	return out
+end
+
+local FALLBACK_ORE_COLOR = { 200, 200, 220 }
+
 renderMaterialsTab = function()
 	if not _contentFrame then
 		return
 	end
 	clearChildren(_contentFrame)
 
-	-- Build sorted material list (only items in PLACEABLE_BLOCKS with count > 0)
+	-- Build sorted material list across bulk + ore + misc namespaces.
 	local materials = {}
-	for itemId, count in pairs(_inventory) do
-		if count > 0 and PlotConfig.PLACEABLE_BLOCKS[itemId] then
-			table.insert(materials, { id = itemId, count = count })
+	local seen: { [string]: boolean } = {}
+	for _, namespace in { "bulk", "ore", "misc" } do
+		for itemId, count in pairs(_inventory[namespace] or {}) do
+			if count > 0 and not seen[itemId] then
+				seen[itemId] = true
+				table.insert(materials, { id = itemId, count = count, namespace = namespace })
+			end
 		end
 	end
 
@@ -277,9 +300,19 @@ renderMaterialsTab = function()
 
 	for i, mat in ipairs(materials) do
 		local blockConfig = PlotConfig.PLACEABLE_BLOCKS[mat.id]
+		local color
+		local displayName
+		if blockConfig then
+			color = Color3.fromRGB(blockConfig.color[1], blockConfig.color[2], blockConfig.color[3])
+			displayName = blockConfig.name
+		else
+			color = Color3.fromRGB(FALLBACK_ORE_COLOR[1], FALLBACK_ORE_COLOR[2], FALLBACK_ORE_COLOR[3])
+			displayName = _formatMaterialName(mat.id)
+		end
+
 		local cell = Instance.new("Frame")
 		cell.LayoutOrder = i
-		cell.BackgroundColor3 = Color3.fromRGB(blockConfig.color[1], blockConfig.color[2], blockConfig.color[3])
+		cell.BackgroundColor3 = color
 		cell.BorderSizePixel = 0
 		cell.Parent = gridFrame
 		createCorner(cell, 6)
@@ -303,7 +336,7 @@ renderMaterialsTab = function()
 		nameLabel.Position = UDim2.new(0, 2, 1, -18)
 		nameLabel.BackgroundColor3 = COLORS.bg
 		nameLabel.BackgroundTransparency = 0.4
-		nameLabel.Text = blockConfig.name
+		nameLabel.Text = displayName
 		nameLabel.TextColor3 = COLORS.text
 		nameLabel.TextSize = 9
 		nameLabel.Font = Enum.Font.GothamBold
@@ -311,18 +344,20 @@ renderMaterialsTab = function()
 		nameLabel.Parent = cell
 		createCorner(nameLabel, 4)
 
-		-- Tap/click to equip to hotbar
-		local equipBtn = Instance.new("TextButton")
-		equipBtn.Size = UDim2.fromScale(1, 1)
-		equipBtn.BackgroundTransparency = 1
-		equipBtn.Text = ""
-		equipBtn.Parent = cell
-		equipBtn.Activated:Connect(function()
-			local HotbarController = Knit.GetController("HotbarController")
-			if HotbarController then
-				HotbarController:EquipToSlot(mat.id)
-			end
-		end)
+		-- Tap/click to equip to hotbar — only for placeable bulk items.
+		if blockConfig then
+			local equipBtn = Instance.new("TextButton")
+			equipBtn.Size = UDim2.fromScale(1, 1)
+			equipBtn.BackgroundTransparency = 1
+			equipBtn.Text = ""
+			equipBtn.Parent = cell
+			equipBtn.Activated:Connect(function()
+				local HotbarController = Knit.GetController("HotbarController")
+				if HotbarController then
+					HotbarController:EquipToSlot(mat.id)
+				end
+			end)
+		end
 	end
 end
 
@@ -432,8 +467,8 @@ renderToolsTab = function()
 		end
 
 		local isEquipped = toolId == _equippedTool
-		local hasItem = toolId == "paper_hands" or (_inventory[toolId] and _inventory[toolId] > 0)
-		local canCraft = not hasItem and toolConfig.craftRecipe and ToolRegistry.canCraft(toolId, _inventory)
+		local hasItem = toolId == "paper_hands" or (_inventory.tools[toolId] and _inventory.tools[toolId] > 0)
+		local canCraft = not hasItem and toolConfig.craftRecipe and ToolRegistry.canCraft(toolId, _inventory.bulk)
 
 		-- Calculate card height (taller if showing recipe materials)
 		local recipeMatCount = 0
@@ -508,7 +543,7 @@ renderToolsTab = function()
 			-- Show material requirements
 			local matY = 38
 			for itemId, needed in pairs(toolConfig.craftRecipe) do
-				local have = _inventory[itemId] or 0
+				local have = (_inventory.bulk and _inventory.bulk[itemId]) or 0
 				local matLabel = Instance.new("TextLabel")
 				matLabel.Size = UDim2.new(0.6, -8, 0, 13)
 				matLabel.Position = UDim2.fromOffset(8, matY)
@@ -1164,7 +1199,10 @@ local function craftEgg(recipeId: string, button: TextButton?, userPrompt: strin
 			end
 			local ok4, inv = Knit.GetService("MiningService"):GetMiningInventory():await()
 			if ok4 and type(inv) == "table" then
-				_inventory = inv
+				_inventory.bulk = (inv :: any).bulk or {}
+				_inventory.ore = (inv :: any).ore or {}
+				_inventory.tools = (inv :: any).tools or {}
+				_inventory.misc = (inv :: any).misc or {}
 			end
 
 			renderEggsTab()
@@ -1677,9 +1715,16 @@ function BackpackController:KnitStart()
 		local MiningService = Knit.GetService("MiningService")
 
 		-- Material count update on mine
-		MiningService.MiningResult:Connect(function(success, droppedItemId, droppedCount)
+		MiningService.MiningResult:Connect(function(success, droppedItemId, droppedCount, _xp, role)
 			if success and droppedItemId and droppedCount then
-				_inventory[droppedItemId] = (_inventory[droppedItemId] or 0) + droppedCount
+				local namespace = role or _materialNamespace(droppedItemId)
+				if namespace ~= "bulk" and namespace ~= "ore" and namespace ~= "tools" and namespace ~= "misc" then
+					namespace = "misc"
+				end
+				local bucket = _inventory[namespace]
+				if bucket then
+					bucket[droppedItemId] = (bucket[droppedItemId] or 0) + droppedCount
+				end
 				if _visible and _activeTab == "Mats" then
 					renderMaterialsTab()
 				end
@@ -1696,7 +1741,7 @@ function BackpackController:KnitStart()
 
 		-- Tool acquired (crafted)
 		MiningService.ToolAcquired:Connect(function(toolId)
-			_inventory[toolId] = (_inventory[toolId] or 0) + 1
+			_inventory.tools[toolId] = (_inventory.tools[toolId] or 0) + 1
 			_crafting = false
 			-- Auto-equip newly crafted tool
 			_equippedTool = toolId
@@ -1705,7 +1750,10 @@ function BackpackController:KnitStart()
 				task.spawn(function()
 					local ok, inv = MiningService:GetMiningInventory():await()
 					if ok and type(inv) == "table" then
-						_inventory = inv
+						_inventory.bulk = (inv :: any).bulk or {}
+						_inventory.ore = (inv :: any).ore or {}
+						_inventory.tools = (inv :: any).tools or {}
+						_inventory.misc = (inv :: any).misc or {}
 					end
 					renderToolsTab()
 				end)

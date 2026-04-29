@@ -4,6 +4,7 @@ local ChunkUtil = require(script.Parent.ChunkUtil)
 local BlockType = require(script.Parent.Enums.BlockType)
 local BiomeConfig = require(script.Parent.BiomeConfig)
 local ChunkBufferPool = require(script.Parent.ChunkBufferPool)
+local ZoneRegistry = require(script.Parent.ZoneRegistry)
 
 -- Frame-budget helper: yields only when the current slice has exceeded the
 -- budget, instead of yielding at fixed iteration intervals. This eliminates
@@ -529,21 +530,23 @@ end
 
 local solidBlocks: { [number]: boolean } = {
 	[BlockType.Paper] = true,
+	[BlockType.InkdropOre] = true,
 	[BlockType.Cardboard] = true,
-	[BlockType.DriedPulp] = true,
-	[BlockType.CompressedPulp] = true,
-	[BlockType.Clay] = true,
+	[BlockType.Pulp] = true,
+	[BlockType.ClayBeadOre] = true,
 	[BlockType.RecycledFiber] = true,
 	[BlockType.FoldedStone] = true,
+	[BlockType.QuartzOre] = true,
 	[BlockType.InkStone] = true,
 	[BlockType.OrigamiRock] = true,
-	[BlockType.GemFragment] = true,
-	[BlockType.CrystalBlock] = true,
-	[BlockType.FoilSheet] = true,
+	[BlockType.GemFragmentOre] = true,
+	[BlockType.Crystal] = true,
+	[BlockType.FoilShardOre] = true,
 	[BlockType.VoidStone] = true,
+	[BlockType.ShadowWispOre] = true,
 	[BlockType.DarkPaper] = true,
 	[BlockType.PrismaticBlock] = true,
-	[BlockType.CoreFragment] = true,
+	[BlockType.PrismCoreOre] = true,
 }
 
 local function placeOreVeins(blocks: buffer, rng: () -> number, oreConfig: BiomeConfig.OreConfig, oreMult: number)
@@ -2411,8 +2414,13 @@ function WorldGenModule.generateChunk(seed: number, cx: number, cy: number, cz: 
 		local depthBelowSurface = (avgSurface - centerBlockY) * BLOCK_SIZE
 		local depthLayer = BiomeConfig.getDepthLayer(math.max(0, depthBelowSurface))
 
-		for _, oreConfig in depthLayer.ores do
-			placeOreVeins(blocks, rng, oreConfig, 1.0)
+		local centerWX = (chunkBlockX + CHUNK_SIZE / 2) * BLOCK_SIZE
+		local centerWZ = (chunkBlockZ + CHUNK_SIZE / 2) * BLOCK_SIZE
+		local oreMult = ZoneRegistry.getOreMultiplier(centerWX, centerWZ)
+		if oreMult > 0 then
+			for _, oreConfig in depthLayer.ores do
+				placeOreVeins(blocks, rng, oreConfig, oreMult)
+			end
 		end
 
 		-- Place egg nodes

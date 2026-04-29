@@ -11,39 +11,32 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
+local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
 
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local MAX_PLACE_DISTANCE = 20
 
--- Reverse mapping: inventory itemId → BlockType id for world placement
+-- Reverse mapping: inventory itemId → BlockType id for world placement.
+-- Only bulk blocks + wood are placeable in the voxel world.
 local ITEM_TO_BLOCK: { [string]: number } = {
-	paper_scrap = BlockType.Paper,
-	cardboard = BlockType.Cardboard,
-	wood = BlockType.Wood,
-	dried_pulp = BlockType.DriedPulp,
-	compressed_pulp = BlockType.CompressedPulp,
-	clay_chunk = BlockType.Clay,
+	paper = BlockType.Paper,
+	pulp = BlockType.Pulp,
 	folded_stone = BlockType.FoldedStone,
-	quartz_shard = BlockType.PaperQuartz,
-	paper_crystal = BlockType.PaperCrystal,
-	ink_stone = BlockType.InkStone,
 	origami_rock = BlockType.OrigamiRock,
-	gem_fragment = BlockType.GemFragment,
-	foil_ore = BlockType.FoilOre,
-	ruby_paper = BlockType.RubyPaper,
-	crystal_shard = BlockType.CrystalBlock,
-	foil_sheet = BlockType.FoilSheet,
-	metal_origami = BlockType.MetalOrigami,
-	sapphire_crystal = BlockType.SapphireCrystal,
+	crystal = BlockType.Crystal,
 	void_stone = BlockType.VoidStone,
-	dark_paper = BlockType.DarkPaper,
-	shadow_fold = BlockType.ShadowFold,
-	void_crystal = BlockType.VoidCrystal,
-	prismatic_shard = BlockType.PrismaticBlock,
-	core_fragment = BlockType.CoreFragment,
-	rainbow_paper = BlockType.RainbowPaper,
+	prismatic_block = BlockType.PrismaticBlock,
+	wood = BlockType.Wood,
 }
+
+local function _placementNamespace(itemId: string): string
+	local role = MaterialTiers.getRole(itemId)
+	if role == "bulk" or role == "ore" then
+		return role
+	end
+	return "misc"
+end
 
 local BlockPlacementService = Knit.CreateService({
 	Name = "BlockPlacementService",
@@ -118,13 +111,14 @@ function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: numbe
 	end
 
 	-- Check inventory
-	local invCount = PlayerDataService:Read(player, { "MiningInventory", itemId }) or 0
+	local namespace = _placementNamespace(itemId)
+	local invCount = PlayerDataService:Read(player, { "MiningInventory", namespace, itemId }) or 0
 	if invCount < 1 then
 		return { success = false, error = "no_material" }
 	end
 
 	-- Deduct material
-	PlayerDataService:Write(player, { "MiningInventory", itemId }, invCount - 1)
+	PlayerDataService:Write(player, { "MiningInventory", namespace, itemId }, invCount - 1)
 	_lastPlaceTime[player] = now
 
 	-- Place block in voxel world (broadcasts BlockUpdate to subscribers)

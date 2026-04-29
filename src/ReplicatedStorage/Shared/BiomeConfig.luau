@@ -117,24 +117,20 @@ function BiomeConfig.getBiomeForChunk(cx: number, cz: number)
 end
 
 -- 7 depth layers (depth measured in studs below surface, positive = deeper)
+-- Each layer has exactly one primary bulk block + one ore block. Drops route
+-- via BlockRegistry.drops[].role into MiningInventory.bulk / .ore.
 BiomeConfig.DepthLayers = {
 	-- Layer 1: Paper Fields
-	-- Paper is intentionally NOT in this layer — the biome surface + subsurface
-	-- already places Paper in the top 4 rows. Everything deeper is Cardboard
-	-- with DriedPulp ore veins. Previously primaryBlock was Paper with
-	-- Cardboard secondary, which caused random Paper patches to reappear all
-	-- the way down to -80 studs. (Reported as "dug through paper, hit
-	-- cardboard, then a big chunk of paper again.")
 	{
 		name = "Paper Fields",
 		minDepth = 0,
 		maxDepth = 80,
-		primaryBlock = BlockType.Cardboard,
+		primaryBlock = BlockType.Paper,
 		secondaryBlock = nil,
 		surfaceBlock = BlockType.PaperGrass,
 		subsurfaceBlock = BlockType.Paper,
 		ores = {
-			{ blockType = BlockType.DriedPulp, chance = 0.05, veinSize = { min = 3, max = 6 }, veinsPerChunk = 3 },
+			{ blockType = BlockType.InkdropOre, chance = 0.30, veinSize = { min = 3, max = 8 }, veinsPerChunk = 22 },
 		},
 		eggChance = 0,
 	} :: DepthLayer,
@@ -144,11 +140,10 @@ BiomeConfig.DepthLayers = {
 		name = "Pulp Caverns",
 		minDepth = 80,
 		maxDepth = 240,
-		primaryBlock = BlockType.CompressedPulp,
-		secondaryBlock = BlockType.Clay,
+		primaryBlock = BlockType.Pulp,
+		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.RecycledFiber, chance = 0.04, veinSize = { min = 3, max = 5 }, veinsPerChunk = 3 },
-			{ blockType = BlockType.PulpOre, chance = 0.02, veinSize = { min = 2, max = 4 }, veinsPerChunk = 2 },
+			{ blockType = BlockType.ClayBeadOre, chance = 0.25, veinSize = { min = 3, max = 8 }, veinsPerChunk = 19 },
 		},
 		eggChance = 0.01,
 	} :: DepthLayer,
@@ -159,10 +154,9 @@ BiomeConfig.DepthLayers = {
 		minDepth = 240,
 		maxDepth = 480,
 		primaryBlock = BlockType.FoldedStone,
-		secondaryBlock = BlockType.InkStone,
+		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.PaperQuartz, chance = 0.03, veinSize = { min = 2, max = 5 }, veinsPerChunk = 3 },
-			{ blockType = BlockType.PaperCrystal, chance = 0.015, veinSize = { min = 1, max = 3 }, veinsPerChunk = 2 },
+			{ blockType = BlockType.QuartzOre, chance = 0.20, veinSize = { min = 3, max = 8 }, veinsPerChunk = 15 },
 		},
 		eggChance = 0.02,
 	} :: DepthLayer,
@@ -173,10 +167,14 @@ BiomeConfig.DepthLayers = {
 		minDepth = 480,
 		maxDepth = 800,
 		primaryBlock = BlockType.OrigamiRock,
-		secondaryBlock = BlockType.GemFragment,
+		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.FoilOre, chance = 0.02, veinSize = { min = 2, max = 4 }, veinsPerChunk = 2 },
-			{ blockType = BlockType.RubyPaper, chance = 0.01, veinSize = { min = 1, max = 3 }, veinsPerChunk = 1 },
+			{
+				blockType = BlockType.GemFragmentOre,
+				chance = 0.15,
+				veinSize = { min = 3, max = 8 },
+				veinsPerChunk = 11,
+			},
 		},
 		eggChance = 0.03,
 	} :: DepthLayer,
@@ -186,16 +184,10 @@ BiomeConfig.DepthLayers = {
 		name = "Crystal Lattice",
 		minDepth = 800,
 		maxDepth = 1200,
-		primaryBlock = BlockType.CrystalBlock,
-		secondaryBlock = BlockType.FoilSheet,
+		primaryBlock = BlockType.Crystal,
+		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.MetalOrigami, chance = 0.02, veinSize = { min = 2, max = 4 }, veinsPerChunk = 2 },
-			{
-				blockType = BlockType.SapphireCrystal,
-				chance = 0.01,
-				veinSize = { min = 1, max = 3 },
-				veinsPerChunk = 1,
-			},
+			{ blockType = BlockType.FoilShardOre, chance = 0.117, veinSize = { min = 3, max = 8 }, veinsPerChunk = 9 },
 		},
 		eggChance = 0.04,
 	} :: DepthLayer,
@@ -206,10 +198,9 @@ BiomeConfig.DepthLayers = {
 		minDepth = 1200,
 		maxDepth = 1600,
 		primaryBlock = BlockType.VoidStone,
-		secondaryBlock = BlockType.DarkPaper,
+		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.ShadowFold, chance = 0.015, veinSize = { min = 1, max = 3 }, veinsPerChunk = 2 },
-			{ blockType = BlockType.VoidCrystal, chance = 0.008, veinSize = { min = 1, max = 2 }, veinsPerChunk = 1 },
+			{ blockType = BlockType.ShadowWispOre, chance = 0.083, veinSize = { min = 3, max = 8 }, veinsPerChunk = 6 },
 		},
 		eggChance = 0.05,
 	} :: DepthLayer,
@@ -220,9 +211,9 @@ BiomeConfig.DepthLayers = {
 		minDepth = 1600,
 		maxDepth = 2000,
 		primaryBlock = BlockType.PrismaticBlock,
-		secondaryBlock = BlockType.CoreFragment,
+		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.RainbowPaper, chance = 0.01, veinSize = { min = 1, max = 2 }, veinsPerChunk = 1 },
+			{ blockType = BlockType.PrismCoreOre, chance = 0.05, veinSize = { min = 3, max = 8 }, veinsPerChunk = 4 },
 		},
 		eggChance = 0.08,
 	} :: DepthLayer,

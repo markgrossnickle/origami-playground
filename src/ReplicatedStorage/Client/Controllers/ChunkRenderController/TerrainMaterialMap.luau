@@ -16,41 +16,41 @@ local materialMap: { [number]: Enum.Material } = {
 	[BlockType.PaperGrass] = Enum.Material.Grass,
 	[BlockType.Paper] = Enum.Material.Sand, -- closest to smooth paper
 	[BlockType.Cardboard] = Enum.Material.Ground,
-	[BlockType.DriedPulp] = Enum.Material.Ground,
+	[BlockType.InkdropOre] = Enum.Material.Ground,
 
 	-- Layer 2: Pulp Caverns
-	[BlockType.CompressedPulp] = Enum.Material.Ground,
-	[BlockType.Clay] = Enum.Material.Mud,
+	[BlockType.Pulp] = Enum.Material.Ground,
+	[BlockType.ClayBeadOre] = Enum.Material.Mud,
 	[BlockType.RecycledFiber] = Enum.Material.Ground,
 	[BlockType.PulpOre] = Enum.Material.Rock,
 
 	-- Layer 3: Fold Tunnels
 	[BlockType.FoldedStone] = Enum.Material.Slate,
-	[BlockType.PaperQuartz] = Enum.Material.Salt,
+	[BlockType.QuartzOre] = Enum.Material.Salt,
 	[BlockType.PaperCrystal] = Enum.Material.Salt,
 	[BlockType.InkStone] = Enum.Material.Slate,
 
 	-- Layer 4: Origami Depths
 	[BlockType.OrigamiRock] = Enum.Material.Rock,
-	[BlockType.GemFragment] = Enum.Material.Rock,
+	[BlockType.GemFragmentOre] = Enum.Material.Rock,
 	[BlockType.FoilOre] = Enum.Material.Rock,
 	[BlockType.RubyPaper] = Enum.Material.Rock,
 
 	-- Layer 5: Crystal Lattice
-	[BlockType.CrystalBlock] = Enum.Material.Salt,
-	[BlockType.FoilSheet] = Enum.Material.Rock,
+	[BlockType.Crystal] = Enum.Material.Salt,
+	[BlockType.FoilShardOre] = Enum.Material.Rock,
 	[BlockType.MetalOrigami] = Enum.Material.Rock,
 	[BlockType.SapphireCrystal] = Enum.Material.Salt,
 
 	-- Layer 6: Void Seams
 	[BlockType.VoidStone] = Enum.Material.Basalt,
 	[BlockType.DarkPaper] = Enum.Material.Basalt,
-	[BlockType.ShadowFold] = Enum.Material.Basalt,
+	[BlockType.ShadowWispOre] = Enum.Material.Basalt,
 	[BlockType.VoidCrystal] = Enum.Material.Basalt,
 
 	-- Layer 7: The Core
 	[BlockType.PrismaticBlock] = Enum.Material.Salt,
-	[BlockType.CoreFragment] = Enum.Material.Salt,
+	[BlockType.PrismCoreOre] = Enum.Material.Salt,
 	[BlockType.RainbowPaper] = Enum.Material.Salt,
 
 	-- Special

@@ -10,7 +10,7 @@ type BlockConfig = {
 	material: Enum.Material,
 	mineable: boolean,
 	minTier: number,
-	drops: { { itemId: string, count: number, chance: number } }?,
+	drops: { { itemId: string, count: number, chance: number, role: string? } }?,
 	xp: number,
 }
 
@@ -41,7 +41,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "paper_scrap", count = 1, chance = 1 } },
+		drops = { { itemId = "paper", count = 1, chance = 1, role = "bulk" } },
 		xp = 1,
 	},
 	[BlockType.Paper] = {
@@ -52,7 +52,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "paper_scrap", count = 1, chance = 1 } },
+		drops = { { itemId = "paper", count = 1, chance = 1, role = "bulk" } },
 		xp = 1,
 	},
 	[BlockType.Cardboard] = {
@@ -63,18 +63,21 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.WoodPlanks,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cardboard", count = 1, chance = 1 } },
+		drops = { { itemId = "paper", count = 1, chance = 1, role = "bulk" } },
 		xp = 2,
 	},
-	[BlockType.DriedPulp] = {
-		id = BlockType.DriedPulp,
-		name = "Dried Pulp",
+	[BlockType.InkdropOre] = {
+		id = BlockType.InkdropOre,
+		name = "Inkdrop Ore",
 		hardness = 2,
-		color = Color3.fromRGB(200, 180, 150), -- tan
-		material = Enum.Material.Ground,
+		color = Color3.fromRGB(80, 80, 220), -- deep blue inkdrop
+		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "dried_pulp", count = 1, chance = 1 } },
+		drops = {
+			{ itemId = "paper", count = 1, chance = 1, role = "bulk" },
+			{ itemId = "inkdrop", count = 1, chance = 1, role = "ore" },
+		},
 		xp = 2,
 	},
 
@@ -83,26 +86,29 @@ local blocks: { [number]: BlockConfig } = {
 	-- Compressed, denser materials
 	-- ═══════════════════════════════════════════
 
-	[BlockType.CompressedPulp] = {
-		id = BlockType.CompressedPulp,
-		name = "Compressed Pulp",
+	[BlockType.Pulp] = {
+		id = BlockType.Pulp,
+		name = "Pulp",
 		hardness = 4,
 		color = Color3.fromRGB(160, 140, 110), -- dark tan
 		material = Enum.Material.Ground,
 		mineable = true,
 		minTier = 1,
-		drops = { { itemId = "compressed_pulp", count = 1, chance = 1 } },
+		drops = { { itemId = "pulp", count = 1, chance = 1, role = "bulk" } },
 		xp = 3,
 	},
-	[BlockType.Clay] = {
-		id = BlockType.Clay,
-		name = "Clay",
+	[BlockType.ClayBeadOre] = {
+		id = BlockType.ClayBeadOre,
+		name = "Clay Bead Ore",
 		hardness = 3,
-		color = Color3.fromRGB(170, 140, 120), -- clay brown
-		material = Enum.Material.Mud,
+		color = Color3.fromRGB(220, 130, 90), -- warm clay bead
+		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 1,
-		drops = { { itemId = "clay_chunk", count = 1, chance = 1 } },
+		drops = {
+			{ itemId = "pulp", count = 1, chance = 1, role = "bulk" },
+			{ itemId = "clay_bead", count = 1, chance = 1, role = "ore" },
+		},
 		xp = 3,
 	},
 	[BlockType.RecycledFiber] = {
@@ -113,7 +119,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Fabric,
 		mineable = true,
 		minTier = 1,
-		drops = { { itemId = "recycled_fiber", count = 1, chance = 1 } },
+		drops = { { itemId = "pulp", count = 1, chance = 1, role = "bulk" } },
 		xp = 4,
 	},
 	[BlockType.PulpOre] = {
@@ -124,7 +130,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Ground,
 		mineable = true,
 		minTier = 1,
-		drops = { { itemId = "pulp_ore", count = 1, chance = 1 }, { itemId = "cardboard", count = 1, chance = 0.3 } },
+		drops = { { itemId = "pulp", count = 1, chance = 1, role = "bulk" } },
 		xp = 6,
 	},
 
@@ -141,18 +147,21 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 2,
-		drops = { { itemId = "folded_stone", count = 1, chance = 1 } },
+		drops = { { itemId = "folded_stone", count = 1, chance = 1, role = "bulk" } },
 		xp = 5,
 	},
-	[BlockType.PaperQuartz] = {
-		id = BlockType.PaperQuartz,
-		name = "Paper Quartz",
+	[BlockType.QuartzOre] = {
+		id = BlockType.QuartzOre,
+		name = "Quartz Ore",
 		hardness = 6,
 		color = Color3.fromRGB(230, 225, 240), -- pale quartz
-		material = Enum.Material.Glass,
+		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 2,
-		drops = { { itemId = "quartz_shard", count = 1, chance = 1 } },
+		drops = {
+			{ itemId = "folded_stone", count = 1, chance = 1, role = "bulk" },
+			{ itemId = "quartz", count = 1, chance = 1, role = "ore" },
+		},
 		xp = 7,
 	},
 	[BlockType.PaperCrystal] = {
@@ -163,7 +172,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 2,
-		drops = { { itemId = "paper_crystal", count = 1, chance = 1 } },
+		drops = { { itemId = "folded_stone", count = 1, chance = 1, role = "bulk" } },
 		xp = 10,
 	},
 	[BlockType.InkStone] = {
@@ -174,7 +183,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 2,
-		drops = { { itemId = "ink_stone", count = 1, chance = 1 } },
+		drops = { { itemId = "folded_stone", count = 1, chance = 1, role = "bulk" } },
 		xp = 8,
 	},
 
@@ -191,18 +200,21 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Granite,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "origami_rock", count = 1, chance = 1 } },
+		drops = { { itemId = "origami_rock", count = 1, chance = 1, role = "bulk" } },
 		xp = 10,
 	},
-	[BlockType.GemFragment] = {
-		id = BlockType.GemFragment,
-		name = "Gem Fragment",
+	[BlockType.GemFragmentOre] = {
+		id = BlockType.GemFragmentOre,
+		name = "Gem Fragment Ore",
 		hardness = 15,
 		color = Color3.fromRGB(220, 100, 180), -- pink gem
-		material = Enum.Material.Glass,
+		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "gem_fragment", count = 1, chance = 1 } },
+		drops = {
+			{ itemId = "origami_rock", count = 1, chance = 1, role = "bulk" },
+			{ itemId = "gem_fragment", count = 1, chance = 1, role = "ore" },
+		},
 		xp = 15,
 	},
 	[BlockType.FoilOre] = {
@@ -213,7 +225,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Foil,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "foil_ore", count = 1, chance = 1 } },
+		drops = { { itemId = "origami_rock", count = 1, chance = 1, role = "bulk" } },
 		xp = 12,
 	},
 	[BlockType.RubyPaper] = {
@@ -224,7 +236,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "ruby_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "origami_rock", count = 1, chance = 1, role = "bulk" } },
 		xp = 20,
 	},
 
@@ -233,26 +245,29 @@ local blocks: { [number]: BlockConfig } = {
 	-- Metallic, crystalline
 	-- ═══════════════════════════════════════════
 
-	[BlockType.CrystalBlock] = {
-		id = BlockType.CrystalBlock,
-		name = "Crystal Block",
+	[BlockType.Crystal] = {
+		id = BlockType.Crystal,
+		name = "Crystal",
 		hardness = 20,
 		color = Color3.fromRGB(150, 200, 255), -- bright crystal blue
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "crystal_shard", count = 1, chance = 1 } },
+		drops = { { itemId = "crystal", count = 1, chance = 1, role = "bulk" } },
 		xp = 18,
 	},
-	[BlockType.FoilSheet] = {
-		id = BlockType.FoilSheet,
-		name = "Foil Sheet",
+	[BlockType.FoilShardOre] = {
+		id = BlockType.FoilShardOre,
+		name = "Foil Shard Ore",
 		hardness = 18,
 		color = Color3.fromRGB(220, 220, 230), -- silver foil
-		material = Enum.Material.Foil,
+		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "foil_sheet", count = 1, chance = 1 } },
+		drops = {
+			{ itemId = "crystal", count = 1, chance = 1, role = "bulk" },
+			{ itemId = "foil_shard", count = 1, chance = 1, role = "ore" },
+		},
 		xp = 15,
 	},
 	[BlockType.MetalOrigami] = {
@@ -263,7 +278,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Metal,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "metal_origami", count = 1, chance = 1 } },
+		drops = { { itemId = "crystal", count = 1, chance = 1, role = "bulk" } },
 		xp = 20,
 	},
 	[BlockType.SapphireCrystal] = {
@@ -274,7 +289,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 3,
-		drops = { { itemId = "sapphire_crystal", count = 1, chance = 1 } },
+		drops = { { itemId = "crystal", count = 1, chance = 1, role = "bulk" } },
 		xp = 25,
 	},
 
@@ -291,7 +306,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Basalt,
 		mineable = true,
 		minTier = 4,
-		drops = { { itemId = "void_stone", count = 1, chance = 1 } },
+		drops = { { itemId = "void_stone", count = 1, chance = 1, role = "bulk" } },
 		xp = 25,
 	},
 	[BlockType.DarkPaper] = {
@@ -302,18 +317,21 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 4,
-		drops = { { itemId = "dark_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "void_stone", count = 1, chance = 1, role = "bulk" } },
 		xp = 22,
 	},
-	[BlockType.ShadowFold] = {
-		id = BlockType.ShadowFold,
-		name = "Shadow Fold",
+	[BlockType.ShadowWispOre] = {
+		id = BlockType.ShadowWispOre,
+		name = "Shadow Wisp Ore",
 		hardness = 35,
 		color = Color3.fromRGB(60, 20, 80), -- deep magenta
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 4,
-		drops = { { itemId = "shadow_fold", count = 1, chance = 1 } },
+		drops = {
+			{ itemId = "void_stone", count = 1, chance = 1, role = "bulk" },
+			{ itemId = "shadow_wisp", count = 1, chance = 1, role = "ore" },
+		},
 		xp = 30,
 	},
 	[BlockType.VoidCrystal] = {
@@ -324,7 +342,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 4,
-		drops = { { itemId = "void_crystal", count = 1, chance = 1 } },
+		drops = { { itemId = "void_stone", count = 1, chance = 1, role = "bulk" } },
 		xp = 40,
 	},
 
@@ -341,18 +359,21 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 5,
-		drops = { { itemId = "prismatic_shard", count = 1, chance = 1 } },
+		drops = { { itemId = "prismatic_block", count = 1, chance = 1, role = "bulk" } },
 		xp = 50,
 	},
-	[BlockType.CoreFragment] = {
-		id = BlockType.CoreFragment,
-		name = "Core Fragment",
+	[BlockType.PrismCoreOre] = {
+		id = BlockType.PrismCoreOre,
+		name = "Prism Core Ore",
 		hardness = 60,
 		color = Color3.fromRGB(255, 255, 200), -- golden glow
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 5,
-		drops = { { itemId = "core_fragment", count = 1, chance = 1 } },
+		drops = {
+			{ itemId = "prismatic_block", count = 1, chance = 1, role = "bulk" },
+			{ itemId = "prism_core", count = 1, chance = 1, role = "ore" },
+		},
 		xp = 60,
 	},
 	[BlockType.RainbowPaper] = {
@@ -363,7 +384,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 5,
-		drops = { { itemId = "rainbow_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "prismatic_block", count = 1, chance = 1, role = "bulk" } },
 		xp = 55,
 	},
 
@@ -379,7 +400,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "wood", count = 1, chance = 1 } },
+		drops = { { itemId = "wood", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.Leaves] = {
@@ -390,7 +411,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "paper_scrap", count = 1, chance = 0.5 } },
+		drops = { { itemId = "paper", count = 1, chance = 0.5, role = "bulk" } },
 		xp = 1,
 	},
 
@@ -406,7 +427,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cactus", count = 1, chance = 1 } },
+		drops = { { itemId = "cactus", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CactusFlower] = {
@@ -417,7 +438,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cactus_flower", count = 1, chance = 0.5 } },
+		drops = { { itemId = "cactus_flower", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.BoulderGray] = {
@@ -428,7 +449,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "boulder", count = 1, chance = 1 } },
+		drops = { { itemId = "boulder", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.BonsaiBark] = {
@@ -439,7 +460,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.WoodPlanks,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "bonsai_bark", count = 1, chance = 1 } },
+		drops = { { itemId = "bonsai_bark", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CherryBlossom] = {
@@ -450,7 +471,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cherry_blossom", count = 1, chance = 0.5 } },
+		drops = { { itemId = "cherry_blossom", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.LotusPetal] = {
@@ -461,7 +482,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "lotus_petal", count = 1, chance = 1 } },
+		drops = { { itemId = "lotus_petal", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.LotusCenter] = {
@@ -472,7 +493,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "lotus_center", count = 1, chance = 1 } },
+		drops = { { itemId = "lotus_center", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.FlyTrapStem] = {
@@ -483,7 +504,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "fly_trap_stem", count = 1, chance = 1 } },
+		drops = { { itemId = "fly_trap_stem", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.FlyTrapMaw] = {
@@ -494,7 +515,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "fly_trap_maw", count = 1, chance = 1 } },
+		drops = { { itemId = "fly_trap_maw", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.PineNeedle] = {
@@ -505,7 +526,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "pine_needle", count = 1, chance = 1 } },
+		drops = { { itemId = "pine_needle", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.WillowVine] = {
@@ -516,7 +537,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "willow_vine", count = 1, chance = 1 } },
+		drops = { { itemId = "willow_vine", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.WillowLeaves] = {
@@ -527,7 +548,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "willow_vine", count = 1, chance = 1 } },
+		drops = { { itemId = "willow_vine", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.PalmFrond] = {
@@ -538,7 +559,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "palm_frond", count = 1, chance = 1 } },
+		drops = { { itemId = "palm_frond", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.GiantBark] = {
@@ -549,7 +570,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "giant_bark", count = 1, chance = 1 } },
+		drops = { { itemId = "giant_bark", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.BirchBark] = {
@@ -560,7 +581,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "birch_bark", count = 1, chance = 1 } },
+		drops = { { itemId = "birch_bark", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.MushroomStem] = {
@@ -571,7 +592,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "mushroom_stem", count = 1, chance = 1 } },
+		drops = { { itemId = "mushroom_stem", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.MushroomCap] = {
@@ -582,7 +603,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "mushroom_cap", count = 1, chance = 0.5 } },
+		drops = { { itemId = "mushroom_cap", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.ShelfBracket] = {
@@ -593,7 +614,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "shelf_bracket", count = 1, chance = 1 } },
+		drops = { { itemId = "shelf_bracket", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -610,7 +631,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "fairy_moss", count = 1, chance = 1 } },
+		drops = { { itemId = "fairy_moss", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.EnchantedSoil] = {
@@ -621,7 +642,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Mud,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "enchanted_soil", count = 1, chance = 1 } },
+		drops = { { itemId = "enchanted_soil", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.FairyFiller] = {
@@ -632,7 +653,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "fairy_filler", count = 1, chance = 1 } },
+		drops = { { itemId = "fairy_filler", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.FairyTrunk] = {
@@ -643,7 +664,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "fairy_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "fairy_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.FairyCanopy] = {
@@ -654,7 +675,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "fairy_canopy", count = 1, chance = 0.5 } },
+		drops = { { itemId = "fairy_canopy", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 
@@ -671,7 +692,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "glade_grass", count = 1, chance = 1 } },
+		drops = { { itemId = "glade_grass", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.GladeSoil] = {
@@ -682,7 +703,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Mud,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "glade_soil", count = 1, chance = 1 } },
+		drops = { { itemId = "glade_soil", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.GladeTrunk] = {
@@ -693,7 +714,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "glade_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "glade_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.GladeCanopy] = {
@@ -704,7 +725,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "glade_canopy", count = 1, chance = 0.5 } },
+		drops = { { itemId = "glade_canopy", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 
@@ -721,7 +742,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "hollow_moss", count = 1, chance = 1 } },
+		drops = { { itemId = "hollow_moss", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.HollowSoil] = {
@@ -732,7 +753,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Mud,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "hollow_soil", count = 1, chance = 1 } },
+		drops = { { itemId = "hollow_soil", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.HollowTrunk] = {
@@ -743,7 +764,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "hollow_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "hollow_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.HollowCanopy] = {
@@ -754,7 +775,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "hollow_canopy", count = 1, chance = 0.5 } },
+		drops = { { itemId = "hollow_canopy", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 
@@ -771,7 +792,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Sandstone,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "sandstone", count = 1, chance = 1 } },
+		drops = { { itemId = "sandstone", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.RedClay] = {
@@ -782,7 +803,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "red_clay", count = 1, chance = 1 } },
+		drops = { { itemId = "red_clay", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.SandstoneTan] = {
@@ -793,7 +814,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Sandstone,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "sandstone", count = 1, chance = 1 } },
+		drops = { { itemId = "sandstone", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.WarmPinkTop] = {
@@ -804,7 +825,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "sandstone", count = 1, chance = 0.5 } },
+		drops = { { itemId = "sandstone", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.DeepPurpleAccent] = {
@@ -815,7 +836,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "sandstone", count = 1, chance = 1 } },
+		drops = { { itemId = "sandstone", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -832,7 +853,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.WoodPlanks,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "corrugated_cardboard", count = 1, chance = 1 } },
+		drops = { { itemId = "corrugated_cardboard", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.DarkCardboard] = {
@@ -843,7 +864,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.WoodPlanks,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "dark_cardboard", count = 1, chance = 1 } },
+		drops = { { itemId = "dark_cardboard", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CopperGear] = {
@@ -854,7 +875,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Metal,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "copper_gear", count = 1, chance = 1 } },
+		drops = { { itemId = "copper_gear", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.BrassLeaf] = {
@@ -865,7 +886,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Metal,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "brass_leaf", count = 1, chance = 1 } },
+		drops = { { itemId = "brass_leaf", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -882,7 +903,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Grass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "coral_plate", count = 1, chance = 1 } },
+		drops = { { itemId = "coral_plate", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.ReefRock] = {
@@ -893,7 +914,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "reef_rock", count = 1, chance = 1 } },
+		drops = { { itemId = "reef_rock", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CoralFiller] = {
@@ -904,7 +925,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Basalt,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "coral_filler", count = 1, chance = 1 } },
+		drops = { { itemId = "coral_filler", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CoralTrunk] = {
@@ -915,7 +936,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "coral_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "coral_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CoralCanopy] = {
@@ -926,7 +947,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "coral_canopy", count = 1, chance = 0.5 } },
+		drops = { { itemId = "coral_canopy", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.OrangeAccent] = {
@@ -937,7 +958,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "orange_accent", count = 1, chance = 1 } },
+		drops = { { itemId = "orange_accent", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -954,7 +975,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "crystal_ground", count = 1, chance = 1 } },
+		drops = { { itemId = "crystal_ground", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.RoseQuartz] = {
@@ -965,7 +986,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "rose_quartz", count = 1, chance = 1 } },
+		drops = { { itemId = "rose_quartz", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CitrineTrunk] = {
@@ -976,7 +997,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "citrine_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "citrine_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.AquamarineCanopy] = {
@@ -987,7 +1008,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "aquamarine_canopy", count = 1, chance = 0.5 } },
+		drops = { { itemId = "aquamarine_canopy", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.DiamondAccent] = {
@@ -998,7 +1019,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glass,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "diamond_accent", count = 1, chance = 1 } },
+		drops = { { itemId = "diamond_accent", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1015,7 +1036,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glacier,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "glacier_ice", count = 1, chance = 1 } },
+		drops = { { itemId = "glacier_ice", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.MintFrost] = {
@@ -1026,7 +1047,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glacier,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "mint_frost", count = 1, chance = 1 } },
+		drops = { { itemId = "mint_frost", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.IceWhiteTrunk] = {
@@ -1037,7 +1058,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glacier,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "ice_white_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "ice_white_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.AuroraVioletCanopy] = {
@@ -1048,7 +1069,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "aurora_violet_canopy", count = 1, chance = 0.5 } },
+		drops = { { itemId = "aurora_violet_canopy", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.DeepIndigo] = {
@@ -1059,7 +1080,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Glacier,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "deep_indigo", count = 1, chance = 1 } },
+		drops = { { itemId = "deep_indigo", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1076,7 +1097,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "party_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "party_paper", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.GoldPaper] = {
@@ -1087,7 +1108,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Foil,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "gold_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "gold_paper", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.PinataWood] = {
@@ -1098,7 +1119,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "pinata_wood", count = 1, chance = 1 } },
+		drops = { { itemId = "pinata_wood", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.PinataLeaves] = {
@@ -1109,7 +1130,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "pinata_leaves", count = 1, chance = 0.5 } },
+		drops = { { itemId = "pinata_leaves", count = 1, chance = 0.5, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.ConfettiFiller] = {
@@ -1120,7 +1141,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "confetti_filler", count = 1, chance = 1 } },
+		drops = { { itemId = "confetti_filler", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 
@@ -1137,7 +1158,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "scroll_parchment", count = 1, chance = 1 } },
+		drops = { { itemId = "scroll_parchment", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.AgedPaper] = {
@@ -1148,7 +1169,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "aged_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "aged_paper", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.InkBrushTrunk] = {
@@ -1159,7 +1180,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "ink_brush_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "ink_brush_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.InkSplatterLeaf] = {
@@ -1170,7 +1191,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "ink_splatter_leaf", count = 1, chance = 1 } },
+		drops = { { itemId = "ink_splatter_leaf", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1187,7 +1208,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "papier_mache", count = 1, chance = 1 } },
+		drops = { { itemId = "papier_mache", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.NewspaperGray] = {
@@ -1198,7 +1219,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "newspaper_gray", count = 1, chance = 1 } },
+		drops = { { itemId = "newspaper_gray", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.PasteDripTrunk] = {
@@ -1209,7 +1230,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "paste_drip_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "paste_drip_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.PasteDripLeaf] = {
@@ -1220,7 +1241,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "paste_drip_leaf", count = 1, chance = 1 } },
+		drops = { { itemId = "paste_drip_leaf", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1237,7 +1258,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "balloon_red", count = 1, chance = 1 } },
+		drops = { { itemId = "balloon_red", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.NewspaperLayer] = {
@@ -1248,7 +1269,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "newspaper_layer", count = 1, chance = 1 } },
+		drops = { { itemId = "newspaper_layer", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.BalloonString] = {
@@ -1259,7 +1280,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Fabric,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "balloon_string", count = 1, chance = 1 } },
+		drops = { { itemId = "balloon_string", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.BalloonTop] = {
@@ -1270,7 +1291,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "balloon_top", count = 1, chance = 1 } },
+		drops = { { itemId = "balloon_top", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1287,7 +1308,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Basalt,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "volcanic_rock", count = 1, chance = 1 } },
+		drops = { { itemId = "volcanic_rock", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.AshStone] = {
@@ -1298,7 +1319,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Slate,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "ash_stone", count = 1, chance = 1 } },
+		drops = { { itemId = "ash_stone", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.ScorchedBase] = {
@@ -1309,7 +1330,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Basalt,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "scorched_base", count = 1, chance = 1 } },
+		drops = { { itemId = "scorched_base", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.BasaltColumn] = {
@@ -1320,7 +1341,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Basalt,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "basalt_column", count = 1, chance = 1 } },
+		drops = { { itemId = "basalt_column", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.MoltenCap] = {
@@ -1331,7 +1352,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "molten_cap", count = 1, chance = 1 } },
+		drops = { { itemId = "molten_cap", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.CrimsonVein] = {
@@ -1342,7 +1363,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Neon,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "crimson_vein", count = 1, chance = 1 } },
+		drops = { { itemId = "crimson_vein", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1359,7 +1380,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cosmic_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "cosmic_paper", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.StellarDust] = {
@@ -1370,7 +1391,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "stellar_dust", count = 1, chance = 1 } },
+		drops = { { itemId = "stellar_dust", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.SatelliteTrunk] = {
@@ -1381,7 +1402,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.Metal,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "satellite_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "satellite_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CyanCanopy] = {
@@ -1392,7 +1413,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cyan_canopy", count = 1, chance = 1 } },
+		drops = { { itemId = "cyan_canopy", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.NebulaFiller] = {
@@ -1403,7 +1424,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "nebula_filler", count = 1, chance = 1 } },
+		drops = { { itemId = "nebula_filler", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 
@@ -1420,7 +1441,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "turquoise_tile", count = 1, chance = 1 } },
+		drops = { { itemId = "turquoise_tile", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.TerracottaClay] = {
@@ -1431,7 +1452,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "terracotta_clay", count = 1, chance = 1 } },
+		drops = { { itemId = "terracotta_clay", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.SaffronTrunk] = {
@@ -1442,7 +1463,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "saffron_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "saffron_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CobaltDome] = {
@@ -1453,7 +1474,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cobalt_dome", count = 1, chance = 1 } },
+		drops = { { itemId = "cobalt_dome", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.MosaicSandstone] = {
@@ -1464,7 +1485,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "mosaic_sandstone", count = 1, chance = 1 } },
+		drops = { { itemId = "mosaic_sandstone", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1481,7 +1502,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "washi_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "washi_paper", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.CoralPaper] = {
@@ -1492,7 +1513,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "coral_paper", count = 1, chance = 1 } },
+		drops = { { itemId = "coral_paper", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.BambooTrunk] = {
@@ -1503,7 +1524,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "bamboo_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "bamboo_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.BambooTop] = {
@@ -1514,7 +1535,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "bamboo_top", count = 1, chance = 1 } },
+		drops = { { itemId = "bamboo_top", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.SteamFiller] = {
@@ -1525,7 +1546,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "steam_filler", count = 1, chance = 1 } },
+		drops = { { itemId = "steam_filler", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 
@@ -1542,7 +1563,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "newsprint_surface", count = 1, chance = 1 } },
+		drops = { { itemId = "newsprint_surface", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.InkSubsurface] = {
@@ -1553,7 +1574,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "ink_subsurface", count = 1, chance = 1 } },
+		drops = { { itemId = "ink_subsurface", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.SepiaTrunk] = {
@@ -1564,7 +1585,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "sepia_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "sepia_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.DustyCanopy] = {
@@ -1575,7 +1596,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "dusty_canopy", count = 1, chance = 1 } },
+		drops = { { itemId = "dusty_canopy", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.RedHeadline] = {
@@ -1586,7 +1607,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "red_headline", count = 1, chance = 1 } },
+		drops = { { itemId = "red_headline", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1603,7 +1624,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "waxy_surface", count = 1, chance = 1 } },
+		drops = { { itemId = "waxy_surface", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.CrayonSubsurface] = {
@@ -1614,7 +1635,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "crayon_subsurface", count = 1, chance = 1 } },
+		drops = { { itemId = "crayon_subsurface", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.CrayonTrunk] = {
@@ -1625,7 +1646,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "crayon_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "crayon_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.CrayonCanopy] = {
@@ -1636,7 +1657,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "crayon_canopy", count = 1, chance = 1 } },
+		drops = { { itemId = "crayon_canopy", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.BurntOrange] = {
@@ -1647,7 +1668,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "burnt_orange", count = 1, chance = 1 } },
+		drops = { { itemId = "burnt_orange", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1664,7 +1685,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "baby_blue_surface", count = 1, chance = 1 } },
+		drops = { { itemId = "baby_blue_surface", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.LavenderSubsurface] = {
@@ -1675,7 +1696,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "lavender_subsurface", count = 1, chance = 1 } },
+		drops = { { itemId = "lavender_subsurface", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.CreamTrunk] = {
@@ -1686,7 +1707,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "cream_trunk", count = 1, chance = 1 } },
+		drops = { { itemId = "cream_trunk", count = 1, chance = 1, role = "misc" } },
 		xp = 2,
 	},
 	[BlockType.RosePinkCanopy] = {
@@ -1697,7 +1718,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "rose_pink_canopy", count = 1, chance = 1 } },
+		drops = { { itemId = "rose_pink_canopy", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 	[BlockType.SoftPeach] = {
@@ -1708,7 +1729,7 @@ local blocks: { [number]: BlockConfig } = {
 		material = Enum.Material.SmoothPlastic,
 		mineable = true,
 		minTier = 0,
-		drops = { { itemId = "soft_peach", count = 1, chance = 1 } },
+		drops = { { itemId = "soft_peach", count = 1, chance = 1, role = "misc" } },
 		xp = 1,
 	},
 
@@ -1725,8 +1746,8 @@ local blocks: { [number]: BlockConfig } = {
 		mineable = true,
 		minTier = 1,
 		drops = {
-			{ itemId = "egg_fragment", count = 1, chance = 1 },
-			{ itemId = "egg_fragment", count = 1, chance = 0.5 },
+			{ itemId = "egg_fragment", count = 1, chance = 1, role = "misc" },
+			{ itemId = "egg_fragment", count = 1, chance = 0.5, role = "misc" },
 		},
 		xp = 20,
 	},

@@ -39,7 +39,12 @@ export type PlayerData = {
 	SavedEmotes: { any },
 
 	-- Mining / Expedition
-	MiningInventory: { [string]: number },
+	MiningInventory: {
+		bulk: { [string]: number },
+		ore: { [string]: number },
+		tools: { [string]: number },
+		misc: { [string]: number },
+	},
 	EquippedTool: string,
 	BlocksMined: number,
 	DepthReached: number,
@@ -84,8 +89,8 @@ local playerDataTemplate: PlayerData = {
 
 	SavedEmotes = {},
 
-	MiningInventory = {},
-	EquippedTool = "prismatic_pick", -- DEBUG: best tool for testing
+	MiningInventory = { bulk = {}, ore = {}, tools = {}, misc = {} },
+	EquippedTool = "paper_hands",
 	BlocksMined = 0,
 	DepthReached = 0,
 

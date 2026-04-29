@@ -118,43 +118,44 @@ local TRICKLE_FILL_TARGET = 500
 local BULK_BLOCKS: { [number]: boolean } = {
 	[BlockType.Bedrock] = true,
 
-	-- Paper Fields bulk (cardboard + below; Paper + PaperGrass stay decorative)
+	-- Paper Fields bulk
+	[BlockType.Paper] = true,
 	[BlockType.Cardboard] = true,
-	[BlockType.DriedPulp] = true,
+	[BlockType.InkdropOre] = true,
 
 	-- Pulp Caverns
-	[BlockType.CompressedPulp] = true,
-	[BlockType.Clay] = true,
+	[BlockType.Pulp] = true,
+	[BlockType.ClayBeadOre] = true,
 	[BlockType.RecycledFiber] = true,
 	[BlockType.PulpOre] = true,
 
 	-- Fold Tunnels
 	[BlockType.FoldedStone] = true,
-	[BlockType.PaperQuartz] = true,
+	[BlockType.QuartzOre] = true,
 	[BlockType.PaperCrystal] = true,
 	[BlockType.InkStone] = true,
 
 	-- Origami Depths
 	[BlockType.OrigamiRock] = true,
-	[BlockType.GemFragment] = true,
+	[BlockType.GemFragmentOre] = true,
 	[BlockType.FoilOre] = true,
 	[BlockType.RubyPaper] = true,
 
 	-- Crystal Lattice
-	[BlockType.CrystalBlock] = true,
-	[BlockType.FoilSheet] = true,
+	[BlockType.Crystal] = true,
+	[BlockType.FoilShardOre] = true,
 	[BlockType.MetalOrigami] = true,
 	[BlockType.SapphireCrystal] = true,
 
 	-- Void Seams
 	[BlockType.VoidStone] = true,
 	[BlockType.DarkPaper] = true,
-	[BlockType.ShadowFold] = true,
+	[BlockType.ShadowWispOre] = true,
 	[BlockType.VoidCrystal] = true,
 
 	-- The Core
 	[BlockType.PrismaticBlock] = true,
-	[BlockType.CoreFragment] = true,
+	[BlockType.PrismCoreOre] = true,
 	[BlockType.RainbowPaper] = true,
 
 	-- Biome subsurface fillers (bulk dirt/rock under the surface topper)

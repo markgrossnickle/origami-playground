@@ -198,7 +198,7 @@ function PlayerDataService:KnitStart()
 end
 
 function PlayerDataService:KnitInit()
-	PlayerStore = ProfileStore.New("PlayerStore", playerDataTemplate) :: ProfileStore.ProfileStore<PlayerData>
+	PlayerStore = ProfileStore.New("PlayerStore_v2", playerDataTemplate) :: ProfileStore.ProfileStore<PlayerData>
 	Players.PlayerAdded:Connect(function(Player: Player)
 		self.RegisteredServices[Player] = {}
 		self:_loadProfile(Player)

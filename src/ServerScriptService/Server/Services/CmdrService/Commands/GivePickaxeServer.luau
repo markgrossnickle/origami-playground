@@ -12,8 +12,8 @@ return function(_context, player, toolId)
 	end
 
 	-- Add to inventory
-	local currentCount = PlayerDataService:Read(player, { "MiningInventory", toolId }) or 0
-	PlayerDataService:Write(player, { "MiningInventory", toolId }, currentCount + 1)
+	local currentCount = PlayerDataService:Read(player, { "MiningInventory", "tools", toolId }) or 0
+	PlayerDataService:Write(player, { "MiningInventory", "tools", toolId }, currentCount + 1)
 
 	-- Equip it
 	PlayerDataService:Write(player, { "EquippedTool" }, toolId)

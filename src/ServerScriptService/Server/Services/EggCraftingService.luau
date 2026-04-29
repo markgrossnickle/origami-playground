@@ -7,6 +7,15 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
+local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
+
+local function _materialNamespace(itemId: string): string
+	local role = MaterialTiers.getRole(itemId)
+	if role == "bulk" or role == "ore" then
+		return role
+	end
+	return "misc"
+end
 
 local EggCraftingService = Knit.CreateService({
 	Name = "EggCraftingService",
@@ -31,7 +40,9 @@ function EggCraftingService.Client:GetRecipes(player: Player)
 		local mats = {}
 		local canCraft = true
 		for _, mat in ipairs(recipe.materials) do
-			local have = inv[mat.itemId] or 0
+			local namespace = _materialNamespace(mat.itemId)
+			local nsBucket = inv[namespace] or {}
+			local have = nsBucket[mat.itemId] or 0
 			table.insert(mats, { itemId = mat.itemId, need = mat.count, have = have })
 			if have < mat.count then
 				canCraft = false
@@ -72,15 +83,18 @@ function EggCraftingService.Client:CraftEgg(player: Player, recipeId: string, us
 	-- Check materials
 	local inv = data.MiningInventory or {}
 	for _, mat in ipairs(recipe.materials) do
-		if (inv[mat.itemId] or 0) < mat.count then
+		local namespace = _materialNamespace(mat.itemId)
+		local nsBucket = inv[namespace] or {}
+		if (nsBucket[mat.itemId] or 0) < mat.count then
 			return { success = false, error = "Not enough " .. mat.itemId:gsub("_", " ") }
 		end
 	end
 
 	-- Deduct materials
 	for _, mat in ipairs(recipe.materials) do
-		local current = PlayerDataService:Read(player, { "MiningInventory", mat.itemId }) or 0
-		PlayerDataService:Write(player, { "MiningInventory", mat.itemId }, current - mat.count)
+		local namespace = _materialNamespace(mat.itemId)
+		local current = PlayerDataService:Read(player, { "MiningInventory", namespace, mat.itemId }) or 0
+		PlayerDataService:Write(player, { "MiningInventory", namespace, mat.itemId }, current - mat.count)
 	end
 
 	-- Build LLM prompt from recipe theme, incorporating player description if provided.

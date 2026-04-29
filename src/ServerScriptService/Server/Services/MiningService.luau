@@ -10,6 +10,7 @@ local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
+local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
 
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local REACH_TOLERANCE = 10
@@ -49,6 +50,23 @@ local equippedTools: { [Player]: string } = {}
 
 -- Helpers
 
+local function _namespaceFor(itemId: string, role: string?): string
+	if role == "tool" then
+		return "tools"
+	end
+	if role == "bulk" or role == "ore" or role == "misc" then
+		return role
+	end
+	local derived = MaterialTiers.getRole(itemId)
+	if derived == "bulk" or derived == "ore" then
+		return derived
+	end
+	if ToolRegistry.get(itemId) then
+		return "tools"
+	end
+	return "misc"
+end
+
 local function _getPlayerTool(player: Player)
 	local toolId = equippedTools[player] or "paper_hands"
 	return ToolRegistry.get(toolId) or ToolRegistry.getDefault()
@@ -82,19 +100,37 @@ local function _awardDrops(player: Player, blockTypeId: number, chunkKey: number
 		return
 	end
 
-	local droppedItemId: string? = nil
-	local droppedCount = 0
 	local xpAwarded = config.xp
+	local anyDropAwarded = false
 
+	-- Fire MiningResult once per drop so the client's optimistic inventory
+	-- counters for both bulk and ore are updated when an ore-pocket block
+	-- yields multiple drops. xpAwarded is only attached to the first fire so
+	-- XP isn't double-counted.
 	if config.drops then
 		for _, drop in config.drops do
 			if math.random() <= drop.chance then
-				droppedItemId = drop.itemId
-				droppedCount = drop.count
+				anyDropAwarded = true
+				local namespace = _namespaceFor(drop.itemId, drop.role)
 
-				-- Add to player inventory
-				local currentCount = PlayerDataService:Read(player, { "MiningInventory", drop.itemId }) or 0
-				PlayerDataService:Write(player, { "MiningInventory", drop.itemId }, currentCount + drop.count)
+				local currentCount = PlayerDataService:Read(player, { "MiningInventory", namespace, drop.itemId }) or 0
+				PlayerDataService:Write(
+					player,
+					{ "MiningInventory", namespace, drop.itemId },
+					currentCount + drop.count
+				)
+
+				if player.Parent then
+					MiningService.Client.MiningResult:Fire(
+						player,
+						true,
+						drop.itemId,
+						drop.count,
+						xpAwarded,
+						drop.role or namespace
+					)
+					xpAwarded = 0
+				end
 			end
 		end
 	end
@@ -117,8 +153,10 @@ local function _awardDrops(player: Player, blockTypeId: number, chunkKey: number
 		PlayerDataService:Write(player, { "DepthReached" }, depth)
 	end
 
-	if player.Parent then
-		MiningService.Client.MiningResult:Fire(player, true, droppedItemId, droppedCount, xpAwarded)
+	-- If the block had no drops (or every drop's chance roll missed), still
+	-- notify the client so XP/UI updates flow.
+	if not anyDropAwarded and player.Parent then
+		MiningService.Client.MiningResult:Fire(player, true, nil, 0, config.xp, nil)
 	end
 end
 
@@ -348,7 +386,7 @@ function MiningService:KnitStart()
 
 		-- paper_hands is always available
 		if toolId ~= "paper_hands" then
-			local hasItem = PlayerDataService:Read(player, { "MiningInventory", toolId })
+			local hasItem = PlayerDataService:Read(player, { "MiningInventory", "tools", toolId })
 			if not hasItem or hasItem <= 0 then
 				return
 			end
@@ -371,19 +409,19 @@ function MiningService:KnitStart()
 		end
 
 		for itemId, needed in toolConfig.craftRecipe do
-			local have = PlayerDataService:Read(player, { "MiningInventory", itemId }) or 0
+			local have = PlayerDataService:Read(player, { "MiningInventory", "bulk", itemId }) or 0
 			if have < needed then
 				return
 			end
 		end
 
 		for itemId, needed in toolConfig.craftRecipe do
-			local have = PlayerDataService:Read(player, { "MiningInventory", itemId }) or 0
-			PlayerDataService:Write(player, { "MiningInventory", itemId }, have - needed)
+			local have = PlayerDataService:Read(player, { "MiningInventory", "bulk", itemId }) or 0
+			PlayerDataService:Write(player, { "MiningInventory", "bulk", itemId }, have - needed)
 		end
 
-		local currentCount = PlayerDataService:Read(player, { "MiningInventory", toolId }) or 0
-		PlayerDataService:Write(player, { "MiningInventory", toolId }, currentCount + 1)
+		local currentCount = PlayerDataService:Read(player, { "MiningInventory", "tools", toolId }) or 0
+		PlayerDataService:Write(player, { "MiningInventory", "tools", toolId }, currentCount + 1)
 
 		self.Client.ToolAcquired:Fire(player, toolId)
 	end)

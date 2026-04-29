@@ -29,7 +29,7 @@ local tools: { [string]: ToolConfig } = {
 		speed = 2.5,
 		reach = 28,
 		tier = 1,
-		craftRecipe = { cardboard = 20 },
+		craftRecipe = { paper = 20 },
 	},
 	stone_pick = {
 		id = "stone_pick",
@@ -38,7 +38,7 @@ local tools: { [string]: ToolConfig } = {
 		speed = 3,
 		reach = 32,
 		tier = 2,
-		craftRecipe = { folded_stone = 20, compressed_pulp = 10 },
+		craftRecipe = { folded_stone = 20, pulp = 10 },
 	},
 	crystal_pick = {
 		id = "crystal_pick",
@@ -47,7 +47,7 @@ local tools: { [string]: ToolConfig } = {
 		speed = 3.5,
 		reach = 36,
 		tier = 3,
-		craftRecipe = { crystal_shard = 10, origami_rock = 15 },
+		craftRecipe = { crystal = 10, origami_rock = 15 },
 	},
 	void_pick = {
 		id = "void_pick",
@@ -56,7 +56,7 @@ local tools: { [string]: ToolConfig } = {
 		speed = 4,
 		reach = 40,
 		tier = 4,
-		craftRecipe = { void_stone = 10, crystal_shard = 5 },
+		craftRecipe = { void_stone = 10, crystal = 5 },
 	},
 	prismatic_pick = {
 		id = "prismatic_pick",
@@ -65,7 +65,7 @@ local tools: { [string]: ToolConfig } = {
 		speed = 4.5,
 		reach = 44,
 		tier = 5,
-		craftRecipe = { prismatic_shard = 5, void_stone = 10 },
+		craftRecipe = { prismatic_block = 5, void_stone = 10 },
 	},
 }
 

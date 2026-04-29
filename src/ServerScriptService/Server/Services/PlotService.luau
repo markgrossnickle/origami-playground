@@ -7,6 +7,15 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
+local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
+
+local function _materialNamespace(itemId: string): string
+	local role = MaterialTiers.getRole(itemId)
+	if role == "bulk" or role == "ore" then
+		return role
+	end
+	return "misc"
+end
 
 local PlotService = Knit.CreateService({
 	Name = "PlotService",
@@ -138,13 +147,14 @@ function PlotService.Client:PlaceBlock(
 
 	-- Check material in inventory
 	local PlayerDataService = Knit.GetService("PlayerDataService")
-	local invCount = PlayerDataService:Read(player, { "MiningInventory", materialItemId }) or 0
+	local namespace = _materialNamespace(materialItemId)
+	local invCount = PlayerDataService:Read(player, { "MiningInventory", namespace, materialItemId }) or 0
 	if invCount < 1 then
 		return { success = false, error = "No " .. materialItemId:gsub("_", " ") .. " available" }
 	end
 
 	-- Deduct material
-	PlayerDataService:Write(player, { "MiningInventory", materialItemId }, invCount - 1)
+	PlayerDataService:Write(player, { "MiningInventory", namespace, materialItemId }, invCount - 1)
 
 	-- Place block
 	plotData.placedBlocks[key] = materialItemId
@@ -174,8 +184,9 @@ function PlotService.Client:RemoveBlock(player: Player, localX: number, localY: 
 
 	-- Refund material
 	local PlayerDataService = Knit.GetService("PlayerDataService")
-	local invCount = PlayerDataService:Read(player, { "MiningInventory", materialItemId }) or 0
-	PlayerDataService:Write(player, { "MiningInventory", materialItemId }, invCount + 1)
+	local namespace = _materialNamespace(materialItemId)
+	local invCount = PlayerDataService:Read(player, { "MiningInventory", namespace, materialItemId }) or 0
+	PlayerDataService:Write(player, { "MiningInventory", namespace, materialItemId }, invCount + 1)
 
 	-- Remove block
 	plotData.placedBlocks[key] = nil

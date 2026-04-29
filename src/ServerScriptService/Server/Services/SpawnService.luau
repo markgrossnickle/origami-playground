@@ -18,11 +18,19 @@ local SpawnService = Knit.CreateService({
 
 local WorldService
 
--- How high to float the spawn platform above terrain so trees/structures
--- can't poke through it and players don't get stuck in foliage.
-local PLATFORM_LIFT = 3
+-- WorldGenModule.getSpawnPosition returns Y = top_of_surface_block + BLOCK_SIZE
+-- (i.e. one block of headroom above the visible ground), so to put the
+-- platform's top FLUSH with the visible terrain we sink it one full block.
+-- PLATFORM_LIFT subtracts BLOCK_SIZE plus half the platform thickness so:
+--   platform_top_Y == top_of_surface_block (visible ground level)
+-- Slight overlap into the surface block is unavoidable but the platform
+-- bottom is inside opaque terrain so it's not visible.
+-- Spawn-clear radius in WorldGenModule already keeps trees away.
+local BLOCK_SIZE = 5
+local PLATFORM_THICKNESS = 1
+local PLATFORM_LIFT = -BLOCK_SIZE - PLATFORM_THICKNESS / 2 -- -5.5
 -- Platform footprint (big enough to catch a drifting spawn while chunks load)
-local PLATFORM_SIZE = Vector3.new(24, 2, 24)
+local PLATFORM_SIZE = Vector3.new(24, PLATFORM_THICKNESS, 24)
 
 function SpawnService:KnitInit() end
 

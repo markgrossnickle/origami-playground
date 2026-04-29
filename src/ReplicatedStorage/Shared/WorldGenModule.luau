@@ -671,9 +671,12 @@ local BRANCH_DIRS_2D = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } } -- E, W, N, 
 local SHELF_DIRS_2D = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } } -- E, N, W, S
 local MUSHROOM_CLUSTER_OFFSETS = { { 0, 0 }, { 1, 1 }, { -1, 1 } }
 
--- All available structure types for "mixed" mode
--- NOTE: "fly_trap" structure builder exists below but is disabled from mixed rotation for now
-local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_pine", "tree_willow", "tree_palm", "cactus", "bonsai" }
+-- Paper-themed structure pool used by the paper_fields biome's "mixed" mode.
+-- Cactus, pine, and palm don't fit the paper-hills aesthetic (cactus next to
+-- evergreen looked wrong) so they're cut from the rotation. Trees, giant
+-- trees, willows, and bonsai all read as papery / origami-friendly.
+-- "fly_trap" structure builder exists below but is disabled from mixed rotation.
+local MIXED_STRUCTURES = { "tree", "tree_giant", "tree_willow", "bonsai" }
 
 -- Per-structure block overrides (used in mixed mode for visual variety)
 local STRUCTURE_BLOCKS = {

@@ -119,7 +119,11 @@ local BULK_BLOCKS: { [number]: boolean } = {
 	[BlockType.Bedrock] = true,
 
 	-- Paper Fields bulk
-	[BlockType.Paper] = true,
+	-- NOTE: Paper is intentionally NOT in BULK_BLOCKS — it's the visible
+	-- subsurface block on the surface biome and players expect the paper-
+	-- crystal layered look (multi-layer + tilt + jitter) when they dig the
+	-- first layer. Adding it here makes the world feel flat. InkdropOre
+	-- and Cardboard remain bulk-rendered (rare ore + legacy filler).
 	[BlockType.Cardboard] = true,
 	[BlockType.InkdropOre] = true,
 

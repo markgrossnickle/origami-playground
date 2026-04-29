@@ -29,13 +29,14 @@ The single new thing this game adds is the **LLM as creative brush**: a 7-year-o
 
 ## Core Loop
 
-1. **Mine** — break blocks for bulk materials and rare ores
-2. **Summon** — spend bulk + ore to summon a recipe from the public catalog (no LLM call)
-3. **Build** — place blocks to make spaces; fill those spaces with summoned items
+1. **Mine in The Wilds** — go out to the shared zones, break blocks for bulk materials and ore. First-break wins drops.
+2. **Summon** — spend bulk + ore to summon a recipe from the public catalog (no LLM call).
+3. **Build / Decorate in your Region** — return to your personal Region (your kingdom on the island) and use materials to build structures and place summoned items.
 4. **Create (rare)** — when you have a Free Create slot or Robux, spend bulk + ore + a Create to author a brand-new recipe (LLM call). Your name goes on it forever.
-5. **Show** — other players visit your plot and admire (or summon copies of) what you've made
+5. **Visit** — wander into other players' Regions to see their work. View-only — no breaking, placing, or interfering.
+6. **Anticipate the weekly reset** — The Wilds refresh every week. Ore respawns. Pre-reset hours are charged. Post-reset hours are an ore rush.
 
-Same as Minecraft, plus the LLM brush. No mandatory progression, no end-game.
+Same as Minecraft in spirit, plus the LLM brush, plus the Region/Wilds split. No mandatory progression, no end-game.
 
 ---
 
@@ -83,10 +84,20 @@ This rule exists because the two languages each have a proper job and mix badly:
 
 ## World System
 
-### Island
-- Procedural island floating in void
-- Surface: gentle origami paper hills (FBM heightmap, max ~20 studs elevation). Other surface biome experiments (sunset mesa, forest, etc.) didn't work out and aren't in play.
-- Underground: 7 depth layers extending to Y=-2000. Caves feature occasional neon mushroom decorations.
+### One Big Island
+- The world is a single huge paper island floating in a void.
+- Bounded horizontally — does NOT generate infinitely outward. The island has edges.
+- Vertically, 7 depth layers extending to Y=-2000.
+- Surface: gentle origami paper hills (FBM heightmap, max ~20 studs elevation). Other surface biome experiments (sunset mesa, forest, etc.) didn't work out and aren't in play. Caves underground feature occasional neon mushroom decorations.
+
+### Three Zones On The Island
+The island is divided into three persistent zone types:
+
+1. **The Hearth** — a permanent dev-curated commons at the world's center. Spawn point for new players. Has signage, tutorial elements, the Workbench, and a portal mechanic ("Return to Base"). Cannot be modified by anyone.
+2. **Regions** — personal player-owned zones scattered across the island (see **Regions** section). Each player gets one. 25×25 surface chunks, full vertical depth.
+3. **The Wilds** — everything between The Hearth and Regions. Shared, contested, mineable. Where multiplayer encounter happens. Resets weekly.
+
+Players spawn at The Hearth on first play, are auto-assigned a Region somewhere on the island, and travel through The Wilds for adventure and mining.
 
 ### Depth Layers + Material Tiers (LOCKED)
 
@@ -122,13 +133,34 @@ Every mined block yields:
 
 A player with 10,000 Paper but no Inkdrop can build a paper house but can't summon a paper bed. **Ore is the gate.**
 
-### Ore Pocket Distribution
+### Where Ore Lives — Mostly The Wilds
+Ore distribution is heavily skewed by zone, by design:
+
+| Zone | Ore density | Player intent |
+|---|---|---|
+| **Your Region** | Very sparse — minimal Tier 1, almost nothing higher | Building, decorating, customizing |
+| **The Wilds** | Full distribution — all 7 tiers at standard rates | Mining, ore hunting, encountering others |
+| **The Hearth** | None — protected zone | Tutorial, gathering, traveling |
+
+This makes Regions the **building/customization** zone and The Wilds the **mining adventure** zone. You leave home to gather; you return home to make.
+
+### Ore Pocket Distribution (in The Wilds)
 - **Pocket spawning:** rare clusters of 3–8 ore-bearing blocks within bulk material, like Minecraft veins
 - **Visual:** ore pockets glow faintly through surrounding bulk so players see them embedded in walls
 - **Drop rate (rough starting points, tunable):**
   - Tier 1 ore (Inkdrop): ~3% of blocks at depth 0 to -80
   - Tier 4 ore (Gem Fragment): ~1.5% of blocks at depth -480 to -800
   - Tier 7 ore (Prism Core): ~0.5% of blocks at depth -1600 to -2000
+- **In Regions:** ore pockets exist but at perhaps 10% the density — you can find a little Inkdrop in your own backyard, but for serious mining you go to The Wilds.
+
+### Wilds Reset
+Every week (proposed: Sunday morning UTC), The Wilds refresh:
+- All bulk and ore broken in The Wilds is restored to base terrain
+- All blocks placed in The Wilds by players are removed
+- Ore pockets respawn at their original positions
+- Pre-reset countdown is visible to all players ("Wilds refresh in 14 hours")
+
+This is reframed as a **scheduled world event**, not regen. Players plan around it. Ore rushes happen post-reset; cleanup happens pre-reset (don't leave anything in The Wilds you want to keep).
 
 ### No Bulk Substitution Upward
 Tier-1 bulk does not convert to tier-7 bulk. Each layer's materials are its own. To summon tier 7, mine tier 7. Same as Minecraft — cobblestone doesn't smelt into iron.
@@ -261,7 +293,7 @@ Creatures are the centerpiece of the LLM creative brush — every player's first
 
 ### What Creatures Do
 - **One active companion follows you.** Provides a small ambient perk based on its kind — faster digging, ore-detection sparkle, a small light source, slightly farther reach. Light enough that not having one is never a punishment.
-- **Other creatures live on your plot.** Decorative and ambient. A few kinds (a moss sheep, a tea-leaf turtle) passively produce trace amounts of materials over time, giving idle play a small payoff without becoming a grind engine.
+- **Other creatures live in your Region.** Decorative and ambient. A few kinds (a moss sheep, a tea-leaf turtle) passively produce trace amounts of materials over time, giving idle play a small payoff without becoming a grind engine.
 - **All creatures are persistent and named by the player.** They cannot die, cannot be taken, cannot be diminished by other players.
 
 ### Creature Properties
@@ -275,97 +307,190 @@ Players name their creatures at hatch/create time. The name is permanent and vis
 
 ---
 
-## Surface Plots
+## Regions
 
-Each player can claim one surface plot.
+Every player owns a **Region** — a vertical column of the island that is theirs alone.
 
-- **Size:** 8x8 chunks (128x128 blocks)
-- **Build:** place mined blocks to make any structure you want
-- **Place creatures:** display your collection
-- **Place summoned items:** decorate with anything from the catalog
-- **Visit other players' plots:** read their style, summon copies of their recipes
-- **Plots are sacred:** no other player can damage, alter, or remove anything on your plot
+### Geometry
+- **Size:** 25×25 surface chunks (400×400 blocks)
+- **Depth:** full vertical column from sky to The Core (Y=0 to Y=-2000)
+- **Layout:** Regions are scattered across the island with The Wilds between them
+- **Quantity:** the island holds a fixed number of Region slots, distributed across its area
 
-The plot is the player's permanent showcase — the museum of their taste in the world.
+### Ownership
+- **Auto-assigned** to a player on their first session — randomly placed in an open slot
+- **Persistent forever** while the owner is active
+- **Loads with the owner** to whatever Roblox shard they join (Region chunks live in player's DataStore)
+- **One Region per player.** No multiple plots, no transfers (yet — could be a Robux-priced "move my Region" SKU later)
+
+### Region Lifecycle (the cycling problem)
+- A Region whose owner has been **inactive for 6 months** is marked **Dormant**: still visible, but flagged
+- After **12 months total inactivity**, a Dormant Region becomes **Reclaimable**: a new player joining the world can be assigned to it
+- When reclaimed, the previous owner's *physical* content is cleared (their structures wipe, the Region resets to procedural base state)
+- The previous owner's *authored recipes* stay in the public catalog forever — creative legacy is preserved even if their physical Region is recycled
+- Communicated transparently: "your Region will be Dormant in X days unless you log in"
+
+### Inside Your Region — What You Can Do
+- Build any structures with mined materials (this is the *primary* purpose of your Region)
+- Mine the small amount of ore that exists in your column (mostly Tier 1, sparse)
+- Place creatures (display, hosting, ambient)
+- Place summoned items from the catalog
+- Decorate freely — this is where customization lives
+- Host friends (they can visit, but cannot modify)
+
+### Inside Your Region — What Visitors Can / Can't Do
+
+| Action | Visitor allowed? |
+|---|---|
+| Walk freely through your Region | ✅ |
+| Inspect your placed items, read attribution | ✅ |
+| Summon copies of recipes from items they see | ✅ |
+| Leave a small "stone" emote / trace beside something | ✅ |
+| Break or place a block | ❌ |
+| Dig | ❌ |
+| Block your movement / "bully" with their body | ❌ (player-collision disabled in non-owner Regions; visitors can pass through everyone) |
+| Take, modify, or damage anything | ❌ |
+| Take ore from your Region | ❌ |
+
+**No bullying.** Specifically, visitor-vs-owner physical collision is disabled inside a Region. Visitors are ghosts; they cannot trap, push, or block the owner.
+
+### Return to Base
+A **"Return to Base"** button is always available in the UI. Pressing it teleports the player to their Region's spawn point. Used to:
+- Escape if stuck in The Wilds
+- Bail out of someone else's Region (if they got lost)
+- Quick travel home to deposit materials
+
+The button has no cooldown (or a very short one to prevent spam). Players cannot be trapped in this game.
+
+---
+
+## The Wilds
+
+The Wilds are everywhere on the island that isn't a Region or The Hearth. They're the **shared, contested, mineable open world**.
+
+### What The Wilds Are For
+- **Mining ore** at full distribution density — the primary mining destination
+- **Encountering other players** — the only place strangers actually mine alongside you
+- **First-break-wins** — when you and a stranger race for the same vein, whoever lands the killing blow gets the drops
+- **Building temporary stuff** — anyone can place blocks in The Wilds, knowing it wipes weekly. Outposts, signs, lanterns at forks, ramps.
+
+### What's Allowed in The Wilds
+- ✅ Mining (anyone, anywhere, all 7 layers)
+- ✅ Placing blocks (anyone, knowing they'll wipe at reset)
+- ✅ Building temporary structures (outposts, paths, scaffolds — wipe at reset)
+- ⚠️ Placing creatures: **discouraged** — creatures left in The Wilds at reset time auto-return to the owner's inventory (no permanent loss)
+- ⚠️ Placing summoned items: **same rule** — auto-return to inventory at reset
+
+Permanent stuff lives in your Region. The Wilds are for activity.
+
+### What Cannot Happen in The Wilds
+- No PvP, no combat between players
+- No theft from inventories
+- No trapping (Return to Base button always works)
+
+### Weekly Reset
+Every week (proposed: Sunday morning UTC):
+- All bulk and ore broken in The Wilds is restored to base terrain
+- All blocks placed in The Wilds are removed
+- Ore pockets respawn at their original positions
+- Player-placed creatures and items in The Wilds auto-return to owner inventories before reset
+- Pre-reset countdown visible to all players
+
+This isn't "regeneration" — it's a **scheduled world event** with anticipation, rushes, and rhythm. Players plan their week around it.
+
+---
+
+## The Hearth
+
+The Hearth is a permanent dev-curated public commons at the center of the island.
+
+- **Cannot be modified by any player** — fixed terrain, fixed structures
+- **Spawn point for new players** on their first session
+- **Has the Workbench** (the LLM-creation altar)
+- **Has the catalog Browse interface**
+- **Tutorial signage and onboarding flow**
+- **Visible from many parts of the world** — a recognizable landmark
+- **Houses the Region map** — players can see Region locations on a map and teleport to friends or visit other players' Regions
+
+The Hearth is the only zone that survives forever and never changes. It anchors the world.
 
 ---
 
 ## Multiplayer
 
-The game is multiplayer-first but contact is gentle and asynchronous. Players are **fellow expeditioners**, not adversaries.
+The game is multiplayer-first. Players share **one big island** with three zones (The Hearth, Regions, The Wilds) and a global recipe catalog.
 
-### Architecture: Shared Surface, Private Persistent Mines
+### Server Topology
+- **~16 players per Roblox shard** (smaller than the Roblox default — designed for intimacy, fewer strangers in a session, easier social cohesion). Tunable; could go up if too sparse, down if too crowded.
+- Multiple shards run in parallel
+- Each shard reads/writes the same persistent island data via shared DataStore + backend cache for The Wilds
+- Region data is per-player and follows the player into any shard
 
-| Zone | Sharing model | Persistence |
-|---|---|---|
-| **Surface (commons + plots)** | Shared across the ~30-player Roblox server instance | Plots are persistent per player; loaded into whatever instance you join |
-| **Personal mine** | Private per player; friends can be invited in via "Mine With Me" | Persistent forever, every dug tunnel stays carved across sessions |
-| **Catalog (recipes)** | Global, backed by origami-server | Every recipe ever authored is summonable from any instance |
-
-### Session flow
-1. Spawn into a Roblox server instance. Up to ~30 other players visible at the shared surface commons.
-2. Plots load around the commons — friends first, then players currently in the instance, then a sprinkling of featured plots for ambient density.
-3. Visit plots, browse the catalog, summon items, decorate your own plot.
-4. Descend below ground → enter **your personal mine** (instanced, persistent, exactly as you left it).
-5. Invite a friend in via "Mine With Me." They keep their own inventory but mine your terrain. Drops go to whoever broke the block.
-6. Going back up returns you to the surface commons.
-
-### What persists where
+### What Persists Where
 
 | Data | Storage | Scope |
 |---|---|---|
-| Inventory, materials, free creates, tools | DataStore per player | Follows you to any server |
-| Your plot (blocks, placed items, creatures) | DataStore per player | Loaded into your current instance |
-| Your mine (every block broken, tunnels, claims) | DataStore per player | Persistent forever, only visible to you + invited friends |
-| Recipes / catalog | origami-server backend | Global, queryable from any instance |
-| Stats, achievement counters | DataStore per player | Follows you |
+| Inventory, materials, Free Creates, tools | DataStore per player | Follows you to any shard |
+| Your Region (all blocks, placed items, creatures) | DataStore per player | Loaded with you into any shard |
+| The Wilds (current week's terrain edits) | Shard state, synced via backend | Resets weekly across all shards |
+| The Hearth | Static, baked into game data | Never changes |
+| Recipe catalog | origami-server backend | Global, queryable from any shard |
+| Stats, achievement counters, Free-Create progress | DataStore per player | Follows you |
+| Region ownership map (who owns which slot) | Backend index | Global authoritative source |
 
-### What strangers can / can't do
+### Session Flow
+1. Open the game. Roblox places you in a ~16-player shard.
+2. **First session:** spawn at The Hearth. Tutorial. Auto-assigned a Region somewhere on the island. Travel to it via map portal.
+3. **Subsequent sessions:** spawn at your Region's home point.
+4. Mine in The Wilds, build in your Region, visit other Regions, gather at The Hearth.
+5. **Return to Base** button always available — teleport home anytime, no cooldown (or short cooldown to prevent spam).
+6. Logging out preserves all your Region work (DataStore). The Wilds keep ticking toward the next reset.
 
-| Action | Can do? |
+### What Strangers Can / Can't Do
+
+| Action | Allowed? |
 |---|---|
-| See your plot from outside | ✅ |
-| Walk into your plot | ✅ |
+| See your Region on the world map | ✅ |
+| Visit your Region (walk through) | ✅ |
 | Summon copies of your authored recipes | ✅ |
-| Tap items on your plot to inspect them | ✅ |
-| Leave a small "stone" trace beside something they admired | ✅ |
-| Damage a block on your plot | ❌ |
-| Take an item from your plot | ❌ |
-| Enter your mine | ❌ (unless invited) |
-| Take materials/ores from you | ❌ |
+| Leave a "stone" emote-trace beside something they admired | ✅ |
+| Mine alongside you in The Wilds | ✅ |
+| Place blocks in The Wilds (knowing they wipe at reset) | ✅ |
+| Break/place blocks in your Region | ❌ |
+| Block your movement (push, trap, body-block) anywhere | ❌ |
+| Combat or PvP | ❌ |
+| Take from your inventory | ❌ |
+| Take ore from your Region | ❌ |
+
+### No Bullying
+Visitor-vs-owner physical collision is **disabled inside someone else's Region**. Visitors are functionally ghosts: they cannot trap, push, or body-block the owner or other visitors. They can only walk and admire.
 
 ### Friend-Session Tracking (for Free Creates)
 Implemented by `FriendSessionService` server-side:
-- On Roblox-friend co-presence in the same instance, accumulate co-time
-- 20 min in same instance with a friend → award Free Create #2 (one-time)
+- On Roblox-friend co-presence in the same shard, accumulate co-time
+- 20 min co-time → award Free Create #2 (one-time)
 - 5 distinct UTC days with ≥15 min co-time → award Free Create #3 (one-time)
+- Friends can request the same shard at join-time
 - Anti-AFK-farm: minimum activity threshold per session, server-validated
 
-### The Asynchronous-Ghosts Feel
-Even though direct PvP / griefing / theft is impossible, multiplayer still feels alive because:
-- Plots are everywhere on the shared surface — every plot is someone's voice
-- The catalog is a giant, constantly-growing social artifact
-- Originator names appear on every summoned copy
-- "Times your recipes have been summoned" counter ticks up while you're offline
-- Friends can teleport into your mine via TeleportService
-
-Multiplayer feels like **witness and trace**, not raid and trade.
+### The Alive-World Feel
+- The Wilds are visibly active — you walk in and see ore pockets being mined, signs left at forks, partial scaffolds being built before the reset
+- Other players' Regions dot the surface — a constellation of personal kingdoms
+- The world map shows recently-active Regions (a soft glow on Region tiles whose owners are online)
+- The catalog grows constantly with new recipes; originators are credited on every copy
+- The Hearth is a steady gathering point — new arrivals constantly cycle through
 
 ### What Cannot Happen
 - **No PvP.** No combat between players.
-- **No griefing.** Strangers cannot break, take, or alter anything you've built.
+- **No griefing.** Strangers cannot break/take/alter Region content.
+- **No trapping.** Return to Base always works.
 - **No theft.** Materials and recipes are personal.
 - **No marketplace, no auctions, no gifting** (v1; controlled gifting may return later).
 
-### What Can Happen
-- Visit other players' plots
-- Summon copies of recipes others have authored
-- Invite friends into your mine
-- Play with friends in the same server (earns Free Creates)
-- See "X copies of your recipes summoned" counters on your profile
-
-### Trade-off
-**No shared deep mining (v1).** You won't bump into a stranger 200 layers deep — the cost of persistent personal mines is solitude in the depths. Mitigation later: **Outposts** (Phase 6) can introduce *shared* deep zones where the asynchronous-ghosts feel reaches its purest form. Deferred from launch.
+### Trade-offs Honestly Named
+- **The Wilds reset weekly.** Outposts and structures built in The Wilds don't persist. This is deliberate — keeps The Wilds fresh, prevents depletion, creates rhythm. Permanent work belongs in your Region.
+- **Bounded island, finite Region slots.** Inactive-region cycling (6 / 12 month timers) handles long-term churn. Authored recipes stay in the catalog forever even after a Region is reclaimed.
+- **No shared persistent deep mining.** Within a week of The Wilds you can encounter other players' digs at depth, but resets clean it. Players who want permanent deep work do it inside their own Region's vertical column.
 
 ---
 
@@ -388,7 +513,7 @@ For dopamine without economy bloat, the player profile tracks read-only stats:
 - Total recipes summoned
 - Total recipes authored (with originator credits visible)
 - Days played
-- Plot square-footage
+- Region square-footage built (number of blocks placed in your Region)
 - Times others have summoned your recipes
 - Layers reached
 
@@ -449,7 +574,9 @@ None of these gate v1 launch.
 - **OrigamiService**: LLM text-to-model endpoint
 - **WorkshopService**: Browse + Create UI handling
 - **CatalogService**: Public recipe storage, search, originator attribution
-- **PlotService**: Surface plot claiming and building
+- **RegionService**: Region claiming, ownership, scattered placement, persistence, inactivity tracking, recycling
+- **WildsService**: Wilds zone management, weekly reset orchestration, ore pocket regeneration, cross-shard sync
+- **HearthService**: Static commons, spawn flow, world map, Return to Base teleport
 - **CreatureService**: Creature behavior, hatching, naming, companion perks
 - **BlockPlacementService**: Placing blocks from inventory
 - **FriendSessionService**: Tracks co-server time with Roblox friends for Free Create awards
@@ -491,16 +618,27 @@ These phases run roughly in parallel; v1 launch requires Phase 1–4.
 - Workbench UI, Free Create slot tracking, Robux SKU integration, friend-session tracking
 - Constrained first creation (companion creature)
 
-### Phase 4: Plots + Multiplayer Visibility
-- Plot claiming, persistent saves, plot visiting, "summoned by X others" counters, surface town commons
+### Phase 4: Regions + Wilds + Hearth
+- Region claiming, 25×25-chunk vertical column allocation, scattered placement on the island
+- Region persistence to per-player DataStore
+- Region visiting (visit-only, no edit, no body-block)
+- Return to Base teleport
+- The Wilds zone definition and weekly reset infrastructure
+- The Hearth fixed commons + spawn flow
+- World map with recently-active glow on online-owner Regions
+- Inactivity-based Region cycling (6/12-month timers)
 
 ### Phase 5: Polish + Content
 - Companion perk variety, more block types, more ore types if needed
-- Achievements, daily login, public stats display
+- Achievements, daily login, public stats display, "summoned by X others" counters
 - Sound and VFX polish
+- Wilds reset event ceremony (countdown timer, "fresh ore!" announcement)
 
 ### Phase 6 (later): Future Considerations
-- Breeding, evolution, bosses, outposts, controlled gifting/trading
+- Breeding, evolution, bosses, controlled gifting/trading
+- Outposts (claimable persistent zones inside The Wilds — soft-claim mechanic)
+- Region-to-Region neighbor invites (friends adjacent on the map)
+- "Move my Region" Robux SKU
 
 ---
 
@@ -508,8 +646,14 @@ These phases run roughly in parallel; v1 launch requires Phase 1–4.
 
 These are not blockers for v1, but worth a decision when relevant:
 
+- **Server size tuning:** 16 is the proposal. May need to flex up/down based on testing — too small feels empty in The Wilds; too large feels chaotic.
+- **Region size tuning:** 25×25 surface chunks is the proposal. May want smaller if too sparse, bigger if too cramped.
+- **Wilds layout on the island:** how exactly are Regions arranged across the island? Grid, organic clusters, themed districts?
 - **Companion perk balance:** how strong should ambient perks be? (Current default: small enough that not having a pet is never a punishment.)
 - **Daily login bag size:** how much material is appropriate to keep dailies a treat without making mining redundant?
 - **Catalog discovery:** how do new players find good recipes? (Suggestion: featured shelf curated by play stats; "newly authored" shelf; per-category top-of-week.)
 - **Friend-session anti-cheat:** how do we prevent friend-pair AFK farms from ticking up "5 days with friend"? (Suggestion: require minimum activity per session, not just presence.)
-- **Originator showcasing:** should authored recipes show up on the originator's plot automatically as little display tags?
+- **Originator showcasing:** should authored recipes show up on the originator's Region automatically as little display tags?
+- **Wilds reset day/time:** Sunday morning UTC is the proposal. Should we A/B-test alternatives based on player base time zones?
+- **Region geometry shape:** square is simplest; could be hex tiles or organic blob shapes for visual variety.
+- **Inactivity timers:** 6 months Dormant / 12 months Reclaimable is the proposal. Could be shorter (faster churn) or longer (more permanence).

@@ -49,7 +49,14 @@ export type PlayerData = {
 	BlocksMined: number,
 	DepthReached: number,
 
-	-- Surface Plots
+	-- Region ownership (Phase 2). OwnedRegionId is "" when unclaimed
+	-- (sentinel — PlayerDataService:Write asserts non-nil values).
+	-- RegionHomePoint is meaningful only when OwnedRegionId ~= "".
+	OwnedRegionId: string,
+	RegionHomePoint: { x: number, y: number, z: number },
+
+	-- Surface Plots — DEPRECATED in Phase 2. PlotService no longer registers
+	-- with Knit; the field is retained orphaned to avoid a profile schema bump.
 	PlotData: {
 		plotIndex: number, -- -1 = unclaimed
 		placedBlocks: { [string]: string }, -- "x,y,z" = materialItemId
@@ -93,6 +100,9 @@ local playerDataTemplate: PlayerData = {
 	EquippedTool = "paper_hands",
 	BlocksMined = 0,
 	DepthReached = 0,
+
+	OwnedRegionId = "",
+	RegionHomePoint = { x = 0, y = 0, z = 0 },
 
 	PlotData = {
 		plotIndex = -1,

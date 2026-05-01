@@ -1,7 +1,13 @@
 --[[
-	PlotConfig — surface plot configuration.
-	32x32 block grid (160x160 studs), 16 blocks tall, 500 max blocks, 5 max creatures.
-	Plots positioned far from mine area on a grid.
+	DEPRECATED in Phase 2 (Zone System / GDD lock).
+
+	Live consumers have moved to:
+		* PlaceableBlocks  (placeable items + visual metadata)
+		* RegionConfig     (slot geometry, ring layout)
+
+	This module is kept only for the deprecated PlotService in
+	Services/_deprecated/. Do NOT add new requires. Delete after one
+	full live cycle confirms no callers remain.
 ]]
 
 local PlotConfig = {}

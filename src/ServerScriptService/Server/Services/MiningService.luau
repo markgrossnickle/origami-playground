@@ -11,6 +11,8 @@ local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
+local ZoneRegistry = require(ReplicatedStorage.Shared.ZoneRegistry)
+local ZonePermissions = require(ReplicatedStorage.Shared.ZonePermissions)
 
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local REACH_TOLERANCE = 10
@@ -39,11 +41,13 @@ local MiningService = Knit.CreateService({
 		ToolEquipped = Knit.CreateSignal(),
 		CraftTool = Knit.CreateSignal(),
 		ToolAcquired = Knit.CreateSignal(),
+		ZoneBlocked = Knit.CreateSignal(), -- (reasonCode: string)
 	},
 })
 
 local WorldService
 local PlayerDataService
+local RegionService
 
 local miningStates: { [Player]: MiningState } = {}
 local equippedTools: { [Player]: string } = {}
@@ -295,6 +299,25 @@ local function _handleMineRequest(player: Player, chunkKey: number, flatIndex: n
 		return
 	end
 
+	do
+		local cx, _, cz = ChunkUtil.parseChunkKey(chunkKey)
+		local lx, _, lz = ChunkUtil.fromFlatIndex(flatIndex)
+		local blockPos = ChunkUtil.blockWorldPosition(cx, 0, cz, lx, 0, lz)
+		local zone = ZoneRegistry.getZone(blockPos.X, blockPos.Z)
+		local isOwner = false
+		if zone == "regions" then
+			local slotId = ZoneRegistry.getRegionAt(blockPos.X, blockPos.Z)
+			if slotId and RegionService and RegionService:GetOwnerOf(slotId) == player.UserId then
+				isOwner = true
+			end
+		end
+		local decision = ZonePermissions.canAct(zone, "mine", isOwner)
+		if not decision.allowed then
+			MiningService.Client.ZoneBlocked:Fire(player, decision.reason or "denied")
+			return
+		end
+	end
+
 	local tool = _getPlayerTool(player)
 
 	local blockConfig = BlockRegistry.get(blockTypeId)
@@ -368,6 +391,7 @@ end
 function MiningService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
+	RegionService = Knit.GetService("RegionService")
 
 	WorldService._onMineRequest:Connect(function(player: Player, chunkKey: number, flatIndex: number)
 		_handleMineRequest(player, chunkKey, flatIndex)

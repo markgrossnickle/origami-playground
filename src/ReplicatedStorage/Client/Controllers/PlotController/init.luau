@@ -1,7 +1,11 @@
 --[[
-	PlotController — client-side surface plot building and visiting.
-	Plot HUD, material palette, build mode (B key toggle), block rendering,
-	creature display, visit menu.
+	DEPRECATED in Phase 2 (Zone System / GDD lock).
+
+	The 'plot' build mode (B key, material palette, block rendering, visit
+	menu) is replaced by zone-aware in-world block placement via the voxel
+	world. PlotController is still loaded by Knit so other controllers can
+	resolve it, but KnitStart is a no-op. Do NOT add new state here.
+	Delete after one full live cycle confirms no callers remain.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

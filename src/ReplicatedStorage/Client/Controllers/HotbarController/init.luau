@@ -17,7 +17,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
-local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
+local PlaceableBlocks = require(ReplicatedStorage.Shared.PlaceableBlocks)
 local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
 local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
 
@@ -115,11 +115,11 @@ local function _isToolItem(itemId: string): boolean
 end
 
 local function _isMaterialItem(itemId: string): boolean
-	return PlotConfig.PLACEABLE_BLOCKS[itemId] ~= nil
+	return PlaceableBlocks.isPlaceable(itemId)
 end
 
 local function _getItemColor(itemId: string): Color3
-	local cfg = PlotConfig.PLACEABLE_BLOCKS[itemId]
+	local cfg = PlaceableBlocks.getInfo(itemId)
 	if cfg then
 		return Color3.fromRGB(cfg.color[1], cfg.color[2], cfg.color[3])
 	end
@@ -127,7 +127,7 @@ local function _getItemColor(itemId: string): Color3
 end
 
 local function _getItemMaterial(itemId: string): Enum.Material
-	local cfg = PlotConfig.PLACEABLE_BLOCKS[itemId]
+	local cfg = PlaceableBlocks.getInfo(itemId)
 	if cfg and cfg.material then
 		local ok, mat = pcall(function()
 			return (Enum.Material :: any)[cfg.material]
@@ -140,7 +140,7 @@ local function _getItemMaterial(itemId: string): Enum.Material
 end
 
 local function _getItemName(itemId: string): string
-	local cfg = PlotConfig.PLACEABLE_BLOCKS[itemId]
+	local cfg = PlaceableBlocks.getInfo(itemId)
 	if cfg then
 		return cfg.name
 	end
@@ -807,7 +807,7 @@ function HotbarController:KnitStart()
 
 		for _, namespace in { "bulk", "misc" } do
 			for itemId, count in pairs(_inventory[namespace] or {}) do
-				if count > 0 and PlotConfig.PLACEABLE_BLOCKS[itemId] and slot <= HOTBAR_SLOTS then
+				if count > 0 and PlaceableBlocks.isPlaceable(itemId) and slot <= HOTBAR_SLOTS then
 					_hotbarItems[slot] = itemId
 					slot += 1
 				end

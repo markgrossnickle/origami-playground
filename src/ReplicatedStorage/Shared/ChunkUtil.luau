@@ -8,8 +8,11 @@ ChunkUtil.BLOCK_SIZE = 5
 ChunkUtil.CHUNK_STUDS = ChunkUtil.CHUNK_SIZE * ChunkUtil.BLOCK_SIZE -- 80
 ChunkUtil.BLOCKS_PER_CHUNK = ChunkUtil.CHUNK_SIZE ^ 3 -- 4096
 
-ChunkUtil.MINE_EXTENT_X = 32 -- chunks (island world radius * 2)
-ChunkUtil.MINE_EXTENT_Z = 32 -- chunks
+-- Streaming bounds (in chunks). MUST equal worldRadiusChunks * 2 in
+-- WorldGenModule, otherwise outer chunks won't stream and players in
+-- regions / outer Wilds will see empty space.
+ChunkUtil.MINE_EXTENT_X = 140 -- chunks (matches WorldGenModule.worldRadiusChunks=70)
+ChunkUtil.MINE_EXTENT_Z = 140 -- chunks
 
 function ChunkUtil.worldToChunk(worldX: number, worldY: number, worldZ: number): (number, number, number)
 	local cx = math.floor(worldX / ChunkUtil.CHUNK_STUDS)

@@ -1,7 +1,18 @@
 --[[
-	PlotService — server-side surface plot management.
-	Claim plots, place/remove blocks, assign/unassign creatures.
-	Blocks stored as dictionary: { "x,y,z" = materialId } in PlayerData.
+	DEPRECATED in Phase 2 (Zone System / GDD lock).
+
+	This service is intentionally NOT registered with Knit anymore — its
+	parent folder ('Services/_deprecated/') is a sub-folder, and
+	Knit.AddServices iterates only direct children of 'Services/'.
+
+	Functionality is superseded by:
+		* RegionService (region ownership / claim)
+		* BlockPlacementService (zone-aware block placement in voxel world)
+		* PlaceableBlocks (placeable items shared module)
+
+	The PlotData field on PlayerData is retained as orphaned state to avoid
+	a profile schema bump. Do NOT add new callers; do NOT re-register.
+	Delete after one full live cycle confirms no migration breakage.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

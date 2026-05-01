@@ -33,7 +33,7 @@ local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 
 local Config = {
 	-- World size
-	worldRadiusChunks = 16, -- radius in chunks from center (32x32 total)
+	worldRadiusChunks = 70, -- radius in chunks from center (140x140 total ≈ 11200x11200 studs)
 	-- Terrain
 	seaLevelBlock = 4, -- surface baseline in blocks above world Y=0
 	maxElevationBlocks = 15, -- max surface height variation in blocks
@@ -71,8 +71,8 @@ local Config = {
 local WorldGenModule = {}
 
 -- Global Heightmap (pre-computed 512x512 buffer)
-local WORLD_SIZE_BLOCKS = Config.worldRadiusChunks * 2 * CHUNK_SIZE -- 512
-local HEIGHTMAP_ORIGIN = -Config.worldRadiusChunks * CHUNK_SIZE -- -256
+local WORLD_SIZE_BLOCKS = Config.worldRadiusChunks * 2 * CHUNK_SIZE -- 2240
+local HEIGHTMAP_ORIGIN = -Config.worldRadiusChunks * CHUNK_SIZE -- -1120
 local HEIGHTMAP_OFFSET = 128
 
 local globalHeightmap: buffer? = nil
@@ -223,8 +223,18 @@ end
 -- Heightmap Initialization (5-pass pipeline)
 
 local function _initializeGlobalHeightmap(seed: number)
+	local _hmStart = os.clock()
 	local size = WORLD_SIZE_BLOCKS
 	local total = size * size
+	print(
+		string.format(
+			"[WorldGen] Initializing heightmap: %d x %d (%d cells, %d KiB buffer)",
+			size,
+			size,
+			total,
+			math.floor(total / 1024)
+		)
+	)
 	local hm = buffer.create(total)
 	local seaLevel = Config.seaLevelBlock
 
@@ -497,6 +507,7 @@ local function _initializeGlobalHeightmap(seed: number)
 		end
 	end
 
+	print(string.format("[WorldGen] Heightmap init complete in %.2fs (seed %d)", os.clock() - _hmStart, seed))
 	globalHeightmap = hm
 	heightmapSeed = seed
 end

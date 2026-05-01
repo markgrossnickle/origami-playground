@@ -10,25 +10,14 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 
 local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
-local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
+local PlaceableBlocks = require(ReplicatedStorage.Shared.PlaceableBlocks)
 local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
+local ZoneRegistry = require(ReplicatedStorage.Shared.ZoneRegistry)
+local ZonePermissions = require(ReplicatedStorage.Shared.ZonePermissions)
 
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local MAX_PLACE_DISTANCE = 20
-
--- Reverse mapping: inventory itemId → BlockType id for world placement.
--- Only bulk blocks + wood are placeable in the voxel world.
-local ITEM_TO_BLOCK: { [string]: number } = {
-	paper = BlockType.Paper,
-	pulp = BlockType.Pulp,
-	folded_stone = BlockType.FoldedStone,
-	origami_rock = BlockType.OrigamiRock,
-	crystal = BlockType.Crystal,
-	void_stone = BlockType.VoidStone,
-	prismatic_block = BlockType.PrismaticBlock,
-	wood = BlockType.Wood,
-}
 
 local function _placementNamespace(itemId: string): string
 	local role = MaterialTiers.getRole(itemId)
@@ -47,6 +36,7 @@ local BlockPlacementService = Knit.CreateService({
 
 local WorldService
 local PlayerDataService
+local RegionService
 
 -- Rate limit: one placement per player per 0.15s
 local _lastPlaceTime: { [Player]: number } = {}
@@ -69,7 +59,7 @@ function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: numbe
 	end
 
 	-- Validate item is placeable
-	local blockTypeId = ITEM_TO_BLOCK[itemId]
+	local blockTypeId = PlaceableBlocks.getBlockType(itemId)
 	if not blockTypeId then
 		return { success = false, error = "not_placeable" }
 	end
@@ -104,6 +94,19 @@ function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: numbe
 		return { success = false, error = "not_subscribed" }
 	end
 
+	local zone = ZoneRegistry.getZone(blockPos.X, blockPos.Z)
+	local isOwner = false
+	if zone == "regions" then
+		local slotId = ZoneRegistry.getRegionAt(blockPos.X, blockPos.Z)
+		if slotId and RegionService and RegionService:GetOwnerOf(slotId) == player.UserId then
+			isOwner = true
+		end
+	end
+	local decision = ZonePermissions.canAct(zone, "place", isOwner)
+	if not decision.allowed then
+		return { success = false, error = decision.reason or "zone_locked" }
+	end
+
 	-- Check target position is air
 	local currentBlock = WorldService:GetBlock(chunkKey, flatIndex)
 	if currentBlock ~= BlockType.Air then
@@ -132,6 +135,7 @@ function BlockPlacementService:KnitInit() end
 function BlockPlacementService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
+	RegionService = Knit.GetService("RegionService")
 
 	-- Clean up rate limit entries on leave
 	Players.PlayerRemoving:Connect(function(player: Player)

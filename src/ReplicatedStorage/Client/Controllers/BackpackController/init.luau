@@ -10,7 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local ToolRegistry = require(ReplicatedStorage.Shared.ToolRegistry)
-local PlotConfig = require(ReplicatedStorage.Shared.PlotConfig)
+local PlaceableBlocks = require(ReplicatedStorage.Shared.PlaceableBlocks)
 local EggCraftingConfig = require(ReplicatedStorage.Shared.EggCraftingConfig)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local OrigamiUnfold = require(ReplicatedStorage.Shared.OrigamiUnfold)
@@ -222,14 +222,9 @@ local function fetchAllData(callback: (() -> ())?)
 	end)
 
 	task.spawn(function()
-		local PlotService = Knit.GetService("PlotService")
-		local ok, plotData = PlotService:GetPlotData():await()
-		if ok and type(plotData) == "table" and plotData.assignedCreatures then
-			_plotAssignedIds = {}
-			for _, entry in ipairs(plotData.assignedCreatures) do
-				_plotAssignedIds[entry.creatureId] = true
-			end
-		end
+		-- PlotService deprecated in Phase 2. Region-based creature placement
+		-- is future work; for now no creatures are 'on plot'.
+		_plotAssignedIds = {}
 		onComplete()
 	end)
 
@@ -299,7 +294,7 @@ renderMaterialsTab = function()
 	gridPad.Parent = gridFrame
 
 	for i, mat in ipairs(materials) do
-		local blockConfig = PlotConfig.PLACEABLE_BLOCKS[mat.id]
+		local blockConfig = PlaceableBlocks.getInfo(mat.id)
 		local color
 		local displayName
 		if blockConfig then
@@ -626,40 +621,9 @@ local function spawnCreatureInWorld(creature: { [string]: any })
 	VFXUtil.sparkle(spawnPos + Vector3.new(0, 2, 0), rarityColor, 15, 1.5)
 end
 
-local function assignCreatureToPlot(creatureId: string)
-	task.spawn(function()
-		local PlotService = Knit.GetService("PlotService")
-		local ok, plotData = PlotService:GetPlotData():await()
-		if not ok or type(plotData) ~= "table" or not plotData.origin then
-			return
-		end
-
-		-- Find first open position
-		local assigned = plotData.assignedCreatures or {}
-		local usedPositions = {}
-		for _, entry in ipairs(assigned) do
-			usedPositions[entry.localX .. "," .. entry.localZ] = true
-		end
-
-		local localX, localZ
-		for _, pos in ipairs(PLOT_CREATURE_POSITIONS) do
-			if not usedPositions[pos[1] .. "," .. pos[2]] then
-				localX, localZ = pos[1], pos[2]
-				break
-			end
-		end
-		if not localX then
-			return
-		end
-
-		local result = PlotService:AssignCreature(creatureId, localX, localZ):await()
-		if result and result.success then
-			_plotAssignedIds[creatureId] = true
-			if _visible and _activeTab == "Critters" then
-				renderCreaturesTab()
-			end
-		end
-	end)
+local function assignCreatureToPlot(_creatureId: string)
+	-- PlotService deprecated in Phase 2; creature plot assignment is disabled
+	-- until region-based creature placement ships. Intentional no-op.
 end
 
 local function releaseCreature(creatureId: string, button: TextButton)
@@ -806,23 +770,11 @@ renderCreaturesTab = function()
 			spawnCreatureInWorld(creature)
 		end)
 
-		-- To Plot / On Plot
-		local plotBtn = Instance.new("TextButton")
-		plotBtn.Size = UDim2.fromOffset(btnW, btnH)
-		plotBtn.Position = UDim2.fromOffset(btnX2, btnY1)
-		plotBtn.BackgroundColor3 = if isOnPlot then COLORS.textDim else COLORS.accent
-		plotBtn.Text = if isOnPlot then "On Plot" else "To Plot"
-		plotBtn.TextColor3 = COLORS.bg
-		plotBtn.TextSize = 10
-		plotBtn.Font = Enum.Font.GothamBold
-		plotBtn.AutoButtonColor = not isOnPlot
-		plotBtn.Parent = card
-		createCorner(plotBtn, 4)
-		if not isOnPlot then
-			plotBtn.MouseButton1Click:Connect(function()
-				assignCreatureToPlot(creature.id)
-			end)
-		end
+		-- "To Plot" / "On Plot" button hidden in Phase 2 — PlotService is
+		-- deprecated and creature plot placement is disabled until region-based
+		-- placement ships. Keeping the layout slot empty for now.
+		local _ = isOnPlot
+		local _ = btnX2
 
 		-- Rename
 		local renameBtn = Instance.new("TextButton")

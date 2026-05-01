@@ -25,6 +25,13 @@ local SpawnService = Knit.CreateService({
 	},
 })
 
+-- Hold all character spawning until SpawnService:KnitStart finishes positioning
+-- the Hearth platform. Without this, players who join during heightmap init
+-- (worldRadius=70 → ~5M-cell heightmap, can take many seconds) spawn before
+-- the SpawnLocation is in the right place and fall through ungenerated geometry.
+-- Set immediately at module-load time, BEFORE Knit:Start completes.
+Players.CharacterAutoLoads = false
+
 local WorldService
 local PlayerDataService
 local RegionService
@@ -214,12 +221,24 @@ function SpawnService:KnitStart()
 	end
 	spawnLocation.Name = "SpawnPlatform"
 
+	-- Now that the SpawnLocation is positioned correctly, allow characters to
+	-- spawn. Players who joined during heightmap init are still character-less
+	-- (CharacterAutoLoads was false at module load); we LoadCharacter them
+	-- explicitly so they appear on the platform.
+	Players.CharacterAutoLoads = true
+
 	Players.PlayerAdded:Connect(function(player)
 		bindPlayer(player, seed)
+		if player.Character == nil then
+			player:LoadCharacter()
+		end
 	end)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		bindPlayer(player, seed)
+		if player.Character == nil then
+			player:LoadCharacter()
+		end
 	end
 end
 

@@ -1121,6 +1121,22 @@ local function _renderChunk(chunkKey: number, blocks: buffer)
 		return
 	end
 
+	-- Standing-on-chunk protection: if this is a re-render of a chunk the
+	-- player is currently standing on, skip it. _recycleChunkParts BulkMoveTos
+	-- the existing parts to FAR_AWAY *before* the new ones are placed, leaving
+	-- a window with no collision under the player. They fall through and get
+	-- stuck below the world. The chunk's old LOD is visually slightly off but
+	-- collision is preserved; the next render after the player moves off the
+	-- chunk will pick up the correct LOD.
+	if renderedChunks[chunkKey] then
+		local pcx, pcy, pcz = _getPlayerChunkPos()
+		if pcx == cx and pcy == cy and pcz == cz then
+			-- Stash latest blocks so a future render on this chunk uses them,
+			-- but don't disturb the parts the player is standing on.
+			return
+		end
+	end
+
 	_recycleChunkParts(chunkKey)
 
 	renderedChunks[chunkKey] = true

@@ -1,15 +1,16 @@
 --!strict
 --[[
-	LandmarkService — places world-visible markers for the Hearth and the 12
-	Region slots so players can navigate. A tall central pillar marks the
-	Hearth at world origin; each Region slot center gets a smaller pillar.
+	LandmarkService — places world-visible markers for the 12 Region slots so
+	players can navigate. Each Region slot center gets a pillar; the Hearth
+	itself is marked by the spawn platform + minimap dot rather than a beam,
+	so the central skyline stays clean.
 
 	Slot pillars are color-coded based on ownership:
 		owner == nil           → yellow  (unclaimed)
 		owner == localPlayer   → green   (yours)  -- handled client-side via attribute
 		owner ~= localPlayer   → grey    (someone else's)
 
-	Server places parts with attributes; client (BeaconColorController) tints
+	Server places parts with attributes; client (RegionHudController) tints
 	them per-viewer based on the local player's OwnedRegionId. The server keeps
 	parts neutral grey by default; the client overrides for ownership feedback.
 
@@ -31,11 +32,6 @@ local LandmarkService = Knit.CreateService({
 local WorldService
 
 local LANDMARK_FOLDER_NAME = "Landmarks"
-
--- Hearth pillar geometry — tall, bright, distinctive.
-local HEARTH_PILLAR_HEIGHT = 80
-local HEARTH_PILLAR_RADIUS = 4
-local HEARTH_PILLAR_COLOR = Color3.fromRGB(255, 220, 130) -- warm gold
 
 -- Slot pillar geometry — moderate, visible from afar.
 local SLOT_PILLAR_HEIGHT = 40
@@ -115,21 +111,6 @@ function LandmarkService:KnitStart()
 	local folder = Instance.new("Folder")
 	folder.Name = LANDMARK_FOLDER_NAME
 	folder.Parent = workspace
-
-	-- Hearth pillar at world origin.
-	local hearthGroundY = WorldGenModule.getSurfaceWorldY(seed, RegionConfig.HEARTH_CX, RegionConfig.HEARTH_CZ)
-	local hearthPillar = _placePillar({
-		name = "HearthPillar",
-		x = RegionConfig.HEARTH_CX,
-		z = RegionConfig.HEARTH_CZ,
-		groundY = hearthGroundY,
-		height = HEARTH_PILLAR_HEIGHT,
-		radius = HEARTH_PILLAR_RADIUS,
-		color = HEARTH_PILLAR_COLOR,
-		parent = folder,
-		attributes = { LandmarkKind = "hearth" },
-	})
-	_addBillboard(hearthPillar, "The Hearth", HEARTH_PILLAR_COLOR, HEARTH_PILLAR_HEIGHT / 2 + 4)
 
 	-- Slot pillars at each of the 12 Region centers.
 	for i = 0, RegionConfig.SLOT_COUNT - 1 do

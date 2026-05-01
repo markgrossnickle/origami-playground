@@ -31,6 +31,9 @@ local tools: { [string]: ToolConfig } = {
 		tier = 1,
 		craftRecipe = { paper = 20 },
 	},
+	-- Recipes use materials the previous tier can already mine, so progression
+	-- isn't a chicken-and-egg loop. tier-N pickaxe is crafted from layer-N
+	-- materials (which tier-(N-1) pick can already extract).
 	stone_pick = {
 		id = "stone_pick",
 		name = "Stone Pick",
@@ -38,7 +41,8 @@ local tools: { [string]: ToolConfig } = {
 		speed = 3,
 		reach = 32,
 		tier = 2,
-		craftRecipe = { folded_stone = 20, pulp = 10 },
+		-- L2 materials, mineable with cardboard_pick (tier 1).
+		craftRecipe = { pulp = 20, clay_bead = 5 },
 	},
 	crystal_pick = {
 		id = "crystal_pick",
@@ -47,7 +51,8 @@ local tools: { [string]: ToolConfig } = {
 		speed = 3.5,
 		reach = 36,
 		tier = 3,
-		craftRecipe = { crystal = 10, origami_rock = 15 },
+		-- L3 materials, mineable with stone_pick (tier 2).
+		craftRecipe = { folded_stone = 20, quartz = 10 },
 	},
 	void_pick = {
 		id = "void_pick",
@@ -56,7 +61,8 @@ local tools: { [string]: ToolConfig } = {
 		speed = 4,
 		reach = 40,
 		tier = 4,
-		craftRecipe = { void_stone = 10, crystal = 5 },
+		-- L5 materials, mineable with crystal_pick (tier 3 — covers L4+L5).
+		craftRecipe = { crystal = 15, foil_shard = 5 },
 	},
 	prismatic_pick = {
 		id = "prismatic_pick",
@@ -65,7 +71,8 @@ local tools: { [string]: ToolConfig } = {
 		speed = 4.5,
 		reach = 44,
 		tier = 5,
-		craftRecipe = { prismatic_block = 5, void_stone = 10 },
+		-- L6 materials, mineable with void_pick (tier 4).
+		craftRecipe = { void_stone = 15, shadow_wisp = 5 },
 	},
 }
 

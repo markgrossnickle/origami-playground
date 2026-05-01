@@ -12,6 +12,7 @@ local ChunkSerializer = require(ReplicatedStorage.Shared.ChunkSerializer)
 local BlockRegistry = require(ReplicatedStorage.Shared.BlockRegistry)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 local GreedyMesher = require(ReplicatedStorage.Shared.GreedyMesher)
+local RegionTints = require(ReplicatedStorage.Shared.RegionTints)
 
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local CHUNK_SIZE = ChunkUtil.CHUNK_SIZE
@@ -238,6 +239,29 @@ local function _tintColor(color: Color3, brightness: number): Color3
 	local g = math.clamp(color.G * brightness, 0, 1)
 	local b = math.clamp(color.B * brightness, 0, 1)
 	return Color3.new(r, g, b)
+end
+
+-- Region tint multiplier — chunkwise multiplier for surface paper "feel".
+-- Identity (no-op) when chunk is in Hearth or Wilds. Threading the multiplier
+-- as a parameter through render functions so we only pay the lookup once per
+-- chunk render, not once per block.
+local function _applyRegionTint(color: Color3, regionTint: Color3?): Color3
+	if regionTint == nil then
+		return color
+	end
+	return Color3.new(
+		math.clamp(color.R * regionTint.R, 0, 1),
+		math.clamp(color.G * regionTint.G, 0, 1),
+		math.clamp(color.B * regionTint.B, 0, 1)
+	)
+end
+
+-- Resolve the region tint for a given chunk by sampling its center XZ.
+-- Returns nil when the chunk's center isn't inside any region slot.
+local function _resolveChunkRegionTint(cx: number, cz: number): Color3?
+	local centerX = cx * CHUNK_STUDS + CHUNK_STUDS * 0.5
+	local centerZ = cz * CHUNK_STUDS + CHUNK_STUDS * 0.5
+	return RegionTints.getMultiplierAtPosition(centerX, centerZ)
 end
 
 -- LOD 0 layer tints are deterministic per (blockTypeId, layerIdx) since both
@@ -623,7 +647,8 @@ local function _makeLayerParts(
 	lx: number,
 	ly: number,
 	lz: number,
-	batched: boolean?
+	batched: boolean?,
+	regionTint: Color3?
 ): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
 	local baseX = cx * CHUNK_STUDS
@@ -655,7 +680,7 @@ local function _makeLayerParts(
 		local stretchAxis = layerSeed % 2
 
 		local part = _getPart()
-		part.Color = _getLayerTint(blockTypeId, i)
+		part.Color = _applyRegionTint(_getLayerTint(blockTypeId, i), regionTint)
 		part.Material = mat
 		if blockTypeId == BlockType.WillowVine then
 			local taper = _vineTaperFactor(blocks, lx, ly, lz)
@@ -794,7 +819,8 @@ local function _makeSimplePart(
 	lx: number,
 	ly: number,
 	lz: number,
-	batched: boolean?
+	batched: boolean?,
+	regionTint: Color3?
 ): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
 	local px = cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock
@@ -813,7 +839,7 @@ local function _makeSimplePart(
 	local baseColor = _getColor(blockTypeId)
 
 	local part = _getPart()
-	part.Color = _tintColor(baseColor, tint)
+	part.Color = _applyRegionTint(_tintColor(baseColor, tint), regionTint)
 	part.Material = _getMaterial(blockTypeId)
 	if blockTypeId == BlockType.WillowVine then
 		local taper = _vineTaperFactor(blocks, lx, ly, lz)
@@ -869,7 +895,8 @@ local function _makeBulkPart(
 	lx: number,
 	ly: number,
 	lz: number,
-	batched: boolean?
+	batched: boolean?,
+	regionTint: Color3?
 ): { BasePart }
 	local halfBlock = BLOCK_SIZE / 2
 	local px = cx * CHUNK_STUDS + lx * BLOCK_SIZE + halfBlock
@@ -877,7 +904,7 @@ local function _makeBulkPart(
 	local pz = cz * CHUNK_STUDS + lz * BLOCK_SIZE + halfBlock
 
 	local part = _getPart()
-	part.Color = _getColor(blockTypeId)
+	part.Color = _applyRegionTint(_getColor(blockTypeId), regionTint)
 	part.Material = _getMaterial(blockTypeId)
 	part.Size = SIMPLE_SIZE_DEFAULT
 	part.CanCollide = true
@@ -907,7 +934,8 @@ local function _makeGreedyRegionPart(
 	cx: number,
 	cy: number,
 	cz: number,
-	batched: boolean?
+	batched: boolean?,
+	regionTint: Color3?
 ): BasePart
 	local blockTypeId = region.blockTypeId
 	local minLx, maxLx = region.minLx, region.maxLx
@@ -924,7 +952,7 @@ local function _makeGreedyRegionPart(
 	local pz = cz * CHUNK_STUDS + (minLz + spanZ * 0.5) * BLOCK_SIZE
 
 	local part = _getPart()
-	part.Color = _getColor(blockTypeId)
+	part.Color = _applyRegionTint(_getColor(blockTypeId), regionTint)
 	part.Material = _getMaterial(blockTypeId)
 	part.Size = Vector3.new(spanX * BLOCK_SIZE, spanY * BLOCK_SIZE, spanZ * BLOCK_SIZE)
 	part.CanCollide = true
@@ -968,15 +996,16 @@ local function _makeBlockParts(
 	ly: number,
 	lz: number,
 	lod: number,
-	batched: boolean?
+	batched: boolean?,
+	regionTint: Color3?
 ): { BasePart }
 	if BULK_BLOCKS[blockTypeId] then
-		return _makeBulkPart(blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+		return _makeBulkPart(blockTypeId, cx, cy, cz, lx, ly, lz, batched, regionTint)
 	end
 	if lod == 0 then
-		return _makeLayerParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+		return _makeLayerParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched, regionTint)
 	else
-		return _makeSimplePart(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched)
+		return _makeSimplePart(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, batched, regionTint)
 	end
 end
 
@@ -1046,6 +1075,8 @@ local function _renderChunkPerBlock(chunkKey: number, blocks: buffer, cx: number
 	local parts: { [number]: { BasePart } } = {}
 	chunkParts[chunkKey] = parts
 
+	local regionTint = _resolveChunkRegionTint(cx, cz)
+
 	local renderStart = os.clock()
 	local blockCount = 0
 
@@ -1056,7 +1087,7 @@ local function _renderChunkPerBlock(chunkKey: number, blocks: buffer, cx: number
 				local blockTypeId = buffer.readu8(blocks, idx)
 
 				if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-					local group = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, true)
+					local group = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, true, regionTint)
 					parts[idx] = group
 				end
 
@@ -1085,9 +1116,11 @@ local function _renderChunkGreedy(chunkKey: number, blocks: buffer, cx: number, 
 	local parts: { BasePart } = table.create(#regions)
 	greedyParts[chunkKey] = parts
 
+	local regionTint = _resolveChunkRegionTint(cx, cz)
+
 	local renderStart = os.clock()
 	for i, region in regions do
-		parts[i] = _makeGreedyRegionPart(region, cx, cy, cz, true)
+		parts[i] = _makeGreedyRegionPart(region, cx, cy, cz, true, regionTint)
 		if i % YIELD_PART_INTERVAL == 0 then
 			if os.clock() - renderStart > FRAME_BUDGET then
 				_flushBatch()
@@ -1204,13 +1237,15 @@ local function _handleBlockUpdate(chunkKey: number, flatIndex: number, blockType
 		chunkParts[chunkKey] = parts
 	end
 
+	local regionTint = _resolveChunkRegionTint(cx, cz)
+
 	if parts[flatIndex] then
 		_returnGroup(parts[flatIndex])
 		parts[flatIndex] = nil
 	end
 
 	if blockTypeId ~= BlockType.Air and _isExposed(blocks, lx, ly, lz) then
-		parts[flatIndex] = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, false)
+		parts[flatIndex] = _makeBlockParts(blocks, blockTypeId, cx, cy, cz, lx, ly, lz, lod, false, regionTint)
 	end
 
 	for _, dir in NEIGHBOR_DIRS do
@@ -1226,7 +1261,7 @@ local function _handleBlockUpdate(chunkKey: number, flatIndex: number, blockType
 		local shouldRender = nBlockType ~= BlockType.Air and _isExposed(blocks, nx, ny, nz)
 
 		if shouldRender and not hasGroup then
-			parts[nIdx] = _makeBlockParts(blocks, nBlockType, cx, cy, cz, nx, ny, nz, lod, false)
+			parts[nIdx] = _makeBlockParts(blocks, nBlockType, cx, cy, cz, nx, ny, nz, lod, false, regionTint)
 		elseif not shouldRender and hasGroup then
 			_returnGroup(parts[nIdx])
 			parts[nIdx] = nil

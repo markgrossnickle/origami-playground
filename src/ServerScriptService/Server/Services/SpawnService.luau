@@ -78,12 +78,21 @@ local function _placeOnPosition(character: Model, pos: Vector3)
 end
 
 local function placeOnPlatform(player: Player, character: Model)
-	local home = _homePointFromProfile(player)
-	if home then
-		_placeOnPosition(character, home)
-	else
-		_placeOnPosition(character, _hearthStandPos)
-	end
+	-- ALWAYS spawn at the Hearth (world origin platform) for now.
+	--
+	-- Auto-teleport to RegionHomePoint is disabled: chunks at the slot
+	-- centers (R=4000) often aren't streamed when the player teleports
+	-- there, AND the slot ring sits inside the island falloff zone where
+	-- terrain is suppressed to near sea level. Combined effect was a
+	-- death loop — fall through ungenerated geometry → hit
+	-- FallenPartsDestroyHeight → respawn at same bad home → repeat.
+	--
+	-- Hearth is at world origin where chunks are always loaded, so this
+	-- is safe. Players walk to their region (visible via the slot pillars
+	-- placed by LandmarkService). Phase 6 will re-enable auto-teleport
+	-- once we have proper chunk-preload-then-teleport plumbing.
+	local _ = player
+	_placeOnPosition(character, _hearthStandPos)
 end
 
 local function _computeHomePointForSlot(seed: number, slotId: string): Vector3?
@@ -134,11 +143,10 @@ local function _assignRegionForFirstTime(player: Player, seed: number)
 
 	SpawnService.Client.RegionAssigned:Fire(player, slotId, { x = home.X, y = home.Y, z = home.Z })
 
-	-- Re-snap the current character (if any) to their freshly-assigned home.
-	local character = player.Character
-	if character then
-		_placeOnPosition(character, home)
-	end
+	-- Auto-teleport to home is intentionally NOT done here for the same
+	-- chunk-not-streamed / falloff-terrain reason as placeOnPlatform.
+	-- Player stays on the Hearth platform after first claim; they can
+	-- walk to their region using the visible slot pillars.
 end
 
 -- Tracks players already bound by bindPlayer to avoid the PlayerAdded +

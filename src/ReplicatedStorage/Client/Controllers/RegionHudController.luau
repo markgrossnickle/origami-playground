@@ -4,12 +4,14 @@
 	current Region info, plus per-viewer tinting of the LandmarkService's
 	slot pillars (green = yours, yellow = unclaimed, grey = someone else's).
 
+	The HUD shows the owner's display name rather than the raw slot id —
+	"Region r:9" doesn't mean anything to a player. Names come from
+	RegionService:GetClaimedSlots and stay live via SlotOwnerChanged.
+
 	Listens to:
 		* SpawnService.Client.RegionAssigned (fired once on first claim)
+		* RegionService.Client.SlotOwnerChanged (live ownership updates)
 		* PlayerDataService:GetData (initial profile load)
-
-	The HUD is intentionally minimal. Phase 6 will replace this with a real
-	world map + Return-to-Base button.
 ]]
 
 local Players = game:GetService("Players")
@@ -17,7 +19,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local RegionConfig = require(ReplicatedStorage.Shared.RegionConfig)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -30,6 +31,7 @@ local COLOR_UNCLAIMED = Color3.fromRGB(240, 200, 80) -- yellow: free
 local COLOR_OTHER = Color3.fromRGB(180, 180, 180) -- grey: someone else's
 
 local _ownedSlotId: string = ""
+local _ownerNames: { [string]: string } = {} -- slotId → display name
 local _hudLabel: TextLabel? = nil
 
 local function _setLabelText(text: string)
@@ -103,14 +105,16 @@ end
 
 local function _updateHud()
 	if _ownedSlotId == "" then
-		_setLabelText("Region: unclaimed (in The Wilds)")
+		_setLabelText("No region claimed yet")
 		return
 	end
-	local center = RegionConfig.getSlotCenter(_ownedSlotId)
-	if center then
-		_setLabelText(string.format("Region: %s   |   Hearth: 0, 0", _ownedSlotId))
+	local ownerName = _ownerNames[_ownedSlotId]
+	if ownerName and ownerName ~= "" then
+		_setLabelText(string.format("Your Region — %s", ownerName))
 	else
-		_setLabelText(string.format("Region: %s", _ownedSlotId))
+		-- Owner name not yet replicated; show a placeholder rather than
+		-- the raw slot id (which is meaningless to the player).
+		_setLabelText("Your Region")
 	end
 end
 
@@ -161,6 +165,36 @@ function RegionHudController:KnitStart()
 			_retintLandmarks()
 			folder.ChildAdded:Connect(function()
 				_retintLandmarks()
+			end)
+		end
+	end)
+
+	-- Pull the current owner name table once and stay live on changes. The
+	-- HUD redraws whenever our own slot's owner name resolves so we don't
+	-- show "Your Region" for long after profile load.
+	task.spawn(function()
+		local RegionService = Knit.GetService("RegionService")
+		if not RegionService then
+			return
+		end
+		local ok, snapshot = RegionService:GetClaimedSlots():await()
+		if ok and type(snapshot) == "table" then
+			for slotId, entry in snapshot do
+				if type(entry) == "table" and type(entry.ownerName) == "string" then
+					_ownerNames[slotId] = entry.ownerName
+				end
+			end
+			_updateHud()
+		end
+		if RegionService.SlotOwnerChanged then
+			RegionService.SlotOwnerChanged:Connect(function(slotId: string, _userId: number, ownerName: string)
+				if type(slotId) ~= "string" or type(ownerName) ~= "string" or ownerName == "" then
+					return
+				end
+				_ownerNames[slotId] = ownerName
+				if slotId == _ownedSlotId then
+					_updateHud()
+				end
 			end)
 		end
 	end)

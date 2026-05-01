@@ -48,6 +48,7 @@ local COLOR_WILDS = Color3.fromRGB(200, 180, 230)
 local COLOR_BG = Color3.fromRGB(20, 20, 30)
 
 local _ownedSlotId: string = ""
+local _ownerNames: { [string]: string } = {} -- slotId → display name
 local _lastZoneKey: string? = nil
 local _gui: ScreenGui? = nil
 local _frame: Frame? = nil
@@ -77,12 +78,18 @@ local function _toastTextAndColor(zoneKey: string, slotId: string?): (string, Co
 	if slotId == nil then
 		return "Region", COLOR_OTHER
 	end
+	local ownerName = _ownerNames[slotId]
 	if _ownedSlotId ~= "" and slotId == _ownedSlotId then
+		if ownerName ~= nil and ownerName ~= "" then
+			return string.format("Your Region — %s", ownerName), COLOR_OWNED
+		end
 		return "Your Region", COLOR_OWNED
 	end
-	-- Strip the "r:" prefix so the toast shows "Region 5" not "Region r:5".
-	local pretty = string.match(slotId, "^r:(%d+)$") or slotId
-	return string.format("Region %s", pretty), COLOR_OTHER
+	if ownerName ~= nil and ownerName ~= "" then
+		return string.format("%s's Region", ownerName), COLOR_OTHER
+	end
+	-- Owner not yet known → "Unclaimed Region" reads better than slotId.
+	return "Unclaimed Region", COLOR_OTHER
 end
 
 local function _createUI()
@@ -253,6 +260,40 @@ function RegionToastController:KnitStart()
 		local SpawnService = Knit.GetService("SpawnService")
 		if SpawnService and SpawnService.RegionAssigned then
 			SpawnService.RegionAssigned:Connect(_onOwnedSlotResolved)
+		end
+	end)
+
+	-- Pull the owner-name table once and stay live on changes. The toast
+	-- text re-renders on owner-name arrival when the player is currently
+	-- inside the slot whose name just resolved (toast was probably showing
+	-- "Unclaimed Region" or stale info).
+	task.spawn(function()
+		local RegionService = Knit.GetService("RegionService")
+		if not RegionService then
+			return
+		end
+		local ok, snapshot = RegionService:GetClaimedSlots():await()
+		if ok and type(snapshot) == "table" then
+			for slotId, entry in snapshot do
+				if type(entry) == "table" and type(entry.ownerName) == "string" then
+					_ownerNames[slotId] = entry.ownerName
+				end
+			end
+		end
+		if RegionService.SlotOwnerChanged then
+			RegionService.SlotOwnerChanged:Connect(function(slotId: string, _userId: number, ownerName: string)
+				if type(slotId) ~= "string" or type(ownerName) ~= "string" or ownerName == "" then
+					return
+				end
+				_ownerNames[slotId] = ownerName
+				-- If we're currently inside that slot, refresh the toast so
+				-- the player sees the updated label without leaving and
+				-- re-entering the boundary.
+				if _lastZoneKey == string.format("regions:%s", slotId) then
+					local text, color = _toastTextAndColor(_lastZoneKey, slotId)
+					_showToast(text, color)
+				end
+			end)
 		end
 	end)
 

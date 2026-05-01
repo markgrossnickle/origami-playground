@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
+local ChunkUtil = require(ReplicatedStorage.Shared.ChunkUtil)
 local WorldGenModule = require(ReplicatedStorage.Shared.WorldGenModule)
 local RegionConfig = require(ReplicatedStorage.Shared.RegionConfig)
 
@@ -12,11 +13,16 @@ local RegionConfig = require(ReplicatedStorage.Shared.RegionConfig)
 	@class SpawnService
 	Region-aware spawn flow.
 
+	* Every CharacterAdded: place the player on the central Hearth platform
+	  immediately (no race with heightmap init).
+	* If the player owns a region, kick off a background task that
+	  pre-subscribes the chunks at the inner edge of their slot, waits for
+	  those chunks to be ready, then teleports the character to that edge
+	  point. This avoids the previous death-loop where teleporting to
+	  ungenerated geometry dropped the player below FallenPartsDestroyHeight.
 	* On first join (OwnedRegionId == "") asks RegionService to claim a free
-	  slot and computes a HomePoint at the slot's surface; persists both to
-	  the player's profile, then teleports them home.
-	* On subsequent joins, teleports the character to the persisted HomePoint.
-	* Falls back to the central Hearth platform when no region is assigned.
+	  slot and persists both the slotId and a HomePoint at the slot's surface,
+	  then runs the same edge-teleport.
 ]=]
 local SpawnService = Knit.CreateService({
 	Name = "SpawnService",
@@ -39,6 +45,20 @@ local RegionService
 local PLATFORM_THICKNESS = 1
 local PLATFORM_SIZE = Vector3.new(24, PLATFORM_THICKNESS, 24)
 local HEARTH_PLATFORM_Y = 100
+
+-- After spawning on the platform, owners get teleported to the inner edge
+-- of their slot — the side closest to the Hearth. This is the natural
+-- "front door" of their region: easy to wander out into the Hearth or
+-- deeper into their own land. We pull the spawn point a few studs INSIDE
+-- the slot boundary so zone permission checks see them as inside the
+-- region (not the boundary line).
+local EDGE_INSET = 16
+
+-- How long to wait after pre-subscribing the edge chunks before yanking the
+-- character there. Server side, Subscribe yields until the chunk exists.
+-- Client side it still has to receive the ChunkData message and render
+-- meshes — this delay covers that round trip + a render frame.
+local EDGE_TELEPORT_DELAY = 2.5
 
 local _hearthStandPos: Vector3 = Vector3.new(0, HEARTH_PLATFORM_Y + PLATFORM_SIZE.Y * 0.5 + 3, 0)
 
@@ -71,32 +91,6 @@ do
 	end)
 end
 
-local function _vec3(p: { x: number, y: number, z: number }): Vector3
-	return Vector3.new(p.x, p.y, p.z)
-end
-
-local function _isZeroHome(p: { x: number, y: number, z: number }): boolean
-	return p.x == 0 and p.y == 0 and p.z == 0
-end
-
-local function _homePointFromProfile(player: Player): Vector3?
-	if PlayerDataService == nil then
-		return nil
-	end
-	local slotId = PlayerDataService:Read(player, { "OwnedRegionId" })
-	if type(slotId) ~= "string" or slotId == "" then
-		return nil
-	end
-	local home = PlayerDataService:Read(player, { "RegionHomePoint" })
-	if type(home) ~= "table" then
-		return nil
-	end
-	if _isZeroHome(home) then
-		return nil
-	end
-	return _vec3(home)
-end
-
 local function _placeOnPosition(character: Model, pos: Vector3)
 	local rootPart = character:WaitForChild("HumanoidRootPart", 5) :: BasePart?
 	if not rootPart then
@@ -112,19 +106,6 @@ local function _placeOnPosition(character: Model, pos: Vector3)
 end
 
 local function placeOnPlatform(player: Player, character: Model)
-	-- ALWAYS spawn at the Hearth (world origin platform) for now.
-	--
-	-- Auto-teleport to RegionHomePoint is disabled: chunks at the slot
-	-- centers (R=4000) often aren't streamed when the player teleports
-	-- there, AND the slot ring sits inside the island falloff zone where
-	-- terrain is suppressed to near sea level. Combined effect was a
-	-- death loop — fall through ungenerated geometry → hit
-	-- FallenPartsDestroyHeight → respawn at same bad home → repeat.
-	--
-	-- Hearth is at world origin where chunks are always loaded, so this
-	-- is safe. Players walk to their region (visible via the slot pillars
-	-- placed by LandmarkService). Phase 6 will re-enable auto-teleport
-	-- once we have proper chunk-preload-then-teleport plumbing.
 	local _ = player
 	_placeOnPosition(character, _hearthStandPos)
 end
@@ -139,37 +120,124 @@ local function _computeHomePointForSlot(seed: number, slotId: string): Vector3?
 	return Vector3.new(center.x, surfaceY + 3, center.z)
 end
 
-local function _assignRegionForFirstTime(player: Player, seed: number)
-	if PlayerDataService == nil or RegionService == nil then
+-- Compute a "front door" point at the inner edge of the slot — the boundary
+-- side that faces the Hearth. We push EDGE_INSET studs back into the slot
+-- so zone checks classify the position as "regions" rather than ambiguous.
+local function _computeRegionEdgePoint(seed: number, slotId: string): Vector3?
+	local center = RegionConfig.getSlotCenter(slotId)
+	if center == nil then
+		return nil
+	end
+	local mag = math.sqrt(center.x * center.x + center.z * center.z)
+	if mag <= 0 then
+		return nil
+	end
+	-- Unit vector from slot center pointing back toward the Hearth.
+	local towardHearthX = -center.x / mag
+	local towardHearthZ = -center.z / mag
+	-- Walk SLOT_HALF_EDGE studs from the center toward the hearth, then
+	-- step EDGE_INSET back inside the slot.
+	local edgeX = center.x + towardHearthX * (RegionConfig.SLOT_HALF_EDGE - EDGE_INSET)
+	local edgeZ = center.z + towardHearthZ * (RegionConfig.SLOT_HALF_EDGE - EDGE_INSET)
+	local surfaceY = WorldGenModule.getSurfaceWorldY(seed, edgeX, edgeZ)
+	return Vector3.new(edgeX, surfaceY + 4, edgeZ)
+end
+
+-- Force-subscribe the chunks around `pos` so the player's client renders
+-- terrain there before we teleport. Subscribe yields per-chunk on first call
+-- (cold DataStore read), so this both warms the cache and pushes ChunkData
+-- to the client. Subscribed chunks aren't tracked by ChunkStreamService's
+-- requiredSet so its 0.5s poll won't unsubscribe them out from under us.
+local function _preSubscribeChunksAtPosition(player: Player, pos: Vector3)
+	if WorldService == nil then
 		return
+	end
+	local pcx, pcy, pcz = ChunkUtil.worldToChunk(pos.X, pos.Y, pos.Z)
+	for dx = -1, 1 do
+		for dz = -1, 1 do
+			-- Slightly more depth than height so the column under the
+			-- player is solid before they land.
+			for dy = -3, 1 do
+				local cx, cy, cz = pcx + dx, pcy + dy, pcz + dz
+				if ChunkUtil.isInMineBounds(cx, cz) then
+					local key = ChunkUtil.chunkKey(cx, cy, cz)
+					WorldService:Subscribe(player, key)
+				end
+			end
+		end
+	end
+end
+
+local function _scheduleEdgeTeleport(player: Player, slotId: string, seed: number)
+	task.spawn(function()
+		local edgePos = _computeRegionEdgePoint(seed, slotId)
+		if edgePos == nil then
+			warn(`[SpawnService] Could not compute edge point for slot {slotId}`)
+			return
+		end
+		if not player.Parent then
+			return
+		end
+
+		-- Pre-warm + subscribe the chunks the player is about to land in.
+		-- Subscribe yields, so this can take a moment; we still pad the
+		-- delay below for client-side render time.
+		_preSubscribeChunksAtPosition(player, edgePos)
+
+		task.wait(EDGE_TELEPORT_DELAY)
+		if not player.Parent then
+			return
+		end
+		local character = player.Character
+		if not character or not character.Parent then
+			return
+		end
+		local rootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not rootPart then
+			return
+		end
+
+		-- Re-look up surface in case anything mutated; cheap.
+		local refreshed = _computeRegionEdgePoint(seed, slotId)
+		if refreshed then
+			edgePos = refreshed
+		end
+		rootPart.CFrame = CFrame.new(edgePos)
+	end)
+end
+
+-- Returns the slotId the player ends up owning (existing or freshly claimed),
+-- or nil if assignment failed (e.g. all slots full).
+local function _assignRegionForFirstTime(player: Player, seed: number): string?
+	if PlayerDataService == nil or RegionService == nil then
+		return nil
 	end
 
 	-- Wait for the profile to load before reading/writing.
 	local ok, _ = PlayerDataService:WaitForProfile(player):await()
 	if not ok or not player.Parent then
-		return
+		return nil
 	end
 
 	local existing = PlayerDataService:Read(player, { "OwnedRegionId" })
 	if type(existing) == "string" and existing ~= "" then
-		-- Already assigned; ensure cache reflects current ownership and exit.
-		return
+		return existing
 	end
 
 	local slotId = RegionService:ClaimFreeSlotForPlayer(player)
 	if slotId == nil then
 		warn(`[SpawnService] No free region slot available for {player.Name}`)
-		return
+		return nil
 	end
 
 	local home = _computeHomePointForSlot(seed, slotId)
 	if home == nil then
 		warn(`[SpawnService] Could not compute home point for slot {slotId}`)
-		return
+		return nil
 	end
 
 	if not player.Parent then
-		return
+		return nil
 	end
 
 	PlayerDataService:Write(player, { "OwnedRegionId" }, slotId)
@@ -177,10 +245,28 @@ local function _assignRegionForFirstTime(player: Player, seed: number)
 
 	SpawnService.Client.RegionAssigned:Fire(player, slotId, { x = home.X, y = home.Y, z = home.Z })
 
-	-- Auto-teleport to home is intentionally NOT done here for the same
-	-- chunk-not-streamed / falloff-terrain reason as placeOnPlatform.
-	-- Player stays on the Hearth platform after first claim; they can
-	-- walk to their region using the visible slot pillars.
+	return slotId
+end
+
+local function _onCharacterSpawned(player: Player, character: Model, seed: number)
+	-- Step 1: always land on the Hearth platform first. Immediate, no race.
+	placeOnPlatform(player, character)
+
+	-- Step 2: if we already know their region (returning player), schedule a
+	-- background teleport to its inner edge.
+	task.spawn(function()
+		if PlayerDataService == nil then
+			return
+		end
+		local ok, _ = PlayerDataService:WaitForProfile(player):await()
+		if not ok or not player.Parent then
+			return
+		end
+		local owned = PlayerDataService:Read(player, { "OwnedRegionId" })
+		if type(owned) == "string" and owned ~= "" then
+			_scheduleEdgeTeleport(player, owned, seed)
+		end
+	end)
 end
 
 -- Tracks players already bound by bindPlayer to avoid the PlayerAdded +
@@ -197,13 +283,23 @@ local function bindPlayer(player: Player, seed: number)
 	_boundPlayers[player] = true
 
 	player.CharacterAdded:Connect(function(character)
-		placeOnPlatform(player, character)
+		_onCharacterSpawned(player, character, seed)
 	end)
 	if player.Character then
-		placeOnPlatform(player, player.Character)
+		_onCharacterSpawned(player, player.Character, seed)
 	end
+
 	task.spawn(function()
-		_assignRegionForFirstTime(player, seed)
+		local slotId = _assignRegionForFirstTime(player, seed)
+		-- For BRAND-NEW players _assignRegionForFirstTime fires
+		-- RegionAssigned and we want to immediately teleport them to their
+		-- new slot's edge. Returning players already had their teleport
+		-- queued in _onCharacterSpawned; this is a no-op for them since
+		-- _scheduleEdgeTeleport is idempotent enough — a second teleport
+		-- to the same point is harmless.
+		if slotId and player.Parent and player.Character then
+			_scheduleEdgeTeleport(player, slotId, seed)
+		end
 	end)
 end
 

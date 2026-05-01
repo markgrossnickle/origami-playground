@@ -19,6 +19,11 @@ local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local BLOCK_SIZE = ChunkUtil.BLOCK_SIZE
 local MAX_PLACE_DISTANCE = 20
 
+-- Character AABB half-extents for self-collision check on block placement.
+-- Conservative R15 estimate: ~3 studs wide, ~5 studs tall.
+local CHARACTER_HALF_WIDTH = 1.5
+local CHARACTER_HALF_HEIGHT = 2.6
+
 local function _placementNamespace(itemId: string): string
 	local role = MaterialTiers.getRole(itemId)
 	if role == "bulk" or role == "ore" then
@@ -111,6 +116,21 @@ function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: numbe
 	local currentBlock = WorldService:GetBlock(chunkKey, flatIndex)
 	if currentBlock ~= BlockType.Air then
 		return { success = false, error = "occupied" }
+	end
+
+	-- Don't allow placing a block that intersects the placer's own character.
+	-- AABB overlap test between the 5-stud block centered at blockPos and the
+	-- placer's character bounding box around HumanoidRootPart.
+	do
+		local blockHalf = BLOCK_SIZE * 0.5
+		local pp = rootPart.Position
+		local bp = blockPos
+		local overlapsX = math.abs(pp.X - bp.X) < (CHARACTER_HALF_WIDTH + blockHalf)
+		local overlapsY = math.abs(pp.Y - bp.Y) < (CHARACTER_HALF_HEIGHT + blockHalf)
+		local overlapsZ = math.abs(pp.Z - bp.Z) < (CHARACTER_HALF_WIDTH + blockHalf)
+		if overlapsX and overlapsY and overlapsZ then
+			return { success = false, error = "blocked_by_self" }
+		end
 	end
 
 	-- Check inventory

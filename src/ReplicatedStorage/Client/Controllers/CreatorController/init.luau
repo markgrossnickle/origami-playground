@@ -2960,7 +2960,11 @@ function CreatorController:KnitInit() end
 
 function CreatorController:KnitStart()
 	createUI()
-	spawnStarterModels()
+	-- Starter models disabled. The hardcoded test props (Stone Bench, Paper
+	-- Crane, etc.) defined in StarterModels.luau are no longer auto-spawned
+	-- around origin. Re-enable by uncommenting the call below if needed for
+	-- testing the OrigamiBuilder pipeline.
+	-- spawnStarterModels()
 
 	-- Fetch initial currency balances
 	task.spawn(function()

@@ -390,9 +390,19 @@ local pendingChunkData: { { key: number, blocks: buffer } } = {}
 
 -- LOD re-evaluation timer
 local lastLODCheck = 0
-local _lastLODPlayerCx: number? = nil
-local _lastLODPlayerCy: number? = nil
-local _lastLODPlayerCz: number? = nil
+-- Track player's last LOD-check position in WORLD STUDS (not chunk coords).
+-- Chunk-coord equality breaks down at chunk boundaries: a stationary player
+-- whose HRP rests at exactly Y=80 (or any 80-stud boundary) gets tiny
+-- physics-induced floating-point oscillations that flip floor(y/80) between
+-- two integers. The chunk-coord gate would then run a full LOD scan every
+-- 2s for a stationary player, causing visible re-render flicker.
+-- World-stud hysteresis: only re-eval LOD when the player has moved at
+-- least HALF A CHUNK (40 studs) from their last LOD-check position.
+local _lastLODPlayerWX: number? = nil
+local _lastLODPlayerWY: number? = nil
+local _lastLODPlayerWZ: number? = nil
+local LOD_HYSTERESIS_STUDS = 40
+local LOD_HYSTERESIS_STUDS_SQ = LOD_HYSTERESIS_STUDS * LOD_HYSTERESIS_STUDS
 
 -- LOD helper
 
@@ -1298,20 +1308,32 @@ local function _reevaluateLODs()
 		return
 	end
 
-	-- Skip the scan entirely if the player hasn't moved to a new chunk since
-	-- the last check — LOD bands only change across chunk boundaries, so
-	-- intra-chunk movement can never trigger a transition.
-	local pcx, pcy, pcz = _getPlayerChunkPos()
-	if not pcx or not pcy or not pcz then
+	-- Hysteresis gate: only re-eval if the player has moved at least
+	-- LOD_HYSTERESIS_STUDS from their last checked position. Prevents the
+	-- chunk-boundary oscillation flicker where a stationary player's HRP
+	-- bounces a few hundredths of a stud across an 80-stud boundary every
+	-- frame (visible as a 2s-cadence re-render churn).
+	local player = Players.LocalPlayer
+	if not player or not player.Character then
 		return
 	end
-	if pcx == _lastLODPlayerCx and pcy == _lastLODPlayerCy and pcz == _lastLODPlayerCz then
-		lastLODCheck = now
+	local hrp = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp then
 		return
 	end
-	_lastLODPlayerCx = pcx
-	_lastLODPlayerCy = pcy
-	_lastLODPlayerCz = pcz
+	local pos = hrp.Position
+	if _lastLODPlayerWX and _lastLODPlayerWY and _lastLODPlayerWZ then
+		local dx = pos.X - _lastLODPlayerWX
+		local dy = pos.Y - _lastLODPlayerWY
+		local dz = pos.Z - _lastLODPlayerWZ
+		if dx * dx + dy * dy + dz * dz < LOD_HYSTERESIS_STUDS_SQ then
+			lastLODCheck = now
+			return
+		end
+	end
+	_lastLODPlayerWX = pos.X
+	_lastLODPlayerWY = pos.Y
+	_lastLODPlayerWZ = pos.Z
 
 	lastLODCheck = now
 

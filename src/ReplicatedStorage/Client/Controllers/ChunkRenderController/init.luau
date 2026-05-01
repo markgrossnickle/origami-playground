@@ -47,25 +47,20 @@ local SIMPLE_TINT_RANGE = 0.08
 
 -- LOD: squared chunk distance threshold.
 -- Tier 0 (≤ LOD_NEAR_DIST2)            → per-block paper-crystal layers + collision.
---                                         Full character. Mining reach (30 studs)
---                                         always stays inside this tier so mining
---                                         never triggers a greedy-mesh rebuild.
 -- Tier 1 (> LOD_NEAR_DIST2, ≤ LOD_MID_DIST2) → per-block simple part w/ tilt + tint.
---                                         Partial character, smooths the visual
---                                         transition between tier 0 and tier 2.
--- Tier 2 (> LOD_MID_DIST2, ≤ RENDER_MAX_DIST2) → greedy-merged solid slabs. No per-
---                                         block character. Far enough that the
---                                         merge is imperceptible, cuts part count
---                                         by ~10-20x in this band.
+-- Tier 2 (> LOD_MID_DIST2, ≤ RENDER_MAX_DIST2) → greedy-merged solid slabs.
 -- Tier -1 (> RENDER_MAX_DIST2)          → unrendered (data only).
--- Tightened from 2 → 1: only the 7 chunks immediately surrounding the
--- player get the expensive 3-part paper-crystal renderer, instead of all 19
--- chunks within √2 chunk distance. Recovers ~63% of LOD 0 part count for a
--- visible-character bubble that's still ~80 studs wide — wider than the
--- camera typically frames.
-local LOD_NEAR_DIST2 = 1
-local LOD_MID_DIST2 = 6
-local RENDER_MAX_DIST2 = 18
+--
+-- LOD_NEAR_DIST2 widened from 1 → 4 (chunk-distance ≤ 2, ~33 chunks) so all
+-- terrain within 160 studs of the player stays at the same LOD permanently.
+-- The earlier value of 1 (only 7 chunks LOD 0) caused visible chunks to
+-- transition LOD 0 → LOD 1 just outside the player's immediate cell — which
+-- the player walked across constantly, triggering re-renders of chunks under
+-- and immediately around them. Wider LOD 0 bubble keeps transitions
+-- comfortably out of the player's near vision.
+local LOD_NEAR_DIST2 = 4
+local LOD_MID_DIST2 = 16
+local RENDER_MAX_DIST2 = 25
 
 -- Bouncy block config
 local BOUNCY_BLOCKS: { [number]: boolean } = {

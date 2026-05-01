@@ -25,24 +25,51 @@ local SpawnService = Knit.CreateService({
 	},
 })
 
--- Hold all character spawning until SpawnService:KnitStart finishes positioning
--- the Hearth platform. Without this, players who join during heightmap init
--- (worldRadius=70 → ~5M-cell heightmap, can take many seconds) spawn before
--- the SpawnLocation is in the right place and fall through ungenerated geometry.
--- Set immediately at module-load time, BEFORE Knit:Start completes.
-Players.CharacterAutoLoads = false
-
 local WorldService
 local PlayerDataService
 local RegionService
 
--- Hearth platform constants (same math as before).
-local BLOCK_SIZE = 5
+-- Hearth platform: a fixed-position floating pad at the world origin, high
+-- enough to be above the maximum possible terrain height. Players spawn here
+-- IMMEDIATELY without waiting for the heightmap to initialize (which can take
+-- 30+ seconds at worldRadius=70). World terrain streams in below them; they
+-- jump off the pad to land on the ground once it's there.
+--
+-- Y=100 is comfortably above max surface (seaLevel=20 + maxElev≈50 = ~70).
 local PLATFORM_THICKNESS = 1
-local PLATFORM_LIFT = -BLOCK_SIZE - PLATFORM_THICKNESS / 2 -- -5.5
 local PLATFORM_SIZE = Vector3.new(24, PLATFORM_THICKNESS, 24)
+local HEARTH_PLATFORM_Y = 100
 
-local _hearthStandPos: Vector3 = Vector3.new(0, 50, 0)
+local _hearthStandPos: Vector3 = Vector3.new(0, HEARTH_PLATFORM_Y + PLATFORM_SIZE.Y * 0.5 + 3, 0)
+
+-- Position the SpawnLocation NOW (at module load), before Knit:Start has even
+-- started. This way every player who joins lands on the Hearth platform —
+-- no autoload-gating, no race with heightmap init.
+do
+	local spawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
+	if spawnLocation then
+		spawnLocation.Size = PLATFORM_SIZE
+		spawnLocation.Position = Vector3.new(0, HEARTH_PLATFORM_Y, 0)
+		spawnLocation.Anchored = true
+		spawnLocation.CanCollide = true
+	else
+		spawnLocation = Instance.new("SpawnLocation")
+		spawnLocation.Size = PLATFORM_SIZE
+		spawnLocation.Position = Vector3.new(0, HEARTH_PLATFORM_Y, 0)
+		spawnLocation.Anchored = true
+		spawnLocation.Material = Enum.Material.SmoothPlastic
+		spawnLocation.Color = Color3.fromRGB(245, 235, 220)
+		spawnLocation.TopSurface = Enum.SurfaceType.Smooth
+		spawnLocation.CanCollide = true
+		spawnLocation.Parent = workspace
+	end
+	spawnLocation.Name = "SpawnPlatform"
+
+	-- selene: allow(incorrect_standard_library_use)
+	pcall(function()
+		(workspace :: any).FallenPartsDestroyHeight = -5000
+	end)
+end
 
 local function _vec3(p: { x: number, y: number, z: number }): Vector3
 	return Vector3.new(p.x, p.y, p.z)
@@ -192,53 +219,16 @@ function SpawnService:KnitStart()
 	PlayerDataService = Knit.GetService("PlayerDataService")
 	RegionService = Knit.GetService("RegionService")
 
+	-- Platform is already positioned at module-load time; no heightmap call
+	-- needed here. seed is still useful for region-claim home computation.
 	local seed = WorldService:GetSeed()
-	local surfacePos = WorldGenModule.getSpawnPosition(seed)
-	local platformPos = Vector3.new(surfacePos.X, surfacePos.Y + PLATFORM_LIFT, surfacePos.Z)
-	_hearthStandPos = platformPos + Vector3.new(0, PLATFORM_SIZE.Y * 0.5 + 3, 0)
-
-	-- selene: allow(incorrect_standard_library_use)
-	pcall(function()
-		(workspace :: any).FallenPartsDestroyHeight = -5000
-	end)
-
-	local spawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
-	if spawnLocation then
-		spawnLocation.Size = PLATFORM_SIZE
-		spawnLocation.Position = platformPos
-		spawnLocation.Anchored = true
-		spawnLocation.CanCollide = true
-	else
-		spawnLocation = Instance.new("SpawnLocation")
-		spawnLocation.Size = PLATFORM_SIZE
-		spawnLocation.Position = platformPos
-		spawnLocation.Anchored = true
-		spawnLocation.Material = Enum.Material.SmoothPlastic
-		spawnLocation.Color = Color3.fromRGB(245, 235, 220)
-		spawnLocation.TopSurface = Enum.SurfaceType.Smooth
-		spawnLocation.CanCollide = true
-		spawnLocation.Parent = workspace
-	end
-	spawnLocation.Name = "SpawnPlatform"
-
-	-- Now that the SpawnLocation is positioned correctly, allow characters to
-	-- spawn. Players who joined during heightmap init are still character-less
-	-- (CharacterAutoLoads was false at module load); we LoadCharacter them
-	-- explicitly so they appear on the platform.
-	Players.CharacterAutoLoads = true
 
 	Players.PlayerAdded:Connect(function(player)
 		bindPlayer(player, seed)
-		if player.Character == nil then
-			player:LoadCharacter()
-		end
 	end)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		bindPlayer(player, seed)
-		if player.Character == nil then
-			player:LoadCharacter()
-		end
 	end
 end
 

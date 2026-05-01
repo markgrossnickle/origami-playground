@@ -343,6 +343,15 @@ local function _showTierBlocked(blockName: string, requiredTier: number)
 	tierBlockedHideTime = os.clock() + 2
 end
 
+local function _showBlockedMessage(message: string)
+	if not tierBlockedLabel then
+		return
+	end
+	tierBlockedLabel.Text = message
+	tierBlockedLabel.Visible = true
+	tierBlockedHideTime = os.clock() + 2
+end
+
 local function _updateTierBlockedUI()
 	if tierBlockedLabel and tierBlockedLabel.Visible and os.clock() >= tierBlockedHideTime then
 		tierBlockedLabel.Visible = false
@@ -613,6 +622,24 @@ function MiningController:KnitStart()
 	-- Listen for tier blocked messages
 	MiningService.TierBlocked:Connect(function(blockName: string, requiredTier: number)
 		_showTierBlocked(blockName, requiredTier)
+		miningProgress = 0
+	end)
+
+	-- Listen for zone blocked messages (mining denied by zone permission).
+	-- Reset miningProgress so the progress bar doesn't sit at 100% forever
+	-- when the player tries to mine inside the Hearth or another player's
+	-- region.
+	MiningService.ZoneBlocked:Connect(function(reason: string)
+		miningProgress = 0
+		local message
+		if reason == "hearth_locked" then
+			message = "Can't mine the Hearth — walk past the gold pillar to the Wilds."
+		elseif reason == "not_your_region" then
+			message = "Can't mine another player's region."
+		else
+			message = "Mining blocked here."
+		end
+		_showBlockedMessage(message)
 	end)
 end
 

@@ -31,6 +31,19 @@ local SpawnService = Knit.CreateService({
 	},
 })
 
+-- Return to Base: a 60s post-use cooldown deters spam (e.g. tap-tap-tap to
+-- skip every walk). Channel time + movement/damage cancels live on the
+-- client; server is just authoritative on "can this player teleport now."
+local RTB_COOLDOWN_SECONDS = 60
+
+-- After a Return-to-Base call we still need a moment for the chunks at the
+-- destination to push to the client and render. The client already paid 2.5s
+-- channel time (during which we could pre-warm), so the server-side post-
+-- subscribe wait is shorter than the initial-join EDGE_TELEPORT_DELAY.
+local RTB_POST_SUBSCRIBE_DELAY = 0.6
+
+local _rtbCooldownExpiresAt: { [Player]: number } = {}
+
 local WorldService
 local PlayerDataService
 local RegionService
@@ -306,7 +319,151 @@ end
 -- Clear the bound flag so a rejoining player gets a fresh bind.
 Players.PlayerRemoving:Connect(function(player)
 	_boundPlayers[player] = nil
+	_rtbCooldownExpiresAt[player] = nil
 end)
+
+local function _remainingCooldown(player: Player): number
+	local end_ = _rtbCooldownExpiresAt[player]
+	if not end_ then
+		return 0
+	end
+	local left = end_ - os.clock()
+	if left <= 0 then
+		return 0
+	end
+	return left
+end
+
+-- Return to Base RPC.
+-- Client commits the channel (hold + cancel-on-movement / cancel-on-damage)
+-- and only fires this once the player has held still for the full duration.
+-- Server validates ownership + cooldown, pre-subscribes destination chunks,
+-- waits briefly for client render, and teleports. Returns the new cooldown
+-- in seconds (NOT a server timestamp — server and client clock frames don't
+-- align) so the client can compute its own deadline.
+type RtbResponse = {
+	success: boolean,
+	error: string?,
+	remainingCooldown: number,
+	cooldownSeconds: number,
+}
+
+function SpawnService:HandleReturnToBaseRequest(player: Player): RtbResponse
+	if WorldService == nil or PlayerDataService == nil then
+		return {
+			success = false,
+			error = "service_not_ready",
+			remainingCooldown = _remainingCooldown(player),
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+
+	local existing = _remainingCooldown(player)
+	if existing > 0 then
+		return {
+			success = false,
+			error = "cooldown",
+			remainingCooldown = existing,
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+
+	local slotId = PlayerDataService:Read(player, { "OwnedRegionId" })
+	if type(slotId) ~= "string" or slotId == "" then
+		return {
+			success = false,
+			error = "no_region",
+			remainingCooldown = 0,
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+
+	local character = player.Character
+	if not character then
+		return {
+			success = false,
+			error = "no_character",
+			remainingCooldown = 0,
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+
+	local seed = WorldService:GetSeed()
+	local edgePos = _computeRegionEdgePoint(seed, slotId)
+	if edgePos == nil then
+		return {
+			success = false,
+			error = "compute_failed",
+			remainingCooldown = 0,
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+
+	-- Pre-warm chunks. Subscribe yields per cold chunk so this is the slow
+	-- step; the client is already showing a "Returning..." state so a few
+	-- hundred ms of yield here is invisible.
+	_preSubscribeChunksAtPosition(player, edgePos)
+	task.wait(RTB_POST_SUBSCRIBE_DELAY)
+
+	-- Re-validate after the yield — player may have left or died.
+	if not player.Parent then
+		return {
+			success = false,
+			error = "left",
+			remainingCooldown = 0,
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+	local char2 = player.Character
+	if not char2 or not char2.Parent then
+		return {
+			success = false,
+			error = "no_character",
+			remainingCooldown = 0,
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+	local rootPart = char2:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not rootPart then
+		return {
+			success = false,
+			error = "no_character",
+			remainingCooldown = 0,
+			cooldownSeconds = RTB_COOLDOWN_SECONDS,
+		}
+	end
+
+	-- Refresh the surface lookup; nothing should have changed but cheap.
+	local refreshed = _computeRegionEdgePoint(seed, slotId)
+	if refreshed then
+		edgePos = refreshed
+	end
+	rootPart.CFrame = CFrame.new(edgePos)
+
+	_rtbCooldownExpiresAt[player] = os.clock() + RTB_COOLDOWN_SECONDS
+
+	return {
+		success = true,
+		remainingCooldown = RTB_COOLDOWN_SECONDS,
+		cooldownSeconds = RTB_COOLDOWN_SECONDS,
+	}
+end
+
+function SpawnService.Client:RequestReturnToBase(player: Player): RtbResponse
+	return SpawnService:HandleReturnToBaseRequest(player)
+end
+
+-- Read-only cooldown probe so the UI can hydrate its countdown when it first
+-- starts (controller may attach after a teleport already started a cooldown).
+function SpawnService.Client:GetReturnToBaseState(player: Player): {
+	remainingCooldown: number,
+	cooldownSeconds: number,
+}
+	return {
+		remainingCooldown = _remainingCooldown(player),
+		cooldownSeconds = RTB_COOLDOWN_SECONDS,
+	}
+end
 
 function SpawnService:KnitInit() end
 

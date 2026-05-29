@@ -333,6 +333,26 @@ function RegionService:ClaimFreeSlotForPlayer(player: Player): string?
 	return nil
 end
 
+-- Synchronous lastSeenAt write. Yields on the DataStore call; callers that
+-- don't want to block wrap it in task.spawn (see TouchSlot).
+local function _touchSlotSync(slotId: string, now: number)
+	if _isStudio() or _store == nil then
+		return
+	end
+	local ok, err = pcall(function()
+		(_store :: DataStore):UpdateAsync(slotId, function(existing)
+			if type(existing) == "table" then
+				existing.lastSeenAt = now
+				return existing
+			end
+			return nil
+		end)
+	end)
+	if not ok then
+		warn(`[RegionService] TouchSlot({slotId}) failed: {err}`)
+	end
+end
+
 function RegionService:TouchSlot(slotId: string)
 	if RegionConfig.parseSlotId(slotId) == nil then
 		return
@@ -342,23 +362,38 @@ function RegionService:TouchSlot(slotId: string)
 	if state then
 		state.lastSeenAt = now
 	end
+	task.spawn(_touchSlotSync, slotId, now)
+end
+
+-- Synchronously flush lastSeenAt for every currently-owned slot. Called on
+-- server shutdown so inactivity timestamps survive a graceful close — the
+-- per-player TouchSlot on PlayerRemoving is fire-and-forget and its spawned
+-- DataStore write can be dropped when the process exits. Region OWNERSHIP is
+-- already durable (written transactionally at claim time); this only keeps
+-- the lastSeenAt heuristic that future inactivity cycling reads from drifting.
+function RegionService:FlushOwnedSlotsOnClose()
 	if _isStudio() or _store == nil then
 		return
 	end
-	task.spawn(function()
-		local ok, err = pcall(function()
-			(_store :: DataStore):UpdateAsync(slotId, function(existing)
-				if type(existing) == "table" then
-					existing.lastSeenAt = now
-					return existing
-				end
-				return nil
-			end)
-		end)
-		if not ok then
-			warn(`[RegionService] TouchSlot({slotId}) failed: {err}`)
+	local now = os.time()
+	local pending = 0
+	for _userId, slotId in _ownerToSlot do
+		local state = _slots[slotId]
+		if state then
+			state.lastSeenAt = now
 		end
-	end)
+		pending += 1
+		task.spawn(function()
+			_touchSlotSync(slotId, now)
+			pending -= 1
+		end)
+	end
+	-- Yield until the writes finish (bounded so we never hang shutdown).
+	local waited = 0
+	while pending > 0 and waited < 10 do
+		task.wait(0.1)
+		waited += 0.1
+	end
 end
 
 function RegionService:KnitInit() end
@@ -375,6 +410,10 @@ function RegionService:KnitStart()
 		if slotId then
 			RegionService:TouchSlot(slotId)
 		end
+	end)
+
+	game:BindToClose(function()
+		RegionService:FlushOwnedSlotsOnClose()
 	end)
 end
 

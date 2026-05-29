@@ -61,6 +61,12 @@ local chunks: { [number]: ChunkData } = {}
 local deltas: { [number]: ChunkDelta } = {}
 local savedDeltas: { [number]: ChunkDelta } = {}
 local dirtyRegions: { [string]: boolean } = {}
+
+-- True while _saveAllDirtyRegions is mid-flight writing regions to the
+-- DataStore. The BindToClose shutdown flush waits on this so a periodic save
+-- and the shutdown save can't both SetAsync the same region key in the same
+-- instant (last-writer-wins would otherwise drop edits).
+local _saveInProgress = false
 local playerSubscriptions: { [Player]: { [number]: boolean } } = {}
 local chunkSubscribers: { [number]: { [Player]: boolean } } = {}
 
@@ -480,10 +486,12 @@ function WorldService:_saveAllDirtyRegions()
 		deltasByRegion[rk][chunkKey] = chunkDelta
 	end
 
+	_saveInProgress = true
 	for regionKey in dirtyRegionsSnapshot do
 		self:_saveRegion(regionKey, deltasByRegion[regionKey])
 		task.wait()
 	end
+	_saveInProgress = false
 
 	-- Merge into savedDeltas in the background, frame-budgeted. The snapshot
 	-- is owned by this closure so nothing else can observe a half-merged
@@ -650,7 +658,23 @@ function WorldService:KnitStart()
 	end)
 
 	game:BindToClose(function()
-		self:_saveAllDirtyRegions()
+		-- Wait out any in-flight periodic save so the shutdown flush doesn't
+		-- race it onto the same region key. Bounded so a stuck flag can never
+		-- hang shutdown past Roblox's ~30s budget.
+		local waited = 0
+		while _saveInProgress and waited < 5 do
+			task.wait(0.1)
+			waited += 0.1
+		end
+
+		local ok, err = pcall(function()
+			self:_saveAllDirtyRegions()
+		end)
+		if ok then
+			print("[WorldService] Shutdown save complete")
+		else
+			warn("[WorldService] Shutdown save FAILED — unsaved world edits may be lost:", err)
+		end
 	end)
 end
 

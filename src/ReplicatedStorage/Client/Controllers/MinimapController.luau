@@ -309,19 +309,19 @@ function MinimapController:KnitInit() end
 function MinimapController:KnitStart()
 	_createUI()
 
-	-- Read owned region from profile (returning players have one stored).
+	-- Our slot is the EPHEMERAL lease this session, not a persisted field.
+	-- Query it once (covers the controller starting after RegionAssigned
+	-- fired) and stay live via RegionAssigned.
 	task.spawn(function()
-		local PlayerDataService = Knit.GetService("PlayerDataService")
-		local ok, data = PlayerDataService:Read():await()
-		if ok and type(data) == "table" then
-			local owned = data.OwnedRegionId
-			if type(owned) == "string" and owned ~= "" then
-				_ownedSlotId = owned
+		local RegionService = Knit.GetService("RegionService")
+		if RegionService then
+			local ok, slot = RegionService:GetMySlot():await()
+			if ok and type(slot) == "string" and slot ~= "" then
+				_ownedSlotId = slot
 			end
 		end
 	end)
 
-	-- Listen for first-claim assignment.
 	task.spawn(function()
 		local SpawnService = Knit.GetService("SpawnService")
 		if SpawnService and SpawnService.RegionAssigned then

@@ -430,17 +430,14 @@ function WorldMapController:KnitStart()
 		end
 	end)
 
-	-- Track our owned slot.
+	-- Track our ephemeral lease slot this session. Query once + stay live.
 	task.spawn(function()
-		local PlayerDataService = Knit.GetService("PlayerDataService")
-		if PlayerDataService then
-			local ok, data = PlayerDataService:Read():await()
-			if ok and type(data) == "table" then
-				local owned = data.OwnedRegionId
-				if type(owned) == "string" and owned ~= "" then
-					_ownedSlotId = owned
-					_refreshSlots()
-				end
+		local RegionService = Knit.GetService("RegionService")
+		if RegionService then
+			local ok, slot = RegionService:GetMySlot():await()
+			if ok and type(slot) == "string" and slot ~= "" then
+				_ownedSlotId = slot
+				_refreshSlots()
 			end
 		end
 	end)

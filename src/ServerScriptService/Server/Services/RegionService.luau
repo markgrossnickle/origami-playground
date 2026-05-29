@@ -186,6 +186,13 @@ function RegionService.Client:GetClaimedSlots(_player: Player)
 	return RegionService:GetClaimedSlotsSnapshot()
 end
 
+-- The caller's currently-leased slot this session ("" if none / server full).
+-- Lets a controller that starts after RegionAssigned fired still learn its
+-- slot without waiting for the next assignment.
+function RegionService.Client:GetMySlot(player: Player): string
+	return RegionService:GetLeasedSlot(player.UserId) or ""
+end
+
 function RegionService:KnitInit() end
 
 function RegionService:KnitStart()

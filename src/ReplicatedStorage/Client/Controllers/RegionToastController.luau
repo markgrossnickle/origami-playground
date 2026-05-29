@@ -243,14 +243,13 @@ function RegionToastController:KnitInit() end
 function RegionToastController:KnitStart()
 	_createUI()
 
-	-- Read owned region from profile (returning players already have one).
+	-- Our slot is the ephemeral lease this session. Query once + stay live.
 	task.spawn(function()
-		local PlayerDataService = Knit.GetService("PlayerDataService")
-		local ok, data = PlayerDataService:Read():await()
-		if ok and type(data) == "table" then
-			local owned = data.OwnedRegionId
-			if type(owned) == "string" and owned ~= "" then
-				_onOwnedSlotResolved(owned)
+		local RegionService = Knit.GetService("RegionService")
+		if RegionService then
+			local ok, slot = RegionService:GetMySlot():await()
+			if ok and type(slot) == "string" and slot ~= "" then
+				_onOwnedSlotResolved(slot)
 			end
 		end
 	end)

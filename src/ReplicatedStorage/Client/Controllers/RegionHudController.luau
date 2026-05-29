@@ -132,17 +132,13 @@ function RegionHudController:KnitInit() end
 function RegionHudController:KnitStart()
 	_createHud()
 
-	-- Pull the current region from the player's profile (if already claimed).
+	-- Our slot is the ephemeral lease this session. Query once + stay live.
 	task.spawn(function()
-		local PlayerDataService = Knit.GetService("PlayerDataService")
-		local ok, data = PlayerDataService:Read():await()
-		if ok and type(data) == "table" then
-			local owned = data.OwnedRegionId
-			if type(owned) == "string" and owned ~= "" then
-				_ownedSlotId = owned
-				_updateHud()
-				_retintLandmarks()
-				return
+		local RegionService = Knit.GetService("RegionService")
+		if RegionService then
+			local ok, slot = RegionService:GetMySlot():await()
+			if ok and type(slot) == "string" and slot ~= "" then
+				_ownedSlotId = slot
 			end
 		end
 		_updateHud()

@@ -11,18 +11,20 @@ local RegionConfig = require(ReplicatedStorage.Shared.RegionConfig)
 
 --[=[
 	@class SpawnService
-	Region-aware spawn flow.
+	Portable-region spawn flow.
 
 	* Every CharacterAdded: place the player on the central Hearth platform
 	  immediately (no race with heightmap init).
-	* If the player owns a region, kick off a background task that
-	  pre-subscribes the chunks at the inner edge of their slot, waits for
-	  those chunks to be ready, then teleports the character to that edge
-	  point. This avoids the previous death-loop where teleporting to
-	  ungenerated geometry dropped the player below FallenPartsDestroyHeight.
-	* On first join (OwnedRegionId == "") asks RegionService to claim a free
-	  slot and persists both the slotId and a HomePoint at the slot's surface,
-	  then runs the same edge-teleport.
+	* Once per session: lease a display slot (RegionService), paint the
+	  player's PORTABLE content into it (RegionContentService ->
+	  WorldService:SetSlotOccupant), tell the client its slot, then
+	  pre-subscribe the slot's inner-edge chunks and teleport there. Painting
+	  before the teleport means the first ChunkData the client receives
+	  already carries the player's build.
+	* If a steal occurs (a full server reassigns a vacated slot), any player
+	  standing in that slot is teleported to the Hearth before it repaints.
+	* If no slot is free (all held by present players) the player simply stays
+	  at the Hearth this session; their content is safe in the durable store.
 ]=]
 local SpawnService = Knit.CreateService({
 	Name = "SpawnService",
@@ -44,9 +46,13 @@ local RTB_POST_SUBSCRIBE_DELAY = 0.6
 
 local _rtbCooldownExpiresAt: { [Player]: number } = {}
 
+-- The slot leased to each present player this session (cleared on leave).
+-- Region content is portable per-player; the slot is an ephemeral display.
+local _sessionSlot: { [Player]: string } = {}
+
 local WorldService
-local PlayerDataService
 local RegionService
+local RegionContentService
 local MilestoneService
 
 -- Hearth platform: a fixed-position floating pad at the world origin, high
@@ -122,16 +128,6 @@ end
 local function placeOnPlatform(player: Player, character: Model)
 	local _ = player
 	_placeOnPosition(character, _hearthStandPos)
-end
-
-local function _computeHomePointForSlot(seed: number, slotId: string): Vector3?
-	local center = RegionConfig.getSlotCenter(slotId)
-	if center == nil then
-		return nil
-	end
-	local surfaceY = WorldGenModule.getSurfaceWorldY(seed, center.x, center.z)
-	-- Place feet a few studs above the surface block to avoid embedding.
-	return Vector3.new(center.x, surfaceY + 3, center.z)
 end
 
 -- Compute a "front door" point at the inner edge of the slot — the boundary
@@ -220,44 +216,50 @@ local function _scheduleEdgeTeleport(player: Player, slotId: string, seed: numbe
 	end)
 end
 
--- Returns the slotId the player ends up owning (existing or freshly claimed),
--- or nil if assignment failed (e.g. all slots full).
-local function _assignRegionForFirstTime(player: Player, seed: number): string?
-	if PlayerDataService == nil or RegionService == nil then
+-- Teleport every player currently standing inside a slot's footprint to the
+-- Hearth platform — except `incoming` (who is being placed there on purpose).
+-- Run before a stolen slot repaints so nobody falls through a changing build.
+local function _teleportOthersOutOfSlot(slotId: string, incoming: Player?)
+	for _, other in Players:GetPlayers() do
+		if other == incoming then
+			continue
+		end
+		local character = other.Character
+		local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if hrp and RegionConfig.getRegionAtPosition(hrp.Position.X, hrp.Position.Z) == slotId then
+			hrp.CFrame = CFrame.new(_hearthStandPos)
+		end
+	end
+end
+
+-- Lease (once per session) + paint the player's portable content into a slot.
+-- Returns the slotId, or nil if the server is full.
+local function _ensureSlot(player: Player, seed: number): string?
+	local cached = _sessionSlot[player]
+	if cached then
+		return cached
+	end
+	if RegionService == nil or RegionContentService == nil or WorldService == nil then
 		return nil
 	end
 
-	-- Wait for the profile to load before reading/writing.
-	local ok, _ = PlayerDataService:WaitForProfile(player):await()
-	if not ok or not player.Parent then
-		return nil
-	end
-
-	local existing = PlayerDataService:Read(player, { "OwnedRegionId" })
-	if type(existing) == "string" and existing ~= "" then
-		return existing
-	end
-
+	-- Claim fires RegionService.SlotAssigned synchronously; our handler (wired
+	-- in KnitStart) teleports anyone out of a stolen slot before we repaint.
 	local slotId = RegionService:ClaimFreeSlotForPlayer(player)
 	if slotId == nil then
-		warn(`[SpawnService] No free region slot available for {player.Name}`)
-		return nil
+		return nil -- server full; player stays at the Hearth this session
 	end
+	_sessionSlot[player] = slotId
 
-	local home = _computeHomePointForSlot(seed, slotId)
-	if home == nil then
-		warn(`[SpawnService] Could not compute home point for slot {slotId}`)
-		return nil
-	end
+	-- Load the player's portable content (preloaded on join) and paint it into
+	-- the slot's chunks server-locally.
+	local content = RegionContentService:Load(player.UserId)
+	WorldService:SetSlotOccupant(slotId, player.UserId, content)
 
-	if not player.Parent then
-		return nil
-	end
-
-	PlayerDataService:Write(player, { "OwnedRegionId" }, slotId)
-	PlayerDataService:Write(player, { "RegionHomePoint" }, { x = home.X, y = home.Y, z = home.Z })
-
-	SpawnService.Client.RegionAssigned:Fire(player, slotId, { x = home.X, y = home.Y, z = home.Z })
+	-- Tell the client which slot is theirs this session.
+	local edge = _computeRegionEdgePoint(seed, slotId)
+	local home = if edge then { x = edge.X, y = edge.Y, z = edge.Z } else { x = 0, y = 0, z = 0 }
+	SpawnService.Client.RegionAssigned:Fire(player, slotId, home)
 
 	if MilestoneService then
 		MilestoneService:RecordFirstRegionClaimed(player)
@@ -270,28 +272,17 @@ local function _onCharacterSpawned(player: Player, character: Model, seed: numbe
 	-- Step 1: always land on the Hearth platform first. Immediate, no race.
 	placeOnPlatform(player, character)
 
-	-- Step 2: if we already know their region (returning player), schedule a
-	-- background teleport to its inner edge.
+	-- Step 2: ensure a leased+painted slot, then edge-teleport into it.
 	task.spawn(function()
-		if PlayerDataService == nil then
-			return
-		end
-		local ok, _ = PlayerDataService:WaitForProfile(player):await()
-		if not ok or not player.Parent then
-			return
-		end
-		local owned = PlayerDataService:Read(player, { "OwnedRegionId" })
-		if type(owned) == "string" and owned ~= "" then
-			_scheduleEdgeTeleport(player, owned, seed)
+		local slotId = _ensureSlot(player, seed)
+		if slotId and player.Parent and player.Character then
+			_scheduleEdgeTeleport(player, slotId, seed)
 		end
 	end)
 end
 
 -- Tracks players already bound by bindPlayer to avoid the PlayerAdded +
--- Players:GetPlayers() race in KnitStart: a player joining between Connect
--- and the loop iteration would otherwise be bound twice — duplicate
--- CharacterAdded connection, duplicate first-join claim attempt, double
--- RegionAssigned fire.
+-- Players:GetPlayers() race in KnitStart.
 local _boundPlayers: { [Player]: boolean } = {}
 
 local function bindPlayer(player: Player, seed: number)
@@ -306,25 +297,13 @@ local function bindPlayer(player: Player, seed: number)
 	if player.Character then
 		_onCharacterSpawned(player, player.Character, seed)
 	end
-
-	task.spawn(function()
-		local slotId = _assignRegionForFirstTime(player, seed)
-		-- For BRAND-NEW players _assignRegionForFirstTime fires
-		-- RegionAssigned and we want to immediately teleport them to their
-		-- new slot's edge. Returning players already had their teleport
-		-- queued in _onCharacterSpawned; this is a no-op for them since
-		-- _scheduleEdgeTeleport is idempotent enough — a second teleport
-		-- to the same point is harmless.
-		if slotId and player.Parent and player.Character then
-			_scheduleEdgeTeleport(player, slotId, seed)
-		end
-	end)
 end
 
 -- Clear the bound flag so a rejoining player gets a fresh bind.
 Players.PlayerRemoving:Connect(function(player)
 	_boundPlayers[player] = nil
 	_rtbCooldownExpiresAt[player] = nil
+	_sessionSlot[player] = nil
 end)
 
 local function _remainingCooldown(player: Player): number
@@ -354,7 +333,7 @@ type RtbResponse = {
 }
 
 function SpawnService:HandleReturnToBaseRequest(player: Player): RtbResponse
-	if WorldService == nil or PlayerDataService == nil then
+	if WorldService == nil or RegionService == nil then
 		return {
 			success = false,
 			error = "service_not_ready",
@@ -373,7 +352,8 @@ function SpawnService:HandleReturnToBaseRequest(player: Player): RtbResponse
 		}
 	end
 
-	local slotId = PlayerDataService:Read(player, { "OwnedRegionId" })
+	-- "Base" is the player's CURRENT leased slot (portable; not a profile field).
+	local slotId = RegionService:GetLeasedSlot(player.UserId)
 	if type(slotId) ~= "string" or slotId == "" then
 		return {
 			success = false,
@@ -478,13 +458,21 @@ function SpawnService:KnitInit() end
 
 function SpawnService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
-	PlayerDataService = Knit.GetService("PlayerDataService")
 	RegionService = Knit.GetService("RegionService")
+	RegionContentService = Knit.GetService("RegionContentService")
 	MilestoneService = Knit.GetService("MilestoneService")
 
-	-- Platform is already positioned at module-load time; no heightmap call
-	-- needed here. seed is still useful for region-claim home computation.
 	local seed = WorldService:GetSeed()
+
+	-- When a lease STEALS a vacated slot, evict anyone standing in it to the
+	-- Hearth before WorldService repaints it with the new occupant's build.
+	-- Fires synchronously inside ClaimFreeSlotForPlayer, before _ensureSlot
+	-- paints, so the order is: teleport others -> repaint.
+	RegionService.SlotAssigned:Connect(function(player: Player, slotId: string, prevUserId: number?)
+		if prevUserId ~= nil and prevUserId ~= player.UserId then
+			_teleportOthersOutOfSlot(slotId, player)
+		end
+	end)
 
 	Players.PlayerAdded:Connect(function(player)
 		bindPlayer(player, seed)

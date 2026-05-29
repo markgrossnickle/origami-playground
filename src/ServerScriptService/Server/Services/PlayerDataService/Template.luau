@@ -24,6 +24,14 @@ export type PlayerData = {
 	SessionCount: number,
 	LastSessionStart: number,
 
+	-- Analytics / Milestones + funnels (MilestoneService).
+	-- Milestones: one-shot First* flags, keyed by milestone name -> true.
+	-- Funnels.Onboarding: monotonic step index for the 10-minute-hook funnel
+	-- (1 SpawnedIn -> 2 BlockMined -> 3 OreFound -> 4 CraftStarted ->
+	-- 5 CraftClaimed). No retention funnel — Roblox tracks retention natively.
+	Milestones: { [string]: boolean },
+	Funnels: { Onboarding: number },
+
 	-- Monetization: processed receipt IDs to prevent double-processing
 	ProcessedReceipts: { [string]: boolean },
 
@@ -85,6 +93,9 @@ local playerDataTemplate: PlayerData = {
 	TotalPlayTime = 0,
 	SessionCount = 0,
 	LastSessionStart = 0,
+
+	Milestones = {},
+	Funnels = { Onboarding = 0 },
 
 	ProcessedReceipts = {},
 

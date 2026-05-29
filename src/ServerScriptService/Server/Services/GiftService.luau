@@ -141,6 +141,11 @@ function GiftService.Client:GiftModel(player: Player, model: Instance, targetUse
 	self.GiftReceived:Fire(targetPlayer, player.DisplayName, modelName)
 	self.GiftSent:Fire(player, targetPlayer.DisplayName, modelName)
 
+	local MilestoneService = Knit.GetService("MilestoneService")
+	if MilestoneService then
+		MilestoneService:RecordFirstGiftSent(player)
+	end
+
 	return { success = true, modelName = modelName }
 end
 

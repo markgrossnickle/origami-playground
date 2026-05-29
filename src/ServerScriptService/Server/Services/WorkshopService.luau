@@ -369,6 +369,13 @@ function WorkshopService.Client:CraftItem(player: Player, recipeId: string, user
 
 	self.ItemCrafted:Fire(player, recipe.id, #pending)
 
+	-- Onboarding funnel step 4: player committed a craft (typed a prompt at
+	-- the workbench). This is the "magic moment" entry in the GDD 10-min hook.
+	local MilestoneService = Knit.GetService("MilestoneService")
+	if MilestoneService then
+		MilestoneService:RecordFirstCraftStarted(player, recipe.id)
+	end
+
 	return {
 		success = true,
 		craftIndex = #pending,
@@ -455,6 +462,12 @@ function WorkshopService.Client:ClaimItem(player: Player, craftIndex: number)
 	PlayerDataService:Write(player, { "PendingCrafts" }, pending)
 
 	self.ItemClaimed:Fire(player, item.id, item.itemType)
+
+	-- Onboarding funnel step 5 (final): player collected a finished creation.
+	local MilestoneService = Knit.GetService("MilestoneService")
+	if MilestoneService then
+		MilestoneService:RecordFirstCraftClaimed(player, item.itemType)
+	end
 
 	return { success = true, item = item }
 end

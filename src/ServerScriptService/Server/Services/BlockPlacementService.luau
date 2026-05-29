@@ -42,6 +42,7 @@ local BlockPlacementService = Knit.CreateService({
 local WorldService
 local PlayerDataService
 local RegionService
+local MilestoneService
 
 -- Rate limit: one placement per player per 0.15s
 local _lastPlaceTime: { [Player]: number } = {}
@@ -147,6 +148,10 @@ function BlockPlacementService.Client:PlaceBlock(player: Player, chunkKey: numbe
 	-- Place block in voxel world (broadcasts BlockUpdate to subscribers)
 	WorldService:SetBlock(chunkKey, flatIndex, blockTypeId)
 
+	if MilestoneService then
+		MilestoneService:RecordFirstBlockPlaced(player)
+	end
+
 	return { success = true }
 end
 
@@ -156,6 +161,7 @@ function BlockPlacementService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
 	RegionService = Knit.GetService("RegionService")
+	MilestoneService = Knit.GetService("MilestoneService")
 
 	-- Clean up rate limit entries on leave
 	Players.PlayerRemoving:Connect(function(player: Player)

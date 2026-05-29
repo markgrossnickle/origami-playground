@@ -47,6 +47,7 @@ local _rtbCooldownExpiresAt: { [Player]: number } = {}
 local WorldService
 local PlayerDataService
 local RegionService
+local MilestoneService
 
 -- Hearth platform: a fixed-position floating pad at the world origin, high
 -- enough to be above the maximum possible terrain height. Players spawn here
@@ -258,6 +259,10 @@ local function _assignRegionForFirstTime(player: Player, seed: number): string?
 
 	SpawnService.Client.RegionAssigned:Fire(player, slotId, { x = home.X, y = home.Y, z = home.Z })
 
+	if MilestoneService then
+		MilestoneService:RecordFirstRegionClaimed(player)
+	end
+
 	return slotId
 end
 
@@ -442,6 +447,10 @@ function SpawnService:HandleReturnToBaseRequest(player: Player): RtbResponse
 
 	_rtbCooldownExpiresAt[player] = os.clock() + RTB_COOLDOWN_SECONDS
 
+	if MilestoneService then
+		MilestoneService:RecordFirstReturnToBase(player)
+	end
+
 	return {
 		success = true,
 		remainingCooldown = RTB_COOLDOWN_SECONDS,
@@ -471,6 +480,7 @@ function SpawnService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
 	RegionService = Knit.GetService("RegionService")
+	MilestoneService = Knit.GetService("MilestoneService")
 
 	-- Platform is already positioned at module-load time; no heightmap call
 	-- needed here. seed is still useful for region-claim home computation.

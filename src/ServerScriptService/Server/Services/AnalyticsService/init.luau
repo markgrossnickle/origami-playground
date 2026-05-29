@@ -96,6 +96,28 @@ function AnalyticsService:TrackFunnel(player: Player, funnelName: string, step: 
 	end)
 end
 
+-- Thin, pcall-wrapped passthroughs to the Roblox analytics API. MilestoneService
+-- (and any future caller) uses these instead of TrackEvent so it can pass
+-- arbitrary custom-field tables and an explicit numeric value, matching the
+-- shape Roblox's dashboard expects. Kept separate from TrackEvent (which
+-- prefixes "category_action") so milestone event names land verbatim.
+function AnalyticsService:LogCustomEvent(
+	player: Player,
+	eventName: string,
+	value: number?,
+	customFields: { [string]: any }?
+)
+	pcall(function()
+		RobloxAnalyticsService:LogCustomEvent(player, eventName, value or 1, customFields or {})
+	end)
+end
+
+function AnalyticsService:LogOnboardingFunnelStep(player: Player, step: number, stepName: string)
+	pcall(function()
+		RobloxAnalyticsService:LogOnboardingFunnelStepEvent(player, step, stepName)
+	end)
+end
+
 function AnalyticsService:TrackEconomy(
 	player: Player,
 	currency: string,

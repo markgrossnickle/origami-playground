@@ -48,6 +48,7 @@ local MiningService = Knit.CreateService({
 local WorldService
 local PlayerDataService
 local RegionService
+local MilestoneService
 
 local miningStates: { [Player]: MiningState } = {}
 local equippedTools: { [Player]: string } = {}
@@ -124,6 +125,12 @@ local function _awardDrops(player: Player, blockTypeId: number, chunkKey: number
 					currentCount + drop.count
 				)
 
+				-- Onboarding funnel step 3: first ore pulled from the world.
+				local resolvedRole = drop.role or MaterialTiers.getRole(drop.itemId)
+				if MilestoneService and resolvedRole == "ore" then
+					MilestoneService:RecordFirstOreFound(player, drop.itemId)
+				end
+
 				if player.Parent then
 					MiningService.Client.MiningResult:Fire(
 						player,
@@ -146,6 +153,19 @@ local function _awardDrops(player: Player, blockTypeId: number, chunkKey: number
 	-- Update stats
 	local totalMined = PlayerDataService:Read(player, { "BlocksMined" }) or 0
 	PlayerDataService:Write(player, { "BlocksMined" }, totalMined + 1)
+
+	-- Onboarding funnel step 2: first block ever broken.
+	if MilestoneService then
+		MilestoneService:RecordFirstBlockMined(player, blockTypeId)
+		-- Phase tracking for the session-summary endPhase field. We classify
+		-- by the block's world XZ zone so "quit in the Wilds" vs "quit in
+		-- their region" is distinguishable.
+		local cx, _, cz = ChunkUtil.parseChunkKey(chunkKey)
+		local lx, _, lz = ChunkUtil.fromFlatIndex(flatIndex)
+		local worldX = cx * ChunkUtil.CHUNK_STUDS + lx * ChunkUtil.BLOCK_SIZE
+		local worldZ = cz * ChunkUtil.CHUNK_STUDS + lz * ChunkUtil.BLOCK_SIZE
+		MilestoneService:NotePhase(player, ZoneRegistry.getZone(worldX, worldZ))
+	end
 
 	-- Track deepest depth
 	local _, chunkCY, _ = ChunkUtil.parseChunkKey(chunkKey)
@@ -392,6 +412,7 @@ function MiningService:KnitStart()
 	WorldService = Knit.GetService("WorldService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
 	RegionService = Knit.GetService("RegionService")
+	MilestoneService = Knit.GetService("MilestoneService")
 
 	WorldService._onMineRequest:Connect(function(player: Player, chunkKey: number, flatIndex: number)
 		_handleMineRequest(player, chunkKey, flatIndex)

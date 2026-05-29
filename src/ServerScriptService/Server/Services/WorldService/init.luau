@@ -13,6 +13,9 @@ local ChunkSerializer = require(ReplicatedStorage.Shared.ChunkSerializer)
 local WorldGenModule = require(ReplicatedStorage.Shared.WorldGenModule)
 local ChunkBufferPool = require(ReplicatedStorage.Shared.ChunkBufferPool)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
+local ZoneRegistry = require(ReplicatedStorage.Shared.ZoneRegistry)
+
+local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 
 local BLOCKS_PER_CHUNK = ChunkUtil.BLOCKS_PER_CHUNK
 local SAVE_INTERVAL = 60
@@ -67,6 +70,15 @@ local dirtyRegions: { [string]: boolean } = {}
 -- and the shutdown save can't both SetAsync the same region key in the same
 -- instant (last-writer-wins would otherwise drop edits).
 local _saveInProgress = false
+
+-- Index of every region key that currently holds persisted deltas. Standard
+-- DataStores can't enumerate keys, so we keep this small list (one entry per
+-- 8x8x8-chunk region a player has actually modified) under a single key. The
+-- weekly Wilds reset walks it to find every region that might hold Wilds
+-- deltas to strip.
+local REGION_INDEX_KEY = "WorldRegionIndex_v1"
+local regionIndex: { [string]: boolean } = {}
+local regionIndexDirty = false
 local playerSubscriptions: { [Player]: { [number]: boolean } } = {}
 local chunkSubscribers: { [number]: { [Player]: boolean } } = {}
 
@@ -138,7 +150,62 @@ local function _saveRegionDeltas(regionKey: string, regionData: { [string]: { [s
 	end)
 	if not success then
 		warn("[WorldService] Failed to save region", regionKey, ":", err)
+		return
 	end
+	-- Track the key so the Wilds reset can find it later.
+	if not regionIndex[regionKey] then
+		regionIndex[regionKey] = true
+		regionIndexDirty = true
+	end
+end
+
+local function _loadRegionIndex()
+	if RunService:IsStudio() or WorldStore == nil then
+		return
+	end
+	local store = WorldStore :: DataStore
+	local ok, result = pcall(function()
+		return store:GetAsync(REGION_INDEX_KEY)
+	end)
+	if ok then
+		if type(result) == "table" then
+			for _, regionKey in result do
+				if type(regionKey) == "string" then
+					regionIndex[regionKey] = true
+				end
+			end
+		end
+	else
+		warn("[WorldService] Failed to load region index:", result)
+	end
+end
+
+local function _persistRegionIndex()
+	if RunService:IsStudio() or WorldStore == nil or not regionIndexDirty then
+		return
+	end
+	local list = {}
+	for regionKey in regionIndex do
+		table.insert(list, regionKey)
+	end
+	local store = WorldStore :: DataStore
+	local ok, err = pcall(function()
+		store:SetAsync(REGION_INDEX_KEY, list)
+	end)
+	if ok then
+		regionIndexDirty = false
+	else
+		warn("[WorldService] Failed to persist region index:", err)
+	end
+end
+
+-- True for chunks whose XZ column is in the Wilds zone (zones are XZ-only;
+-- the whole vertical column shares a zone).
+local function _isWildsChunkKey(chunkKey: number): boolean
+	local cx, _, cz = ChunkUtil.parseChunkKey(chunkKey)
+	local centerX = cx * CHUNK_STUDS + CHUNK_STUDS * 0.5
+	local centerZ = cz * CHUNK_STUDS + CHUNK_STUDS * 0.5
+	return ZoneRegistry.getZone(centerX, centerZ) == "wilds"
 end
 
 local function _markDirty(chunkKey: number, cx: number, cy: number, cz: number)
@@ -491,6 +558,7 @@ function WorldService:_saveAllDirtyRegions()
 		self:_saveRegion(regionKey, deltasByRegion[regionKey])
 		task.wait()
 	end
+	_persistRegionIndex()
 	_saveInProgress = false
 
 	-- Merge into savedDeltas in the background, frame-budgeted. The snapshot
@@ -583,6 +651,136 @@ function WorldService:_evictUnusedChunks(): number
 	return #evictList
 end
 
+-- ── Wilds weekly reset ─────────────────────────────────────────────────────
+
+-- Regenerate one loaded chunk from base worldgen (dropping its deltas) and
+-- re-broadcast fresh ChunkData to its subscribers. Ore veins are baked into
+-- generateChunk deterministically from the seed, so regen restores ore
+-- pockets at their original positions for free.
+function WorldService:_regenerateChunkToBase(chunkKey: number)
+	deltas[chunkKey] = nil
+	savedDeltas[chunkKey] = nil
+
+	local chunk = chunks[chunkKey]
+	if not chunk then
+		return
+	end
+
+	local ok, blockBuffer = pcall(WorldGenModule.generateChunk, seed, chunk.cx, chunk.cy, chunk.cz)
+	if not ok then
+		warn("[WorldService] Wilds reset regen failed:", blockBuffer)
+		return
+	end
+
+	chunk.blocks = blockBuffer
+	chunk.compressed = nil
+
+	local subscribers = chunkSubscribers[chunkKey]
+	if subscribers and next(subscribers) then
+		local compressed = ChunkSerializer.compress(blockBuffer)
+		chunk.compressed = compressed
+		for player in subscribers do
+			self.Client.ChunkData:Fire(player, chunkKey, compressed)
+		end
+	end
+end
+
+-- Reset all in-memory Wilds state: drop deltas for every Wilds chunk (loaded
+-- or merely cached in savedDeltas), regenerate the loaded ones, and
+-- re-broadcast. Runs on EVERY server when a reset fires so live players see
+-- fresh terrain and so no server re-persists the cleared deltas on its next
+-- save. Frame-budgeted. Returns the number of loaded chunks regenerated.
+function WorldService:ResetWildsInMemory(): number
+	-- Drop cached deltas for unloaded Wilds chunks so a later load doesn't
+	-- re-apply them.
+	for chunkKey in savedDeltas do
+		if _isWildsChunkKey(chunkKey) then
+			savedDeltas[chunkKey] = nil
+		end
+	end
+	for chunkKey in deltas do
+		if _isWildsChunkKey(chunkKey) then
+			deltas[chunkKey] = nil
+		end
+	end
+
+	local toReset = {}
+	for chunkKey, chunk in chunks do
+		local centerX = chunk.cx * CHUNK_STUDS + CHUNK_STUDS * 0.5
+		local centerZ = chunk.cz * CHUNK_STUDS + CHUNK_STUDS * 0.5
+		if ZoneRegistry.getZone(centerX, centerZ) == "wilds" then
+			table.insert(toReset, chunkKey)
+		end
+	end
+
+	local start = os.clock()
+	for _, chunkKey in toReset do
+		self:_regenerateChunkToBase(chunkKey)
+		if os.clock() - start > 0.004 then
+			task.wait()
+			start = os.clock()
+		end
+	end
+	return #toReset
+end
+
+-- Strip every Wilds chunk's delta from the DataStore by walking the region
+-- index. Run on exactly ONE server (the election winner in WildsService) so
+-- the wipe happens once. Throttled to stay within the DataStore request
+-- budget. Returns the number of chunk deltas cleared.
+function WorldService:ResetWildsPersistedDeltas(): number
+	if RunService:IsStudio() or WorldStore == nil then
+		return 0
+	end
+	local store = WorldStore :: DataStore
+
+	local keys = {}
+	for regionKey in regionIndex do
+		table.insert(keys, regionKey)
+	end
+
+	local cleared = 0
+	for _, regionKey in keys do
+		local ok, regionData = pcall(function()
+			return store:GetAsync(regionKey)
+		end)
+		if ok and type(regionData) == "table" then
+			local remaining: { [string]: any } = {}
+			local removedAny = false
+			for chunkKeyStr, serialized in regionData do
+				local packed = ChunkUtil.chunkKeyFromString(chunkKeyStr)
+				if packed and _isWildsChunkKey(packed) then
+					removedAny = true
+					cleared += 1
+				else
+					remaining[chunkKeyStr] = serialized
+				end
+			end
+			if removedAny then
+				if next(remaining) then
+					pcall(function()
+						store:SetAsync(regionKey, remaining)
+					end)
+				else
+					pcall(function()
+						store:RemoveAsync(regionKey)
+					end)
+					regionIndex[regionKey] = nil
+					regionIndexDirty = true
+				end
+			end
+		elseif not ok then
+			warn("[WorldService] Wilds reset: failed to load region", regionKey, ":", regionData)
+		end
+		-- Throttle: one region per 50ms keeps us well under the DataStore
+		-- write budget even with a few hundred modified regions.
+		task.wait(0.05)
+	end
+
+	_persistRegionIndex()
+	return cleared
+end
+
 -- Knit lifecycle
 
 function WorldService:KnitInit()
@@ -591,6 +789,8 @@ function WorldService:KnitInit()
 
 	seed = _getOrCreateSeed()
 	print("[WorldService] World seed:", seed)
+
+	_loadRegionIndex()
 
 	Players.PlayerRemoving:Connect(function(player)
 		self:UnsubscribeAll(player)

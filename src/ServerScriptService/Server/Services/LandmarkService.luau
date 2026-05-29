@@ -11,8 +11,9 @@
 		owner ~= localPlayer   → grey    (someone else's)
 
 	Server places parts with attributes; client (RegionHudController) tints
-	them per-viewer based on the local player's OwnedRegionId. The server keeps
-	parts neutral grey by default; the client overrides for ownership feedback.
+	them per-viewer based on the local player's currently-leased slot. The
+	server keeps parts neutral grey by default; the client overrides for
+	ownership feedback.
 
 	Beacons are pure decor — anchored, non-collidable, on a streaming-friendly
 	folder. They DO NOT live in the voxel world (zone permissions skip them).

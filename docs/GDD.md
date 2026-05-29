@@ -309,26 +309,24 @@ Players name their creatures at hatch/create time. The name is permanent and vis
 
 ## Regions
 
-Every player owns a **Region** — a vertical column of the island that is theirs alone.
+Every player has a **portable Region** — a personal build that travels with them. The island has a fixed set of **display slots**; while you're playing, your Region is shown in one of them. Your builds are permanent and follow you between servers — the physical location is just a temporary lease.
 
 ### Geometry
-- **Size:** 25×25 surface chunks (400×400 blocks)
+- **Size:** 18×18 surface chunks (1440×1440 studs). (Sized so the twelve slots on the ring are *disjoint* — at the original 25×25 they overlapped diagonally, which would let two players' builds collide. 18×18 is the largest whole-chunk size that fits, and keeps slots off the island-falloff void the larger squares' corners hung over. Region size remains tunable.)
 - **Depth:** full vertical column from sky to The Core (Y=0 to Y=-2000)
-- **Layout:** Regions are scattered across the island with The Wilds between them
-- **Quantity:** the island holds a fixed number of Region slots, distributed across its area
+- **Quantity:** **12 display slots per server**, equidistant on a ring, with The Wilds between them
 
-### Ownership
-- **Auto-assigned** to a player on their first session — randomly placed in an open slot
-- **Persistent forever** while the owner is active
-- **Loads with the owner** to whatever Roblox shard they join (Region chunks live in player's DataStore)
-- **One Region per player.** No multiple plots, no transfers (yet — could be a Robux-priced "move my Region" SKU later)
+### Ownership (portable content, ephemeral slots)
+- A Region's **content** belongs to the player and is durable, stored in a dedicated per-player store in slot-*local* coordinates so the same build renders into any slot.
+- On join you are **leased a free display slot** and your content is painted into it. Slots are ephemeral and **per-server** — rendered server-locally and never written to the shared world, so two servers can show the same physical slot to different players with no collision.
+- **One Region per player.** It appears wherever you are; logging into any server rebuilds the Region you last edited around you.
 
-### Region Lifecycle (the cycling problem)
-- A Region whose owner has been **inactive for 6 months** is marked **Dormant**: still visible, but flagged
-- After **12 months total inactivity**, a Dormant Region becomes **Reclaimable**: a new player joining the world can be assigned to it
-- When reclaimed, the previous owner's *physical* content is cleared (their structures wipe, the Region resets to procedural base state)
-- The previous owner's *authored recipes* stay in the public catalog forever — creative legacy is preserved even if their physical Region is recycled
-- Communicated transparently: "your Region will be Dormant in X days unless you log in"
+### Region Lifecycle (slot leasing)
+- **Leave:** your slot is kept (your build stays visible) but marked *vacated*.
+- **Reconnect:** if free slots are available, you keep your spot; your build was never gone.
+- **Full server, newcomer needs a slot:** the **oldest-vacated** slot is reassigned. Vacated slots are always filled *last* and oldest-first, so a brief disconnect on a non-full server never costs you your spot, but a full server reuses long-empty slots. Anyone standing in a reassigned slot is teleported to the Hearth before it repaints.
+- The previous occupant's build is **never destroyed** — it lives in their durable per-player store and reappears the next time they're assigned a slot.
+- No inactivity timers, no Dormant/Reclaimable states — slot reuse is purely demand-driven and crash-safe (leases are in-memory; content is durable).
 
 ### Inside Your Region — What You Can Do
 - Build any structures with mined materials (this is the *primary* purpose of your Region)
@@ -619,14 +617,13 @@ These phases run roughly in parallel; v1 launch requires Phase 1–4.
 - Constrained first creation (companion creature)
 
 ### Phase 4: Regions + Wilds + Hearth
-- Region claiming, 25×25-chunk vertical column allocation, scattered placement on the island
-- Region persistence to per-player DataStore
+- Portable per-player Region content (durable, slot-local coordinates)
+- Per-server ephemeral display-slot leasing (claim on join, vacate on leave, oldest-vacated reused on a full server)
 - Region visiting (visit-only, no edit, no body-block)
 - Return to Base teleport
 - The Wilds zone definition and weekly reset infrastructure
 - The Hearth fixed commons + spawn flow
-- World map with recently-active glow on online-owner Regions
-- Inactivity-based Region cycling (6/12-month timers)
+- World map
 
 ### Phase 5: Polish + Content
 - Companion perk variety, more block types, more ore types if needed

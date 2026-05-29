@@ -66,4 +66,51 @@ function RegionConfig.getRegionAtPosition(wx: number, wz: number): string?
 	return nil
 end
 
+-- ── Portable-region coordinate mapping ─────────────────────────────────────
+-- A region's CONTENT is stored per-player in LOCAL coordinates (relative to
+-- the slot's min XZ corner) so the same build renders identically in any of
+-- the 12 display slots. Slots are full vertical columns, so Y (cy) is global
+-- and never rebased — only XZ shifts between local and world.
+
+local CHUNK_STUDS = 80 -- ChunkUtil.CHUNK_STUDS; inlined to avoid a require cycle
+
+-- Min XZ corner of a slot, in CHUNK coordinates. localChunk (0,0) maps here.
+-- Derived from the slot center minus the half-edge, floored to a chunk.
+function RegionConfig.getSlotMinChunk(slotId: string): (number?, number?)
+	local i = RegionConfig.parseSlotId(slotId)
+	if i == nil then
+		return nil, nil
+	end
+	local center = RegionConfig.SLOT_CENTERS[i + 1]
+	local minCx = math.floor((center.x - RegionConfig.SLOT_HALF_EDGE) / CHUNK_STUDS)
+	local minCz = math.floor((center.z - RegionConfig.SLOT_HALF_EDGE) / CHUNK_STUDS)
+	return minCx, minCz
+end
+
+-- World chunk (cx, cz) -> local chunk offset within slotId. Returns nil if the
+-- chunk lies outside the slot's footprint.
+function RegionConfig.worldChunkToLocal(slotId: string, cx: number, cz: number): (number?, number?)
+	local minCx, minCz = RegionConfig.getSlotMinChunk(slotId)
+	if minCx == nil or minCz == nil then
+		return nil, nil
+	end
+	local lcx = cx - minCx
+	local lcz = cz - minCz
+	-- Slot spans SLOT_HALF_EDGE*2 / CHUNK_STUDS chunks (25 at current config).
+	local span = math.floor((RegionConfig.SLOT_HALF_EDGE * 2) / CHUNK_STUDS)
+	if lcx < 0 or lcz < 0 or lcx >= span or lcz >= span then
+		return nil, nil
+	end
+	return lcx, lcz
+end
+
+-- Local chunk offset -> world chunk (cx, cz) for a given slot.
+function RegionConfig.localChunkToWorld(slotId: string, lcx: number, lcz: number): (number?, number?)
+	local minCx, minCz = RegionConfig.getSlotMinChunk(slotId)
+	if minCx == nil or minCz == nil then
+		return nil, nil
+	end
+	return minCx + lcx, minCz + lcz
+end
+
 return RegionConfig

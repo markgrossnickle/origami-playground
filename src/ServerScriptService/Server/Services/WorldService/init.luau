@@ -14,6 +14,7 @@ local WorldGenModule = require(ReplicatedStorage.Shared.WorldGenModule)
 local ChunkBufferPool = require(ReplicatedStorage.Shared.ChunkBufferPool)
 local BlockType = require(ReplicatedStorage.Shared.Enums.BlockType)
 local ZoneRegistry = require(ReplicatedStorage.Shared.ZoneRegistry)
+local RegionConfig = require(ReplicatedStorage.Shared.RegionConfig)
 
 local CHUNK_STUDS = ChunkUtil.CHUNK_STUDS
 
@@ -50,6 +51,10 @@ local WorldService = Knit.CreateService({
 	Name = "WorldService",
 
 	BlockBroken = Signal.new(),
+	-- Fired when a block changes inside a leased region slot. Payload:
+	-- (userId, lcx, cy, lcz, flatIndex, blockTypeId) in LOCAL slot coords.
+	-- RegionContentService listens and persists to the owner's portable store.
+	RegionBlockChanged = Signal.new(),
 
 	Client = {
 		ChunkData = Knit.CreateSignal(),
@@ -79,6 +84,28 @@ local _saveInProgress = false
 local REGION_INDEX_KEY = "WorldRegionIndex_v1"
 local regionIndex: { [string]: boolean } = {}
 local regionIndexDirty = false
+
+-- ── Ephemeral region-slot rendering ────────────────────────────────────────
+-- A leased region slot's chunks are painted SERVER-LOCALLY from the
+-- occupant's portable content (RegionContentService) and MUST NEVER enter the
+-- global persistence path (deltas / savedDeltas / dirtyRegions / regionIndex)
+-- — otherwise a player's build would bake into the shared world at the slot's
+-- fixed position and the portable model collapses. These three tables are
+-- physically separate from that path; the save loop has no reference to them.
+local _slotOccupant: { [string]: number } = {} -- slotId -> userId currently leasing
+local _slotContent: { [string]: { [string]: { [number]: number } } } = {} -- slotId -> "lcx,cy,lcz" -> {flat:type}
+local _ephemeralChunks: { [number]: boolean } = {} -- chunkKey -> rendered ephemerally right now
+
+local function _localChunkKey(lcx: number, cy: number, lcz: number): string
+	return string.format("%d,%d,%d", lcx, cy, lcz)
+end
+
+-- slotId for the slot whose disjoint chunk footprint contains this chunk, or
+-- nil (Hearth/Wilds). Uses the chunk-grid membership (not the stud AABB) so
+-- content routing is exact and never double-claims a boundary chunk.
+local function _chunkSlotId(cx: number, cz: number): string?
+	return RegionConfig.getRegionChunkSlot(cx, cz)
+end
 local playerSubscriptions: { [Player]: { [number]: boolean } } = {}
 local chunkSubscribers: { [number]: { [Player]: boolean } } = {}
 
@@ -209,6 +236,14 @@ local function _isWildsChunkKey(chunkKey: number): boolean
 end
 
 local function _markDirty(chunkKey: number, cx: number, cy: number, cz: number)
+	-- Defense in depth: ephemeral (leased-slot) chunks must never reach the
+	-- global persistence path. The SetBlock ephemeral branch returns before
+	-- calling this, but guard anyway so a future caller can't leak.
+	if _ephemeralChunks[chunkKey] then
+		warn("[WorldService] BUG: _markDirty called for ephemeral chunk", chunkKey)
+		return
+	end
+
 	local regionKey = ChunkUtil.regionKey(cx, cy, cz)
 	dirtyRegions[regionKey] = true
 
@@ -219,6 +254,28 @@ local function _markDirty(chunkKey: number, cx: number, cy: number, cz: number)
 	local chunk = chunks[chunkKey]
 	if chunk then
 		chunk.dirty = true
+	end
+end
+
+-- Queue a single block change for replication to a chunk's subscribers.
+-- Shared by the global and ephemeral SetBlock paths.
+local function _queueBlockUpdate(chunkKey: number, flatIndex: number, blockTypeId: number)
+	local subscribers = chunkSubscribers[chunkKey]
+	if not subscribers then
+		return
+	end
+	for player in subscribers do
+		local perPlayer = pendingBlockUpdates[player]
+		if not perPlayer then
+			perPlayer = {}
+			pendingBlockUpdates[player] = perPlayer
+		end
+		local perChunk = perPlayer[chunkKey]
+		if not perChunk then
+			perChunk = {}
+			perPlayer[chunkKey] = perChunk
+		end
+		perChunk[flatIndex] = blockTypeId
 	end
 end
 
@@ -315,19 +372,39 @@ function WorldService:GetOrCreateChunk(cx: number, cy: number, cz: number): Chun
 		blockBuffer = buffer.create(BLOCKS_PER_CHUNK)
 	end
 
-	self:_loadDeltasForChunk(chunkKey, cx, cy, cz)
-
-	local chunkDelta = savedDeltas[chunkKey]
-	if chunkDelta then
-		for flatIndex, blockTypeId in chunkDelta do
-			buffer.writeu8(blockBuffer, flatIndex, blockTypeId)
+	-- If this chunk is in a currently-leased slot, render it EPHEMERALLY:
+	-- base terrain + the occupant's portable content, and never touch the
+	-- global delta path (load or apply).
+	local slotId = _chunkSlotId(cx, cz)
+	if slotId ~= nil and _slotOccupant[slotId] ~= nil then
+		_ephemeralChunks[chunkKey] = true
+		local content = _slotContent[slotId]
+		if content then
+			local lcx, lcz = RegionConfig.worldChunkToLocal(slotId, cx, cz)
+			if lcx ~= nil and lcz ~= nil then
+				local delta = content[_localChunkKey(lcx, cy, lcz)]
+				if delta then
+					for flatIndex, blockTypeId in delta do
+						buffer.writeu8(blockBuffer, flatIndex, blockTypeId)
+					end
+				end
+			end
 		end
-	end
+	else
+		self:_loadDeltasForChunk(chunkKey, cx, cy, cz)
 
-	local memDelta = deltas[chunkKey]
-	if memDelta then
-		for flatIndex, blockTypeId in memDelta do
-			buffer.writeu8(blockBuffer, flatIndex, blockTypeId)
+		local chunkDelta = savedDeltas[chunkKey]
+		if chunkDelta then
+			for flatIndex, blockTypeId in chunkDelta do
+				buffer.writeu8(blockBuffer, flatIndex, blockTypeId)
+			end
+		end
+
+		local memDelta = deltas[chunkKey]
+		if memDelta then
+			for flatIndex, blockTypeId in memDelta do
+				buffer.writeu8(blockBuffer, flatIndex, blockTypeId)
+			end
 		end
 	end
 
@@ -378,6 +455,40 @@ function WorldService:SetBlock(chunkKey: number, flatIndex: number, blockTypeId:
 	-- Invalidate cached compressed view — blocks just changed.
 	chunk.compressed = nil
 
+	-- EPHEMERAL path: leased-slot edits capture into per-occupant content and
+	-- replicate, but NEVER enter deltas/dirtyRegions/regionIndex.
+	if _ephemeralChunks[chunkKey] then
+		local slotId = _chunkSlotId(chunk.cx, chunk.cz)
+		if slotId then
+			local content = _slotContent[slotId]
+			if not content then
+				content = {}
+				_slotContent[slotId] = content
+			end
+			local lcx, lcz = RegionConfig.worldChunkToLocal(slotId, chunk.cx, chunk.cz)
+			if lcx ~= nil and lcz ~= nil then
+				local lk = _localChunkKey(lcx, chunk.cy, lcz)
+				local delta = content[lk]
+				if not delta then
+					delta = {}
+					content[lk] = delta
+				end
+				delta[flatIndex] = blockTypeId
+				local userId = _slotOccupant[slotId]
+				if userId then
+					self.RegionBlockChanged:Fire(userId, lcx, chunk.cy, lcz, flatIndex, blockTypeId)
+				end
+			end
+		end
+
+		_queueBlockUpdate(chunkKey, flatIndex, blockTypeId)
+		if oldBlock ~= BlockType.Air and blockTypeId == BlockType.Air then
+			self.BlockBroken:Fire(chunkKey, flatIndex, oldBlock)
+		end
+		return
+	end
+
+	-- GLOBAL path (Hearth / Wilds): persisted to the shared WorldData store.
 	if not deltas[chunkKey] then
 		deltas[chunkKey] = {}
 	end
@@ -386,26 +497,8 @@ function WorldService:SetBlock(chunkKey: number, flatIndex: number, blockTypeId:
 	_markDirty(chunkKey, chunk.cx, chunk.cy, chunk.cz)
 
 	-- Queue the update for each subscriber. The 10Hz flush loop in KnitStart
-	-- coalesces a burst of mining edits into one batched fire per player —
-	-- replaces firing N events when a player breaks N blocks in a 100ms
-	-- window with a single event carrying all N. Reduces chunk-handover and
-	-- mining-burst replication storms.
-	local subscribers = chunkSubscribers[chunkKey]
-	if subscribers then
-		for player in subscribers do
-			local perPlayer = pendingBlockUpdates[player]
-			if not perPlayer then
-				perPlayer = {}
-				pendingBlockUpdates[player] = perPlayer
-			end
-			local perChunk = perPlayer[chunkKey]
-			if not perChunk then
-				perChunk = {}
-				perPlayer[chunkKey] = perChunk
-			end
-			perChunk[flatIndex] = blockTypeId
-		end
-	end
+	-- coalesces a burst of mining edits into one batched fire per player.
+	_queueBlockUpdate(chunkKey, flatIndex, blockTypeId)
 
 	if oldBlock ~= BlockType.Air and blockTypeId == BlockType.Air then
 		self.BlockBroken:Fire(chunkKey, flatIndex, oldBlock)
@@ -647,6 +740,9 @@ function WorldService:_evictUnusedChunks(): number
 			ChunkBufferPool.release(chunk.blocks)
 		end
 		chunks[chunkKey] = nil
+		-- Drop the ephemeral flag; the occupant's content survives in
+		-- _slotContent, so a re-subscribe re-paints from there.
+		_ephemeralChunks[chunkKey] = nil
 	end
 	return #evictList
 end
@@ -657,6 +753,17 @@ end
 -- re-broadcast fresh ChunkData to its subscribers. Ore veins are baked into
 -- generateChunk deterministically from the seed, so regen restores ore
 -- pockets at their original positions for free.
+function WorldService:_rebroadcastChunk(chunkKey: number, chunk: ChunkData)
+	local subscribers = chunkSubscribers[chunkKey]
+	if subscribers and next(subscribers) then
+		local compressed = ChunkSerializer.compress(chunk.blocks)
+		chunk.compressed = compressed
+		for player in subscribers do
+			self.Client.ChunkData:Fire(player, chunkKey, compressed)
+		end
+	end
+end
+
 function WorldService:_regenerateChunkToBase(chunkKey: number)
 	deltas[chunkKey] = nil
 	savedDeltas[chunkKey] = nil
@@ -668,19 +775,80 @@ function WorldService:_regenerateChunkToBase(chunkKey: number)
 
 	local ok, blockBuffer = pcall(WorldGenModule.generateChunk, seed, chunk.cx, chunk.cy, chunk.cz)
 	if not ok then
-		warn("[WorldService] Wilds reset regen failed:", blockBuffer)
+		warn("[WorldService] regen failed:", blockBuffer)
 		return
 	end
 
 	chunk.blocks = blockBuffer
 	chunk.compressed = nil
+	self:_rebroadcastChunk(chunkKey, chunk)
+end
 
-	local subscribers = chunkSubscribers[chunkKey]
-	if subscribers and next(subscribers) then
-		local compressed = ChunkSerializer.compress(blockBuffer)
-		chunk.compressed = compressed
-		for player in subscribers do
-			self.Client.ChunkData:Fire(player, chunkKey, compressed)
+-- ── Ephemeral slot lifecycle (driven by RegionService lease lifecycle) ──────
+
+-- Regenerate a loaded chunk to base + the occupant's portable content, then
+-- re-broadcast. Used when a slot is leased while some of its chunks are
+-- already loaded (so they flip from base/vacant to the occupant's build).
+function WorldService:_repaintEphemeralChunk(chunkKey: number, chunk: ChunkData, slotId: string)
+	-- Drop any global deltas this chunk may have picked up while the slot was
+	-- vacant (legacy data / cross-zone region-key sharing) so the periodic
+	-- save can never write leased-slot content to the shared WorldData store.
+	deltas[chunkKey] = nil
+	savedDeltas[chunkKey] = nil
+
+	local ok, blockBuffer = pcall(WorldGenModule.generateChunk, seed, chunk.cx, chunk.cy, chunk.cz)
+	if not ok then
+		warn("[WorldService] repaint regen failed:", blockBuffer)
+		return
+	end
+	local content = _slotContent[slotId]
+	if content then
+		local lcx, lcz = RegionConfig.worldChunkToLocal(slotId, chunk.cx, chunk.cz)
+		if lcx ~= nil and lcz ~= nil then
+			local delta = content[_localChunkKey(lcx, chunk.cy, lcz)]
+			if delta then
+				for flatIndex, blockTypeId in delta do
+					buffer.writeu8(blockBuffer, flatIndex, blockTypeId)
+				end
+			end
+		end
+	end
+	chunk.blocks = blockBuffer
+	chunk.compressed = nil
+	self:_rebroadcastChunk(chunkKey, chunk)
+end
+
+-- Lease a slot to `userId`, supplying their portable content (local-keyed
+-- delta map from RegionContentService). Marks the slot's loaded chunks
+-- ephemeral and repaints them with the occupant's build. New chunks that
+-- stream in afterward are handled lazily by GetOrCreateChunk.
+function WorldService:SetSlotOccupant(slotId: string, userId: number, content: { [string]: { [number]: number } }?)
+	if RegionConfig.parseSlotId(slotId) == nil then
+		return
+	end
+	_slotOccupant[slotId] = userId
+	_slotContent[slotId] = content or {}
+	for chunkKey, chunk in chunks do
+		if _chunkSlotId(chunk.cx, chunk.cz) == slotId then
+			_ephemeralChunks[chunkKey] = true
+			self:_repaintEphemeralChunk(chunkKey, chunk, slotId)
+		end
+	end
+end
+
+-- Release a slot: drop the occupant + content and regenerate its loaded
+-- chunks back to base terrain (re-broadcast). Callers (Phase 4) must first
+-- teleport anyone standing in the slot to safety BEFORE calling this.
+function WorldService:ClearSlot(slotId: string)
+	if _slotOccupant[slotId] == nil then
+		return
+	end
+	_slotOccupant[slotId] = nil
+	_slotContent[slotId] = nil
+	for chunkKey, chunk in chunks do
+		if _chunkSlotId(chunk.cx, chunk.cz) == slotId then
+			_ephemeralChunks[chunkKey] = nil
+			self:_regenerateChunkToBase(chunkKey)
 		end
 	end
 end

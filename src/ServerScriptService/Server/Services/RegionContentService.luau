@@ -299,6 +299,17 @@ function RegionContentService:KnitStart()
 		_store = DataStoreService:GetDataStore(DATASTORE_NAME)
 	end
 
+	-- Persist every edit a player makes inside their leased slot. WorldService
+	-- fires this from its ephemeral SetBlock path with LOCAL slot coords.
+	local WorldService = Knit.GetService("WorldService")
+	if WorldService and WorldService.RegionBlockChanged then
+		WorldService.RegionBlockChanged:Connect(
+			function(userId: number, lcx: number, cy: number, lcz: number, flatIndex: number, blockType: number)
+				self:SetBlock(userId, lcx, cy, lcz, flatIndex, blockType)
+			end
+		)
+	end
+
 	-- Preload a player's region the moment they join so their content is ready
 	-- before the spawn flow tries to paint it.
 	Players.PlayerAdded:Connect(function(player)

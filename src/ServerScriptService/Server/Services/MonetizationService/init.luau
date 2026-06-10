@@ -7,6 +7,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 
 local MonetizationConfig = require(ReplicatedStorage.Shared.MonetizationConfig)
+local ModelLinkConfig = require(ReplicatedStorage.Shared.ModelLinkConfig)
 
 local PlayerDataService
 local AnalyticsService
@@ -294,8 +295,41 @@ function MonetizationService:GetPremiumMultiplier(): number
 end
 
 -- ============================================================================
+-- Subscription Gate (BYOM model feature)
+-- ============================================================================
+
+-- Returns true if the player may use the bring-your-own-model feature.
+-- Gated behind a Roblox Subscription, but feature-flaggable: while
+-- ModelLinkConfig.GateEnabled is false (or no SubscriptionId is configured)
+-- the gate is bypassed so the feature is usable before the owner sets up the
+-- Subscription in the Creator Dashboard.
+function MonetizationService:HasModelSubscription(player: Player): boolean
+	if not ModelLinkConfig.GateEnabled then
+		return true
+	end
+	if ModelLinkConfig.SubscriptionId == "" then
+		warn("[MonetizationService] Model gate enabled but SubscriptionId is empty — denying access")
+		return false
+	end
+
+	local ok, status = pcall(function()
+		return MarketplaceService:GetUserSubscriptionStatusAsync(player.UserId, ModelLinkConfig.SubscriptionId)
+	end)
+	if not ok then
+		warn("[MonetizationService] GetUserSubscriptionStatusAsync failed:", status)
+		return false
+	end
+	-- status is a UserSubscriptionStatus table with an IsSubscribed boolean.
+	return status ~= nil and status.IsSubscribed == true
+end
+
+-- ============================================================================
 -- Client API
 -- ============================================================================
+
+function MonetizationService.Client:HasModelSubscription(player: Player): boolean
+	return self.Server:HasModelSubscription(player)
+end
 
 function MonetizationService.Client:HasGamePass(player: Player, passName: string): boolean
 	return self.Server:HasGamePass(player, passName)

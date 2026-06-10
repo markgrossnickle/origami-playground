@@ -8,15 +8,23 @@
 	build renders into whichever of the 12 display slots the player currently
 	leases.
 
-	Storage decisions (vetted):
-	  * A DEDICATED DataStore ("PlayerRegion_v1"), NOT the player's profile.
-	    Profiles have a 4 MB whole-document cap and save as one unit; coupling
-	    voxel builds to economy/progression data risks bricking a save on a big
-	    build. One key per player.
-	  * BINARY encoding (3 bytes/changed block) wrapped in Base64 for DataStore
-	    byte-safety — far smaller than a JSON sparse map, and the binary cap
-	    (~1M edited blocks) is unreachable by hand-building. If that ever
-	    changes, shard the key by sub-region; the on-disk format is versioned.
+	Storage: a DEDICATED ProfileStore store ("PlayerRegionStore_v1"), separate
+	from the main player profile.
+	  * Separate store: the main profile has a 4 MB whole-document cap and
+	    saves as one unit; coupling voxel builds to economy/progression data
+	    risks bricking a save on a big build.
+	  * ProfileStore (not a raw DataStore): session-locking closes the
+	    server-hop race. With a raw DataStore, Server A's final SetAsync and
+	    Server B's GetAsync are unordered — B can read stale content and later
+	    overwrite A's last edits (lost update). ProfileStore makes B's
+	    StartSessionAsync wait for A's session release, which force-saves
+	    first, so B always loads current content.
+	  * The voxel payload is ONE profile field: a versioned binary blob
+	    (3 bytes/changed block) wrapped in Base64 for DataStore byte-safety.
+	    Far smaller than a JSON sparse map; the ~1M-edited-block ceiling is
+	    unreachable by hand-building.
+	  * ProfileStore's mock mode also makes this work in Studio (the previous
+	    raw-DataStore version was a Studio no-op).
 
 	In-memory shape (per loaded user):
 	  _content[userId] = { [localChunkKey] = { [flatIndex] = blockType } }
@@ -25,41 +33,50 @@
 	A delta value of BlockType.Air means "this base-terrain block was mined
 	out" — same semantics as WorldService deltas.
 
-	This phase is storage only. Painting content into a leased slot (and
-	capturing edits back) is wired in later phases.
+	WorldService holds the same content table by reference for the leased slot
+	(SetSlotOccupant) and fires RegionBlockChanged on ephemeral edits; we
+	mirror the write into our cache (idempotent — same table) and own the
+	dirty-tracking + persistence.
 ]]
 
-local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
+
+local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Base64 = require(ReplicatedStorage.Shared.Base64)
 
-local DATASTORE_NAME = "PlayerRegion_v1"
 local FORMAT_VERSION = 1
 local SAVE_DEBOUNCE = 6
 
 type ChunkDelta = { [number]: number }
 type RegionContent = { [string]: ChunkDelta }
 
+type RegionData = {
+	Blob: string,
+}
+
+local regionDataTemplate: RegionData = {
+	Blob = "",
+}
+
+local RegionStore = ProfileStore.New("PlayerRegionStore_v1", regionDataTemplate)
+type Profile = ProfileStore.Profile<RegionData>
+
 local RegionContentService = Knit.CreateService({
 	Name = "RegionContentService",
 	Client = {},
 })
 
-local _store: DataStore? = nil
+local _profiles: { [number]: Profile } = {}
 local _content: { [number]: RegionContent } = {}
 local _loaded: { [number]: boolean } = {}
 local _loading: { [number]: boolean } = {}
 local _dirty: { [number]: boolean } = {}
 local _lastSave: { [number]: number } = {}
 local _savePending: { [number]: boolean } = {}
-
-local function _isStudio(): boolean
-	return RunService:IsStudio()
-end
 
 local function _localChunkKey(lcx: number, cy: number, lcz: number): string
 	return string.format("%d,%d,%d", lcx, cy, lcz)
@@ -162,8 +179,21 @@ local function _deserialize(encoded: string): RegionContent
 	return content
 end
 
--- ── Load / save ──────────────────────────────────────────────────────────────
+-- ── Session / load / save ────────────────────────────────────────────────────
 
+local function _clearUser(userId: number)
+	_profiles[userId] = nil
+	_content[userId] = nil
+	_loaded[userId] = nil
+	_loading[userId] = nil
+	_dirty[userId] = nil
+	_lastSave[userId] = nil
+	_savePending[userId] = nil
+end
+
+-- Start a ProfileStore session for the user and deserialize their content.
+-- Blocks (StartSessionAsync waits out any other server's live session — this
+-- is exactly the server-hop handshake we want). Returns the content table.
 function RegionContentService:Load(userId: number): RegionContent
 	if _loaded[userId] then
 		return _content[userId]
@@ -177,19 +207,43 @@ function RegionContentService:Load(userId: number): RegionContent
 	end
 
 	_loading[userId] = true
-	local content: RegionContent = {}
-	if not _isStudio() and _store ~= nil then
-		local ok, encoded = pcall(function()
-			return (_store :: DataStore):GetAsync(tostring(userId))
-		end)
-		if ok then
-			if type(encoded) == "string" then
-				content = _deserialize(encoded)
-			end
-		else
-			warn(`[RegionContentService] Load failed for {userId}: {encoded}`)
+
+	local profile = RegionStore:StartSessionAsync(tostring(userId), {
+		Cancel = function()
+			-- Give up if the player left while we were waiting on the lock.
+			return Players:GetPlayerByUserId(userId) == nil
+		end,
+	})
+
+	-- Player left while we were waiting on the lock: PlayerRemoving's Unload
+	-- already ran (it had nothing to clear), so caching now would leave a
+	-- stale empty entry that a REJOIN would silently trust. End the session
+	-- if we got one and cache nothing.
+	if Players:GetPlayerByUserId(userId) == nil then
+		if profile ~= nil then
+			profile:EndSession()
 		end
+		_loading[userId] = nil
+		return {}
 	end
+
+	local content: RegionContent = {}
+	if profile ~= nil then
+		profile:AddUserId(userId)
+		profile:Reconcile()
+		profile.OnSessionEnd:Connect(function()
+			-- Session stolen by another server (player hopped) or released.
+			-- Drop the cache so nothing stale gets painted; the other server
+			-- owns the content now. WorldService's in-flight render of this
+			-- user keeps its own reference and is cleared on slot release.
+			_clearUser(userId)
+		end)
+		content = _deserialize(profile.Data.Blob)
+		_profiles[userId] = profile
+	else
+		warn(`[RegionContentService] Could not start region session for {userId}; edits this session won't persist`)
+	end
+
 	_content[userId] = content
 	_loaded[userId] = true
 	_loading[userId] = nil
@@ -208,26 +262,24 @@ function RegionContentService:GetChunkDelta(userId: number, lcx: number, cy: num
 	return content[_localChunkKey(lcx, cy, lcz)]
 end
 
+-- Serialize the in-memory content into the profile and trigger a save.
 function RegionContentService:Save(userId: number)
 	if not _dirty[userId] then
 		return
 	end
 	local content = _content[userId]
-	if content == nil then
+	local profile = _profiles[userId]
+	if content == nil or profile == nil then
 		return
 	end
 	_dirty[userId] = false
 	_lastSave[userId] = os.clock()
-	if _isStudio() or _store == nil then
-		return
-	end
-	local encoded = _serialize(content)
-	local ok, err = pcall(function()
-		(_store :: DataStore):SetAsync(tostring(userId), encoded)
-	end)
-	if not ok then
-		warn(`[RegionContentService] Save failed for {userId}: {err}`)
-		_dirty[userId] = true -- retry on the next debounce
+
+	profile.Data.Blob = _serialize(content)
+	if profile:IsActive() then
+		profile:Save()
+	else
+		warn(`[RegionContentService] Region profile for {userId} inactive; save skipped`)
 	end
 end
 
@@ -260,10 +312,9 @@ function RegionContentService:SetBlock(
 )
 	local content = _content[userId]
 	if content == nil then
-		-- Caller should Load first; create lazily so an edit is never lost.
-		content = {}
-		_content[userId] = content
-		_loaded[userId] = true
+		-- No live session (load failed or session was stolen). Don't create a
+		-- cache that would never persist — the edit is visual-only.
+		return
 	end
 	local key = _localChunkKey(lcx, cy, lcz)
 	local delta = content[key]
@@ -276,29 +327,37 @@ function RegionContentService:SetBlock(
 	_scheduleSave(self, userId)
 end
 
+-- Final save + session release. The release force-saves, which is what the
+-- next server's StartSessionAsync waits on — closing the server-hop race.
 function RegionContentService:Unload(userId: number)
-	self:Save(userId)
-	_content[userId] = nil
-	_loaded[userId] = nil
-	_loading[userId] = nil
-	_dirty[userId] = nil
-	_lastSave[userId] = nil
-	_savePending[userId] = nil
+	local profile = _profiles[userId]
+	if profile ~= nil then
+		local content = _content[userId]
+		if content ~= nil and _dirty[userId] then
+			profile.Data.Blob = _serialize(content)
+			_dirty[userId] = false
+		end
+		profile:EndSession()
+	end
+	_clearUser(userId)
 end
 
+-- Serialize all loaded users into their profiles. ProfileStore's own
+-- BindToClose then force-saves every active session; our flush is
+-- yield-free, so the blobs are in place before those saves read Data.
 function RegionContentService:FlushAll()
-	for userId in _content do
-		self:Save(userId)
+	for userId, content in _content do
+		local profile = _profiles[userId]
+		if profile ~= nil and _dirty[userId] then
+			profile.Data.Blob = _serialize(content)
+			_dirty[userId] = false
+		end
 	end
 end
 
 function RegionContentService:KnitInit() end
 
 function RegionContentService:KnitStart()
-	if not _isStudio() then
-		_store = DataStoreService:GetDataStore(DATASTORE_NAME)
-	end
-
 	-- Persist every edit a player makes inside their leased slot. WorldService
 	-- fires this from its ephemeral SetBlock path with LOCAL slot coords.
 	local WorldService = Knit.GetService("WorldService")

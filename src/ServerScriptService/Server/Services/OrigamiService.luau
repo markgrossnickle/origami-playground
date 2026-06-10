@@ -1,12 +1,14 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local OrigamiConfig = require(ReplicatedStorage.Shared.OrigamiConfig)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
-local ServerConfig = require(ReplicatedStorage.Assets.Configuration.Server)
+-- Server-only: API key lives in ServerStorage, never replicated to clients.
+local ServerConfig = require(ServerStorage.Configuration.Server)
 
 local OrigamiService = Knit.CreateService({
 	Name = "OrigamiService",

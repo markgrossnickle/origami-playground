@@ -25,6 +25,9 @@
 				"$path": "ServerPackages"
 			}
 		},
+		"ServerStorage": {
+			"$path": "src/ServerStorage"
+		},
 		"HttpService": {
 			"$className": "HttpService",
 			"$properties": {

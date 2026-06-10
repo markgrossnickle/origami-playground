@@ -5,7 +5,7 @@ Each model creates every prompt for side-by-side comparison.
 import asyncio, aiohttp, json, os, time
 
 API_URL = "https://origami-server.fly.dev"
-API_KEY = "f75898d3ab723052d2bb696f5f01d507"
+API_KEY = os.environ.get("ORIGAMI_API_KEY", "")  # export ORIGAMI_API_KEY=... (rotated; no longer hardcoded)
 
 MODELS = ["flash25_lite", "flash3", "gemini_pro"]
 DISPLAY = {

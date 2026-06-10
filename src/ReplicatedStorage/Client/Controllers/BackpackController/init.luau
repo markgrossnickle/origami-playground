@@ -70,6 +70,9 @@ local _tabButtons: { [string]: TextButton } = {}
 local _activeTab = "Mats"
 local _visible = false
 local _crafting = false
+-- Forward declaration: hatchEgg (defined above switchTab) calls switchTab,
+-- so it must exist as a module-level upvalue before that definition.
+local switchTab: (tabName: string) -> ()
 
 -- Cached data — namespaced { bulk = {...}, ore = {...}, tools = {...}, misc = {...} }
 local _inventory: {
@@ -1423,7 +1426,7 @@ end
 
 -- Tab Switching & Panel Toggle
 
-local function switchTab(tabName: string)
+function switchTab(tabName: string)
 	_activeTab = tabName
 
 	for name, btn in pairs(_tabButtons) do

@@ -25,7 +25,7 @@ except ImportError:
     import aiohttp
 
 API_URL = "https://origami-server.fly.dev/api/generate"
-API_KEY = "f75898d3ab723052d2bb696f5f01d507"
+API_KEY = os.environ.get("ORIGAMI_API_KEY", "")  # export ORIGAMI_API_KEY=... (rotated; no longer hardcoded)
 
 # New models to collect — existing data (gpt54_nano, gpt54_mini, gpt_mini, etc.) already on disk
 MODELS = ["flash25_lite", "flash25", "gemini25_pro"]

@@ -5,7 +5,7 @@ Uses the origami-server API to create creatures, then outputs ShopkeeperData.lua
 import asyncio, aiohttp, json, os, sys
 
 API_URL = "https://origami-server.fly.dev"
-API_KEY = "f75898d3ab723052d2bb696f5f01d507"
+API_KEY = os.environ.get("ORIGAMI_API_KEY", "")  # export ORIGAMI_API_KEY=... (rotated; no longer hardcoded)
 
 SCRIPT_DIR = os.path.dirname(__file__)
 OUT_DIR = os.path.join(SCRIPT_DIR, "shopkeeper_data")

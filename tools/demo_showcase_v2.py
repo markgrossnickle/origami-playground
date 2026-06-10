@@ -5,7 +5,7 @@ Saves to tools/demo_showcase_v2/ to keep separate from originals.
 import asyncio, aiohttp, json, os, time
 
 API_URL = "https://origami-server.fly.dev"
-API_KEY = "f75898d3ab723052d2bb696f5f01d507"
+API_KEY = os.environ.get("ORIGAMI_API_KEY", "")  # export ORIGAMI_API_KEY=... (rotated; no longer hardcoded)
 
 MODELS = ["flash25_lite", "flash_lite", "flash25", "flash3"]
 DISPLAY = {

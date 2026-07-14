@@ -369,9 +369,9 @@ function EmoteService.Client:RequestEmote(player: Player, prompt: string, style:
 
 	_lastGenerationTime[player.UserId] = now
 
-	-- Call LLM via OrigamiService (server-side call to Client method with player)
+	-- Server-internal generation (this path charges its own Crane cost above).
 	local OrigamiService = Knit.GetService("OrigamiService")
-	local result = OrigamiService.Client:RequestModel(player, prompt, "emote", style or "origami")
+	local result = OrigamiService:GenerateModel(player, prompt, "emote", style or "origami")
 
 	if not result or not result.success then
 		return { success = false, error = result and result.error or "Generation failed" }

@@ -149,6 +149,12 @@ function MonetizationService:ConsumeProCreation(player: Player): boolean
 	return false
 end
 
+-- Re-grant a credit (refund path: the LLM call failed after the credit was
+-- consumed, so the player shouldn't lose their purchase).
+function MonetizationService:GrantProCreation(player: Player)
+	_proCreationAllowed[player.UserId] = true
+end
+
 -- Check if the player has a Pro creation credit (does NOT consume).
 function MonetizationService:HasProCreation(player: Player): boolean
 	return _proCreationAllowed[player.UserId] == true

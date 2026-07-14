@@ -94,6 +94,30 @@ local function _materialNamespace(itemId: string): string
 	end
 	return "misc"
 end
+
+-- Count of a material in whichever inventory namespace it lives in. Tool
+-- recipes mix bulk and ore ingredients, so reading only _inventory.bulk
+-- undercounts ore to 0 and wrongly greys out tier-2+ craft buttons.
+local function _materialCount(itemId: string): number
+	local namespace = _materialNamespace(itemId)
+	local bucket = (_inventory :: any)[namespace]
+	return (bucket and bucket[itemId]) or 0
+end
+
+-- Namespace-aware replacement for ToolRegistry.canCraft (which takes a flat
+-- single-namespace map).
+local function _canCraftTool(toolConfig: { craftRecipe: { [string]: number }? }): boolean
+	local recipe = toolConfig.craftRecipe
+	if not recipe then
+		return false
+	end
+	for itemId, needed in recipe do
+		if _materialCount(itemId) < needed then
+			return false
+		end
+	end
+	return true
+end
 local _creatures: { { [string]: any } } = {}
 local _pendingEggs: { { [string]: any } } = {}
 local _recipes: { { [string]: any } } = {}
@@ -466,7 +490,7 @@ renderToolsTab = function()
 
 		local isEquipped = toolId == _equippedTool
 		local hasItem = toolId == "paper_hands" or (_inventory.tools[toolId] and _inventory.tools[toolId] > 0)
-		local canCraft = not hasItem and toolConfig.craftRecipe and ToolRegistry.canCraft(toolId, _inventory.bulk)
+		local canCraft = not hasItem and toolConfig.craftRecipe ~= nil and _canCraftTool(toolConfig)
 
 		-- Calculate card height (taller if showing recipe materials)
 		local recipeMatCount = 0
@@ -541,7 +565,7 @@ renderToolsTab = function()
 			-- Show material requirements
 			local matY = 38
 			for itemId, needed in pairs(toolConfig.craftRecipe) do
-				local have = (_inventory.bulk and _inventory.bulk[itemId]) or 0
+				local have = _materialCount(itemId)
 				local matLabel = Instance.new("TextLabel")
 				matLabel.Size = UDim2.new(0.6, -8, 0, 13)
 				matLabel.Position = UDim2.fromOffset(8, matY)

@@ -342,7 +342,9 @@ function WorkshopService.Client:CraftItem(player: Player, recipeId: string, user
 	local prompt = buildPrompt(recipe, userPrompt or "")
 	local OrigamiService = Knit.GetService("OrigamiService")
 	local category = if recipe.itemType == "costume" then "avatar" else recipe.itemType
-	local result = OrigamiService.Client:RequestModel(player, prompt, category, "lowpoly")
+	-- Server-internal generation: this craft already charged recipe materials,
+	-- so it uses the ungated path (Client:RequestModel would charge again).
+	local result = OrigamiService:GenerateModel(player, prompt, category, "lowpoly")
 
 	local modelData = nil
 	if result and result.success and result.model then
@@ -432,7 +434,7 @@ function WorkshopService.Client:ClaimItem(player: Player, craftIndex: number)
 	if not craft.modelData and craft.userPrompt then
 		local OrigamiService = Knit.GetService("OrigamiService")
 		local category = if craft.itemType == "costume" then "avatar" else craft.itemType
-		local result = OrigamiService.Client:RequestModel(player, craft.userPrompt, category, "lowpoly")
+		local result = OrigamiService:GenerateModel(player, craft.userPrompt, category, "lowpoly")
 		if result and result.success and result.model then
 			craft.modelData = result.model
 		end

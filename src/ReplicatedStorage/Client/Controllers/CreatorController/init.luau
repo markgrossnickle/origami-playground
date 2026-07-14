@@ -1236,6 +1236,14 @@ function submitSingleRequest(
 			end
 		else
 			local errMsg = (ok and result and result.error) or (not ok and tostring(result)) or "Unknown error"
+			-- Server-side gate errors get friendly copy instead of raw codes.
+			if errMsg == "insufficient_paper" then
+				errMsg = "Need Paper Tokens! Earn them by gifting, breeding, or winning games."
+			elseif errMsg == "no_pro_credit" then
+				errMsg = "Pro creations need a Robux purchase first."
+			elseif errMsg == "cooldown" then
+				errMsg = "Creating too fast — give it a few seconds."
+			end
 			local errReason = ok and result and result.error_reason
 			if errReason then
 				warn(
@@ -1355,9 +1363,11 @@ function submitPrompt()
 		return
 	end
 
-	-- Shop currency checks
+	-- Friendly PRE-checks only. The authoritative charge (Paper deduction /
+	-- Pro-credit consumption) happens SERVER-SIDE inside
+	-- OrigamiService.Client:RequestModel — client-side deduction was both
+	-- bypassable by exploiters and would now double-charge.
 	if _shopMode == "create_lite" then
-		-- Deduct 1 Paper Token
 		local PlayerDataService = Knit.GetService("PlayerDataService")
 		local ok, paper = PlayerDataService:Read():await()
 		local paperCount = if ok and paper then (paper.Paper or 0) else 0
@@ -1365,15 +1375,9 @@ function submitPrompt()
 			setStatus("Need Paper Tokens! Earn them by gifting, breeding, or winning games.", COLORS.error)
 			return
 		end
-		-- Deduct server-side
-		local deductOk, deductResult = PlayerDataService:DeductCurrency("Paper", OrigamiConfig.PAPER_COST_PER_CREATION)
-			:await()
-		if not deductOk or not deductResult or not deductResult.success then
-			setStatus("Not enough Paper Tokens!", COLORS.error)
-			return
-		end
 	elseif _shopMode == "create_pro" then
-		-- Check if player already has a pro creation credit (from a previous purchase)
+		-- Ensure a pro creation credit exists (purchased via Robux). The
+		-- server consumes it when the request lands.
 		local MonetizationService = Knit.GetService("MonetizationService")
 		local hasOk, hasCredit = MonetizationService:HasProCreation():await()
 		if not hasOk or not hasCredit then
@@ -1394,12 +1398,6 @@ function submitPrompt()
 				setStatus("Purchase not completed.", COLORS.error)
 				return
 			end
-		end
-		-- Consume the credit
-		local consumeOk, consumed = MonetizationService:ConsumeProCreation():await()
-		if not consumeOk or not consumed then
-			setStatus("Pro creation credit not available.", COLORS.error)
-			return
 		end
 	end
 

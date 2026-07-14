@@ -160,9 +160,10 @@ function BreedingService.Client:RequestBreed(
 			string.sub(parent2Name, 1, 40)
 		)
 
-		-- Call LLM (server-side call to Client method with player)
+		-- Server-internal generation (breeding charges its own Crane cost;
+		-- the Client path would also demand Paper / a Pro credit).
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local result = OrigamiService.Client:RequestModel(player, breedPrompt, "creature", style)
+		local result = OrigamiService:GenerateModel(player, breedPrompt, "creature", style)
 
 		local offspringData = nil
 		if result and result.success and result.model then
@@ -321,7 +322,7 @@ function BreedingService.Client:HatchEgg(player: Player, eggIndex: number)
 	if not egg.offspringData and egg.breedPrompt then
 		warn("[HatchEgg] No offspringData — retrying LLM with prompt:", string.sub(egg.breedPrompt, 1, 80))
 		local OrigamiService = Knit.GetService("OrigamiService")
-		local result = OrigamiService.Client:RequestModel(player, egg.breedPrompt, "creature", egg.style or "origami")
+		local result = OrigamiService:GenerateModel(player, egg.breedPrompt, "creature", egg.style or "origami")
 		warn(
 			"[HatchEgg] LLM retry result — success:",
 			result and result.success,

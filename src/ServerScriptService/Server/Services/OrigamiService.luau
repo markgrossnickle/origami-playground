@@ -1,6 +1,7 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
@@ -62,6 +63,49 @@ local function checkRateLimit(player: Player): (boolean, number)
 	return true, 0
 end
 
+-- Server-side spend gate for CLIENT-initiated generations. Every LLM call
+-- costs real money, so the charge must live here — client-side gating is
+-- bypassable by any exploiter firing the remote directly.
+--   flash_lite (the default) → costs PAPER_COST_PER_CREATION Paper tokens.
+--   any other model (flash / gemini_pro / opus / test) → consumes a purchased
+--   Pro Creation credit (MonetizationService, granted by Robux receipt).
+-- Studio skips the charge (mirrors DeductCurrency's Studio behavior) so dev
+-- iteration stays free. Returns (ok, errorCode?, refund?); call refund() if
+-- the generation fails after payment.
+local function _chargeForRequest(player: Player, modelKey: string?): (boolean, string?, (() -> ())?)
+	if RunService:IsStudio() then
+		return true, nil, nil
+	end
+
+	if modelKey == nil or modelKey == "flash_lite" then
+		local PlayerDataService = Knit.GetService("PlayerDataService")
+		local cost = OrigamiConfig.PAPER_COST_PER_CREATION
+		local have = PlayerDataService:Read(player, { "Paper" }) or 0
+		if have < cost then
+			return false, "insufficient_paper", nil
+		end
+		PlayerDataService:Write(player, { "Paper" }, have - cost)
+		return true,
+			nil,
+			function()
+				local current = PlayerDataService:Read(player, { "Paper" }) or 0
+				PlayerDataService:Write(player, { "Paper" }, current + cost)
+			end
+	end
+
+	local MonetizationService = Knit.GetService("MonetizationService")
+	if not MonetizationService:ConsumeProCreation(player) then
+		return false, "no_pro_credit", nil
+	end
+	return true, nil, function()
+		MonetizationService:GrantProCreation(player)
+	end
+end
+
+-- Client entry point: rate-limited + paid. The actual generation lives in
+-- GenerateModel (below), which server-internal callers (Workshop, Breeding,
+-- EggCrafting, Emote) use directly because they gate with their own
+-- material/currency costs and must not be double-charged.
 function OrigamiService.Client:RequestModel(
 	player: Player,
 	prompt: string,
@@ -79,6 +123,34 @@ function OrigamiService.Client:RequestModel(
 		return { success = false, error = "prompt_too_long" }
 	end
 
+	local allowed, remaining = checkRateLimit(player)
+	if not allowed then
+		return { success = false, error = "cooldown", cooldownRemaining = remaining }
+	end
+
+	local paid, chargeError, refund = _chargeForRequest(player, model)
+	if not paid then
+		return { success = false, error = chargeError or "payment_failed" }
+	end
+
+	local result = self.Server:GenerateModel(player, prompt, category, style, model, type)
+	if not result.success and refund then
+		-- Generation failed after payment — give the Paper / credit back.
+		refund()
+	end
+	return result
+end
+
+-- Raw generation path: no rate limit, no charge. Server-internal callers ONLY
+-- (they gate themselves); never expose this on the Client table.
+function OrigamiService:GenerateModel(
+	player: Player,
+	prompt: string,
+	category: string,
+	style: string?,
+	model: string?,
+	modelType: string?
+)
 	-- Build request
 	local apiUrl = getApiUrl()
 	if apiUrl == "" then
@@ -95,7 +167,7 @@ function OrigamiService.Client:RequestModel(
 		style = style or "origami",
 		model = model or "flash_lite",
 		raw = if isRaw then true else nil,
-		type = type,
+		type = modelType,
 	}
 
 	-- Call external API
@@ -153,8 +225,8 @@ function OrigamiService.Client:RequestModel(
 
 	-- Fire signals
 	local modelData = data.model
-	self.Server.ModelCreated:Fire(player, modelData)
-	self.Server.Client.ModelGenerated:Fire(player, modelData)
+	self.ModelCreated:Fire(player, modelData)
+	self.Client.ModelGenerated:Fire(player, modelData)
 
 	return { success = true, model = modelData }
 end

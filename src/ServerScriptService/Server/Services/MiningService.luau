@@ -453,16 +453,22 @@ function MiningService:KnitStart()
 			return
 		end
 
+		-- Recipe ingredients span namespaces: tier-2+ recipes mix bulk
+		-- (pulp, folded_stone, ...) with ore (clay_bead, quartz, ...).
+		-- Resolve each ingredient's namespace — a hard-coded "bulk" here
+		-- made every ore read 0 and blocked all tier-2+ crafting.
 		for itemId, needed in toolConfig.craftRecipe do
-			local have = PlayerDataService:Read(player, { "MiningInventory", "bulk", itemId }) or 0
+			local namespace = _namespaceFor(itemId, nil)
+			local have = PlayerDataService:Read(player, { "MiningInventory", namespace, itemId }) or 0
 			if have < needed then
 				return
 			end
 		end
 
 		for itemId, needed in toolConfig.craftRecipe do
-			local have = PlayerDataService:Read(player, { "MiningInventory", "bulk", itemId }) or 0
-			PlayerDataService:Write(player, { "MiningInventory", "bulk", itemId }, have - needed)
+			local namespace = _namespaceFor(itemId, nil)
+			local have = PlayerDataService:Read(player, { "MiningInventory", namespace, itemId }) or 0
+			PlayerDataService:Write(player, { "MiningInventory", namespace, itemId }, have - needed)
 		end
 
 		local currentCount = PlayerDataService:Read(player, { "MiningInventory", "tools", toolId }) or 0

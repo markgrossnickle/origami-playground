@@ -120,9 +120,9 @@ function EggCraftingService.Client:CraftEgg(player: Player, recipeId: string, us
 		prompt = string.format("A %s creature: %s.", recipe.rarity:lower(), shortTheme)
 	end
 
-	-- Call OrigamiService for creature model data
+	-- Server-internal generation (egg crafting already charged materials).
 	local OrigamiService = Knit.GetService("OrigamiService")
-	local result = OrigamiService.Client:RequestModel(player, prompt, "creature", "lowpoly")
+	local result = OrigamiService:GenerateModel(player, prompt, "creature", "lowpoly")
 
 	local offspringData = nil
 	if result and result.success and result.model then

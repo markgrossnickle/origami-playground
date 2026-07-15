@@ -121,7 +121,6 @@ end
 local _creatures: { { [string]: any } } = {}
 local _pendingEggs: { { [string]: any } } = {}
 local _recipes: { { [string]: any } } = {}
-local _plotAssignedIds: { [string]: boolean } = {}
 
 -- Creature spawn state
 local _activeCreatureModel: Model? = nil
@@ -192,7 +191,7 @@ end
 -- Data Fetching
 
 local function fetchAllData(callback: (() -> ())?)
-	local remaining = 7
+	local remaining = 6
 	local function onComplete()
 		remaining -= 1
 		if remaining <= 0 and callback then
@@ -245,13 +244,6 @@ local function fetchAllData(callback: (() -> ())?)
 		if ok and type(recipes) == "table" then
 			_recipes = recipes
 		end
-		onComplete()
-	end)
-
-	task.spawn(function()
-		-- PlotService deprecated in Phase 2. Region-based creature placement
-		-- is future work; for now no creatures are 'on plot'.
-		_plotAssignedIds = {}
 		onComplete()
 	end)
 
@@ -648,11 +640,6 @@ local function spawnCreatureInWorld(creature: { [string]: any })
 	VFXUtil.sparkle(spawnPos + Vector3.new(0, 2, 0), rarityColor, 15, 1.5)
 end
 
-local function assignCreatureToPlot(_creatureId: string)
-	-- PlotService deprecated in Phase 2; creature plot assignment is disabled
-	-- until region-based creature placement ships. Intentional no-op.
-end
-
 local function releaseCreature(creatureId: string, button: TextButton)
 	button.Text = "Confirm?"
 	button.BackgroundColor3 = COLORS.error
@@ -717,7 +704,6 @@ renderCreaturesTab = function()
 
 	for i, creature in ipairs(_creatures) do
 		local rarityColor = EggCraftingConfig.RARITY_COLORS[creature.rarity] or COLORS.text
-		local isOnPlot = _plotAssignedIds[creature.id] or false
 
 		local card = Instance.new("Frame")
 		card.Name = creature.id
@@ -797,11 +783,8 @@ renderCreaturesTab = function()
 			spawnCreatureInWorld(creature)
 		end)
 
-		-- "To Plot" / "On Plot" button hidden in Phase 2 — PlotService is
-		-- deprecated and creature plot placement is disabled until region-based
-		-- placement ships. Keeping the layout slot empty for now.
-		local _ = isOnPlot
-		local _ = btnX2
+		-- The right-hand action slot (region-based creature placement) is
+		-- future work; the layout leaves it empty for now.
 
 		-- Rename
 		local renameBtn = Instance.new("TextButton")

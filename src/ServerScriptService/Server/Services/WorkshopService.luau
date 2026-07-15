@@ -1,7 +1,8 @@
 --[[
 	WorkshopService — craft accessories, tools, costumes, and props from mining materials.
 	Validates recipes, deducts materials, calls OrigamiService for LLM model data,
-	creates PendingCraft entries with timers, and handles equip/unequip/prop placement.
+	creates PendingCraft entries with timers, and handles equip/unequip.
+	(World-zone prop placement is a separate, upcoming feature.)
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -585,7 +586,7 @@ function WorkshopService.Client:EquipItem(player: Player, itemId: string)
 		end
 		equipped.tool = itemId
 	else
-		return { success = false, error = "Cannot equip props — use PlaceProp" }
+		return { success = false, error = "Props are placed in the world, not equipped" }
 	end
 
 	PlayerDataService:Write(player, { "Equipped" }, equipped)
@@ -665,18 +666,6 @@ function WorkshopService.Client:DeleteItem(player: Player, itemId: string)
 		PlayerDataService:Write(player, { "Equipped" }, equipped)
 	end
 
-	-- Remove from PlacedProps if it's there
-	local placed = data.PlacedProps or {}
-	local newPlaced = {}
-	for _, prop in ipairs(placed) do
-		if prop.itemId ~= itemId then
-			table.insert(newPlaced, prop)
-		end
-	end
-	if #newPlaced ~= #placed then
-		PlayerDataService:Write(player, { "PlacedProps" }, newPlaced)
-	end
-
 	-- Remove from collection
 	local crafted = data.CraftedItems or {}
 	local newCrafted = {}
@@ -715,60 +704,6 @@ function WorkshopService.Client:RenameItem(player: Player, itemId: string, newNa
 	end
 
 	return { success = false, error = "Item not found" }
-end
-
-function WorkshopService.Client:PlaceProp(
-	player: Player,
-	itemId: string,
-	localX: number,
-	localY: number,
-	localZ: number
-)
-	local PlayerDataService = Knit.GetService("PlayerDataService")
-	local data = PlayerDataService:Read(player)
-	if not data then
-		return { success = false, error = "Player data not loaded" }
-	end
-
-	-- Verify item exists and is a prop
-	local crafted = data.CraftedItems or {}
-	local item = nil
-	for _, it in ipairs(crafted) do
-		if it.id == itemId then
-			item = it
-			break
-		end
-	end
-	if not item then
-		return { success = false, error = "Item not found" }
-	end
-	if item.itemType ~= "prop" then
-		return { success = false, error = "Only props can be placed" }
-	end
-
-	-- Check plot ownership
-	local plotData = data.PlotData
-	if not plotData or plotData.plotIndex == -1 then
-		return { success = false, error = "No plot claimed" }
-	end
-
-	-- Add to PlacedProps (or update if already placed)
-	local placed = data.PlacedProps or {}
-	local found = false
-	for i, prop in ipairs(placed) do
-		if prop.itemId == itemId then
-			placed[i] = { itemId = itemId, localX = localX, localY = localY, localZ = localZ }
-			found = true
-			break
-		end
-	end
-	if not found then
-		table.insert(placed, { itemId = itemId, localX = localX, localY = localY, localZ = localZ })
-	end
-
-	PlayerDataService:Write(player, { "PlacedProps" }, placed)
-
-	return { success = true }
 end
 
 function WorkshopService.Client:GetEquipped(player: Player)

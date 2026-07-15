@@ -150,8 +150,10 @@ local function _commitPlacement()
 		end
 		local ok, result = PropPlacementService:PlaceProp(item.id, pos.X, pos.Y, pos.Z, ry):await()
 		-- On server rejection, re-enter placement so the ghost isn't silently
-		-- lost — the player can reposition and try again.
-		if not ok or type(result) ~= "table" or result.success ~= true then
+		-- lost — the player can reposition and try again. Skip if a new
+		-- placement was already started during the RPC round-trip, so we don't
+		-- clobber it.
+		if (not ok or type(result) ~= "table" or result.success ~= true) and not _active then
 			PropPlacementController:BeginPlacement(item)
 		end
 	end)

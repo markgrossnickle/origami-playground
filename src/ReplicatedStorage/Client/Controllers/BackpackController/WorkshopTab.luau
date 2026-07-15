@@ -1,7 +1,8 @@
 --[[
 	WorkshopTab — renders the Workshop tab inside the BackpackController.
-	Handles type filters, pending crafts, recipe cards, crafted items, and equip actions.
-	(Prop placement is disabled until world-zone prop placement ships.)
+	Handles type filters, pending crafts, recipe cards, crafted items, and
+	equip actions. The "Place" action on props hands off to
+	PropPlacementController (world-zone placement).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,6 +29,7 @@ WorkshopTab.showPromptModal = nil :: any
 WorkshopTab.contentFrame = nil :: any
 WorkshopTab.screenGui = nil :: any
 WorkshopTab.onRefreshNeeded = nil :: (() -> ())?
+WorkshopTab.onRequestClose = nil :: (() -> ())?
 
 -- State
 local _pendingCrafts: { any } = {}
@@ -758,15 +760,21 @@ function WorkshopTab.render()
 			createCorner(equipBtn, 4)
 
 			if isProp then
-				-- World-zone prop placement is not built yet (the old plot-based
-				-- path was removed). Shown disabled until that feature lands.
-				equipBtn.BackgroundColor3 = COLORS.textDim
-				equipBtn.Text = "Place (soon)"
+				equipBtn.BackgroundColor3 = COLORS.accent
+				equipBtn.Text = "Place"
 				equipBtn.TextColor3 = COLORS.bg
 				equipBtn.TextSize = 10
 				equipBtn.Font = Enum.Font.GothamBold
-				equipBtn.AutoButtonColor = false
-				equipBtn.Active = false
+				equipBtn.MouseButton1Click:Connect(function()
+					local controller = Knit.GetController("PropPlacementController")
+					if controller then
+						controller:BeginPlacement(item)
+					end
+					-- Close the backpack so the world is clickable for placement.
+					if WorkshopTab.onRequestClose then
+						WorkshopTab.onRequestClose()
+					end
+				end)
 			elseif isEquipped then
 				equipBtn.BackgroundColor3 = COLORS.textDim
 				equipBtn.Text = "Unequip"

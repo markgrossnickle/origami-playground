@@ -20,7 +20,9 @@
 	    render the new occupant's props into it. Runs for fresh leases and for
 	    steals (a full server reassigning a vacated slot).
 	  * Place → persist + instantiate immediately.
-	  * Remove → un-persist + destroy (the crafted item stays in inventory).
+	  * Remove → each placed model carries an owner-only "Remove" hold-prompt;
+	    triggering it un-persists + destroys (the crafted item stays in
+	    inventory).
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -106,8 +108,19 @@ local function _findCraftedModelData(userId: number, itemId: string): { [string]
 	return nil
 end
 
+-- Un-persist a placement and destroy its model. The crafted item stays in the
+-- owner's inventory (this only removes the placed instance).
+local function _doRemove(ownerUserId: number, placementId: string, model: Model?)
+	if RegionContentService ~= nil then
+		RegionContentService:RemoveProp(ownerUserId, placementId)
+	end
+	if model then
+		model:Destroy()
+	end
+end
+
 -- Build + place one prop model at its world transform, tagged for later
--- lookup (removal) and slot-clearing.
+-- lookup + slot-clearing, with an owner-only "Remove" ProximityPrompt.
 local function _spawnPropModel(
 	record: PropRecord,
 	modelData: { [string]: any },
@@ -127,6 +140,26 @@ local function _spawnPropModel(
 	model:SetAttribute("OwnerUserId", ownerUserId)
 	model:SetAttribute("SlotId", slotId)
 	model.Parent = _folder
+
+	-- Owner-only removal via hold-prompt. OrigamiBuilder sets PrimaryPart.
+	local anchor = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+	if anchor then
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ActionText = "Remove"
+		prompt.ObjectText = model.Name
+		prompt.HoldDuration = 0.5
+		prompt.MaxActivationDistance = 12
+		prompt.RequiresLineOfSight = false
+		prompt.Parent = anchor
+		prompt.Triggered:Connect(function(triggerer: Player)
+			-- Gate to the owner; non-owners see the prompt but it no-ops.
+			if triggerer.UserId ~= ownerUserId then
+				return
+			end
+			_doRemove(ownerUserId, record.id, model)
+		end)
+	end
+
 	return model
 end
 
@@ -137,15 +170,6 @@ local function _clearSlotProps(slotId: string)
 			child:Destroy()
 		end
 	end
-end
-
-local function _findModelByPlacementId(placementId: string): Model?
-	for _, child in ipairs(_folder:GetChildren()) do
-		if child:GetAttribute("PlacementId") == placementId and child:IsA("Model") then
-			return child
-		end
-	end
-	return nil
 end
 
 -- Render all of a present player's stored props into their leased slot.
@@ -232,25 +256,6 @@ function PropPlacementService.Client:PlaceProp(
 	_spawnPropModel(record, modelData, slotId, player.UserId)
 
 	return { success = true, placementId = record.id }
-end
-
-function PropPlacementService.Client:RemoveProp(player: Player, placementId: string)
-	if type(placementId) ~= "string" then
-		return { success = false, error = "invalid_args" }
-	end
-	local model = _findModelByPlacementId(placementId)
-	-- Ownership: only the owner can remove (checked against the record too).
-	if model and model:GetAttribute("OwnerUserId") ~= player.UserId then
-		return { success = false, error = "not_owner" }
-	end
-	local removed = RegionContentService:RemoveProp(player.UserId, placementId)
-	if removed == nil and model == nil then
-		return { success = false, error = "not_found" }
-	end
-	if model then
-		model:Destroy()
-	end
-	return { success = true }
 end
 
 function PropPlacementService:KnitInit() end

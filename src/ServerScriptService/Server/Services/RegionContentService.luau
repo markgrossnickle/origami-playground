@@ -54,13 +54,32 @@ local SAVE_DEBOUNCE = 6
 type ChunkDelta = { [number]: number }
 type RegionContent = { [string]: ChunkDelta }
 
+-- A placed crafted prop. Position is SLOT-LOCAL X/Z (studs from the slot's min
+-- corner) so it renders into any leased slot; ly is absolute world Y and ry is
+-- the Y rotation in radians. `itemId` references the owner's CraftedItems (the
+-- model data is looked up at render time, not duplicated here). `id` is a
+-- stable placement guid used for removal.
+export type PropRecord = {
+	id: string,
+	itemId: string,
+	lx: number,
+	ly: number,
+	lz: number,
+	ry: number,
+}
+
 type RegionData = {
 	Blob: string,
+	Props: { PropRecord },
 }
 
 local regionDataTemplate: RegionData = {
 	Blob = "",
+	Props = {},
 }
+
+-- Cap placed props per player so the region profile can't balloon.
+local MAX_PROPS = 100
 
 local RegionStore = ProfileStore.New("PlayerRegionStore_v1", regionDataTemplate)
 type Profile = ProfileStore.Profile<RegionData>
@@ -325,6 +344,54 @@ function RegionContentService:SetBlock(
 	delta[flatIndex] = blockType
 	_dirty[userId] = true
 	_scheduleSave(self, userId)
+end
+
+-- ── Placed props ─────────────────────────────────────────────────────────────
+-- Props live directly in profile.Data.Props (a small structured list, so no
+-- binary blob), persisted by the same profile:Save() the voxel Blob uses.
+
+function RegionContentService:GetProps(userId: number): { PropRecord }
+	local profile = _profiles[userId]
+	if profile == nil then
+		return {}
+	end
+	return profile.Data.Props
+end
+
+-- Append a placement. Returns false if there's no live session or the cap is
+-- hit. The caller supplies a fully-formed record (id generated upstream).
+function RegionContentService:AddProp(userId: number, prop: PropRecord): boolean
+	local profile = _profiles[userId]
+	if profile == nil then
+		return false
+	end
+	local props = profile.Data.Props
+	if #props >= MAX_PROPS then
+		return false
+	end
+	table.insert(props, prop)
+	_dirty[userId] = true
+	_scheduleSave(self, userId)
+	return true
+end
+
+-- Remove a placement by its id. Returns the removed record (for restoring the
+-- item to inventory, etc.) or nil if not found / no session.
+function RegionContentService:RemoveProp(userId: number, placementId: string): PropRecord?
+	local profile = _profiles[userId]
+	if profile == nil then
+		return nil
+	end
+	local props = profile.Data.Props
+	for i, prop in ipairs(props) do
+		if prop.id == placementId then
+			table.remove(props, i)
+			_dirty[userId] = true
+			_scheduleSave(self, userId)
+			return prop
+		end
+	end
+	return nil
 end
 
 -- Final save + session release. The release force-saves, which is what the

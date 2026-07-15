@@ -56,9 +56,6 @@ do
 	MATERIAL_DEPTH_ORDER.wood = idx
 end
 
--- Auto-positioning for creature plot assignment
-local PLOT_CREATURE_POSITIONS = { { 4, 4 }, { 12, 4 }, { 20, 4 }, { 4, 12 }, { 12, 12 } }
-
 local TABS = { "Mats", "Tools", "Critters", "Eggs", "Workshop" }
 local isMobile = UserInputService.TouchEnabled
 

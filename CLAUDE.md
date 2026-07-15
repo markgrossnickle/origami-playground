@@ -174,7 +174,6 @@ src/
         InputController.luau         # Cross-platform input handling
         UIController/init.luau       # General UI management
         ShopController/init.luau     # Shop UI
-        DailyRewardController/init.luau
         CmdrController/init.luau
       Components/                  # Client-only components
     Shared/
@@ -365,7 +364,7 @@ Before shipping any UI change, verify:
 
 ## Built-in Services
 
-See template documentation for: **MonetizationService**, **AnalyticsService**, **ShopService/ShopController**, **DailyRewardController**, **LiveConfigService**, **Cmdr**. Config files in `src/ReplicatedStorage/Shared/` (`MonetizationConfig.luau`, `ShopConfig.luau`, `GameConfig.luau`).
+See template documentation for: **MonetizationService**, **AnalyticsService**, **ShopService/ShopController**, **LiveConfigService**, **Cmdr**. Config files in `src/ReplicatedStorage/Shared/` (`MonetizationConfig.luau`, `ShopConfig.luau`, `GameConfig.luau`).
 
 ## Git Workflow
 

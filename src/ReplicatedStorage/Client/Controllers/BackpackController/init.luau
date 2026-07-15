@@ -1655,6 +1655,13 @@ function BackpackController:KnitStart()
 		end
 	end
 
+	-- Close the backpack (e.g. so the world is clickable for prop placement).
+	WorkshopTab.onRequestClose = function()
+		if _visible then
+			togglePanel()
+		end
+	end
+
 	task.delay(2, function()
 		buildUI()
 	end)

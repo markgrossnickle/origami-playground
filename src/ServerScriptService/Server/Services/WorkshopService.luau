@@ -2,7 +2,7 @@
 	WorkshopService — craft accessories, tools, costumes, and props from mining materials.
 	Validates recipes, deducts materials, calls OrigamiService for LLM model data,
 	creates PendingCraft entries with timers, and handles equip/unequip.
-	(World-zone prop placement is a separate, upcoming feature.)
+	(Prop placement in the world lives in PropPlacementService.)
 ]]
 
 local HttpService = game:GetService("HttpService")

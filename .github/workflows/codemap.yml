@@ -1,0 +1,24 @@
+name: CODEMAP
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  codemap:
+    name: CODEMAP.md is current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # codemap.py is stdlib-only, and ubuntu-latest ships python3 -- no deps
+      # to install and no setup-python step needed.
+      - name: Regenerate CODEMAP.md
+        run: python3 scripts/codemap.py . --top 40 --out CODEMAP.md
+
+      - name: Fail if CODEMAP.md is stale
+        run: |
+          if ! git diff --exit-code CODEMAP.md; then
+            echo "::error file=CODEMAP.md::CODEMAP.md is stale. Regenerate it with 'python3 scripts/codemap.py . --top 40 --out CODEMAP.md' and commit the result."
+            exit 1
+          fi

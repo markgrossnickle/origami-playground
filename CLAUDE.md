@@ -545,3 +545,33 @@ end)
 - Components named `*Component` (auto-discovered by bootstrap)
 - Use Promises for async, Trove for cleanup, Signal for events
 - Clean up player data on `Players.PlayerRemoving`
+
+## CODEMAP.md — keep it current
+
+`CODEMAP.md` at the repo root is this repo's compact structural map: language stats, entry
+points, the directory tree, and the **top 40 files by importance** with their key symbols. It
+exists to brief AI sessions on the shape of this codebase in one short read, instead of paying
+for a crawl over the whole tree to rediscover the same structure every session.
+
+It is an **orientation artifact, not an index** — it deliberately does not list every file.
+The `--top 40` cap is what keeps it worth reading; a full dump would cost more to read than
+the exploration it is meant to replace. Keep it under ~300 lines.
+
+**It MUST be kept current.** Regenerate it before committing any structural change — adding,
+removing, renaming, or moving files, or changing a module's public symbols:
+
+```bash
+python3 scripts/codemap.py . --top 40 --out CODEMAP.md
+```
+
+Commit the regenerated `CODEMAP.md` in the same commit as the change that caused it.
+
+**A stale codemap COSTS tokens instead of saving them.** This is the whole point, so be
+plain about it: a map that disagrees with the tree is worse than no map at all. It points
+sessions at files that moved or no longer exist, hides the ones that now matter, and is
+trusted right up until it wastes a search — at which point the session pays twice, once for
+reading the map and again for the crawl it was supposed to prevent. A map is only a saving
+while it is true. Keeping it current is critical.
+
+CI enforces this: `.github/workflows/codemap.yml` regenerates the map on every push and pull
+request and fails the build if the committed copy differs.

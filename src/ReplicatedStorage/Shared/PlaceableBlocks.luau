@@ -2,7 +2,7 @@
 --[[
 	PlaceableBlocks — single source of truth for which inventory items are
 	placeable in the voxel world, and how they look in the hotbar/backpack
-	UIs. Replaces PlotConfig.PLACEABLE_BLOCKS (deprecated in Phase 2).
+	UIs.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

@@ -57,19 +57,10 @@ export type PlayerData = {
 	BlocksMined: number,
 	DepthReached: number,
 
-	-- Surface Plots — DEPRECATED in Phase 2. PlotService no longer registers
-	-- with Knit; the field is retained orphaned to avoid a profile schema bump.
-	PlotData: {
-		plotIndex: number, -- -1 = unclaimed
-		placedBlocks: { [string]: string }, -- "x,y,z" = materialItemId
-		assignedCreatures: { { creatureId: string, localX: number, localZ: number } },
-	},
-
 	-- Workshop Crafting
 	PendingCrafts: { any }, -- workshop craft queue (max 3)
 	CraftedItems: { any }, -- completed items collection (max 50)
 	Equipped: { accessory: string?, tool: string?, costume: string? },
-	PlacedProps: { { itemId: string, localX: number, localY: number, localZ: number } },
 }
 
 local playerDataTemplate: PlayerData = {
@@ -106,16 +97,9 @@ local playerDataTemplate: PlayerData = {
 	BlocksMined = 0,
 	DepthReached = 0,
 
-	PlotData = {
-		plotIndex = -1,
-		placedBlocks = {},
-		assignedCreatures = {},
-	},
-
 	PendingCrafts = {},
 	CraftedItems = {},
 	Equipped = {},
-	PlacedProps = {},
 }
 
 return playerDataTemplate

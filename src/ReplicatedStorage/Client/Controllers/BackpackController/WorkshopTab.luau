@@ -1,6 +1,7 @@
 --[[
 	WorkshopTab — renders the Workshop tab inside the BackpackController.
-	Handles type filters, pending crafts, recipe cards, crafted items, and equip/place actions.
+	Handles type filters, pending crafts, recipe cards, crafted items, and equip actions.
+	(Prop placement is disabled until world-zone prop placement ships.)
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -322,38 +323,6 @@ local function renameItem(itemId: string, card: Frame, nameLabel: TextLabel)
 		end
 		nameLabel.Visible = true
 		renameBox:Destroy()
-	end)
-end
-
-local function placeProp(itemId: string, button: TextButton?)
-	task.spawn(function()
-		if button then
-			button.Text = "Placing..."
-		end
-		-- Place at a default position on the plot (center, ground level)
-		local WorkshopService = Knit.GetService("WorkshopService")
-		local result = WorkshopService:PlaceProp(itemId, 12, 0, 12):await()
-
-		if result and result.success then
-			if button and button.Parent then
-				button.Text = "Placed!"
-				button.BackgroundColor3 = WorkshopTab.COLORS.success
-				task.delay(1.5, function()
-					if WorkshopTab.onRefreshNeeded then
-						WorkshopTab.onRefreshNeeded()
-					end
-				end)
-			end
-		elseif button and button.Parent then
-			button.Text = result and result.error or "Failed"
-			button.BackgroundColor3 = WorkshopTab.COLORS.error
-			task.delay(2, function()
-				if button.Parent then
-					button.Text = "Place"
-					button.BackgroundColor3 = WorkshopTab.COLORS.accent
-				end
-			end)
-		end
 	end)
 end
 
@@ -789,14 +758,15 @@ function WorkshopTab.render()
 			createCorner(equipBtn, 4)
 
 			if isProp then
-				equipBtn.BackgroundColor3 = COLORS.accent
-				equipBtn.Text = "Place"
+				-- World-zone prop placement is not built yet (the old plot-based
+				-- path was removed). Shown disabled until that feature lands.
+				equipBtn.BackgroundColor3 = COLORS.textDim
+				equipBtn.Text = "Place (soon)"
 				equipBtn.TextColor3 = COLORS.bg
 				equipBtn.TextSize = 10
 				equipBtn.Font = Enum.Font.GothamBold
-				equipBtn.MouseButton1Click:Connect(function()
-					placeProp(item.id, equipBtn)
-				end)
+				equipBtn.AutoButtonColor = false
+				equipBtn.Active = false
 			elseif isEquipped then
 				equipBtn.BackgroundColor3 = COLORS.textDim
 				equipBtn.Text = "Unequip"

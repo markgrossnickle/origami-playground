@@ -55,10 +55,12 @@ type ChunkDelta = { [number]: number }
 type RegionContent = { [string]: ChunkDelta }
 
 -- A placed crafted prop. Position is SLOT-LOCAL X/Z (studs from the slot's min
--- corner) so it renders into any leased slot; ly is absolute world Y and ry is
--- the Y rotation in radians. `itemId` references the owner's CraftedItems (the
--- model data is looked up at render time, not duplicated here). `id` is a
--- stable placement guid used for removal.
+-- corner) so it renders into any leased slot; ly is the height ABOVE the
+-- procedural ground surface (re-grounded to the current slot's terrain at
+-- render, so props don't float/sink when terrain height differs between
+-- slots); ry is the Y rotation in radians. `itemId` references the owner's
+-- CraftedItems (the model data is looked up at render time, not duplicated
+-- here). `id` is a stable placement guid used for removal.
 export type PropRecord = {
 	id: string,
 	itemId: string,

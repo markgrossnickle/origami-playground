@@ -33,13 +33,15 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local OrigamiBuilder = require(ReplicatedStorage.Shared.OrigamiBuilder)
 local RegionConfig = require(ReplicatedStorage.Shared.RegionConfig)
 local ZoneRegistry = require(ReplicatedStorage.Shared.ZoneRegistry)
+local WorldGenModule = require(ReplicatedStorage.Shared.WorldGenModule)
 
 local FOLDER_NAME = "PlacedProps"
 local MAX_PLACE_DISTANCE = 60 -- studs from the player to the placement point
 local PLACE_COOLDOWN = 0.25 -- seconds between placements per player
 
 -- Mirror of RegionContentService.PropRecord (kept local to avoid requiring the
--- service just for its type).
+-- service just for its type). ly is the height ABOVE the procedural ground
+-- surface (not absolute Y), so props re-ground to the current slot's terrain.
 type PropRecord = {
 	id: string,
 	itemId: string,
@@ -59,6 +61,7 @@ local RegionContentService
 local PlayerDataService
 
 local _folder: Folder
+local _seed = 0 -- world seed, for the deterministic surface-height lookup
 local _lastPlace: { [Player]: number } = {}
 
 local function _isFinite(n: number): boolean
@@ -148,7 +151,11 @@ local function _spawnPropModel(
 			part.Anchored = true
 		end
 	end
-	model:PivotTo(CFrame.new(wx, record.ly, wz) * CFrame.Angles(0, record.ry, 0))
+	-- Re-ground: record.ly is the height above the PROCEDURAL surface, so a
+	-- prop sits the same distance above the terrain in whatever slot it renders
+	-- into, even though the terrain height differs between slots.
+	local groundY = WorldGenModule.getSurfaceWorldY(_seed, wx, wz)
+	model:PivotTo(CFrame.new(wx, groundY + record.ly, wz) * CFrame.Angles(0, record.ry, 0))
 	model:SetAttribute("PlacementId", record.id)
 	model:SetAttribute("OwnerUserId", ownerUserId)
 	model:SetAttribute("SlotId", slotId)
@@ -276,11 +283,15 @@ function PropPlacementService.Client:PlaceProp(
 		return { success = false, error = "bad_slot" }
 	end
 
+	-- Store Y as the height above the procedural surface (not absolute), so it
+	-- re-grounds correctly when the region renders in a slot whose terrain sits
+	-- at a different height.
+	local groundY = WorldGenModule.getSurfaceWorldY(_seed, wx, wz)
 	local record = {
 		id = HttpService:GenerateGUID(false),
 		itemId = itemId,
 		lx = lx,
-		ly = wy,
+		ly = wy - groundY,
 		lz = lz,
 		ry = ry,
 	}
@@ -299,6 +310,7 @@ function PropPlacementService:KnitStart()
 	RegionService = Knit.GetService("RegionService")
 	RegionContentService = Knit.GetService("RegionContentService")
 	PlayerDataService = Knit.GetService("PlayerDataService")
+	_seed = Knit.GetService("WorldService"):GetSeed()
 
 	_folder = Instance.new("Folder")
 	_folder.Name = FOLDER_NAME

@@ -166,9 +166,12 @@ local function _loadRegionDeltas(regionKey: string): { [string]: { [string]: num
 	return nil
 end
 
-local function _saveRegionDeltas(regionKey: string, regionData: { [string]: { [string]: number } })
+-- Returns true if the region is durably saved (or Studio, where we don't
+-- persist), false if the SetAsync failed — the caller re-marks it dirty so the
+-- next save cycle retries instead of silently dropping it.
+local function _saveRegionDeltas(regionKey: string, regionData: { [string]: { [string]: number } }): boolean
 	if RunService:IsStudio() then
-		return
+		return true
 	end
 
 	local store = WorldStore :: DataStore
@@ -177,13 +180,14 @@ local function _saveRegionDeltas(regionKey: string, regionData: { [string]: { [s
 	end)
 	if not success then
 		warn("[WorldService] Failed to save region", regionKey, ":", err)
-		return
+		return false
 	end
 	-- Track the key so the Wilds reset can find it later.
 	if not regionIndex[regionKey] then
 		regionIndex[regionKey] = true
 		regionIndexDirty = true
 	end
+	return true
 end
 
 local function _loadRegionIndex()
@@ -647,12 +651,25 @@ function WorldService:_saveAllDirtyRegions()
 	end
 
 	_saveInProgress = true
+	local failedRegions: { string } = {}
 	for regionKey in dirtyRegionsSnapshot do
-		self:_saveRegion(regionKey, deltasByRegion[regionKey])
+		if not self:_saveRegion(regionKey, deltasByRegion[regionKey]) then
+			table.insert(failedRegions, regionKey)
+		end
 		task.wait()
 	end
 	_persistRegionIndex()
 	_saveInProgress = false
+
+	-- Re-mark regions whose DataStore write failed so the next cycle retries
+	-- them. Without this a failed save was silently dropped — the deltas lived
+	-- only in savedDeltas (memory) until the next edit happened to re-dirty the
+	-- region, so a crash in between lost them. The data is preserved by the
+	-- background merge below, and _saveRegion pulls a region's savedDeltas on
+	-- the retry, so re-flagging alone is enough to re-attempt the write.
+	for _, regionKey in failedRegions do
+		dirtyRegions[regionKey] = true
+	end
 
 	-- Merge into savedDeltas in the background, frame-budgeted. The snapshot
 	-- is owned by this closure so nothing else can observe a half-merged
@@ -676,7 +693,10 @@ function WorldService:_saveAllDirtyRegions()
 	end)
 end
 
-function WorldService:_saveRegion(regionKey: string, regionDeltas: { [number]: ChunkDelta }?)
+-- Returns false if the region had data but its DataStore write failed (so the
+-- caller can re-mark it dirty and retry); true otherwise (saved, or nothing to
+-- save).
+function WorldService:_saveRegion(regionKey: string, regionDeltas: { [number]: ChunkDelta }?): boolean
 	-- DataStore key format is string "cx,cy,cz" for backward compatibility.
 	local regionData: { [string]: { [string]: number } } = {}
 
@@ -718,8 +738,9 @@ function WorldService:_saveRegion(regionKey: string, regionDeltas: { [number]: C
 	end
 
 	if next(regionData) then
-		_saveRegionDeltas(regionKey, regionData)
+		return _saveRegionDeltas(regionKey, regionData)
 	end
+	return true
 end
 
 function WorldService:_evictUnusedChunks(): number

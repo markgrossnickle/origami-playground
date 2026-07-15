@@ -4,7 +4,6 @@ local BlockType = require(script.Parent.Enums.BlockType)
 
 export type OreConfig = {
 	blockType: number,
-	chance: number,
 	veinSize: { min: number, max: number },
 	veinsPerChunk: number,
 }
@@ -130,7 +129,7 @@ BiomeConfig.DepthLayers = {
 		surfaceBlock = BlockType.PaperGrass,
 		subsurfaceBlock = BlockType.Paper,
 		ores = {
-			{ blockType = BlockType.InkdropOre, chance = 0.30, veinSize = { min = 3, max = 8 }, veinsPerChunk = 22 },
+			{ blockType = BlockType.InkdropOre, veinSize = { min = 3, max = 8 }, veinsPerChunk = 22 },
 		},
 		eggChance = 0,
 	} :: DepthLayer,
@@ -143,7 +142,7 @@ BiomeConfig.DepthLayers = {
 		primaryBlock = BlockType.Pulp,
 		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.ClayBeadOre, chance = 0.25, veinSize = { min = 3, max = 8 }, veinsPerChunk = 19 },
+			{ blockType = BlockType.ClayBeadOre, veinSize = { min = 3, max = 8 }, veinsPerChunk = 19 },
 		},
 		eggChance = 0.01,
 	} :: DepthLayer,
@@ -156,7 +155,7 @@ BiomeConfig.DepthLayers = {
 		primaryBlock = BlockType.FoldedStone,
 		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.QuartzOre, chance = 0.20, veinSize = { min = 3, max = 8 }, veinsPerChunk = 15 },
+			{ blockType = BlockType.QuartzOre, veinSize = { min = 3, max = 8 }, veinsPerChunk = 15 },
 		},
 		eggChance = 0.02,
 	} :: DepthLayer,
@@ -171,7 +170,6 @@ BiomeConfig.DepthLayers = {
 		ores = {
 			{
 				blockType = BlockType.GemFragmentOre,
-				chance = 0.15,
 				veinSize = { min = 3, max = 8 },
 				veinsPerChunk = 11,
 			},
@@ -187,7 +185,7 @@ BiomeConfig.DepthLayers = {
 		primaryBlock = BlockType.Crystal,
 		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.FoilShardOre, chance = 0.117, veinSize = { min = 3, max = 8 }, veinsPerChunk = 9 },
+			{ blockType = BlockType.FoilShardOre, veinSize = { min = 3, max = 8 }, veinsPerChunk = 9 },
 		},
 		eggChance = 0.04,
 	} :: DepthLayer,
@@ -200,7 +198,7 @@ BiomeConfig.DepthLayers = {
 		primaryBlock = BlockType.VoidStone,
 		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.ShadowWispOre, chance = 0.083, veinSize = { min = 3, max = 8 }, veinsPerChunk = 6 },
+			{ blockType = BlockType.ShadowWispOre, veinSize = { min = 3, max = 8 }, veinsPerChunk = 6 },
 		},
 		eggChance = 0.05,
 	} :: DepthLayer,
@@ -213,7 +211,7 @@ BiomeConfig.DepthLayers = {
 		primaryBlock = BlockType.PrismaticBlock,
 		secondaryBlock = nil,
 		ores = {
-			{ blockType = BlockType.PrismCoreOre, chance = 0.05, veinSize = { min = 3, max = 8 }, veinsPerChunk = 4 },
+			{ blockType = BlockType.PrismCoreOre, veinSize = { min = 3, max = 8 }, veinsPerChunk = 4 },
 		},
 		eggChance = 0.08,
 	} :: DepthLayer,

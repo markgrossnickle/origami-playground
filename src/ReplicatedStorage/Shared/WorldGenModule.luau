@@ -560,13 +560,15 @@ local solidBlocks: { [number]: boolean } = {
 	[BlockType.PrismCoreOre] = true,
 }
 
+-- Ore density is governed entirely by veinsPerChunk (tuned per layer to the
+-- GDD's ~3%/1.5%/0.5% block-fraction targets: veinsPerChunk * avg-vein-length
+-- / blocks-per-chunk). oreMult applies the zone scaling (Wilds 1.0, Regions
+-- 0.1, Hearth 0.0). There is no separate per-vein spawn probability — an
+-- earlier `chance` guard here was a no-op for the top layers and silently
+-- halved the deepest ore, so it was removed.
 local function placeOreVeins(blocks: buffer, rng: () -> number, oreConfig: BiomeConfig.OreConfig, oreMult: number)
 	local veins = math.floor(oreConfig.veinsPerChunk * oreMult * Config.oreFrequencyMultiplier + 0.5)
 	for _ = 1, veins do
-		if rng() > oreConfig.chance * 10 then
-			continue
-		end
-
 		local startX = math.floor(rng() * CHUNK_SIZE)
 		local startY = math.floor(rng() * CHUNK_SIZE)
 		local startZ = math.floor(rng() * CHUNK_SIZE)

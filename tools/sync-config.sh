@@ -52,7 +52,6 @@ ALWAYS_SYNC=(
     "src/ServerScriptService/Server/Services/CmdrService/Commands/GameVersion.luau"
 
     # Template controllers
-    "src/ReplicatedStorage/Client/Controllers/DailyRewardController/init.luau"
     "src/ReplicatedStorage/Client/Controllers/ShopController/init.luau"
 
     # Sync tool itself

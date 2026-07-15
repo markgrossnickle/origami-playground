@@ -30,12 +30,13 @@ local PropPlacementController = Knit.CreateController({
 
 local RAY_LENGTH = 600
 local ROTATE_STEP = math.rad(45)
+local MAX_PLACE_DISTANCE = 60 -- mirrors PropPlacementService so the tint matches
 local COLOR_VALID = Color3.fromRGB(90, 220, 120)
 local COLOR_INVALID = Color3.fromRGB(220, 90, 90)
 
 local _mySlotId: string = ""
 local _active = false
-local _itemId: string? = nil
+local _item: { [string]: any }? = nil
 local _ghost: Model? = nil
 local _highlight: Highlight? = nil
 local _rotationY = 0
@@ -44,7 +45,7 @@ local _renderConn: RBXScriptConnection? = nil
 
 local function _cleanup()
 	_active = false
-	_itemId = nil
+	_item = nil
 	_rotationY = 0
 	_validNow = false
 	if _renderConn then
@@ -117,8 +118,16 @@ local function _onRender()
 	end
 	local pivotPos = _positionGhost(hit)
 	_pendingPlacePos = pivotPos
-	-- Valid only inside our own leased slot.
-	_validNow = _mySlotId ~= "" and ZoneRegistry.getRegionAt(hit.X, hit.Z) == _mySlotId
+	-- Valid only inside our own leased slot AND within the server's reach — so
+	-- the green tint doesn't promise a placement the server will reject.
+	local inRegion = _mySlotId ~= "" and ZoneRegistry.getRegionAt(hit.X, hit.Z) == _mySlotId
+	local inReach = true
+	local character = LocalPlayer.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hrp then
+		inReach = (hrp.Position - pivotPos).Magnitude <= MAX_PLACE_DISTANCE
+	end
+	_validNow = inRegion and inReach
 	if _highlight then
 		_highlight.FillColor = if _validNow then COLOR_VALID else COLOR_INVALID
 		_highlight.OutlineColor = if _validNow then COLOR_VALID else COLOR_INVALID
@@ -126,18 +135,24 @@ local function _onRender()
 end
 
 local function _commitPlacement()
-	if not _active or not _validNow or _pendingPlacePos == nil or _itemId == nil then
+	if not _active or not _validNow or _pendingPlacePos == nil or _item == nil then
 		return
 	end
 	local pos = _pendingPlacePos
-	local itemId = _itemId
+	local item = _item
 	local ry = _rotationY
 	_cleanup()
 
 	task.spawn(function()
 		local PropPlacementService = Knit.GetService("PropPlacementService")
-		if PropPlacementService then
-			PropPlacementService:PlaceProp(itemId, pos.X, pos.Y, pos.Z, ry):await()
+		if not PropPlacementService then
+			return
+		end
+		local ok, result = PropPlacementService:PlaceProp(item.id, pos.X, pos.Y, pos.Z, ry):await()
+		-- On server rejection, re-enter placement so the ghost isn't silently
+		-- lost — the player can reposition and try again.
+		if not ok or type(result) ~= "table" or result.success ~= true then
+			PropPlacementController:BeginPlacement(item)
 		end
 	end)
 end
@@ -173,7 +188,7 @@ function PropPlacementController:BeginPlacement(craftedItem: { [string]: any })
 
 	_ghost = ghost
 	_highlight = highlight
-	_itemId = craftedItem.id
+	_item = craftedItem
 	_rotationY = 0
 	_active = true
 	_renderConn = RunService.RenderStepped:Connect(_onRender)

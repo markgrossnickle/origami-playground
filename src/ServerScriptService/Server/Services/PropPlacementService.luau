@@ -61,6 +61,10 @@ local PlayerDataService
 local _folder: Folder
 local _lastPlace: { [Player]: number } = {}
 
+local function _isFinite(n: number): boolean
+	return n == n and n ~= math.huge and n ~= -math.huge
+end
+
 -- ── Coordinate mapping (stud-space, mirrors the voxel local↔world scheme) ──
 -- A slot's min XZ corner in studs; local prop coords are relative to it.
 local function _slotOrigin(slotId: string): (number?, number?)
@@ -135,6 +139,15 @@ local function _spawnPropModel(
 	if not ok or model == nil then
 		return nil
 	end
+	-- Force every part static. OrigamiBuilder honors `anchored=false` parts and
+	-- builds velocity/spring/hinge constraints, so an un-anchored prop would
+	-- physics-simulate and drift/fly on the server (and to everyone). A placed
+	-- decoration must stay put; anchored parts ignore forces + constraints.
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+		end
+	end
 	model:PivotTo(CFrame.new(wx, record.ly, wz) * CFrame.Angles(0, record.ry, 0))
 	model:SetAttribute("PlacementId", record.id)
 	model:SetAttribute("OwnerUserId", ownerUserId)
@@ -173,16 +186,25 @@ local function _clearSlotProps(slotId: string)
 end
 
 -- Render all of a present player's stored props into their leased slot.
+-- Placements whose crafted item no longer exists (deleted/re-crafted) are
+-- pruned so they don't accumulate against the per-player cap forever.
 local function _renderPropsForSlot(player: Player, slotId: string)
 	if RegionContentService == nil then
 		return
 	end
 	local props = RegionContentService:GetProps(player.UserId)
+	local orphanIds: { string } = {}
+	-- Snapshot ids first: pruning mutates the underlying list.
 	for _, record in ipairs(props) do
 		local modelData = _findCraftedModelData(player.UserId, record.itemId)
 		if modelData then
 			_spawnPropModel(record, modelData, slotId, player.UserId)
+		else
+			table.insert(orphanIds, record.id)
 		end
+	end
+	for _, id in orphanIds do
+		RegionContentService:RemoveProp(player.UserId, id)
 	end
 end
 
@@ -199,16 +221,25 @@ function PropPlacementService.Client:PlaceProp(
 	if type(itemId) ~= "string" or type(wx) ~= "number" or type(wy) ~= "number" or type(wz) ~= "number" then
 		return { success = false, error = "invalid_args" }
 	end
-	if type(ry) ~= "number" or ry ~= ry then -- reject NaN rotation
+	-- NaN/Inf ARE numbers, so they slip the type check AND the range check
+	-- (`NaN > 60` is false). Storing a non-finite coord poisons profile.Data
+	-- and the next DataStore save (shared with the voxel Blob) throws, silently
+	-- breaking the whole region profile. Reject them up front.
+	if not (_isFinite(wx) and _isFinite(wy) and _isFinite(wz)) then
+		return { success = false, error = "bad_coord" }
+	end
+	if type(ry) ~= "number" or not _isFinite(ry) then
 		ry = 0
 	end
 
-	-- Rate limit.
+	-- Rate limit ALL attempts (rejected ones too, so failures can't be spammed
+	-- to burn CPU on getRegionAt + profile reads).
 	local now = os.clock()
 	local last = _lastPlace[player]
 	if last and (now - last) < PLACE_COOLDOWN then
 		return { success = false, error = "cooldown" }
 	end
+	_lastPlace[player] = now
 
 	-- Must be inside the player's OWN leased slot.
 	local slotId = RegionService and RegionService:GetLeasedSlot(player.UserId)
@@ -234,6 +265,11 @@ function PropPlacementService.Client:PlaceProp(
 	if modelData == nil then
 		return { success = false, error = "not_a_prop" }
 	end
+	-- Reject a model with no parts — it can't get a PrimaryPart, so its removal
+	-- prompt would never attach and it'd become an un-removable cap slot.
+	if type(modelData.parts) ~= "table" or #modelData.parts == 0 then
+		return { success = false, error = "empty_model" }
+	end
 
 	local lx, lz = _worldToLocalXZ(slotId, wx, wz)
 	if lx == nil or lz == nil then
@@ -252,7 +288,6 @@ function PropPlacementService.Client:PlaceProp(
 		return { success = false, error = "limit_reached" }
 	end
 
-	_lastPlace[player] = now
 	_spawnPropModel(record, modelData, slotId, player.UserId)
 
 	return { success = true, placementId = record.id }

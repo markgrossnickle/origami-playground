@@ -489,7 +489,8 @@ local function createUI()
 	categoryLayout.Parent = categoryRow
 
 	for _, cat in ipairs(OrigamiConfig.CATEGORIES) do
-		-- Animation category is handled by AnimatorController
+		-- Animation has no in-creator UI (the AnimatorController was removed),
+		-- so skip its category button.
 		if cat.key == "animation" then
 			continue
 		end
@@ -2387,8 +2388,8 @@ function spawnCreature(model: Model, modelData: { [string]: any })
 	addNameLabel(model, modelName)
 	registerSpawnedModel(model, modelData)
 
-	-- Start creature AI (shared module handles locomotion + animation)
-	-- Store cleanup function so EditController can pause/resume AI
+	-- Start creature AI (shared module handles locomotion + animation).
+	-- Keep the returned stop-handle on the entry so cleanup can halt it later.
 	local stopAI = CreatureAI.Start(model, modelData, model:GetPivot().Position, { model, character })
 	-- Attach stopAI to the entry we just registered
 	local entry = _spawnedModels[#_spawnedModels]
@@ -3044,46 +3045,6 @@ function CreatorController:KnitStart()
 			CreatorController:CloseShop()
 		end
 	end)
-end
-
--- ═══════════════════════════════════════════════════════════════════
--- Public API for EditController
--- ═══════════════════════════════════════════════════════════════════
-
-function CreatorController:GetSpawnedModels()
-	return _spawnedModels
-end
-
-function CreatorController:RemoveSpawnedModel(model: Model)
-	for i, entry in ipairs(_spawnedModels) do
-		if entry.model == model then
-			if entry.stopAI then
-				entry.stopAI()
-			end
-			if model.Parent then
-				model:Destroy()
-			end
-			table.remove(_spawnedModels, i)
-			break
-		end
-	end
-end
-
-function CreatorController:RestartCreatureAI(model: Model, modelData: { [string]: any })
-	local character = Player.Character
-	local excludeList = { model }
-	if character then
-		table.insert(excludeList, character)
-	end
-	local stopAI = CreatureAI.Start(model, modelData, model:GetPivot().Position, excludeList)
-	-- Update the entry in _spawnedModels
-	for _, entry in ipairs(_spawnedModels) do
-		if entry.model == model then
-			entry.stopAI = stopAI
-			break
-		end
-	end
-	return stopAI
 end
 
 return CreatorController

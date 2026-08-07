@@ -73,6 +73,35 @@ function ShopController:_buildUI()
 	}) :: ScreenGui
 	self._shopGui = gui
 
+	-- Always-visible toggle button in its own ScreenGui (the shop gui itself
+	-- is Enabled=false while closed). Without this, touch players had no way
+	-- to open the shop at all — the only bindings were keyboard B / gamepad Y.
+	-- Sits just below the Backpack toggle on the left edge.
+	local toggleGui = createInstance("ScreenGui", {
+		Name = "ShopToggleGui",
+		ResetOnSpawn = false,
+		DisplayOrder = 9,
+		Parent = PlayerGui,
+	}) :: ScreenGui
+
+	local toggleSize = if IS_MOBILE then 48 else 44
+	local toggleBtn = createInstance("TextButton", {
+		Name = "ShopToggle",
+		Size = UDim2.fromOffset(toggleSize, toggleSize),
+		Position = UDim2.new(0, 10, 0.5, toggleSize + 8),
+		AnchorPoint = Vector2.new(0, 0.5),
+		BackgroundColor3 = Color3.fromRGB(40, 40, 55),
+		Text = "\xF0\x9F\x9B\x92", -- 🛒
+		TextSize = 22,
+		Font = Enum.Font.GothamBold,
+		TextColor3 = Color3.new(1, 1, 1),
+		Parent = toggleGui,
+	}) :: TextButton
+	createInstance("UICorner", { CornerRadius = UDim.new(0, 10), Parent = toggleBtn })
+	toggleBtn.Activated:Connect(function()
+		self:Toggle()
+	end)
+
 	-- Background overlay
 	local overlay = createInstance("Frame", {
 		Name = "Overlay",

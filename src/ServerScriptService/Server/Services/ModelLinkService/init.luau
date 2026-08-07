@@ -111,7 +111,7 @@ local function filterForBroadcast(text: string, fromUserId: number): string
 	return filtered
 end
 
---- Mint a one-time link code for the player and return it plus the website URL.
+-- Mint a one-time link code for the player and return it plus the website URL.
 function ModelLinkService.Client:GetLinkCode(player: Player)
 	local ok, data = postJson("/api/link/start", { user_id = tostring(player.UserId) })
 	if not ok then
@@ -132,7 +132,7 @@ function ModelLinkService.Client:GetLinkCode(player: Player)
 	}
 end
 
---- Whether the player has a linked model and which provider (no secrets are
+-- Whether the player has a linked model and which provider (no secrets are
 -- ever returned by the server).
 function ModelLinkService.Client:IsLinked(player: Player)
 	local apiUrl = getApiUrl()
@@ -166,7 +166,7 @@ function ModelLinkService.Client:IsLinked(player: Player)
 	}
 end
 
---- Demo feature: ask the player's linked model a prompt and return the
+-- Demo feature: ask the player's linked model a prompt and return the
 -- text-filtered response. Optionally gated behind the model subscription.
 function ModelLinkService.Client:AskModel(player: Player, prompt: string)
 	-- Subscription gate (bypassed while ModelLinkConfig.GateEnabled is false).

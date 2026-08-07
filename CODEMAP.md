@@ -1,6 +1,6 @@
 # CodeMap: origami-playground
 
-_267 files | 79,928 LOC | source: git ls-files_
+_268 files | 79,989 LOC | source: git ls-files_
 
 ## Stats
 
@@ -10,7 +10,7 @@ _267 files | 79,928 LOC | source: git ls-files_
 | JSON | 82 | 35,805 |
 | Python | 10 | 2,269 |
 | other | 7 | 422 |
-| Markdown | 6 | 1,746 |
+| Markdown | 7 | 1,807 |
 | TOML | 5 | 71 |
 | YAML | 4 | 180 |
 | Shell | 3 | 572 |
@@ -39,7 +39,7 @@ tools/  (82 files, 37,699 LOC)
 ... +6 asset-only directories (no code)
 ```
 
-## Key files (40 of 267, ranked)
+## Key files (40 of 268, ranked)
 
 - `src/ReplicatedStorage/Shared/WorldGenModule.luau` (2537 L) **[<-5]**
   - WorldGenModule, :generateChunk(), :getSpawnPosition(), :getSurfaceWorldY(), :getSurfaceBlockY(), :getSeaLevelBlock(), :getWorldRadiusChunks(), :getStructureName(), :verifyDeterminism(), local _yieldIfBudgetExceeded(), local _resetBudget(), local hashSeed(), +20 more

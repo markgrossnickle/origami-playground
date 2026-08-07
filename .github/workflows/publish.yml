@@ -10,7 +10,6 @@ jobs:
   lint-and-test:
     name: Lint, Format & Test
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -18,16 +17,14 @@ jobs:
         uses: ok-nick/setup-aftman@v0.4.2
       - name: Run selene
         run: selene src --allow-warnings
-        continue-on-error: true
       - name: Check formatting
         run: stylua --check src
-        continue-on-error: true
       - name: Run tests
         run: lune run tests/runner
-        continue-on-error: true
 
   publish:
     name: Build & Publish
+    needs: lint-and-test
     runs-on: ubuntu-latest
     permissions:
       contents: write

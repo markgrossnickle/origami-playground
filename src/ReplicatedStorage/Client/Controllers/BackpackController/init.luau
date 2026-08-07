@@ -547,7 +547,7 @@ renderToolsTab = function()
 			equipBtn.Font = Enum.Font.GothamBold
 			equipBtn.Parent = card
 			createCorner(equipBtn, 4)
-			equipBtn.MouseButton1Click:Connect(function()
+			equipBtn.Activated:Connect(function()
 				equipTool(toolId)
 			end)
 		elseif toolConfig.craftRecipe then
@@ -581,7 +581,7 @@ renderToolsTab = function()
 			createCorner(craftBtn, 4)
 
 			if canCraft then
-				craftBtn.MouseButton1Click:Connect(function()
+				craftBtn.Activated:Connect(function()
 					craftTool(toolId, craftBtn)
 				end)
 			end
@@ -642,7 +642,7 @@ local function releaseCreature(creatureId: string, button: TextButton)
 	button.BackgroundColor3 = COLORS.error
 	local confirmed = false
 
-	button.MouseButton1Click:Once(function()
+	button.Activated:Once(function()
 		confirmed = true
 		task.spawn(function()
 			local CreatureService = Knit.GetService("CreatureService")
@@ -776,7 +776,7 @@ renderCreaturesTab = function()
 		spawnBtn.Font = Enum.Font.GothamBold
 		spawnBtn.Parent = card
 		createCorner(spawnBtn, 4)
-		spawnBtn.MouseButton1Click:Connect(function()
+		spawnBtn.Activated:Connect(function()
 			spawnCreatureInWorld(creature)
 		end)
 
@@ -794,7 +794,7 @@ renderCreaturesTab = function()
 		renameBtn.Font = Enum.Font.GothamBold
 		renameBtn.Parent = card
 		createCorner(renameBtn, 4)
-		renameBtn.MouseButton1Click:Connect(function()
+		renameBtn.Activated:Connect(function()
 			local nameL = card:FindFirstChild("NameLabel")
 			if not nameL then
 				return
@@ -840,7 +840,7 @@ renderCreaturesTab = function()
 		relBtn.Font = Enum.Font.GothamBold
 		relBtn.Parent = card
 		createCorner(relBtn, 4)
-		relBtn.MouseButton1Click:Connect(function()
+		relBtn.Activated:Connect(function()
 			releaseCreature(creature.id, relBtn)
 		end)
 	end
@@ -1278,7 +1278,7 @@ renderEggsTab = function()
 				hatchBtn.Font = Enum.Font.GothamBold
 				hatchBtn.Parent = card
 				createCorner(hatchBtn, 4)
-				hatchBtn.MouseButton1Click:Connect(function()
+				hatchBtn.Activated:Connect(function()
 					hatchEgg(egg.index, hatchBtn)
 				end)
 			end
@@ -1590,7 +1590,7 @@ local function buildUI()
 		tabBtn.BorderSizePixel = 0
 		tabBtn.Parent = tabBar
 
-		tabBtn.MouseButton1Click:Connect(function()
+		tabBtn.Activated:Connect(function()
 			switchTab(tabName)
 		end)
 
@@ -1610,8 +1610,8 @@ local function buildUI()
 	_contentFrame.Parent = _mainFrame
 
 	-- Event handlers
-	toggleBtn.MouseButton1Click:Connect(togglePanel)
-	closeBtn.MouseButton1Click:Connect(function()
+	toggleBtn.Activated:Connect(togglePanel)
+	closeBtn.Activated:Connect(function()
 		_visible = false
 		_mainFrame.Visible = false
 		if _eggTimerThread then

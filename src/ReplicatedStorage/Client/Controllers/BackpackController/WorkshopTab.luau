@@ -268,7 +268,7 @@ local function deleteItem(itemId: string, button: TextButton)
 	button.BackgroundColor3 = WorkshopTab.COLORS.error
 	local confirmed = false
 
-	button.MouseButton1Click:Once(function()
+	button.Activated:Once(function()
 		confirmed = true
 		task.spawn(function()
 			local WorkshopService = Knit.GetService("WorkshopService")
@@ -436,7 +436,7 @@ function WorkshopTab.render()
 				claimBtn.Font = Enum.Font.GothamBold
 				claimBtn.Parent = card
 				createCorner(claimBtn, 4)
-				claimBtn.MouseButton1Click:Connect(function()
+				claimBtn.Activated:Connect(function()
 					claimItem(craft.index, claimBtn)
 				end)
 			end
@@ -474,7 +474,7 @@ function WorkshopTab.render()
 		filterBtn.Parent = filterBar
 		createCorner(filterBtn, 4)
 
-		filterBtn.MouseButton1Click:Connect(function()
+		filterBtn.Activated:Connect(function()
 			_typeFilter = itemType
 			WorkshopTab.render()
 		end)
@@ -765,7 +765,7 @@ function WorkshopTab.render()
 				equipBtn.TextColor3 = COLORS.bg
 				equipBtn.TextSize = 10
 				equipBtn.Font = Enum.Font.GothamBold
-				equipBtn.MouseButton1Click:Connect(function()
+				equipBtn.Activated:Connect(function()
 					local controller = Knit.GetController("PropPlacementController")
 					if controller then
 						controller:BeginPlacement(item)
@@ -781,7 +781,7 @@ function WorkshopTab.render()
 				equipBtn.TextColor3 = COLORS.bg
 				equipBtn.TextSize = 10
 				equipBtn.Font = Enum.Font.GothamBold
-				equipBtn.MouseButton1Click:Connect(function()
+				equipBtn.Activated:Connect(function()
 					unequipItem(item.itemType)
 				end)
 			else
@@ -790,7 +790,7 @@ function WorkshopTab.render()
 				equipBtn.TextColor3 = COLORS.bg
 				equipBtn.TextSize = 10
 				equipBtn.Font = Enum.Font.GothamBold
-				equipBtn.MouseButton1Click:Connect(function()
+				equipBtn.Activated:Connect(function()
 					equipItem(item.id, equipBtn)
 				end)
 			end
@@ -806,7 +806,7 @@ function WorkshopTab.render()
 			renameBtn.Font = Enum.Font.GothamBold
 			renameBtn.Parent = card
 			createCorner(renameBtn, 4)
-			renameBtn.MouseButton1Click:Connect(function()
+			renameBtn.Activated:Connect(function()
 				local nl = card:FindFirstChild("NameLabel")
 				if nl then
 					renameItem(item.id, card, nl)
@@ -824,7 +824,7 @@ function WorkshopTab.render()
 			delBtn.Font = Enum.Font.GothamBold
 			delBtn.Parent = card
 			createCorner(delBtn, 4)
-			delBtn.MouseButton1Click:Connect(function()
+			delBtn.Activated:Connect(function()
 				deleteItem(item.id, delBtn)
 			end)
 		end

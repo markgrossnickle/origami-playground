@@ -268,7 +268,7 @@ end)
 | StyLua | 2.3.0 | Formatter (tabs/4, 120 cols, double quotes, Unix LF) |
 | Selene | 0.29.0 | Linter (roblox standard, excludes Packages/*) |
 | wally-package-types | 1.6.2 | Fixes Luau types for Wally packages |
-| Lune | 0.8.9 | Luau runtime for tests outside Studio |
+| Lune | 0.10.4 | Luau runtime for tests outside Studio |
 
 Managed via **aftman** (`aftman.toml`).
 

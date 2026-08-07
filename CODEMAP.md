@@ -1,18 +1,18 @@
 # CodeMap: origami-playground
 
-_265 files | 79,491 LOC | source: git ls-files_
+_265 files | 79,659 LOC | source: git ls-files_
 
 ## Stats
 
 | Language | Files | LOC |
 |---|---:|---:|
-| Luau | 148 | 38,423 |
+| Luau | 148 | 38,594 |
 | JSON | 82 | 35,805 |
 | Python | 10 | 2,269 |
 | other | 7 | 422 |
 | Markdown | 6 | 1,746 |
 | TOML | 5 | 71 |
-| YAML | 4 | 183 |
+| YAML | 4 | 180 |
 | Shell | 3 | 572 |
 
 ## Entry points
@@ -24,9 +24,9 @@ _265 files | 79,491 LOC | source: git ls-files_
 
 ```
 scripts/  (1 files, 869 LOC)
-src/  (145 files, 37,152 LOC)
-  ReplicatedStorage/  (80 files, 26,858 LOC)
-    Client/  (31 files, 13,546 LOC)
+src/  (145 files, 37,323 LOC)
+  ReplicatedStorage/  (80 files, 27,029 LOC)
+    Client/  (31 files, 13,717 LOC)
     Shared/  (49 files, 13,312 LOC)
   ServerScriptService/  (64 files, 10,288 LOC)
     Server/  (64 files, 10,288 LOC)
@@ -43,7 +43,7 @@ tools/  (82 files, 37,699 LOC)
 
 - `src/ReplicatedStorage/Shared/WorldGenModule.luau` (2537 L) **[<-5]**
   - WorldGenModule, :generateChunk(), :getSpawnPosition(), :getSurfaceWorldY(), :getSurfaceBlockY(), :getSeaLevelBlock(), :getWorldRadiusChunks(), :getStructureName(), :verifyDeterminism(), local _yieldIfBudgetExceeded(), local _resetBudget(), local hashSeed(), +20 more
-- `src/ReplicatedStorage/Client/Controllers/BackpackController/init.luau` (1767 L) **[knit]**
+- `src/ReplicatedStorage/Client/Controllers/BackpackController/init.luau` (1909 L) **[knit]**
   - BackpackController, :KnitInit(), :KnitStart(), :DespawnActiveCreature(), switchTab, local _materialNamespace(), local _materialCount(), local _canCraftTool(), local createCorner(), local clearChildren(), local formatMaterialName(), local formatTime(), +14 more
 - `src/ReplicatedStorage/Client/Controllers/CreatorController/init.luau` (3050 L) **[knit]**
   - CreatorController, :OpenShop(), :CloseShop(), :KnitInit(), :KnitStart(), updateModelHighlights, updateStyleHighlights, updateCategoryHighlights, updateTypeHighlights, clearAllCreations, addQueueEntry, updateQueueEntry, +30 more
@@ -79,6 +79,8 @@ tools/  (82 files, 37,699 LOC)
   - CreatureAI, :Start(), type AnimPartData, local foldCurve(), local classifyPart(), local applyCreatureAnimation()
 - `src/ReplicatedStorage/Client/Controllers/ReturnToBaseController.luau` (488 L) **[knit]**
   - ReturnToBaseController, :KnitInit(), :KnitStart(), local _now(), local _setFill(), local _setLabel(), local _setHint(), local _setBackground(), local _flashError(), local _disconnectChannelHooks(), local _cancelChannel(), local _isInOwnRegion(), +6 more
+- `src/ReplicatedStorage/Client/Controllers/ShopController/init.luau` (524 L) **[knit]**
+  - ShopController, :Open(), :Close(), :Toggle(), :KnitInit(), :KnitStart(), :_buildUI(), :_selectCategory(), :_populateItems(), :_promptPurchase(), :_updateCurrencyDisplay(), :_refreshAllCurrencies(), +2 more
 - `src/ServerScriptService/Server/Services/SpawnService.luau` (486 L) **[knit]**
   - SpawnService, :HandleReturnToBaseRequest(), :KnitInit(), :KnitStart(), type RtbResponse, local _placeOnPosition(), local placeOnPlatform(), local _computeRegionEdgePoint(), local _preSubscribeChunksAtPosition(), local _scheduleEdgeTeleport(), local _teleportOthersOutOfSlot(), local _ensureSlot(), +3 more
 - `src/ReplicatedStorage/Shared/Enums/BlockType.luau` (219 L) **[<-12]**
@@ -87,8 +89,6 @@ tools/  (82 files, 37,699 LOC)
   - FoldDemoData, :GetNames()
 - `src/ServerScriptService/Server/Services/RegionContentService.luau` (463 L) **[knit]**
   - RegionContentService, :Load(), :GetContent(), :GetChunkDelta(), :Save(), :SetBlock(), :GetProps(), :AddProp(), :RemoveProp(), :Unload(), :FlushAll(), :KnitInit(), +11 more
-- `src/ReplicatedStorage/Client/Controllers/ShopController/init.luau` (495 L) **[knit]**
-  - ShopController, :Open(), :Close(), :Toggle(), :KnitInit(), :KnitStart(), :_buildUI(), :_selectCategory(), :_populateItems(), :_promptPurchase(), :_updateCurrencyDisplay(), :_refreshAllCurrencies(), +2 more
 - `src/ServerScriptService/Server/Services/MonetizationService/init.luau` (431 L) **[knit]**
   - MonetizationService, :HasGamePass(), :PromptGamePass(), :PromptProduct(), :ConsumeProCreation(), :GrantProCreation(), :HasProCreation(), :GetLoginReward(), :ClaimLoginReward(), :IsPremium(), :GetPremiumMultiplier(), :HasModelSubscription(), +8 more
 - `src/ReplicatedStorage/Client/Controllers/EmoteController/init.luau` (464 L) **[knit]**

@@ -1,6 +1,7 @@
 --[[
 	BackpackController — unified inventory, tools, creatures, and eggs UI.
-	One 📦 button → tabbed modal with Materials, Tools, Critters, Eggs tabs.
+	One 📦 button → tabbed modal with Materials, Tools, Critters, Eggs,
+	Workshop, and Stats (Expedition Records) tabs.
 	Replaces EggCraftingController and CreatureController standalone UIs.
 ]]
 
@@ -17,6 +18,8 @@ local OrigamiUnfold = require(ReplicatedStorage.Shared.OrigamiUnfold)
 local CreatureAI = require(ReplicatedStorage.Shared.CreatureAI)
 local VFXUtil = require(ReplicatedStorage.Shared.VFXUtil)
 local MaterialTiers = require(ReplicatedStorage.Shared.MaterialTiers)
+local BiomeConfig = require(ReplicatedStorage.Shared.BiomeConfig)
+local ExpeditionRecords = require(ReplicatedStorage.Shared.ExpeditionRecords)
 local WorkshopTab = require(script.WorkshopTab)
 
 local Player = Players.LocalPlayer
@@ -56,7 +59,7 @@ do
 	MATERIAL_DEPTH_ORDER.wood = idx
 end
 
-local TABS = { "Mats", "Tools", "Critters", "Eggs", "Workshop" }
+local TABS = { "Mats", "Tools", "Critters", "Eggs", "Workshop", "Stats" }
 local isMobile = UserInputService.TouchEnabled
 
 -- State
@@ -119,6 +122,16 @@ local _creatures: { { [string]: any } } = {}
 local _pendingEggs: { { [string]: any } } = {}
 local _recipes: { { [string]: any } } = {}
 
+-- Expedition Records snapshot for the Stats tab (refreshed on panel open).
+local _records: ExpeditionRecords.Snapshot = {
+	blocksMined = 0,
+	depthReached = 0,
+	craftedCount = 0,
+	playTimeSeconds = 0,
+	sessionCount = 0,
+	giftsGiven = 0,
+}
+
 -- Creature spawn state
 local _activeCreatureModel: Model? = nil
 local _activeCreatureCleanup: (() -> ())? = nil
@@ -132,6 +145,7 @@ local renderToolsTab: () -> ()
 local renderCreaturesTab: () -> ()
 local renderEggsTab: () -> ()
 local renderWorkshopTab: () -> ()
+local renderRecordsTab: () -> ()
 
 -- Utility
 
@@ -188,7 +202,7 @@ end
 -- Data Fetching
 
 local function fetchAllData(callback: (() -> ())?)
-	local remaining = 6
+	local remaining = 7
 	local function onComplete()
 		remaining -= 1
 		if remaining <= 0 and callback then
@@ -240,6 +254,23 @@ local function fetchAllData(callback: (() -> ())?)
 		local ok, recipes = EggCraftingService:GetRecipes():await()
 		if ok and type(recipes) == "table" then
 			_recipes = recipes
+		end
+		onComplete()
+	end)
+
+	-- Expedition Records snapshot for the Stats tab. One full profile read;
+	-- CraftedItems is the collection array, so its length is the folded count.
+	task.spawn(function()
+		local PlayerDataService = Knit.GetService("PlayerDataService")
+		local ok, data = PlayerDataService:Read():await()
+		if ok and type(data) == "table" then
+			local profile = data :: any
+			_records.blocksMined = tonumber(profile.BlocksMined) or 0
+			_records.depthReached = tonumber(profile.DepthReached) or 0
+			_records.craftedCount = if type(profile.CraftedItems) == "table" then #profile.CraftedItems else 0
+			_records.playTimeSeconds = tonumber(profile.TotalPlayTime) or 0
+			_records.sessionCount = tonumber(profile.SessionCount) or 0
+			_records.giftsGiven = tonumber(profile.GiftsGiven) or 0
 		end
 		onComplete()
 	end)
@@ -1428,6 +1459,115 @@ renderEggsTab = function()
 	startEggTimers()
 end
 
+-- Records (Stats) Tab
+
+renderRecordsTab = function()
+	if not _contentFrame then
+		return
+	end
+	clearChildren(_contentFrame)
+
+	-- Single container so the UIListLayout dies with the tab: clearChildren
+	-- destroys GuiObjects only, and a layout parented straight to the shared
+	-- _contentFrame would leak into every other tab.
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, -8, 0, 0)
+	container.BackgroundTransparency = 1
+	container.AutomaticSize = Enum.AutomaticSize.Y
+	container.Parent = _contentFrame
+
+	local header = Instance.new("TextLabel")
+	header.Size = UDim2.new(1, 0, 0, 24)
+	header.BackgroundTransparency = 1
+	header.Text = "\xF0\x9F\x93\x9C Expedition Records" -- 📜
+	header.TextColor3 = COLORS.text
+	header.TextSize = 15
+	header.Font = Enum.Font.GothamBold
+	header.TextXAlignment = Enum.TextXAlignment.Left
+	header.LayoutOrder = 1
+	header.Parent = container
+
+	local list = Instance.new("UIListLayout")
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Padding = UDim.new(0, 8)
+	list.Parent = container
+
+	local gridFrame = Instance.new("Frame")
+	gridFrame.Size = UDim2.new(1, 0, 0, 0)
+	gridFrame.BackgroundTransparency = 1
+	gridFrame.AutomaticSize = Enum.AutomaticSize.Y
+	gridFrame.LayoutOrder = 2
+	gridFrame.Parent = container
+
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.new(0.5, -5, 0, 64)
+	grid.CellPadding = UDim2.fromOffset(10, 10)
+	grid.SortOrder = Enum.SortOrder.LayoutOrder
+	grid.Parent = gridFrame
+
+	local stats = ExpeditionRecords.buildStats(_records, BiomeConfig.DepthLayers)
+	for i, stat in stats do
+		local card = Instance.new("Frame")
+		card.BackgroundColor3 = COLORS.card
+		card.BorderSizePixel = 0
+		card.LayoutOrder = i
+		card.Parent = gridFrame
+		createCorner(card, 8)
+
+		local icon = Instance.new("TextLabel")
+		icon.Size = UDim2.new(0, 36, 1, 0)
+		icon.Position = UDim2.fromOffset(6, 0)
+		icon.BackgroundTransparency = 1
+		icon.Text = stat.icon
+		icon.TextSize = 22
+		icon.Font = Enum.Font.GothamBold
+		icon.Parent = card
+
+		local value = Instance.new("TextLabel")
+		value.Size = UDim2.new(1, -50, 0, 22)
+		value.Position = UDim2.new(0, 44, 0, 12)
+		value.BackgroundTransparency = 1
+		value.Text = stat.value
+		value.TextColor3 = COLORS.text
+		value.TextSize = 17
+		value.Font = Enum.Font.GothamBold
+		value.TextXAlignment = Enum.TextXAlignment.Left
+		value.TextTruncate = Enum.TextTruncate.AtEnd
+		value.Parent = card
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, -50, 0, 14)
+		label.Position = UDim2.new(0, 44, 0, 36)
+		label.BackgroundTransparency = 1
+		label.Text = stat.label
+		label.TextColor3 = COLORS.textDim
+		label.TextSize = 11
+		label.Font = Enum.Font.Gotham
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Parent = card
+	end
+
+	-- Flavor footer: the next layer to reach, or a completion note.
+	local layers = BiomeConfig.DepthLayers
+	local explored = ExpeditionRecords.layersExplored(_records.depthReached, layers)
+	local footer = Instance.new("TextLabel")
+	footer.Size = UDim2.new(1, 0, 0, 30)
+	footer.BackgroundTransparency = 1
+	footer.TextColor3 = COLORS.textDim
+	footer.TextSize = 12
+	footer.Font = Enum.Font.Gotham
+	footer.TextWrapped = true
+	footer.TextXAlignment = Enum.TextXAlignment.Left
+	footer.LayoutOrder = 3
+	footer.Parent = container
+	if explored < #layers then
+		local nextLayer = layers[explored + 1]
+		footer.Text = string.format("Next stop: %s — dig below %d studs!", nextLayer.name, nextLayer.minDepth)
+	else
+		footer.Text = "You've reached The Core. The paper world holds no deeper secrets... for now."
+	end
+end
+
 -- Tab Switching & Panel Toggle
 
 function switchTab(tabName: string)
@@ -1459,6 +1599,8 @@ function switchTab(tabName: string)
 		renderEggsTab()
 	elseif tabName == "Workshop" then
 		renderWorkshopTab()
+	elseif tabName == "Stats" then
+		renderRecordsTab()
 	end
 end
 

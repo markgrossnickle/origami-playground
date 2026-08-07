@@ -1,12 +1,12 @@
 # CodeMap: origami-playground
 
-_265 files | 79,659 LOC | source: git ls-files_
+_267 files | 79,928 LOC | source: git ls-files_
 
 ## Stats
 
 | Language | Files | LOC |
 |---|---:|---:|
-| Luau | 148 | 38,594 |
+| Luau | 150 | 38,863 |
 | JSON | 82 | 35,805 |
 | Python | 10 | 2,269 |
 | other | 7 | 422 |
@@ -24,22 +24,22 @@ _265 files | 79,659 LOC | source: git ls-files_
 
 ```
 scripts/  (1 files, 869 LOC)
-src/  (145 files, 37,323 LOC)
-  ReplicatedStorage/  (80 files, 27,029 LOC)
+src/  (146 files, 37,436 LOC)
+  ReplicatedStorage/  (81 files, 27,142 LOC)
     Client/  (31 files, 13,717 LOC)
-    Shared/  (49 files, 13,312 LOC)
+    Shared/  (50 files, 13,425 LOC)
   ServerScriptService/  (64 files, 10,288 LOC)
     Server/  (64 files, 10,288 LOC)
   ServerStorage/  (1 files, 6 LOC)
     Configuration/  (1 files, 6 LOC)
-tests/  (14 files, 1,443 LOC)
+tests/  (15 files, 1,599 LOC)
   helpers/  (5 files, 461 LOC)
-  unit/  (6 files, 589 LOC)
+  unit/  (7 files, 745 LOC)
 tools/  (82 files, 37,699 LOC)
 ... +6 asset-only directories (no code)
 ```
 
-## Key files (40 of 265, ranked)
+## Key files (40 of 267, ranked)
 
 - `src/ReplicatedStorage/Shared/WorldGenModule.luau` (2537 L) **[<-5]**
   - WorldGenModule, :generateChunk(), :getSpawnPosition(), :getSurfaceWorldY(), :getSurfaceBlockY(), :getSeaLevelBlock(), :getWorldRadiusChunks(), :getStructureName(), :verifyDeterminism(), local _yieldIfBudgetExceeded(), local _resetBudget(), local hashSeed(), +20 more

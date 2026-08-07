@@ -90,7 +90,7 @@ local function postJson(path: string, body: { [string]: any }): (boolean, any)
 	return true, data
 end
 
---- Filter model text for broadcast to all players (mandatory per Roblox ToS).
+-- Filter model text for broadcast to all players (mandatory per Roblox ToS).
 -- Returns the filtered string, or a safe fallback if filtering fails.
 local function filterForBroadcast(text: string, fromUserId: number): string
 	local ok, result = pcall(function()
